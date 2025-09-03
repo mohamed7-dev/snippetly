@@ -7,7 +7,7 @@ if (!MONGO_URI) throw new Error("Missing Mongo_URI Env Variable.");
 
 export async function connectToDatabase() {
   return mongoose
-    .connect(MONGO_URI)
+    .connect(MONGO_URI, { dbName: "snippetly" })
     .then(() => {
       DatabaseLogger.logConnection("connect");
     })

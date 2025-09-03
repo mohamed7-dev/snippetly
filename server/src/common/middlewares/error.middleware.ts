@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { ErrorLogger } from "../logger";
 import { Interceptor } from "./interceptor.middleware";
 import { HttpException } from "../lib/exception";
+import { StatusCodes } from "http-status-codes";
 
 export default class ErrorMiddleWare extends Interceptor {
   constructor(req: Request, res: Response, next: NextFunction) {
@@ -18,6 +19,11 @@ export default class ErrorMiddleWare extends Interceptor {
     const message: string = error.message || "Something went wrong";
     if (error instanceof HttpException) {
       // check if 400, return cause
+      if (error.status === StatusCodes.BAD_REQUEST) {
+        res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ message, cause: error.cause });
+      }
       res.status(status).json({ message });
     } else {
       res.status(status).json({ message });

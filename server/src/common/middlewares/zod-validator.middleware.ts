@@ -10,13 +10,9 @@ export function zodValidatorMiddleware<T>(schema: z.Schema<T>) {
     } catch (error) {
       if (error instanceof ZodError) {
         const errorTree = z.treeifyError(error);
-        console.log(errorTree);
         return res.status(StatusCodes.BAD_REQUEST).json({
-          message: "Validation failed",
-          //   errors: errorTree.properties.map((err) => ({
-          //     path: err.path.join("."),
-          //     message: err.message,
-          //   })),
+          message: "Bad Request: invalid inputs.",
+          cause: errorTree,
         });
       }
       next(error);

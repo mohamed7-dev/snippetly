@@ -1,17 +1,16 @@
 import { Schema, model } from "mongoose";
+import { BaseModel } from "../../common/types/base-mongoose-model";
 
-interface IUser {
+export interface IUser extends BaseModel {
   name: string;
   password: string;
   email: string;
   firstName: string;
   lastName: string;
-  folders: Schema.Types.ObjectId[];
+  collections: Schema.Types.ObjectId[];
   friendshipInbox: Schema.Types.ObjectId[];
   friendshipOutbox: Schema.Types.ObjectId[];
   friends: Schema.Types.ObjectId[];
-  createdAt: Date;
-  updatedAt: Date;
 }
 
 const userSchema = new Schema<IUser>(
@@ -22,7 +21,7 @@ const userSchema = new Schema<IUser>(
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     // RELATIONS
-    folders: [{ type: Schema.Types.ObjectId, ref: "Folder" }],
+    collections: [{ type: Schema.Types.ObjectId, ref: "Collection" }],
     friendshipInbox: [{ type: Schema.Types.ObjectId, ref: "User" }],
     friendshipOutbox: [{ type: Schema.Types.ObjectId, ref: "User" }],
     friends: [{ type: Schema.Types.ObjectId, ref: "User" }],

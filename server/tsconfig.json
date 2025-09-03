@@ -19,6 +19,10 @@
     "isolatedModules": true,
 
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
-  }
+    "emitDecoratorMetadata": true,
+
+    "types": ["node", "express"],
+    "typeRoots": ["./src/common/types", "./node_modules/@types"]
+  },
+  "include": ["src", "./src/common/types"]
 }
