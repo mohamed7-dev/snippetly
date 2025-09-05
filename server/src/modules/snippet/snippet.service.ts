@@ -1,6 +1,5 @@
 import { StatusCodes } from "http-status-codes";
 import { HttpException } from "../../common/lib/exception";
-import { Collection } from "../collection/collection.model";
 import { CreateSnippetDtoType } from "./dto/create-snippet.dto";
 import { DeleteSnippetDtoType } from "./dto/delete-snippet.dto";
 import { UpdateSnippetDtoType } from "./dto/update-snippet.dto";
@@ -8,33 +7,50 @@ import { Snippet } from "./snippet.model";
 import { GetUserSnippetsDtoType } from "./dto/get-user-snippets.dto";
 import { UserService } from "../user/user.service";
 import { createUniqueSlug } from "../../common/lib/utils";
+import { Request } from "express";
+import { CollectionService } from "../collection/collection.service";
 
 export class SnippetService {
   public readonly UserService: UserService;
+  public readonly CollectionService: CollectionService;
+
   constructor() {
     this.UserService = new UserService();
+    this.CollectionService = new CollectionService();
   }
 
-  async create(input: CreateSnippetDtoType & { userId: string }) {
+  async create(req: Request<{}, {}, CreateSnippetDtoType>) {
+    const input = req.body;
+
     const newSnippet = await Snippet.create({
       ...input,
       slug: createUniqueSlug(input.title),
-      owner: input.userId,
+      owner: req.user.id,
     });
 
-    await Collection.findByIdAndUpdate(
-      newSnippet.collection,
-      {
-        $addToSet: { snippets: newSnippet._id },
-      },
-      { new: true }
-    );
+    await this.CollectionService.updateCollectionSnippets({
+      snippetId: newSnippet.id,
+      collectionId: newSnippet.collection.toString(),
+      operation: "Push",
+    });
 
-    return newSnippet;
+    return {
+      message: "Snippet has been created successfully.",
+      status: StatusCodes.CREATED,
+      data: newSnippet,
+    };
   }
 
-  async update(input: UpdateSnippetDtoType & { userId: string }) {
-    const { slug, data, userId } = input;
+  async update(
+    req: Request<
+      { slug: UpdateSnippetDtoType["slug"] },
+      {},
+      UpdateSnippetDtoType["data"]
+    >
+  ) {
+    const data = req.body;
+    const slug = req.params.slug;
+    const userId = req.user.id;
     const foundSnippet = await this.findOne({ slug });
 
     if (!foundSnippet || foundSnippet.owner.toString() !== userId) {
@@ -50,11 +66,17 @@ export class SnippetService {
       },
       { new: true }
     );
-    return updatedSnippet;
+    return {
+      message: "Snippet has been updated successfully.",
+      status: StatusCodes.OK,
+      data: updatedSnippet,
+    };
   }
 
-  async delete(input: DeleteSnippetDtoType & { userId: string }) {
-    const { slug, userId } = input;
+  async delete(req: Request<DeleteSnippetDtoType>) {
+    const { slug } = req.params;
+    const userId = req.user.id;
+
     const foundSnippet = await this.findOne({ slug });
 
     if (!foundSnippet || foundSnippet.owner.toString() !== userId) {
@@ -62,30 +84,37 @@ export class SnippetService {
     }
     const deletedSnippet = await Snippet.findOneAndDelete({ slug });
 
-    const foundCollection = await Collection.findByIdAndUpdate(
-      deletedSnippet.collection,
-      {
-        $pull: { snippets: deletedSnippet._id },
-      }
-    ).select("-password");
+    await this.CollectionService.updateCollectionSnippets({
+      snippetId: deletedSnippet.id,
+      collectionId: deletedSnippet.collection.toString(),
+      operation: "Pull",
+    });
 
-    return { foundCollection, foundSnippet };
+    return {
+      data: foundSnippet,
+      message: "Snippet has been deleted successfully.",
+      status: StatusCodes.OK,
+    };
   }
 
-  async getUserSnippets(input: GetUserSnippetsDtoType) {
+  async getUserSnippets(req: Request<GetUserSnippetsDtoType>) {
     const foundUser = await this.UserService.findOneQueryBuilder({
-      name: input.name,
+      name: req.params.name,
     });
     if (!foundUser) {
       throw new HttpException(StatusCodes.NOT_FOUND, "User not found.");
     }
     const snippets = await Snippet.find({ owner: foundUser._id });
-    return snippets;
+    return {
+      data: snippets,
+      message: "Fetched successfully.",
+      status: StatusCodes.OK,
+    };
   }
 
-  async getUserFriendsSnippets(input: GetUserSnippetsDtoType) {
+  async getUserFriendsSnippets(req: Request<GetUserSnippetsDtoType>) {
     const foundUser = await this.UserService.findOneQueryBuilder({
-      name: input.name,
+      name: req.params.name,
     });
 
     if (!foundUser) {
@@ -95,9 +124,13 @@ export class SnippetService {
     const foundSnippets = await Snippet.find({
       isPrivate: false,
       owner: [...foundUser.friends],
-    }).populate("owner", "firstName lastName");
+    }).populate("owner", "firstName lastName name");
 
-    return foundSnippets;
+    return {
+      data: foundSnippets,
+      message: "Fetched successfully.",
+      status: StatusCodes.OK,
+    };
   }
 
   private async findOne(by: { [key: string]: string }) {

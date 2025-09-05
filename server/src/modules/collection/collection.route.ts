@@ -30,7 +30,7 @@ export class CollectionRoute implements Route {
     this.router.put(
       `${this.path}/:code`,
       authMiddleware,
-      zodValidatorMiddleware(UpdateCollectionDto.omit({ code: true })),
+      zodValidatorMiddleware(UpdateCollectionDto.pick({ data: true })),
       this.controller.update
     );
   }

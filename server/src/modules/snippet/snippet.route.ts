@@ -30,7 +30,7 @@ export class SnippetRoute implements Route {
     this.router.put(
       `${this.path}/:slug`,
       authMiddleware,
-      zodValidatorMiddleware(UpdateSnippetDto.omit({ slug: true })),
+      zodValidatorMiddleware(UpdateSnippetDto.pick({ data: true })),
       this.controller.update
     );
     this.router.get(

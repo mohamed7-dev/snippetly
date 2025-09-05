@@ -9,5 +9,5 @@
     "**/routeTree.gen.ts": true
   },
   "conventionalCommits.scopes": ["server"],
-  "cSpell.words": ["snippetly"]
+  "cSpell.words": ["JWTOKEN", "snippetly"]
 }

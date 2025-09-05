@@ -1,59 +1,58 @@
 import { Request, Response } from "express";
 import { UserService } from "./user.service";
-import { StatusCodes } from "http-status-codes";
 import { UpdateUserDtoType } from "./dto/update-user.dto";
-import { DeleteUserDtoType } from "./dto/delete-user.dto";
+import {
+  FriendshipResponseDto,
+  GetCurrentUserDto,
+  GetUserProfile,
+  UserRes,
+} from "./dto/response.dto";
+import { HttpException } from "../../common/lib/exception";
+import { StatusCodes } from "http-status-codes";
+import { AuthService } from "../auth/auth.service";
 
 export class UserController {
   private readonly UserService: UserService;
+  private readonly AuthService: AuthService;
 
   constructor() {
     this.UserService = new UserService();
+    this.AuthService = new AuthService();
   }
 
   public update = async (
-    req: Request<
-      { name: Pick<UpdateUserDtoType, "name">["name"] },
-      {},
-      Omit<UpdateUserDtoType, "name">
-    >,
+    req: Request<{ name: string }, {}, UpdateUserDtoType>,
     res: Response
   ) => {
-    const updatedUser = await this.UserService.update({
-      name: req.params.name,
-      data: req.body.data,
-      loggedInUserName: req.user.name,
-    });
-
-    res.status(StatusCodes.OK).json({
-      message: "User info has been updated successfully.",
-      data: updatedUser,
+    const { data, status, message } = await this.UserService.update(req);
+    const { success, data: parsedData } = UserRes.safeParse(data);
+    if (!success) return this.throwServerError();
+    await this.AuthService.logout(req, res);
+    res.status(status).json({
+      message: `${message}, you need to log back in to start new session.`,
+      data: parsedData,
     });
   };
 
-  public delete = async (
-    req: Request<{ name: Pick<DeleteUserDtoType, "name">["name"] }>,
-    res: Response
-  ) => {
-    await this.UserService.delete({
-      name: req.params.name,
-      loggedInUserName: req.user.name,
-    });
-
-    res.status(StatusCodes.OK).json({
-      message: "User account has been deleted successfully.",
-      data: null,
+  public delete = async (req: Request<{ name: string }>, res: Response) => {
+    const { status, message, data } = await this.UserService.delete(req);
+    await this.AuthService.logout(req, res);
+    res.status(status).json({
+      message: `${message}, you need to log back in to start new session.`,
+      data,
     });
   };
 
   public getCurrentUserProfile = async (req: Request, res: Response) => {
-    const loggedInUserName = req.user.name;
+    const { data, message, status } = await this.UserService.getCurrentUser(
+      req
+    );
+    const { success, data: parsedData } = GetCurrentUserDto.safeParse(data);
+    if (!success) return this.throwServerError();
 
-    const userProfile = await this.UserService.getCurrentUser(loggedInUserName);
-
-    res.status(StatusCodes.OK).json({
-      message: "Fetched successfully.",
-      data: userProfile,
+    res.status(status).json({
+      message,
+      data: parsedData,
     });
   };
 
@@ -61,13 +60,24 @@ export class UserController {
     req: Request<{ name: string }>,
     res: Response
   ) => {
-    const name = req.params.name;
-
-    const userProfile = await this.UserService.getOne({ name });
-
-    res.status(StatusCodes.OK).json({
-      message: "Fetched successfully.",
-      data: userProfile,
+    const {
+      data: profileData,
+      message,
+      status,
+    } = await this.UserService.getOne(req);
+    let parsedData;
+    if (req.params.name === req.user.name) {
+      const { success, data } = GetCurrentUserDto.safeParse(profileData);
+      if (!success) return this.throwServerError();
+      parsedData = data;
+    } else {
+      const { success, data: data } = GetUserProfile.safeParse(profileData);
+      if (!success) return this.throwServerError();
+      parsedData = data;
+    }
+    res.status(status).json({
+      message,
+      data: parsedData,
     });
   };
 
@@ -75,15 +85,16 @@ export class UserController {
     req: Request<{ friend_name: string }>,
     res: Response
   ) => {
-    const { friend_name } = req.params;
-    const result = await this.UserService.sendFriendshipRequest({
-      name: req.user.name,
-      friendName: friend_name,
+    const { data, message, status } =
+      await this.UserService.sendFriendshipRequest(req);
+    const { success, data: parsedData } = FriendshipResponseDto.safeParse({
+      user: data.updatedUser,
+      friend: data.updatedFriend,
     });
-
-    res.status(StatusCodes.OK).json({
-      message: "Friendship request has been sent successfully.",
-      data: result,
+    if (!success) return this.throwServerError();
+    res.status(status).json({
+      message,
+      data: parsedData,
     });
   };
 
@@ -91,15 +102,16 @@ export class UserController {
     req: Request<{ friend_name: string }>,
     res: Response
   ) => {
-    const { friend_name } = req.params;
-    const result = await this.UserService.acceptFriendshipRequest({
-      name: req.user.name,
-      friendName: friend_name,
+    const { status, message, data } =
+      await this.UserService.acceptFriendshipRequest(req);
+    const { success, data: parsedData } = FriendshipResponseDto.safeParse({
+      user: data.updatedUser,
+      friend: data.updatedFriend,
     });
-
-    res.status(StatusCodes.OK).json({
-      message: "Friendship request has been accepted successfully.",
-      data: result,
+    if (!success) return this.throwServerError();
+    res.status(status).json({
+      message,
+      data: parsedData,
     });
   };
 
@@ -107,15 +119,24 @@ export class UserController {
     req: Request<{ friend_name: string }>,
     res: Response
   ) => {
-    const { friend_name } = req.params;
-    const result = await this.UserService.rejectFriendshipRequest({
-      name: req.user.name,
-      friendName: friend_name,
+    const { status, message, data } =
+      await this.UserService.rejectFriendshipRequest(req);
+    const { success, data: parsedData } = FriendshipResponseDto.safeParse({
+      user: data.updatedUser,
+      friend: data.updatedFriend,
     });
+    if (!success) return this.throwServerError();
 
-    res.status(StatusCodes.OK).json({
-      message: "Friendship request has been rejected successfully.",
-      data: result,
+    res.status(status).json({
+      message,
+      data: parsedData,
     });
   };
+
+  public throwServerError(): never {
+    throw new HttpException(
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      "Oops, Something went wrong."
+    );
+  }
 }

@@ -1,7 +1,6 @@
 import z from "zod";
+import { SelectCollectionDto } from "./select-collection.dto";
 
-export const CreateCollectionDto = z.object({
-  title: z.string().min(1, { error: "Title is required." }),
-});
+export const CreateCollectionDto = SelectCollectionDto.pick({ title: true });
 
 export type CreateCollectionDtoType = z.infer<typeof CreateCollectionDto>;

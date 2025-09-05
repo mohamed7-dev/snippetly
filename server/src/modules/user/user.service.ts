@@ -1,29 +1,35 @@
 import { StatusCodes } from "http-status-codes";
 import { HttpException } from "../../common/lib/exception";
-import { GetOneDtoType } from "./dto/get-one.dto";
-import { User } from "./user.model";
-import { SendFriendshipRequestDtoType } from "./dto/send-friendship-request.dto";
-import { DeleteUserDtoType } from "./dto/delete-user.dto";
+import { IUser, User } from "./user.model";
 import { CreateUserDtoType } from "./dto/create-user.dto";
-import { hash, genSalt } from "bcryptjs";
 import { UpdateUserDtoType } from "./dto/update-user.dto";
-import jwt from "jsonwebtoken";
-import { JWT_SECRET_KEY } from "../../config";
-import { Schema, Types } from "mongoose";
+import { ValueOrElement } from "../../common/types/utils";
+import { PasswordHashService } from "../auth/password-hash.service";
+import { Request } from "express";
+import { AuthService } from "../auth/auth.service";
+import { UpdateUserPasswordDtoType } from "./dto/update-password.dto";
+import { Types } from "mongoose";
 
 export class UserService {
+  private readonly PasswordHashService: PasswordHashService;
+  private readonly AuthService: AuthService;
+  constructor() {
+    this.PasswordHashService = new PasswordHashService();
+    this.AuthService = new AuthService();
+  }
+
   public async create(input: CreateUserDtoType) {
     const { firstName, lastName, name, email, password } = input;
     const foundUser = await User.findOne({ name });
 
-    if (foundUser)
-      // Suggest another user name
+    if (foundUser) {
       throw new HttpException(
         StatusCodes.CONFLICT,
         "User account already exists."
       );
+    }
 
-    const hashedPassword = await hash(password, await genSalt(10));
+    const hashedPassword = await this.PasswordHashService.hash(password);
 
     const newUser = await User.create({
       firstName,
@@ -36,48 +42,103 @@ export class UserService {
     return newUser;
   }
 
-  public async update(input: UpdateUserDtoType & { loggedInUserName: string }) {
-    const {
-      name,
-      loggedInUserName,
-      data: { password, ...rest },
-    } = input;
+  public async suggestUniqueNames(baseName: string) {
+    const suggestions = [];
+    const existingNames = new Set(
+      (
+        await User.find({ name: new RegExp(`^${baseName}`, "i") }).select(
+          "name"
+        )
+      ).map((u) => u.name.toLowerCase())
+    );
+
+    // Try appending numbers
+    for (let i = 1; suggestions.length < 3 && i <= 50; i++) {
+      const candidate = `${baseName}${i}`;
+      if (!existingNames.has(candidate.toLowerCase())) {
+        suggestions.push(candidate);
+      }
+    }
+    return suggestions;
+  }
+
+  public async update(req: Request<{ name: string }, {}, UpdateUserDtoType>) {
+    const data = req.body;
+    const name = req.params.name;
+
+    if ("password" in data) {
+      throw new HttpException(
+        StatusCodes.BAD_REQUEST,
+        "Password can't be updated."
+      );
+    }
+    const loggedInUserName = req.user.name;
+
     if (loggedInUserName !== name) {
       throw new HttpException(StatusCodes.NOT_FOUND, "User not found.");
     }
 
-    let hashedPassword = undefined;
-    if (password) {
-      hashedPassword = await hash(password, await genSalt(10));
-    }
+    const updatedUser = await User.findOneAndUpdate({ name }, data, {
+      new: true,
+    }).select("-password");
 
-    // TODO: verify email and save it in a placeholder field
-    // once the email is verified swap it with the email field
+    return {
+      data: updatedUser,
+      status: StatusCodes.OK,
+      message: "User info has been updated successfully",
+    };
+  }
+
+  public async updatePassword(req: Request<{}, {}, UpdateUserPasswordDtoType>) {
+    const loggedInUserName = req.user.name;
 
     const updatedUser = await User.findOneAndUpdate(
-      { name },
-      {
-        ...(hashedPassword ? { password: hashedPassword } : {}),
-        ...rest,
-      },
+      { name: loggedInUserName },
+      { password: await this.PasswordHashService.hash(req.body.password) },
       {
         new: true,
       }
     ).select("-password");
-    const token = jwt.sign(
-      {
-        id: updatedUser._id,
-        name: updatedUser.name,
-      },
-      JWT_SECRET_KEY
-    );
-    return { updatedUser, token };
+
+    return {
+      data: updatedUser,
+      message: "Password has been updated successfully",
+      status: StatusCodes.OK,
+    };
   }
 
-  public async delete({
-    name,
-    loggedInUserName,
-  }: DeleteUserDtoType & { loggedInUserName: string }) {
+  public async updateUserCollections({
+    collectionId,
+    userId,
+    operation,
+  }: {
+    collectionId: string;
+    userId: string;
+    operation: "Pull" | "Push";
+  }) {
+    const updatedUser = await User.findOneAndUpdate(
+      { id: userId },
+      {
+        ...(operation === "Push"
+          ? { $addToSet: { collections: collectionId } }
+          : null),
+        ...(operation === "Pull"
+          ? { $pull: { collections: collectionId } }
+          : null),
+      },
+      { new: true }
+    );
+
+    return {
+      data: updatedUser,
+      message: "User collections have been updated successfully.",
+      status: StatusCodes.OK,
+    };
+  }
+
+  public async delete(req: Request<{ name: string }>) {
+    const name = req.params.name;
+    const loggedInUserName = req.user.name;
     if (loggedInUserName !== name) {
       throw new HttpException(StatusCodes.NOT_FOUND, "User not found.");
     }
@@ -85,39 +146,69 @@ export class UserService {
 
     // Pull the userId from all other users' friends arrays
     await User.updateMany(
-      { friends: deletedUser._id },
-      { $pull: { friends: deletedUser._id } }
+      {
+        $or: [
+          { friends: deletedUser._id },
+          { friendshipInbox: deletedUser._id },
+          { friendshipOutbox: deletedUser._id },
+        ],
+      },
+      {
+        $pull: {
+          friends: deletedUser._id,
+          friendshipInbox: deletedUser._id,
+          friendshipOutbox: deletedUser._id,
+        },
+      }
     );
+    return {
+      status: StatusCodes.OK,
+      message: "User account has been deleted successfully",
+      data: null,
+    };
   }
 
-  public async getCurrentUser(name: string) {
-    return await this.getOne({ name });
+  public async getCurrentUser(req: Request) {
+    req.params.name = req.user.name;
+    const profile = await this.getOne(req as Request<{ name: string }>);
+    if (profile.data.id !== req.user.id) {
+      throw new HttpException(
+        StatusCodes.FORBIDDEN,
+        "You are not allowed to view this profile."
+      );
+    }
+    return profile;
   }
 
-  public async getOne(input: GetOneDtoType) {
-    const foundUser = await User.findOne({ name: input.name })
+  public async getOne(req: Request<{ name: string }>) {
+    const foundUser = await User.findOne({ name: req.params.name })
       .select("-password")
       .populate("collections")
-      .populate("friends", "firstName lastName")
-      .populate("friendshipInbox", "firstName lastName")
-      .populate("friendshipOutbox", "firstName lastName")
+      .populate("friends", "firstName lastName name _id")
+      .populate("friendshipInbox", "firstName lastName name _id")
+      .populate("friendshipOutbox", "firstName lastName name _id")
       .exec();
 
     if (!foundUser) {
       throw new HttpException(StatusCodes.NOT_FOUND, "User not found.");
     }
 
-    return foundUser;
+    return {
+      data: foundUser,
+      message: "Fetched successfully.",
+      status: StatusCodes.OK,
+    };
   }
 
-  public findOneQueryBuilder(by: { name?: string; id?: string }) {
-    return User.findOne({ ...(by.name ? { name: by.name } : { id: by.id }) });
+  public findOneQueryBuilder<T extends keyof IUser>(filter: {
+    [K in T]: ValueOrElement<IUser[K]>;
+  }) {
+    return User.findOne(filter);
   }
 
-  public async sendFriendshipRequest({
-    name,
-    friendName,
-  }: SendFriendshipRequestDtoType) {
+  public async sendFriendshipRequest(req: Request<{ friend_name: string }>) {
+    const { friend_name: friendName } = req.params;
+    const name = req.user.name;
     // Note: name is the logged in user name
     const { friend: foundPotentialFriend, user } = await this.getFriendAndUser({
       friendName,
@@ -161,15 +252,17 @@ export class UserService {
       { new: true }
     ).select("-password");
 
-    return { updatedFriend, updatedUser };
+    return {
+      data: { updatedFriend, updatedUser },
+      message: "Friendship request has been sent successfully.",
+      status: StatusCodes.OK,
+    };
   }
 
-  public async acceptFriendshipRequest({
-    name,
-    friendName,
-  }: SendFriendshipRequestDtoType) {
+  public async acceptFriendshipRequest(req: Request<{ friend_name: string }>) {
+    const { friend_name: friendName } = req.params;
+    const name = req.user.name;
     // Note: name is the logged in user name to whom the request was sent
-
     const { friend, user } = await this.getFriendAndUser({ friendName, name });
 
     if (
@@ -203,15 +296,18 @@ export class UserService {
       { new: true }
     ).select("-password");
 
-    return { updatedFriend, updatedUser };
+    return {
+      data: { updatedFriend, updatedUser },
+      message: "Friendship request has been accepted successfully.",
+      status: StatusCodes.OK,
+    };
   }
 
-  public async rejectFriendshipRequest({
-    name,
-    friendName,
-  }: SendFriendshipRequestDtoType) {
-    // Note: name is the logged in user name to whom the request was sent
+  public async rejectFriendshipRequest(req: Request<{ friend_name: string }>) {
+    const { friend_name: friendName } = req.params;
+    const name = req.user.name;
 
+    // Note: name is the logged in user name to whom the request was sent
     const { friend, user } = await this.getFriendAndUser({ friendName, name });
 
     if (user.id === friend.id) {
@@ -273,7 +369,11 @@ export class UserService {
       { new: true }
     ).select("-password");
 
-    return { updatedFriend, updatedUser };
+    return {
+      data: { updatedFriend, updatedUser },
+      message: "Friendship request has been rejected successfully.",
+      status: StatusCodes.OK,
+    };
   }
 
   private async getFriendAndUser({

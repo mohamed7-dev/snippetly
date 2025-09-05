@@ -1,35 +1,48 @@
 import { StatusCodes } from "http-status-codes";
 import { HttpException } from "../../common/lib/exception";
-import { User } from "../user/user.model";
 import { Collection } from "./collection.model";
 import { CreateCollectionDtoType } from "./dto/create-collection.dto";
 import { UpdateCollectionDtoType } from "./dto/update-collection.dto";
-import { DeleteCollectionDtoType } from "./dto/delete-collection.dto";
 import { createUniqueSlug } from "../../common/lib/utils";
+import { Request } from "express";
+import { UserService } from "../user/user.service";
 
 export class CollectionService {
-  async create(input: CreateCollectionDtoType & { userId: string }) {
-    const { title } = input;
-
-    const newCollection = await Collection.create({
-      ...input,
-      code: createUniqueSlug(title),
-      owner: input.userId,
-    });
-
-    await User.findOneAndUpdate(
-      { id: newCollection.owner },
-      {
-        $addToSet: { collections: newCollection._id },
-      },
-      { new: true }
-    );
-    return newCollection;
+  private readonly UserService: UserService;
+  constructor() {
+    this.UserService = new UserService();
   }
 
-  async update(input: UpdateCollectionDtoType & { userId: string }) {
-    const { code, data, userId } = input;
+  async create(req: Request<{}, {}, CreateCollectionDtoType>) {
+    const { title } = req.body;
+
+    const newCollection = await Collection.create({
+      title,
+      code: createUniqueSlug(title),
+      owner: req.user.id,
+    });
+
+    await this.UserService.updateUserCollections({
+      collectionId: newCollection.id,
+      userId: newCollection.owner.toString(),
+      operation: "Push",
+    });
+
+    return {
+      data: newCollection,
+      message: "Collection has been created successfully.",
+      status: StatusCodes.CREATED,
+    };
+  }
+
+  async update(
+    req: Request<{ code: string }, {}, UpdateCollectionDtoType["data"]>
+  ) {
+    const data = req.body;
+    const code = req.params.code;
     const foundCollection = await this.findOne({ code });
+
+    const userId = req.user.id;
     if (!foundCollection || foundCollection.owner.toString() !== userId) {
       throw new HttpException(StatusCodes.NOT_FOUND, "Collection not found.");
     }
@@ -44,23 +57,61 @@ export class CollectionService {
       { new: true }
     );
 
-    return updatedCollection;
+    return {
+      data: updatedCollection,
+      message: "Collection has been updated successfully.",
+      status: StatusCodes.OK,
+    };
   }
 
-  async delete(input: DeleteCollectionDtoType & { userId: string }) {
-    const { code, userId } = input;
+  public async updateCollectionSnippets({
+    collectionId,
+    snippetId,
+    operation,
+  }: {
+    collectionId: string;
+    snippetId: string;
+    operation: "Pull" | "Push";
+  }) {
+    const updatedCollection = await Collection.findOneAndUpdate(
+      { id: collectionId },
+      {
+        ...(operation === "Push"
+          ? { $addToSet: { snippets: snippetId } }
+          : null),
+        ...(operation === "Pull" ? { $pull: { snippets: snippetId } } : null),
+      },
+      { new: true }
+    );
+
+    return {
+      data: updatedCollection,
+      message: "collection snippets have been updated successfully.",
+      status: StatusCodes.OK,
+    };
+  }
+
+  async delete(req: Request<{ code: string }>) {
+    const code = req.params.code;
     const foundCollection = await this.findOne({ code });
+    const userId = req.user.id;
     if (!foundCollection || foundCollection.owner.toString() !== userId) {
       throw new HttpException(StatusCodes.NOT_FOUND, "Collection not found.");
     }
 
     const deletedCollection = await Collection.findOneAndDelete({ code });
 
-    const updatedUser = await User.findByIdAndUpdate(deletedCollection.owner, {
-      $pull: { collections: deletedCollection._id },
+    await this.UserService.updateUserCollections({
+      collectionId: deletedCollection.id,
+      userId: deletedCollection.owner.toString(),
+      operation: "Pull",
     });
 
-    return { foundCollection, updatedUser };
+    return {
+      data: foundCollection,
+      message: "Collection has been deleted successfully",
+      status: StatusCodes.OK,
+    };
   }
 
   private async findOne(by: { [key: string]: string }) {

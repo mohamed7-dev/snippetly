@@ -1,8 +1,9 @@
 import { Request, Response } from "express";
 import { CreateSnippetDtoType } from "./dto/create-snippet.dto";
 import { SnippetService } from "./snippet.service";
-import { StatusCodes } from "http-status-codes";
 import { UpdateSnippetDtoType } from "./dto/update-snippet.dto";
+import { DeleteSnippetDtoType } from "./dto/delete-snippet.dto";
+import { GetUserSnippetsDtoType } from "./dto/get-user-snippets.dto";
 
 export class SnippetController {
   private readonly SnippetService: SnippetService;
@@ -15,70 +16,64 @@ export class SnippetController {
     req: Request<{}, {}, CreateSnippetDtoType>,
     res: Response
   ) => {
-    const newSnippet = await this.SnippetService.create({
-      ...req.body,
-      userId: req.user.id,
-    });
+    const { data, message, status } = await this.SnippetService.create(req);
 
-    res.status(StatusCodes.CREATED).json({
-      message: "Snippet has been created successfully.",
-      data: newSnippet,
+    res.status(status).json({
+      message,
+      data,
     });
   };
 
   public update = async (
-    req: Request<{ slug: string }, {}, Omit<UpdateSnippetDtoType, "slug">>,
+    req: Request<
+      { slug: UpdateSnippetDtoType["slug"] },
+      {},
+      UpdateSnippetDtoType["data"]
+    >,
     res: Response
   ) => {
-    const updatedSnippet = await this.SnippetService.update({
-      ...req.body,
-      slug: req.params.slug,
-      userId: req.user.id,
-    });
+    const { data, status, message } = await this.SnippetService.update(req);
 
-    res.status(StatusCodes.OK).json({
-      message: "Snippet has been updated successfully.",
-      data: updatedSnippet,
+    res.status(status).json({
+      message,
+      data,
     });
   };
 
-  public delete = async (req: Request<{ slug: string }>, res: Response) => {
-    await this.SnippetService.delete({
-      slug: req.params.slug,
-      userId: req.user.id,
-    });
+  public delete = async (
+    req: Request<{ slug: DeleteSnippetDtoType["slug"] }>,
+    res: Response
+  ) => {
+    const { message, status } = await this.SnippetService.delete(req);
 
-    res.status(StatusCodes.OK).json({
-      message: "Snippet has been deleted successfully.",
+    res.status(status).json({
+      message,
       data: null,
     });
   };
 
   public getUserSnippets = async (
-    req: Request<{ name: string }>,
+    req: Request<{ name: GetUserSnippetsDtoType["name"] }>,
     res: Response
   ) => {
-    const snippets = await this.SnippetService.getUserSnippets({
-      name: req.params.name,
-    });
-
-    res.status(StatusCodes.OK).json({
-      message: "Fetched successfully.",
-      data: snippets,
+    const { data, message, status } = await this.SnippetService.getUserSnippets(
+      req
+    );
+    res.status(status).json({
+      message,
+      data,
     });
   };
 
   public getUserFriendsSnippets = async (
-    req: Request<{ name: string }>,
+    req: Request<{ name: GetUserSnippetsDtoType["name"] }>,
     res: Response
   ) => {
-    const snippets = await this.SnippetService.getUserFriendsSnippets({
-      name: req.params.name,
-    });
-
-    res.status(StatusCodes.OK).json({
-      message: "Fetched successfully.",
-      data: snippets,
+    const { data, message, status } =
+      await this.SnippetService.getUserFriendsSnippets(req);
+    res.status(status).json({
+      message,
+      data,
     });
   };
 }
