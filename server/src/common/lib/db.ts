@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { DatabaseLogger } from "../logger";
+import { DatabaseLogger } from "../logger-alternative/utils";
 
 const MONGO_URI = process.env.MONGO_URI;
 

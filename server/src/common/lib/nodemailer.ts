@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { ServerLogger } from "../logger-alternative";
 
 const credentials = {
   email: process.env.GMAIL_APP_EMAIL,
@@ -6,9 +7,10 @@ const credentials = {
 };
 
 if (!credentials.email || !credentials.password) {
-  throw new Error(
+  ServerLogger.logShutdown(
     "Missing GMAIL_APP_EMAIL or GMAIL_APP_PASSWORD Env Variables."
   );
+  process.exit(0);
 }
 
 export const transporter = nodemailer.createTransport({

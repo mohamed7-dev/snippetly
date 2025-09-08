@@ -1,14 +1,16 @@
 import morgan, { StreamOptions } from "morgan";
-import { serverLogger } from "../logger";
 import { LOG_FORMAT, NODE_ENV } from "../../config";
+import { ServerLogger } from "../logger-alternative";
 
 const stream: StreamOptions = {
   write: (message: string) =>
-    serverLogger.http(message.substring(0, message.lastIndexOf("\n"))),
+    ServerLogger.contextLogger().http(
+      message.substring(0, message.lastIndexOf("\n"))
+    ),
 };
 
 const skip = () => {
-  const env = NODE_ENV || "development";
+  const env = NODE_ENV;
   return env !== "development";
 };
 

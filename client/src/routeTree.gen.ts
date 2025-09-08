@@ -8,51 +8,230 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
+import { createFileRoute } from '@tanstack/react-router'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as mainLayoutMainLayoutRouteRouteImport } from './routes/(main-layout)/_main-layout/route'
+import { Route as mainLayoutMainLayoutIndexRouteImport } from './routes/(main-layout)/_main-layout/index'
+import { Route as authauthLayoutAuthLayoutRouteRouteImport } from './routes/(auth)/(auth-layout)/_auth-layout/route'
+import { Route as authauthLayoutAuthLayoutSignupRouteImport } from './routes/(auth)/(auth-layout)/_auth-layout/signup'
+import { Route as authauthLayoutAuthLayoutLoginRouteImport } from './routes/(auth)/(auth-layout)/_auth-layout/login'
+import { Route as authauthLayoutAuthLayoutForgotPasswordRouteImport } from './routes/(auth)/(auth-layout)/_auth-layout/forgot-password'
+
+const mainLayoutRouteImport = createFileRoute('/(main-layout)')()
+const authauthLayoutRouteImport = createFileRoute('/(auth)/(auth-layout)')()
+
+const mainLayoutRoute = mainLayoutRouteImport.update({
+  id: '/(main-layout)',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const authauthLayoutRoute = authauthLayoutRouteImport.update({
+  id: '/(auth)/(auth-layout)',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const mainLayoutMainLayoutRouteRoute =
+  mainLayoutMainLayoutRouteRouteImport.update({
+    id: '/_main-layout',
+    getParentRoute: () => mainLayoutRoute,
+  } as any)
+const mainLayoutMainLayoutIndexRoute =
+  mainLayoutMainLayoutIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => mainLayoutMainLayoutRouteRoute,
+  } as any)
+const authauthLayoutAuthLayoutRouteRoute =
+  authauthLayoutAuthLayoutRouteRouteImport.update({
+    id: '/_auth-layout',
+    getParentRoute: () => authauthLayoutRoute,
+  } as any)
+const authauthLayoutAuthLayoutSignupRoute =
+  authauthLayoutAuthLayoutSignupRouteImport.update({
+    id: '/signup',
+    path: '/signup',
+    getParentRoute: () => authauthLayoutAuthLayoutRouteRoute,
+  } as any)
+const authauthLayoutAuthLayoutLoginRoute =
+  authauthLayoutAuthLayoutLoginRouteImport.update({
+    id: '/login',
+    path: '/login',
+    getParentRoute: () => authauthLayoutAuthLayoutRouteRoute,
+  } as any)
+const authauthLayoutAuthLayoutForgotPasswordRoute =
+  authauthLayoutAuthLayoutForgotPasswordRouteImport.update({
+    id: '/forgot-password',
+    path: '/forgot-password',
+    getParentRoute: () => authauthLayoutAuthLayoutRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
+  '/': typeof mainLayoutMainLayoutIndexRoute
+  '/forgot-password': typeof authauthLayoutAuthLayoutForgotPasswordRoute
+  '/login': typeof authauthLayoutAuthLayoutLoginRoute
+  '/signup': typeof authauthLayoutAuthLayoutSignupRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
+  '/': typeof mainLayoutMainLayoutIndexRoute
+  '/forgot-password': typeof authauthLayoutAuthLayoutForgotPasswordRoute
+  '/login': typeof authauthLayoutAuthLayoutLoginRoute
+  '/signup': typeof authauthLayoutAuthLayoutSignupRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
+  '/(main-layout)': typeof mainLayoutRouteWithChildren
+  '/(main-layout)/_main-layout': typeof mainLayoutMainLayoutRouteRouteWithChildren
+  '/(auth)/(auth-layout)': typeof authauthLayoutRouteWithChildren
+  '/(auth)/(auth-layout)/_auth-layout': typeof authauthLayoutAuthLayoutRouteRouteWithChildren
+  '/(main-layout)/_main-layout/': typeof mainLayoutMainLayoutIndexRoute
+  '/(auth)/(auth-layout)/_auth-layout/forgot-password': typeof authauthLayoutAuthLayoutForgotPasswordRoute
+  '/(auth)/(auth-layout)/_auth-layout/login': typeof authauthLayoutAuthLayoutLoginRoute
+  '/(auth)/(auth-layout)/_auth-layout/signup': typeof authauthLayoutAuthLayoutSignupRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/forgot-password' | '/login' | '/signup'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/forgot-password' | '/login' | '/signup'
+  id:
+    | '__root__'
+    | '/(main-layout)'
+    | '/(main-layout)/_main-layout'
+    | '/(auth)/(auth-layout)'
+    | '/(auth)/(auth-layout)/_auth-layout'
+    | '/(main-layout)/_main-layout/'
+    | '/(auth)/(auth-layout)/_auth-layout/forgot-password'
+    | '/(auth)/(auth-layout)/_auth-layout/login'
+    | '/(auth)/(auth-layout)/_auth-layout/signup'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
+  mainLayoutRoute: typeof mainLayoutRouteWithChildren
+  authauthLayoutRoute: typeof authauthLayoutRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
+    '/(main-layout)': {
+      id: '/(main-layout)'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+      preLoaderRoute: typeof mainLayoutRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/(auth)/(auth-layout)': {
+      id: '/(auth)/(auth-layout)'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof authauthLayoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(main-layout)/_main-layout': {
+      id: '/(main-layout)/_main-layout'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof mainLayoutMainLayoutRouteRouteImport
+      parentRoute: typeof mainLayoutRoute
+    }
+    '/(main-layout)/_main-layout/': {
+      id: '/(main-layout)/_main-layout/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof mainLayoutMainLayoutIndexRouteImport
+      parentRoute: typeof mainLayoutMainLayoutRouteRoute
+    }
+    '/(auth)/(auth-layout)/_auth-layout': {
+      id: '/(auth)/(auth-layout)/_auth-layout'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof authauthLayoutAuthLayoutRouteRouteImport
+      parentRoute: typeof authauthLayoutRoute
+    }
+    '/(auth)/(auth-layout)/_auth-layout/signup': {
+      id: '/(auth)/(auth-layout)/_auth-layout/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof authauthLayoutAuthLayoutSignupRouteImport
+      parentRoute: typeof authauthLayoutAuthLayoutRouteRoute
+    }
+    '/(auth)/(auth-layout)/_auth-layout/login': {
+      id: '/(auth)/(auth-layout)/_auth-layout/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof authauthLayoutAuthLayoutLoginRouteImport
+      parentRoute: typeof authauthLayoutAuthLayoutRouteRoute
+    }
+    '/(auth)/(auth-layout)/_auth-layout/forgot-password': {
+      id: '/(auth)/(auth-layout)/_auth-layout/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof authauthLayoutAuthLayoutForgotPasswordRouteImport
+      parentRoute: typeof authauthLayoutAuthLayoutRouteRoute
     }
   }
 }
 
+interface mainLayoutMainLayoutRouteRouteChildren {
+  mainLayoutMainLayoutIndexRoute: typeof mainLayoutMainLayoutIndexRoute
+}
+
+const mainLayoutMainLayoutRouteRouteChildren: mainLayoutMainLayoutRouteRouteChildren =
+  {
+    mainLayoutMainLayoutIndexRoute: mainLayoutMainLayoutIndexRoute,
+  }
+
+const mainLayoutMainLayoutRouteRouteWithChildren =
+  mainLayoutMainLayoutRouteRoute._addFileChildren(
+    mainLayoutMainLayoutRouteRouteChildren,
+  )
+
+interface mainLayoutRouteChildren {
+  mainLayoutMainLayoutRouteRoute: typeof mainLayoutMainLayoutRouteRouteWithChildren
+}
+
+const mainLayoutRouteChildren: mainLayoutRouteChildren = {
+  mainLayoutMainLayoutRouteRoute: mainLayoutMainLayoutRouteRouteWithChildren,
+}
+
+const mainLayoutRouteWithChildren = mainLayoutRoute._addFileChildren(
+  mainLayoutRouteChildren,
+)
+
+interface authauthLayoutAuthLayoutRouteRouteChildren {
+  authauthLayoutAuthLayoutForgotPasswordRoute: typeof authauthLayoutAuthLayoutForgotPasswordRoute
+  authauthLayoutAuthLayoutLoginRoute: typeof authauthLayoutAuthLayoutLoginRoute
+  authauthLayoutAuthLayoutSignupRoute: typeof authauthLayoutAuthLayoutSignupRoute
+}
+
+const authauthLayoutAuthLayoutRouteRouteChildren: authauthLayoutAuthLayoutRouteRouteChildren =
+  {
+    authauthLayoutAuthLayoutForgotPasswordRoute:
+      authauthLayoutAuthLayoutForgotPasswordRoute,
+    authauthLayoutAuthLayoutLoginRoute: authauthLayoutAuthLayoutLoginRoute,
+    authauthLayoutAuthLayoutSignupRoute: authauthLayoutAuthLayoutSignupRoute,
+  }
+
+const authauthLayoutAuthLayoutRouteRouteWithChildren =
+  authauthLayoutAuthLayoutRouteRoute._addFileChildren(
+    authauthLayoutAuthLayoutRouteRouteChildren,
+  )
+
+interface authauthLayoutRouteChildren {
+  authauthLayoutAuthLayoutRouteRoute: typeof authauthLayoutAuthLayoutRouteRouteWithChildren
+}
+
+const authauthLayoutRouteChildren: authauthLayoutRouteChildren = {
+  authauthLayoutAuthLayoutRouteRoute:
+    authauthLayoutAuthLayoutRouteRouteWithChildren,
+}
+
+const authauthLayoutRouteWithChildren = authauthLayoutRoute._addFileChildren(
+  authauthLayoutRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
+  mainLayoutRoute: mainLayoutRouteWithChildren,
+  authauthLayoutRoute: authauthLayoutRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

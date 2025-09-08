@@ -1,0 +1,1 @@
+export const FIND_FOLDERS_DEFAULT_LIMIT = 20;

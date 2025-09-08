@@ -3,11 +3,16 @@ import { AuthService } from "./auth.service";
 import { StatusCodes } from "http-status-codes";
 import { LoginDtoType } from "./dto/login.dto";
 import { SignupDtoType } from "./dto/signup.dto";
-import { LoginResponseDto } from "./dto/response.dto";
-import { HttpException } from "../../common/lib/exception";
+import {
+  LoginResponseDto,
+  RefreshTokenResDto,
+  SignupResponseDto,
+} from "./dto/response.dto";
+import { InternalServerError } from "../../common/lib/exception";
 import { ResetPasswordDtoType } from "./dto/reset-password.dto";
 import { SendVEmailDtoType } from "./dto/send-v-email.dto";
 import { SendREmailDtoType } from "./dto/send-r-email.dto";
+import { VerifyTokenDtoType } from "./dto/verify-token.dto";
 
 export class AuthController {
   private readonly AuthService: AuthService;
@@ -20,18 +25,17 @@ export class AuthController {
     request: Request<{}, {}, LoginDtoType>,
     response: Response
   ) => {
-    const loginResult = await this.AuthService.login(request, response);
-    const { success, data: parsedData } = LoginResponseDto.safeParse(
-      loginResult.data
+    const data = await this.AuthService.login(
+      request.context,
+      request.body,
+      response
     );
+    const { success, data: parsedData } = LoginResponseDto.safeParse(data);
     if (!success) {
-      throw new HttpException(
-        StatusCodes.INTERNAL_SERVER_ERROR,
-        "Oops, Something went wrong."
-      );
+      throw new InternalServerError();
     }
-    response.status(loginResult.status).json({
-      message: loginResult.message,
+    response.status(StatusCodes.OK).json({
+      message: "Authenticated successfully.",
       data: parsedData,
     });
   };
@@ -41,19 +45,21 @@ export class AuthController {
     response: Response
   ) => {
     const { data, message, status } = await this.AuthService.signup(
-      request,
+      request.context,
+      request.body,
       response
     );
-    const { success, data: parsedData } = LoginResponseDto.safeParse(data);
-    if (!success) {
-      throw new HttpException(
-        StatusCodes.INTERNAL_SERVER_ERROR,
-        "Oops, Something went wrong."
-      );
+    let dataToReturn = null;
+    if (status === StatusCodes.CREATED) {
+      const { success, data: parsedData } = SignupResponseDto.safeParse(data);
+      if (!success) {
+        throw new InternalServerError();
+      }
+      dataToReturn = parsedData;
     }
     response.status(status).json({
       message,
-      data: parsedData,
+      data: dataToReturn ?? data,
     });
   };
 
@@ -61,29 +67,26 @@ export class AuthController {
     request: Request,
     response: Response
   ) => {
-    const { status, data, message } =
-      await this.AuthService.generateRefreshToken(request, response);
-    const { success, data: parsedData } = LoginResponseDto.safeParse(data);
+    const data = await this.AuthService.generateRefreshToken(
+      request.context,
+      response
+    );
+
+    const { success, data: parsedData } = RefreshTokenResDto.safeParse(data);
     if (!success) {
-      throw new HttpException(
-        StatusCodes.INTERNAL_SERVER_ERROR,
-        "Oops, Something went wrong."
-      );
+      throw new InternalServerError();
     }
-    response.status(status).json({
-      message,
+    response.status(StatusCodes.OK).json({
+      message: "Refresh token has been generated successfully.",
       data: parsedData,
     });
   };
 
   public logout = async (request: Request, response: Response) => {
-    const { data, status, message } = await this.AuthService.logout(
-      request,
-      response
-    );
-    response.status(status).json({
-      message,
-      data,
+    await this.AuthService.logout(request.context, response);
+    response.status(StatusCodes.OK).json({
+      message: "Logged out successfully.",
+      data: null,
     });
   };
 
@@ -91,25 +94,28 @@ export class AuthController {
     request: Request<{}, {}, SendVEmailDtoType>,
     response: Response
   ) => {
-    const { status, message } = await this.AuthService.sendVerificationEmail(
-      request.body.email
+    const data = await this.AuthService.sendVerificationEmail(
+      request.context,
+      request.body
     );
 
-    response.status(status).json({
-      message,
+    response.status(StatusCodes.OK).json({
+      message: `Email verification has been sent to ${data.user.email}, check your inbox to verify your account.`,
       data: null,
     });
   };
 
   public verifyVerificationToken = async (
-    request: Request<{}, {}, {}, { token: string }>,
+    request: Request<{}, {}, {}, VerifyTokenDtoType>,
     response: Response
   ) => {
-    const { data, status, message } =
-      await this.AuthService.verifyVerificationToken(request.query.token);
-    response.status(status).json({
-      message,
-      data: data.token,
+    const data = await this.AuthService.verifyVerificationToken(
+      request.context,
+      request.query
+    );
+    response.status(StatusCodes.OK).json({
+      message: "Email verification token has been verified successfully.",
+      data: { token: data.token },
     });
   };
 
@@ -117,25 +123,27 @@ export class AuthController {
     request: Request<{}, {}, SendREmailDtoType>,
     response: Response
   ) => {
-    const { status, message } = await this.AuthService.sendResetPasswordEmail(
-      request.body.email
+    const data = await this.AuthService.sendResetPasswordEmail(
+      request.context,
+      request.body
     );
-    response.status(status).json({
-      message,
+    response.status(StatusCodes.OK).json({
+      message: `Reset password email has been sent to ${data.user.email}, check your inbox!.`,
       data: null,
     });
   };
 
   public resetPassword = async (
-    request: Request<{}, {}, ResetPasswordDtoType, { token: string }>,
+    request: Request<{}, {}, ResetPasswordDtoType, VerifyTokenDtoType>,
     response: Response
   ) => {
-    const { data, status, message } = await this.AuthService.resetPassword(
-      request
-    );
-    response.status(status).json({
-      message,
-      data: data.token,
+    const data = await this.AuthService.resetPassword(request.context, {
+      ...request.query,
+      ...request.body,
+    });
+    response.status(StatusCodes.OK).json({
+      message: "Password has been updated successfully.",
+      data: { token: data.token },
     });
   };
 }

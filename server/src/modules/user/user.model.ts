@@ -1,5 +1,6 @@
 import { Schema, model } from "mongoose";
 import { BaseModel } from "../../common/types/base-mongoose-model";
+import { IFolder } from "../folder/folder.model";
 
 export interface IUser extends BaseModel {
   name: string;
@@ -13,15 +14,32 @@ export interface IUser extends BaseModel {
   emailVerificationExpiresAt: Date | null;
   resetPasswordToken: string | null;
   resetPasswordExpiresAt: Date | null;
-  collections: Schema.Types.ObjectId[];
+  folders: Schema.Types.ObjectId[];
   friendshipInbox: Schema.Types.ObjectId[];
   friendshipOutbox: Schema.Types.ObjectId[];
   friends: Schema.Types.ObjectId[];
 }
 
+export interface PopulatedUserDocument
+  extends Omit<
+    IUser,
+    "friends" | "friendshipOutbox" | "friendshipInbox" | "folders"
+  > {
+  friends: IUser;
+  friendshipOutbox: IUser;
+  friendshipInbox: IUser;
+  folders: IFolder;
+}
+
 const userSchema = new Schema<IUser>(
   {
-    name: { type: String, required: true, unique: true, trim: true },
+    name: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      index: true,
+    },
     email: { type: String, required: true, unique: true },
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
@@ -33,7 +51,7 @@ const userSchema = new Schema<IUser>(
     resetPasswordToken: String,
     resetPasswordExpiresAt: Date,
     // RELATIONS
-    collections: [{ type: Schema.Types.ObjectId, ref: "Collection" }],
+    folders: [{ type: Schema.Types.ObjectId, ref: "Folder" }],
     friendshipInbox: [{ type: Schema.Types.ObjectId, ref: "User" }],
     friendshipOutbox: [{ type: Schema.Types.ObjectId, ref: "User" }],
     friends: [{ type: Schema.Types.ObjectId, ref: "User" }],

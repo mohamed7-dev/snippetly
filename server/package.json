@@ -1,12 +1,13 @@
 {
-  "name": "school-management-system-server",
+  "name": "snippetly-server",
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc --noEmit",
     "start": "node --env-file=.env.production dist/index.js",
-    "dev": "tsx watch --tsconfig ./tsconfig.json --env-file=.env src/index.ts"
+    "dev": "tsx watch --tsconfig ./tsconfig.json --env-file=.env src/index.ts",
+    "dev:trace": "pnpm run dev --trace-warnings"
   },
   "keywords": [],
   "author": "mohamed shaban",
@@ -14,6 +15,7 @@
   "packageManager": "pnpm@10.13.1",
   "dependencies": {
     "bcryptjs": "^3.0.2",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
@@ -23,11 +25,13 @@
     "mongoose": "^8.18.0",
     "morgan": "^1.10.1",
     "nodemailer": "^7.0.6",
+    "picocolors": "^1.1.1",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0",
     "zod": "^4.1.5"
   },
   "devDependencies": {
+    "@types/cookie-parser": "^1.4.9",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/jsonwebtoken": "^9.0.10",

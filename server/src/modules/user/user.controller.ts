@@ -7,9 +7,12 @@ import {
   GetUserProfile,
   UserRes,
 } from "./dto/response.dto";
-import { HttpException } from "../../common/lib/exception";
-import { StatusCodes } from "http-status-codes";
+import { InternalServerError } from "../../common/lib/exception";
 import { AuthService } from "../auth/auth.service";
+import { FriendshipParamDtoType } from "./dto/friendship.dto";
+import { DeleteUserParamDtoType } from "./dto/delete-user.dto";
+import { GetOneParamDtoType } from "./dto/get-one.dto";
+import { StatusCodes } from "http-status-codes";
 
 export class UserController {
   private readonly UserService: UserService;
@@ -21,122 +24,136 @@ export class UserController {
   }
 
   public update = async (
-    req: Request<{ name: string }, {}, UpdateUserDtoType>,
+    req: Request<
+      Pick<UpdateUserDtoType, "name">,
+      {},
+      UpdateUserDtoType["data"]
+    >,
     res: Response
   ) => {
-    const { data, status, message } = await this.UserService.update(req);
-    const { success, data: parsedData } = UserRes.safeParse(data);
+    const updatedUser = await this.UserService.update(req.context, {
+      data: req.body,
+      name: req.params.name,
+    });
+    const { success, data: parsedData } = UserRes.safeParse(updatedUser);
     if (!success) return this.throwServerError();
-    await this.AuthService.logout(req, res);
-    res.status(status).json({
-      message: `${message}, you need to log back in to start new session.`,
+    await this.AuthService.logout(req.context, res);
+    res.status(StatusCodes.OK).json({
+      message: `User info has been updated successfully, you need to log back in to start new session.`,
       data: parsedData,
     });
   };
 
-  public delete = async (req: Request<{ name: string }>, res: Response) => {
-    const { status, message, data } = await this.UserService.delete(req);
-    await this.AuthService.logout(req, res);
-    res.status(status).json({
-      message: `${message}, you need to log back in to start new session.`,
-      data,
+  public delete = async (
+    req: Request<DeleteUserParamDtoType>,
+    res: Response
+  ) => {
+    await this.AuthService.logout(req.context, res).then(async () => {
+      return await this.UserService.delete(req.context, req.params);
+    });
+
+    res.status(StatusCodes.OK).json({
+      message: `User account has been deleted successfully, and session has been ended on the server.`,
+      data: null,
     });
   };
 
   public getCurrentUserProfile = async (req: Request, res: Response) => {
-    const { data, message, status } = await this.UserService.getCurrentUser(
-      req
-    );
-    const { success, data: parsedData } = GetCurrentUserDto.safeParse(data);
+    const foundUser = await this.UserService.getCurrentUser(req.context);
+    const { success, data: parsedData } =
+      GetCurrentUserDto.safeParse(foundUser);
     if (!success) return this.throwServerError();
 
-    res.status(status).json({
-      message,
+    res.status(StatusCodes.OK).json({
+      message: "Fetched successfully.",
       data: parsedData,
     });
   };
 
   public getUserProfile = async (
-    req: Request<{ name: string }>,
+    req: Request<GetOneParamDtoType>,
     res: Response
   ) => {
-    const {
-      data: profileData,
-      message,
-      status,
-    } = await this.UserService.getOne(req);
-    let parsedData;
-    if (req.params.name === req.user.name) {
-      const { success, data } = GetCurrentUserDto.safeParse(profileData);
+    const foundUser = await this.UserService.getOne(req.context, req.params);
+
+    let parsedData = null;
+    if (req.params.name === req.context.user?.name) {
+      const { success, data } = GetCurrentUserDto.safeParse(foundUser);
       if (!success) return this.throwServerError();
       parsedData = data;
     } else {
-      const { success, data: data } = GetUserProfile.safeParse(profileData);
+      const { success, data: data } = GetUserProfile.safeParse(foundUser);
       if (!success) return this.throwServerError();
       parsedData = data;
     }
-    res.status(status).json({
-      message,
+
+    res.status(StatusCodes.OK).json({
+      message: "Fetched successfully.",
       data: parsedData,
     });
   };
 
   public sendFriendshipRequest = async (
-    req: Request<{ friend_name: string }>,
+    req: Request<FriendshipParamDtoType>,
     res: Response
   ) => {
-    const { data, message, status } =
-      await this.UserService.sendFriendshipRequest(req);
+    const data = await this.UserService.sendFriendshipRequest(
+      req.context,
+      req.params
+    );
+
     const { success, data: parsedData } = FriendshipResponseDto.safeParse({
       user: data.updatedUser,
       friend: data.updatedFriend,
     });
+
     if (!success) return this.throwServerError();
-    res.status(status).json({
-      message,
+    res.status(StatusCodes.OK).json({
+      message: "Friendship request has been sent successfully.",
       data: parsedData,
     });
   };
 
   public acceptFriendshipRequest = async (
-    req: Request<{ friend_name: string }>,
+    req: Request<FriendshipParamDtoType>,
     res: Response
   ) => {
-    const { status, message, data } =
-      await this.UserService.acceptFriendshipRequest(req);
+    const data = await this.UserService.acceptFriendshipRequest(
+      req.context,
+      req.params
+    );
     const { success, data: parsedData } = FriendshipResponseDto.safeParse({
       user: data.updatedUser,
       friend: data.updatedFriend,
     });
     if (!success) return this.throwServerError();
-    res.status(status).json({
-      message,
+    res.status(StatusCodes.OK).json({
+      message: "Friendship request has been accepted successfully.",
       data: parsedData,
     });
   };
 
   public rejectFriendshipRequest = async (
-    req: Request<{ friend_name: string }>,
+    req: Request<FriendshipParamDtoType>,
     res: Response
   ) => {
-    const { status, message, data } =
-      await this.UserService.rejectFriendshipRequest(req);
+    const data = await this.UserService.rejectFriendshipRequest(
+      req.context,
+      req.params
+    );
     const { success, data: parsedData } = FriendshipResponseDto.safeParse({
       user: data.updatedUser,
       friend: data.updatedFriend,
     });
     if (!success) return this.throwServerError();
 
-    res.status(status).json({
-      message,
+    res.status(StatusCodes.OK).json({
+      message: "Friendship request has been rejected successfully.",
       data: parsedData,
     });
   };
 
   public throwServerError(): never {
-    throw new HttpException(
-      StatusCodes.INTERNAL_SERVER_ERROR,
-      "Oops, Something went wrong."
-    );
+    throw new InternalServerError();
   }
 }

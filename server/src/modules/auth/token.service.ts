@@ -5,14 +5,14 @@ import {
   JWT_REFRESH_EXPIRES,
   REFRESH_JWTOKEN_SECRET,
 } from "../../config";
-import { IUser } from "../user/user.model";
 import { HttpException } from "../../common/lib/exception";
 import { StatusCodes } from "http-status-codes";
 import { UserService } from "../user/user.service";
 import { TOKEN_EXPIRES } from "./constants";
 import crypto from "crypto";
+import { Request } from "express";
 
-export type JWTPayload = Pick<IUser, "name" | "id" | "email">;
+export type JWTPayload = Request["user"];
 
 export class TokenService {
   private readonly UserService: UserService;
@@ -61,7 +61,14 @@ export class TokenService {
       email,
     }).select("-password");
 
-    const foundVToken = foundUser.emailVerificationToken;
+    if (!foundUser) {
+      throw new HttpException(
+        StatusCodes.NOT_FOUND,
+        `User with email ${email} is not found`
+      );
+    }
+
+    const foundVToken = foundUser?.emailVerificationToken;
     if (foundVToken) {
       foundUser.emailVerificationToken = null;
       foundUser.emailVerificationExpiresAt = null;
@@ -106,8 +113,14 @@ export class TokenService {
     const foundUser = await this.UserService.findOneQueryBuilder({
       email,
     }).select("-password");
+    if (!foundUser) {
+      throw new HttpException(
+        StatusCodes.NOT_FOUND,
+        `User with email ${email} is not found`
+      );
+    }
 
-    const foundRToken = foundUser.resetPasswordToken;
+    const foundRToken = foundUser?.resetPasswordToken;
     if (foundRToken) {
       foundUser.resetPasswordToken = null;
       foundUser.resetPasswordExpiresAt = null;

@@ -1,6 +1,6 @@
 import { App } from "./app";
 import { AuthRoute } from "./modules/auth/auth.route";
-import { CollectionRoute } from "./modules/collection/collection.route";
+import { CollectionRoute } from "./modules/folder/folder.route";
 import { SnippetRoute } from "./modules/snippet/snippet.route";
 import { UserRoute } from "./modules/user/user.route";
 

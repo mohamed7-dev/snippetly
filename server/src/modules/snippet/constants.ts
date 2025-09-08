@@ -1,0 +1,1 @@
+export const FIND_SNIPPETS_DEFAULT_LIMIT = 20;

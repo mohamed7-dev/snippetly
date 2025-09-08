@@ -15,6 +15,6 @@ export const SignupResponseDto = LoginResponseDto;
 export type SignupResponseDtoType = z.infer<typeof SignupResponseDto>;
 
 // Refresh Token
-export const RefreshTokenDto = LoginResponseDto;
+export const RefreshTokenResDto = LoginResponseDto;
 
-export type RefreshTokenDtoType = z.infer<typeof RefreshTokenDto>;
+export type RefreshTokenDtoResType = z.infer<typeof RefreshTokenResDto>;

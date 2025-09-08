@@ -1,13 +1,16 @@
 import "dotenv/config";
 import express, { Application, Request } from "express";
-import { ServerLogger } from "./common/logger";
-import { PORT } from "./config";
+import { NODE_ENV, PORT } from "./config";
 import cors from "cors";
 import { morganMiddleware } from "./common/middlewares/morgan.middleware";
 import ErrorMiddleWare from "./common/middlewares/error.middleware";
 import expressListRoutes from "express-list-routes";
-import { Route } from "./common/lib/types";
 import { connectToDatabase } from "./common/lib/db";
+import { Route } from "./common/types/express";
+import { DefaultLogger } from "./common/logger-alternative/default-logger";
+import { Logger, ServerLogger } from "./common/logger-alternative";
+import { requestContextMiddleware } from "./common/middlewares/request-context-middleware";
+import cookieParser from "cookie-parser";
 
 export class App {
   public app: Application;
@@ -15,7 +18,8 @@ export class App {
 
   constructor(routes: Route[]) {
     this.app = express();
-    this.port = PORT || 8000;
+    this.port = PORT;
+    Logger.useLogger(new DefaultLogger());
     this.initializeMiddlewares();
     this.initializeRoutes(routes);
     this.initializeErrorHandling();
@@ -24,18 +28,17 @@ export class App {
 
   public listen(): void {
     this.app.listen(this.port, () => {
-      ServerLogger.logStartup(
-        Number(this.port),
-        process.env.NODE_ENV || "development"
-      );
+      ServerLogger.logStartup(Number(this.port), NODE_ENV);
     });
   }
 
   private initializeMiddlewares(): void {
     this.app.use(express.json());
+    this.app.use(cookieParser());
     this.app.use(cors<Request>());
     this.app.use(express.urlencoded({ extended: true }));
     this.app.use(morganMiddleware);
+    this.app.use(requestContextMiddleware);
   }
 
   private initializeRoutes(routes: Route[]): void {

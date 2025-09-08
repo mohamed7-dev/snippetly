@@ -1,7 +1,7 @@
 import z from "zod";
 import { CreateUserDto } from "./create-user.dto";
 
-export const GetOneDto = z.object({
+export const GetOneParamDto = z.object({
   name: CreateUserDto.shape.name,
 });
-export type GetOneDtoType = z.infer<typeof GetOneDto>;
+export type GetOneParamDtoType = z.infer<typeof GetOneParamDto>;

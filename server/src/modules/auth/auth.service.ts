@@ -3,13 +3,17 @@ import { HttpException } from "../../common/lib/exception";
 import { SignupDtoType } from "./dto/signup.dto";
 import { LoginDtoType } from "./dto/login.dto";
 import { UserService } from "../user/user.service";
-import { Request, Response } from "express";
+import { Response } from "express";
 import { JWTPayload, TokenService } from "./token.service";
 import { REFRESH_TOKEN_COOKIE_KEY } from "./constants";
 import { PasswordHashService } from "./password-hash.service";
 import { EmailService } from "../email/email.service";
 import { APP_URL } from "../../config";
 import { ResetPasswordDtoType } from "./dto/reset-password.dto";
+import { SendVEmailDtoType } from "./dto/send-v-email.dto";
+import { VerifyTokenDtoType } from "./dto/verify-token.dto";
+import { SendREmailDtoType } from "./dto/send-r-email.dto";
+import { RequestContext } from "../../common/middlewares";
 
 export class AuthService {
   private readonly UserService: UserService;
@@ -22,9 +26,9 @@ export class AuthService {
     this.PasswordHashService = new PasswordHashService();
   }
 
-  public async login(req: Request<{}, {}, LoginDtoType>, res: Response) {
-    const { name, password } = req.body;
-    const refreshToken = req.cookies?.[REFRESH_TOKEN_COOKIE_KEY] as string;
+  public async login(ctx: RequestContext, input: LoginDtoType, res: Response) {
+    const { name, password } = input;
+    const refreshToken = ctx.req.cookies?.[REFRESH_TOKEN_COOKIE_KEY] as string;
 
     const foundUser = await this.UserService.findOneQueryBuilder({ name });
 
@@ -63,6 +67,7 @@ export class AuthService {
 
       this.clearRefreshTokenCookie(res);
     }
+
     const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
       this.generateJWT({
         name: foundUser.name,
@@ -73,30 +78,27 @@ export class AuthService {
     foundUser.refreshTokens = [...newRefreshTokenArray, newRefreshToken];
     let updatedUser = await foundUser.save();
 
-    res.cookie(REFRESH_TOKEN_COOKIE_KEY, newRefreshToken, {
-      httpOnly: true,
-      sameSite: "none",
-      secure: true,
-      expires: new Date(
-        this.TokenService.decodeToken(newRefreshToken).exp * 1000
-      ),
-    });
+    this.setRefreshTokenCookie(res, newRefreshToken);
 
-    return {
-      data: { accessToken: newAccessToken, foundUser: updatedUser },
-      message: "Authenticated successfully.",
-      status: StatusCodes.OK,
-    };
+    return { accessToken: newAccessToken, user: updatedUser };
   }
 
-  public async signup(req: Request<{}, {}, SignupDtoType>, res: Response) {
+  public async signup(
+    ctx: RequestContext,
+    input: SignupDtoType,
+    res: Response
+  ) {
     try {
-      const newUser = await this.UserService.create(req.body);
+      const newUser = await this.UserService.create(ctx, input);
 
-      const { data } = await this.login(req, res);
+      const data = await this.login(
+        ctx,
+        { name: newUser.name, password: input.password },
+        res
+      );
 
       return {
-        data: { accessToken: data.accessToken, newUser },
+        data: { accessToken: data.accessToken, user: newUser },
         message: "User account has been registered successfully.",
         status: StatusCodes.CREATED,
       };
@@ -105,8 +107,8 @@ export class AuthService {
         error instanceof HttpException &&
         error.status === StatusCodes.CONFLICT
       ) {
-        const suggestedNames = this.UserService.suggestUniqueNames(
-          req.body.name
+        const suggestedNames = await this.UserService.suggestUniqueNames(
+          input.name
         );
         return {
           data: suggestedNames,
@@ -118,8 +120,8 @@ export class AuthService {
     }
   }
 
-  public async generateRefreshToken(req: Request, res: Response) {
-    const refreshToken = req.cookies[REFRESH_TOKEN_COOKIE_KEY];
+  public async generateRefreshToken(ctx: RequestContext, res: Response) {
+    const refreshToken = ctx.req.cookies[REFRESH_TOKEN_COOKIE_KEY];
 
     if (!refreshToken) return this.throwSessionError();
 
@@ -135,7 +137,7 @@ export class AuthService {
         async (err, decoded) => {
           if (err) return this.throwSessionError();
           const hackedUser = await this.UserService.findOneQueryBuilder({
-            id: decoded.id,
+            _id: decoded.id,
           });
           hackedUser.refreshTokens = [];
           await hackedUser.save();
@@ -148,58 +150,42 @@ export class AuthService {
       (rt) => rt !== refreshToken
     );
 
-    let returnStatement;
     this.TokenService.verifyRefreshToken(refreshToken, async (err, decoded) => {
       if (err) {
         // expired refresh token
         foundUserWithToken.refreshTokens = [...newRefreshTokenArray];
         await foundUserWithToken.save();
       }
-      if (err || foundUserWithToken._id.toString() !== decoded.id) {
+      if (err || foundUserWithToken.id !== decoded.id) {
         return this.throwSessionError();
       }
-      // Refresh token rotation
-      const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
-        this.generateJWT({
-          name: foundUserWithToken.name,
-          id: foundUserWithToken.id,
-          email: foundUserWithToken.email,
-        });
-      foundUserWithToken.refreshTokens = [
-        ...newRefreshTokenArray,
-        newRefreshToken,
-      ];
-      await foundUserWithToken.save();
-      res.cookie(REFRESH_TOKEN_COOKIE_KEY, newRefreshToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "none",
-        expires: new Date(
-          this.TokenService.decodeToken(newRefreshToken).exp * 1000
-        ),
-      });
-
-      returnStatement = {
-        data: { accessToken: newAccessToken, foundUser: foundUserWithToken },
-        message: "Refresh token has been generated successfully.",
-        status: StatusCodes.CREATED,
-      };
     });
+    // Refresh token rotation
+    const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
+      this.generateJWT({
+        name: foundUserWithToken.name,
+        id: foundUserWithToken.id,
+        email: foundUserWithToken.email,
+      });
+    foundUserWithToken.refreshTokens = [
+      ...newRefreshTokenArray,
+      newRefreshToken,
+    ];
+    await foundUserWithToken.save();
+    this.setRefreshTokenCookie(res, newRefreshToken);
 
-    return returnStatement as {
-      data: { accessToken: string; foundUser: typeof foundUserWithToken };
-      message: string;
-      status: StatusCodes;
-    };
+    return { accessToken: newAccessToken, user: foundUserWithToken };
   }
 
-  public async logout(req: Request, res: Response) {
-    const refreshToken = req.cookies[REFRESH_TOKEN_COOKIE_KEY] as string;
+  public async logout(ctx: RequestContext, res: Response) {
+    const refreshToken = ctx.req.cookies?.[REFRESH_TOKEN_COOKIE_KEY] as string;
+
     if (!refreshToken) return this.throwSessionError();
 
     const foundUserWithToken = await this.UserService.findOneQueryBuilder({
       refreshTokens: refreshToken,
     });
+
     if (!foundUserWithToken) {
       this.clearRefreshTokenCookie(res);
       return this.throwSessionError();
@@ -210,14 +196,14 @@ export class AuthService {
     await foundUserWithToken.save();
     this.clearRefreshTokenCookie(res);
 
-    return {
-      data: null,
-      message: "Logged out successfully.",
-      status: StatusCodes.OK,
-    };
+    return foundUserWithToken;
   }
 
-  public async sendVerificationEmail(email: string) {
+  public async sendVerificationEmail(
+    _ctx: RequestContext,
+    input: SendVEmailDtoType
+  ) {
+    const { email } = input;
     const { token, user } =
       await this.TokenService.generateEmailVerificationToken(email);
     EmailService.sendVerificationEmail({
@@ -225,23 +211,23 @@ export class AuthService {
       username: `${user.firstName} ${user.lastName}`,
       callbackUrl: `${APP_URL}/api/v1/auth/verify-email-token?token=${token}`,
     });
-    return {
-      data: { user, token },
-      status: StatusCodes.OK,
-      message: `Email verification has been sent to ${email}, check your inbox to verify your account.`,
-    };
+    return { user, token };
   }
 
-  public async verifyVerificationToken(token: string) {
+  public async verifyVerificationToken(
+    _ctx: RequestContext,
+    input: VerifyTokenDtoType
+  ) {
+    const token = input.token;
     const user = await this.TokenService.verifyEmailVerificationToken(token);
-    return {
-      data: { user, token },
-      status: StatusCodes.OK,
-      message: "Email verification token has been verified successfully.",
-    };
+    return { user, token };
   }
 
-  public async sendResetPasswordEmail(email: string) {
+  public async sendResetPasswordEmail(
+    _ctx: RequestContext,
+    input: SendREmailDtoType
+  ) {
+    const { email } = input;
     const { token, user } = await this.TokenService.generateResetPasswordToken(
       email
     );
@@ -252,25 +238,21 @@ export class AuthService {
       callbackUrl: `${APP_URL}/api/v1/auth/reset-password?token=${token}`,
     });
 
-    return {
-      data: { user, token },
-      status: StatusCodes.OK,
-      message: `Reset password email has been sent to ${email}, check your inbox!.`,
-    };
+    return { user, token };
   }
 
   public async resetPassword(
-    req: Request<{}, {}, ResetPasswordDtoType, { token: string }>
+    ctx: RequestContext,
+    input: ResetPasswordDtoType & VerifyTokenDtoType
   ) {
-    const token = req.query.token;
-    await this.TokenService.verifyResetPasswordToken(token);
-    const updatedUser = this.UserService.updatePassword(req);
+    const token = input.token;
+    const foundUser = await this.TokenService.verifyResetPasswordToken(token);
+    const updatedUser = this.UserService.updatePassword(ctx, {
+      password: input.password,
+      email: foundUser.email,
+    });
 
-    return {
-      data: { user: updatedUser, token },
-      status: StatusCodes.OK,
-      message: "Password has been updated successfully",
-    };
+    return { user: updatedUser, token };
   }
 
   private generateJWT(payload: JWTPayload) {
@@ -292,6 +274,15 @@ export class AuthService {
       httpOnly: true,
       sameSite: "none",
       secure: true,
+    });
+  }
+
+  private setRefreshTokenCookie(res: Response, refreshToken: string) {
+    res.cookie(REFRESH_TOKEN_COOKIE_KEY, refreshToken, {
+      httpOnly: true,
+      sameSite: "none",
+      secure: true,
+      expires: new Date(this.TokenService.decodeToken(refreshToken).exp * 1000),
     });
   }
 }

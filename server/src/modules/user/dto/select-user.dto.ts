@@ -1,5 +1,5 @@
 import z from "zod";
-import { baseModelSchema } from "../../../common/lib/zod";
+import { baseModelSchema, objectIdSchema } from "../../../common/lib/zod";
 
 export const SelectUserDto = baseModelSchema.extend({
   name: z.string().trim(),
@@ -7,15 +7,15 @@ export const SelectUserDto = baseModelSchema.extend({
   email: z.email().trim(),
   firstName: z.string().trim(),
   lastName: z.string().trim(),
-  emailVerifiedAt: z.date().nullable(),
+  emailVerifiedAt: z.date().nullable().optional(),
   refreshTokens: z.array(z.string()),
-  emailVerificationToken: z.date().nullable(),
-  emailVerificationExpiresAt: z.date().nullable(),
+  emailVerificationToken: z.uuidv4().nullable().optional(),
+  emailVerificationExpiresAt: z.date().nullable().optional(),
   // Relations (ObjectIds)
-  collections: z.array(z.string()),
-  friendshipInbox: z.array(z.string()),
-  friendshipOutbox: z.array(z.string()),
-  friends: z.array(z.string()),
+  folders: z.array(objectIdSchema).default([]),
+  friendshipInbox: z.array(objectIdSchema).default([]),
+  friendshipOutbox: z.array(objectIdSchema).default([]),
+  friends: z.array(objectIdSchema).default([]),
 });
 
 export type SelectUserDtoType = z.infer<typeof SelectUserDto>;

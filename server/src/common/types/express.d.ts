@@ -1,9 +1,10 @@
+import { JwtPayload } from "jsonwebtoken";
 import { IUser } from "../../modules/user/user.model";
 
 declare global {
   namespace Express {
     export interface Request {
-      user?: Pick<IUser, "id" | "name" | "email">;
+      user: (Pick<IUser, "id" | "name" | "email"> & JwtPayload) | null;
     }
   }
 }

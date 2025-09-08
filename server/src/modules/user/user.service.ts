@@ -3,22 +3,22 @@ import { HttpException } from "../../common/lib/exception";
 import { IUser, User } from "./user.model";
 import { CreateUserDtoType } from "./dto/create-user.dto";
 import { UpdateUserDtoType } from "./dto/update-user.dto";
-import { ValueOrElement } from "../../common/types/utils";
 import { PasswordHashService } from "../auth/password-hash.service";
-import { Request } from "express";
-import { AuthService } from "../auth/auth.service";
 import { UpdateUserPasswordDtoType } from "./dto/update-password.dto";
-import { Types } from "mongoose";
+import { FriendshipParamDtoType } from "./dto/friendship.dto";
+import { DeleteUserParamDtoType } from "./dto/delete-user.dto";
+import { RequestContext } from "../../common/middlewares";
+import { GetOneParamDtoType } from "./dto/get-one.dto";
+import { RootFilterQuery } from "mongoose";
 
 export class UserService {
   private readonly PasswordHashService: PasswordHashService;
-  private readonly AuthService: AuthService;
+
   constructor() {
     this.PasswordHashService = new PasswordHashService();
-    this.AuthService = new AuthService();
   }
 
-  public async create(input: CreateUserDtoType) {
+  public async create(_ctx: RequestContext, input: CreateUserDtoType) {
     const { firstName, lastName, name, email, password } = input;
     const foundUser = await User.findOne({ name });
 
@@ -62,9 +62,8 @@ export class UserService {
     return suggestions;
   }
 
-  public async update(req: Request<{ name: string }, {}, UpdateUserDtoType>) {
-    const data = req.body;
-    const name = req.params.name;
+  public async update(ctx: RequestContext, input: UpdateUserDtoType) {
+    const { data, name } = input;
 
     if ("password" in data) {
       throw new HttpException(
@@ -72,7 +71,8 @@ export class UserService {
         "Password can't be updated."
       );
     }
-    const loggedInUserName = req.user.name;
+
+    const loggedInUserName = ctx.user.name;
 
     if (loggedInUserName !== name) {
       throw new HttpException(StatusCodes.NOT_FOUND, "User not found.");
@@ -82,19 +82,18 @@ export class UserService {
       new: true,
     }).select("-password");
 
-    return {
-      data: updatedUser,
-      status: StatusCodes.OK,
-      message: "User info has been updated successfully",
-    };
+    return updatedUser;
   }
 
-  public async updatePassword(req: Request<{}, {}, UpdateUserPasswordDtoType>) {
-    const loggedInUserName = req.user.name;
+  public async updatePassword(
+    ctx: RequestContext,
+    input: UpdateUserPasswordDtoType
+  ) {
+    const email = ctx.user?.email ?? input.email;
 
     const updatedUser = await User.findOneAndUpdate(
-      { name: loggedInUserName },
-      { password: await this.PasswordHashService.hash(req.body.password) },
+      { email },
+      { password: await this.PasswordHashService.hash(input.password) },
       {
         new: true,
       }
@@ -107,41 +106,44 @@ export class UserService {
     };
   }
 
-  public async updateUserCollections({
-    collectionId,
-    userId,
-    operation,
-  }: {
-    collectionId: string;
-    userId: string;
-    operation: "Pull" | "Push";
-  }) {
+  public async updateUserFolders(
+    {
+      folderId,
+      userId,
+      operation,
+    }: {
+      folderId: string;
+      userId: string;
+      operation: "Pull" | "Push";
+    },
+    _ctx: RequestContext
+  ) {
     const updatedUser = await User.findOneAndUpdate(
       { id: userId },
       {
-        ...(operation === "Push"
-          ? { $addToSet: { collections: collectionId } }
-          : null),
-        ...(operation === "Pull"
-          ? { $pull: { collections: collectionId } }
-          : null),
+        ...(operation === "Push" ? { $addToSet: { folders: folderId } } : null),
+        ...(operation === "Pull" ? { $pull: { folders: folderId } } : null),
       },
       { new: true }
     );
 
     return {
       data: updatedUser,
-      message: "User collections have been updated successfully.",
+      message: "User folders have been updated successfully.",
       status: StatusCodes.OK,
     };
   }
 
-  public async delete(req: Request<{ name: string }>) {
-    const name = req.params.name;
-    const loggedInUserName = req.user.name;
-    if (loggedInUserName !== name) {
+  public async delete(ctx: RequestContext, input: DeleteUserParamDtoType) {
+    const name = input.name;
+    const loggedInUserName = ctx.user.name;
+
+    const foundUser = await this.findOneQueryBuilder({ name });
+
+    if (!foundUser || loggedInUserName !== name) {
       throw new HttpException(StatusCodes.NOT_FOUND, "User not found.");
     }
+
     const deletedUser = await User.findOneAndDelete({ name });
 
     // Pull the userId from all other users' friends arrays
@@ -161,17 +163,12 @@ export class UserService {
         },
       }
     );
-    return {
-      status: StatusCodes.OK,
-      message: "User account has been deleted successfully",
-      data: null,
-    };
+    return foundUser;
   }
 
-  public async getCurrentUser(req: Request) {
-    req.params.name = req.user.name;
-    const profile = await this.getOne(req as Request<{ name: string }>);
-    if (profile.data.id !== req.user.id) {
+  public async getCurrentUser(ctx: RequestContext) {
+    const profile = await this.getOne(ctx, { name: ctx.user.name });
+    if (profile.id !== ctx.user.id) {
       throw new HttpException(
         StatusCodes.FORBIDDEN,
         "You are not allowed to view this profile."
@@ -180,40 +177,45 @@ export class UserService {
     return profile;
   }
 
-  public async getOne(req: Request<{ name: string }>) {
-    const foundUser = await User.findOne({ name: req.params.name })
+  public async getOne(_ctx: RequestContext, input: GetOneParamDtoType) {
+    const foundUser = await User.findOne({ name: input.name })
       .select("-password")
-      .populate("collections")
-      .populate("friends", "firstName lastName name _id")
-      .populate("friendshipInbox", "firstName lastName name _id")
-      .populate("friendshipOutbox", "firstName lastName name _id")
+      .populate("folders", "title code")
+      .populate("friends", "firstName lastName name email")
+      .populate("friendshipInbox", "firstName lastName name email")
+      .populate("friendshipOutbox", "firstName lastName name email")
       .exec();
 
     if (!foundUser) {
       throw new HttpException(StatusCodes.NOT_FOUND, "User not found.");
     }
 
-    return {
-      data: foundUser,
-      message: "Fetched successfully.",
-      status: StatusCodes.OK,
-    };
+    return foundUser;
   }
 
-  public findOneQueryBuilder<T extends keyof IUser>(filter: {
-    [K in T]: ValueOrElement<IUser[K]>;
-  }) {
+  public findOneQueryBuilder(filter: RootFilterQuery<IUser>) {
     return User.findOne(filter);
   }
 
-  public async sendFriendshipRequest(req: Request<{ friend_name: string }>) {
-    const { friend_name: friendName } = req.params;
-    const name = req.user.name;
+  public async sendFriendshipRequest(
+    ctx: RequestContext,
+    input: FriendshipParamDtoType
+  ) {
+    const { friend_name: friendName } = input;
+    const name = ctx.user.name;
+
     // Note: name is the logged in user name
     const { friend: foundPotentialFriend, user } = await this.getFriendAndUser({
       friendName,
       name,
     });
+
+    if (!foundPotentialFriend || !user) {
+      throw new HttpException(
+        StatusCodes.BAD_REQUEST,
+        "Invalid friendship request."
+      );
+    }
 
     if (
       user.friends.includes(foundPotentialFriend.id) ||
@@ -228,7 +230,7 @@ export class UserService {
     if (user.friendshipOutbox.includes(foundPotentialFriend.id)) {
       throw new HttpException(
         StatusCodes.CONFLICT,
-        `Friendship request has been sent to the user ${friendName}`
+        `Friendship request has already been sent to the user ${friendName}`
       );
     }
 
@@ -241,7 +243,10 @@ export class UserService {
       {
         new: true,
       }
-    ).select("-password");
+    )
+      .select("-password")
+      .populate("friendshipInbox", "firstName lastName name email")
+      .populate("friendshipOutbox", "firstName lastName name email");
 
     // update friend's inbox
     const updatedFriend = await User.findOneAndUpdate(
@@ -250,18 +255,20 @@ export class UserService {
         $addToSet: { friendshipInbox: updatedUser._id },
       },
       { new: true }
-    ).select("-password");
+    )
+      .select("-password")
+      .populate("friendshipInbox", "firstName lastName name email")
+      .populate("friendshipOutbox", "firstName lastName name email");
 
-    return {
-      data: { updatedFriend, updatedUser },
-      message: "Friendship request has been sent successfully.",
-      status: StatusCodes.OK,
-    };
+    return { updatedFriend, updatedUser };
   }
 
-  public async acceptFriendshipRequest(req: Request<{ friend_name: string }>) {
-    const { friend_name: friendName } = req.params;
-    const name = req.user.name;
+  public async acceptFriendshipRequest(
+    ctx: RequestContext,
+    input: FriendshipParamDtoType
+  ) {
+    const { friend_name: friendName } = input;
+    const name = ctx.user.name;
     // Note: name is the logged in user name to whom the request was sent
     const { friend, user } = await this.getFriendAndUser({ friendName, name });
 
@@ -284,7 +291,10 @@ export class UserService {
         $addToSet: { friends: user._id },
       },
       { new: true }
-    ).select("-password");
+    )
+      .select("-password")
+      .populate("friendshipInbox", "firstName lastName name email")
+      .populate("friendshipOutbox", "firstName lastName name email");
 
     // update logged in user's friends field and inbox field
     const updatedUser = await User.findOneAndUpdate(
@@ -294,18 +304,20 @@ export class UserService {
         $addToSet: { friends: friend._id },
       },
       { new: true }
-    ).select("-password");
+    )
+      .select("-password")
+      .populate("friendshipInbox", "firstName lastName name email")
+      .populate("friendshipOutbox", "firstName lastName name email");
 
-    return {
-      data: { updatedFriend, updatedUser },
-      message: "Friendship request has been accepted successfully.",
-      status: StatusCodes.OK,
-    };
+    return { updatedFriend, updatedUser };
   }
 
-  public async rejectFriendshipRequest(req: Request<{ friend_name: string }>) {
-    const { friend_name: friendName } = req.params;
-    const name = req.user.name;
+  public async rejectFriendshipRequest(
+    ctx: RequestContext,
+    input: FriendshipParamDtoType
+  ) {
+    const { friend_name: friendName } = input;
+    const name = ctx.user.name;
 
     // Note: name is the logged in user name to whom the request was sent
     const { friend, user } = await this.getFriendAndUser({ friendName, name });
@@ -337,7 +349,11 @@ export class UserService {
         { new: true }
       ).select("-password");
 
-      return { updatedFriend, updatedUser };
+      return {
+        data: { updatedFriend, updatedUser },
+        message: "Friendship request has been rejected successfully.",
+        status: StatusCodes.OK,
+      };
     }
 
     // if friend in not in the friends array of the user, then reject the request
@@ -358,7 +374,10 @@ export class UserService {
         $pull: { friendshipOutbox: user._id },
       },
       { new: true }
-    ).select("-password");
+    )
+      .select("-password")
+      .populate("friendshipInbox", "firstName lastName name email")
+      .populate("friendshipOutbox", "firstName lastName name email");
 
     // update user's inbox field
     const updatedUser = await User.findOneAndUpdate(
@@ -367,13 +386,12 @@ export class UserService {
         $pull: { friendshipInbox: friend._id },
       },
       { new: true }
-    ).select("-password");
+    )
+      .select("-password")
+      .populate("friendshipInbox", "firstName lastName name email")
+      .populate("friendshipOutbox", "firstName lastName name email");
 
-    return {
-      data: { updatedFriend, updatedUser },
-      message: "Friendship request has been rejected successfully.",
-      status: StatusCodes.OK,
-    };
+    return { updatedFriend, updatedUser };
   }
 
   private async getFriendAndUser({

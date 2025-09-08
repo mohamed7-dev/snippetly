@@ -1,5 +1,5 @@
 import z from "zod";
-import { baseModelSchema, ObjectIdStringSchema } from "../../../common/lib/zod";
+import { baseModelSchema, objectIdSchema } from "../../../common/lib/zod";
 
 export const SelectSnippetDto = baseModelSchema.extend({
   title: z.string().min(1, "Title is required"),
@@ -7,11 +7,13 @@ export const SelectSnippetDto = baseModelSchema.extend({
   description: z.string().optional(),
   code: z.string().min(1, "Code is required"),
   parseFormat: z.string().min(1, "Parse format is required"),
-  isPrivate: z.boolean().default(false),
+  isPrivate: z.boolean(),
+  allowForking: z.boolean(),
 
-  owner: ObjectIdStringSchema,
-  collection: ObjectIdStringSchema,
-  sharedWith: z.array(ObjectIdStringSchema).default([]),
+  owner: objectIdSchema,
+  folder: objectIdSchema,
+  sharedWith: z.array(objectIdSchema).default([]),
+  tags: z.array(objectIdSchema).default([]),
 });
 
 export type SelectSnippetDtoType = z.infer<typeof SelectSnippetDto>;

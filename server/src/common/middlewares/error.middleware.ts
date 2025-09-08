@@ -1,8 +1,9 @@
 import { NextFunction, Request, Response } from "express";
-import { ErrorLogger } from "../logger";
 import { Interceptor } from "./interceptor.middleware";
 import { HttpException } from "../lib/exception";
 import { StatusCodes } from "http-status-codes";
+import { ErrorLogger } from "../logger-alternative/utils";
+import { LogContextEnum } from "../logger-alternative/constants";
 
 export default class ErrorMiddleWare extends Interceptor {
   constructor(req: Request, res: Response, next: NextFunction) {
@@ -27,7 +28,7 @@ export default class ErrorMiddleWare extends Interceptor {
       res.status(status).json({ message });
     } else {
       res.status(status).json({ message });
-      ErrorLogger.logUnhandledError(error, "Express Error Handler", {
+      ErrorLogger.logUnhandledError(error, LogContextEnum.SERVER, {
         endpoint: req.path,
         method: req.method,
         statusCode: status,
