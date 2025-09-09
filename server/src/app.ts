@@ -11,6 +11,8 @@ import { DefaultLogger } from "./common/logger-alternative/default-logger";
 import { Logger, ServerLogger } from "./common/logger-alternative";
 import { requestContextMiddleware } from "./common/middlewares/request-context-middleware";
 import cookieParser from "cookie-parser";
+import { corsOptions } from "./common/lib/cors";
+import { provideCredentialsMiddleware } from "./common/middlewares/provide-credentials.middleware";
 
 export class App {
   public app: Application;
@@ -35,7 +37,9 @@ export class App {
   private initializeMiddlewares(): void {
     this.app.use(express.json());
     this.app.use(cookieParser());
-    this.app.use(cors<Request>());
+    // must run before CORS, to set allow origin header
+    this.app.use(provideCredentialsMiddleware);
+    this.app.use(cors<Request>(corsOptions));
     this.app.use(express.urlencoded({ extended: true }));
     this.app.use(morganMiddleware);
     this.app.use(requestContextMiddleware);

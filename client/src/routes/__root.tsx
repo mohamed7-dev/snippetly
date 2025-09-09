@@ -1,4 +1,4 @@
-import { Outlet, createRootRoute } from '@tanstack/react-router'
+import { Outlet, createRootRouteWithContext } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { ReactQueryDevtoolsPanel } from '@tanstack/react-query-devtools'
 import { TanstackDevtools } from '@tanstack/react-devtools'
@@ -7,13 +7,18 @@ import {
   TanstackQueryProvider,
 } from '@/components/providers/tanstack-query-provider'
 import { AuthProvider } from '@/features/auth'
+import { Toaster } from 'sonner'
+import type { QueryClient } from '@tanstack/react-query'
 
-export const Route = createRootRoute({
+export const Route = createRootRouteWithContext<{
+  queryClient: QueryClient
+}>()({
   component: () => (
     <div className="min-h-screen bg-background">
       <TanstackQueryProvider>
         <AuthProvider>
           <Outlet />
+          <Toaster position="top-center" />
         </AuthProvider>
       </TanstackQueryProvider>
       <TanstackDevtools

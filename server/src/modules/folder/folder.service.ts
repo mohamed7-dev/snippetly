@@ -39,18 +39,16 @@ export class FolderService {
       const tagDocs = await this.TagService.ensureTagsExistence(tags);
       newFolder.tags = tagDocs.map((doc) => doc.id);
     }
+    const createdFolder = await newFolder.save();
 
-    const [createdFolder] = await Promise.all([
-      newFolder.save(),
-      this.UserService.updateUserFolders(
-        {
-          folderId: newFolder.id,
-          userId: newFolder.owner.toString(),
-          operation: "Push",
-        },
-        ctx
-      ),
-    ]);
+    await this.UserService.updateUserFolders(
+      {
+        folderId: createdFolder._id.toString(),
+        userId: createdFolder.owner.toString(),
+        operation: "Push",
+      },
+      ctx
+    );
 
     return createdFolder;
   }
@@ -227,11 +225,14 @@ export class FolderService {
       filter.$or = [{ title: regex }, { description: regex }, { code: regex }];
     }
 
-    const folders = await Folder.find(filter)
-      .sort({ updatedAt: -1 })
-      .limit(defaultLimit + 1)
-      .populate("tags")
-      .populate("owner", "firstName lastName name email");
+    const [folders, total] = await Promise.all([
+      Folder.find(filter)
+        .sort({ updatedAt: -1 })
+        .limit(defaultLimit + 1)
+        .populate("tags")
+        .populate("owner", "firstName lastName name email"),
+      await Folder.countDocuments({ owner: foundUser._id }),
+    ]);
 
     const { nextCursor, data: paginatedData } = handleCursorPagination({
       data: folders,
@@ -245,6 +246,7 @@ export class FolderService {
             updatedAt: nextCursor.updatedAt,
           } satisfies FindFoldersDtoType["cursor"])
         : null,
+      total,
     };
   }
 

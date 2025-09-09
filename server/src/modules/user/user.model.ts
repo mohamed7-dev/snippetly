@@ -8,6 +8,7 @@ export interface IUser extends BaseModel {
   email: string;
   firstName: string;
   lastName: string;
+  acceptedPolicies: boolean;
   emailVerifiedAt: Date | null;
   refreshTokens: string[];
   emailVerificationToken: string | null;
@@ -44,6 +45,7 @@ const userSchema = new Schema<IUser>(
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
     password: { type: String, required: true },
+    acceptedPolicies: { type: Boolean, default: false },
     refreshTokens: [String],
     emailVerifiedAt: Date,
     emailVerificationToken: String,

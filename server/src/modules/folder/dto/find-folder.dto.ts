@@ -3,7 +3,11 @@ import { SelectUserDto } from "../../user/dto/select-user.dto";
 import { SelectFolderDto } from "./select-folder.dto";
 
 export const FindFoldersDto = z.object({
-  limit: z.number().min(1).max(100).optional(),
+  limit: z
+    .string()
+    .transform((val) => Number(val))
+    .refine((val) => val > 0 && val < 100)
+    .optional(),
   cursor: z
     .object({
       updatedAt: z

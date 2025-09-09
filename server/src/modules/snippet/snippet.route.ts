@@ -51,7 +51,12 @@ export class SnippetRoute implements Route {
       zodValidatorMiddleware(GetSnippetDto, "Params"),
       this.controller.getSnippet
     );
-
+    this.router.get(
+      `${this.path}/user/current`,
+      authMiddleware,
+      zodValidatorMiddleware(GetUserSnippetsDto.omit({ name: true }), "Query"),
+      this.controller.getCurrentUserSnippets
+    );
     this.router.get(
       `${this.path}/user/:name/friends`,
       authMiddleware,

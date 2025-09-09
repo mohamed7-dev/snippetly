@@ -105,7 +105,7 @@ export class FolderController {
     >,
     response: Response
   ) => {
-    const { data, nextCursor } =
+    const { data, nextCursor, total } =
       await this.FolderService.findCurrentUserFolders(
         request.context,
         request.query
@@ -122,6 +122,7 @@ export class FolderController {
       message: "Fetched successfully.",
       data: parsedData,
       nextCursor,
+      total,
     });
   };
 
@@ -129,7 +130,7 @@ export class FolderController {
     request: Request<{}, {}, {}, FindFoldersDtoType>,
     response: Response
   ) => {
-    const { data, nextCursor } = await this.FolderService.find(
+    const { data, nextCursor, total } = await this.FolderService.find(
       request.context,
       request.query
     );
@@ -157,6 +158,7 @@ export class FolderController {
       message: "Fetched successfully.",
       data: dataToReturn,
       nextCursor,
+      total,
     });
   };
 

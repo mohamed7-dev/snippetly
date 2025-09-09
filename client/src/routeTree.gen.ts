@@ -11,18 +11,28 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as mainLayoutMainLayoutRouteRouteImport } from './routes/(main-layout)/_main-layout/route'
-import { Route as mainLayoutMainLayoutIndexRouteImport } from './routes/(main-layout)/_main-layout/index'
+import { Route as DashboardRouteRouteImport } from './routes/dashboard.route'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
+import { Route as DashboardFriendsRouteImport } from './routes/dashboard.friends'
+import { Route as DashboardCollectionsRouteRouteImport } from './routes/dashboard.collections.route'
+import { Route as DashboardCollectionsIndexRouteImport } from './routes/dashboard.collections.index'
+import { Route as DashboardCollectionsSlugRouteImport } from './routes/dashboard.collections.$slug'
 import { Route as authauthLayoutAuthLayoutRouteRouteImport } from './routes/(auth)/(auth-layout)/_auth-layout/route'
 import { Route as authauthLayoutAuthLayoutSignupRouteImport } from './routes/(auth)/(auth-layout)/_auth-layout/signup'
 import { Route as authauthLayoutAuthLayoutLoginRouteImport } from './routes/(auth)/(auth-layout)/_auth-layout/login'
 import { Route as authauthLayoutAuthLayoutForgotPasswordRouteImport } from './routes/(auth)/(auth-layout)/_auth-layout/forgot-password'
 
-const mainLayoutRouteImport = createFileRoute('/(main-layout)')()
 const authauthLayoutRouteImport = createFileRoute('/(auth)/(auth-layout)')()
 
-const mainLayoutRoute = mainLayoutRouteImport.update({
-  id: '/(main-layout)',
+const DashboardRouteRoute = DashboardRouteRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const authauthLayoutRoute = authauthLayoutRouteImport.update({
@@ -30,16 +40,33 @@ const authauthLayoutRoute = authauthLayoutRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const mainLayoutMainLayoutRouteRoute =
-  mainLayoutMainLayoutRouteRouteImport.update({
-    id: '/_main-layout',
-    getParentRoute: () => mainLayoutRoute,
+const DashboardIndexRoute = DashboardIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+const DashboardFriendsRoute = DashboardFriendsRouteImport.update({
+  id: '/friends',
+  path: '/friends',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+const DashboardCollectionsRouteRoute =
+  DashboardCollectionsRouteRouteImport.update({
+    id: '/collections',
+    path: '/collections',
+    getParentRoute: () => DashboardRouteRoute,
   } as any)
-const mainLayoutMainLayoutIndexRoute =
-  mainLayoutMainLayoutIndexRouteImport.update({
+const DashboardCollectionsIndexRoute =
+  DashboardCollectionsIndexRouteImport.update({
     id: '/',
     path: '/',
-    getParentRoute: () => mainLayoutMainLayoutRouteRoute,
+    getParentRoute: () => DashboardCollectionsRouteRoute,
+  } as any)
+const DashboardCollectionsSlugRoute =
+  DashboardCollectionsSlugRouteImport.update({
+    id: '/$slug',
+    path: '/$slug',
+    getParentRoute: () => DashboardCollectionsRouteRoute,
   } as any)
 const authauthLayoutAuthLayoutRouteRoute =
   authauthLayoutAuthLayoutRouteRouteImport.update({
@@ -66,57 +93,101 @@ const authauthLayoutAuthLayoutForgotPasswordRoute =
   } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof mainLayoutMainLayoutIndexRoute
+  '/': typeof authauthLayoutAuthLayoutRouteRouteWithChildren
+  '/dashboard': typeof DashboardRouteRouteWithChildren
+  '/dashboard/collections': typeof DashboardCollectionsRouteRouteWithChildren
+  '/dashboard/friends': typeof DashboardFriendsRoute
+  '/dashboard/': typeof DashboardIndexRoute
+  '/dashboard/collections/$slug': typeof DashboardCollectionsSlugRoute
+  '/dashboard/collections/': typeof DashboardCollectionsIndexRoute
   '/forgot-password': typeof authauthLayoutAuthLayoutForgotPasswordRoute
   '/login': typeof authauthLayoutAuthLayoutLoginRoute
   '/signup': typeof authauthLayoutAuthLayoutSignupRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof mainLayoutMainLayoutIndexRoute
+  '/': typeof authauthLayoutAuthLayoutRouteRouteWithChildren
+  '/dashboard/friends': typeof DashboardFriendsRoute
+  '/dashboard': typeof DashboardIndexRoute
+  '/dashboard/collections/$slug': typeof DashboardCollectionsSlugRoute
+  '/dashboard/collections': typeof DashboardCollectionsIndexRoute
   '/forgot-password': typeof authauthLayoutAuthLayoutForgotPasswordRoute
   '/login': typeof authauthLayoutAuthLayoutLoginRoute
   '/signup': typeof authauthLayoutAuthLayoutSignupRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/(main-layout)': typeof mainLayoutRouteWithChildren
-  '/(main-layout)/_main-layout': typeof mainLayoutMainLayoutRouteRouteWithChildren
+  '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRouteRouteWithChildren
+  '/dashboard/collections': typeof DashboardCollectionsRouteRouteWithChildren
+  '/dashboard/friends': typeof DashboardFriendsRoute
+  '/dashboard/': typeof DashboardIndexRoute
   '/(auth)/(auth-layout)': typeof authauthLayoutRouteWithChildren
   '/(auth)/(auth-layout)/_auth-layout': typeof authauthLayoutAuthLayoutRouteRouteWithChildren
-  '/(main-layout)/_main-layout/': typeof mainLayoutMainLayoutIndexRoute
+  '/dashboard/collections/$slug': typeof DashboardCollectionsSlugRoute
+  '/dashboard/collections/': typeof DashboardCollectionsIndexRoute
   '/(auth)/(auth-layout)/_auth-layout/forgot-password': typeof authauthLayoutAuthLayoutForgotPasswordRoute
   '/(auth)/(auth-layout)/_auth-layout/login': typeof authauthLayoutAuthLayoutLoginRoute
   '/(auth)/(auth-layout)/_auth-layout/signup': typeof authauthLayoutAuthLayoutSignupRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/forgot-password' | '/login' | '/signup'
+  fullPaths:
+    | '/'
+    | '/dashboard'
+    | '/dashboard/collections'
+    | '/dashboard/friends'
+    | '/dashboard/'
+    | '/dashboard/collections/$slug'
+    | '/dashboard/collections/'
+    | '/forgot-password'
+    | '/login'
+    | '/signup'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/forgot-password' | '/login' | '/signup'
+  to:
+    | '/'
+    | '/dashboard/friends'
+    | '/dashboard'
+    | '/dashboard/collections/$slug'
+    | '/dashboard/collections'
+    | '/forgot-password'
+    | '/login'
+    | '/signup'
   id:
     | '__root__'
-    | '/(main-layout)'
-    | '/(main-layout)/_main-layout'
+    | '/'
+    | '/dashboard'
+    | '/dashboard/collections'
+    | '/dashboard/friends'
+    | '/dashboard/'
     | '/(auth)/(auth-layout)'
     | '/(auth)/(auth-layout)/_auth-layout'
-    | '/(main-layout)/_main-layout/'
+    | '/dashboard/collections/$slug'
+    | '/dashboard/collections/'
     | '/(auth)/(auth-layout)/_auth-layout/forgot-password'
     | '/(auth)/(auth-layout)/_auth-layout/login'
     | '/(auth)/(auth-layout)/_auth-layout/signup'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  mainLayoutRoute: typeof mainLayoutRouteWithChildren
+  IndexRoute: typeof IndexRoute
+  DashboardRouteRoute: typeof DashboardRouteRouteWithChildren
   authauthLayoutRoute: typeof authauthLayoutRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/(main-layout)': {
-      id: '/(main-layout)'
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/': {
+      id: '/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof mainLayoutRouteImport
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/(auth)/(auth-layout)': {
@@ -126,19 +197,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof authauthLayoutRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/(main-layout)/_main-layout': {
-      id: '/(main-layout)/_main-layout'
+    '/dashboard/': {
+      id: '/dashboard/'
       path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof mainLayoutMainLayoutRouteRouteImport
-      parentRoute: typeof mainLayoutRoute
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof DashboardIndexRouteImport
+      parentRoute: typeof DashboardRouteRoute
     }
-    '/(main-layout)/_main-layout/': {
-      id: '/(main-layout)/_main-layout/'
+    '/dashboard/friends': {
+      id: '/dashboard/friends'
+      path: '/friends'
+      fullPath: '/dashboard/friends'
+      preLoaderRoute: typeof DashboardFriendsRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/dashboard/collections': {
+      id: '/dashboard/collections'
+      path: '/collections'
+      fullPath: '/dashboard/collections'
+      preLoaderRoute: typeof DashboardCollectionsRouteRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/dashboard/collections/': {
+      id: '/dashboard/collections/'
       path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof mainLayoutMainLayoutIndexRouteImport
-      parentRoute: typeof mainLayoutMainLayoutRouteRoute
+      fullPath: '/dashboard/collections/'
+      preLoaderRoute: typeof DashboardCollectionsIndexRouteImport
+      parentRoute: typeof DashboardCollectionsRouteRoute
+    }
+    '/dashboard/collections/$slug': {
+      id: '/dashboard/collections/$slug'
+      path: '/$slug'
+      fullPath: '/dashboard/collections/$slug'
+      preLoaderRoute: typeof DashboardCollectionsSlugRouteImport
+      parentRoute: typeof DashboardCollectionsRouteRoute
     }
     '/(auth)/(auth-layout)/_auth-layout': {
       id: '/(auth)/(auth-layout)/_auth-layout'
@@ -171,30 +263,36 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface mainLayoutMainLayoutRouteRouteChildren {
-  mainLayoutMainLayoutIndexRoute: typeof mainLayoutMainLayoutIndexRoute
+interface DashboardCollectionsRouteRouteChildren {
+  DashboardCollectionsSlugRoute: typeof DashboardCollectionsSlugRoute
+  DashboardCollectionsIndexRoute: typeof DashboardCollectionsIndexRoute
 }
 
-const mainLayoutMainLayoutRouteRouteChildren: mainLayoutMainLayoutRouteRouteChildren =
+const DashboardCollectionsRouteRouteChildren: DashboardCollectionsRouteRouteChildren =
   {
-    mainLayoutMainLayoutIndexRoute: mainLayoutMainLayoutIndexRoute,
+    DashboardCollectionsSlugRoute: DashboardCollectionsSlugRoute,
+    DashboardCollectionsIndexRoute: DashboardCollectionsIndexRoute,
   }
 
-const mainLayoutMainLayoutRouteRouteWithChildren =
-  mainLayoutMainLayoutRouteRoute._addFileChildren(
-    mainLayoutMainLayoutRouteRouteChildren,
+const DashboardCollectionsRouteRouteWithChildren =
+  DashboardCollectionsRouteRoute._addFileChildren(
+    DashboardCollectionsRouteRouteChildren,
   )
 
-interface mainLayoutRouteChildren {
-  mainLayoutMainLayoutRouteRoute: typeof mainLayoutMainLayoutRouteRouteWithChildren
+interface DashboardRouteRouteChildren {
+  DashboardCollectionsRouteRoute: typeof DashboardCollectionsRouteRouteWithChildren
+  DashboardFriendsRoute: typeof DashboardFriendsRoute
+  DashboardIndexRoute: typeof DashboardIndexRoute
 }
 
-const mainLayoutRouteChildren: mainLayoutRouteChildren = {
-  mainLayoutMainLayoutRouteRoute: mainLayoutMainLayoutRouteRouteWithChildren,
+const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
+  DashboardCollectionsRouteRoute: DashboardCollectionsRouteRouteWithChildren,
+  DashboardFriendsRoute: DashboardFriendsRoute,
+  DashboardIndexRoute: DashboardIndexRoute,
 }
 
-const mainLayoutRouteWithChildren = mainLayoutRoute._addFileChildren(
-  mainLayoutRouteChildren,
+const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(
+  DashboardRouteRouteChildren,
 )
 
 interface authauthLayoutAuthLayoutRouteRouteChildren {
@@ -230,7 +328,8 @@ const authauthLayoutRouteWithChildren = authauthLayoutRoute._addFileChildren(
 )
 
 const rootRouteChildren: RootRouteChildren = {
-  mainLayoutRoute: mainLayoutRouteWithChildren,
+  IndexRoute: IndexRoute,
+  DashboardRouteRoute: DashboardRouteRouteWithChildren,
   authauthLayoutRoute: authauthLayoutRouteWithChildren,
 }
 export const routeTree = rootRouteImport

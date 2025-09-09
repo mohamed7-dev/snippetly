@@ -1,17 +1,38 @@
 import React from 'react'
+import {
+  getAccessToken,
+  getUser,
+  setAuth,
+  type LoggedInUser,
+} from '../lib/auth-store'
 
-type AuthContextType = {
+type AuthContextValue = {
+  user: ReturnType<typeof getUser>
   accessToken: string | null
-  setAccessToken: (token: string | null) => void
+  login: (token: string, user: LoggedInUser) => void
+  logout: () => void
 }
 
-const AuthContext = React.createContext<AuthContextType | undefined>(undefined)
+const AuthContext = React.createContext<AuthContextValue | undefined>(undefined)
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [accessToken, setAccessToken] = React.useState<string | null>(null)
+  const [user, setUser] = React.useState(getUser())
+  const [accessToken, setAccessToken] = React.useState(getAccessToken())
+
+  const login = (token: string, user: any) => {
+    setUser(user)
+    setAccessToken(token)
+    setAuth(token, user) // sync module store
+  }
+
+  const logout = () => {
+    setUser(null)
+    setAccessToken(null)
+    setAuth(null, null) // sync module store
+  }
 
   return (
-    <AuthContext.Provider value={{ accessToken, setAccessToken }}>
+    <AuthContext.Provider value={{ user, accessToken, login, logout }}>
       {children}
     </AuthContext.Provider>
   )

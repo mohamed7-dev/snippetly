@@ -222,6 +222,18 @@ export class SnippetService {
     return newSnippet;
   }
 
+  async getCurrentUserSnippets(
+    ctx: RequestContext,
+    input: Omit<GetUserSnippetsDtoType, "name">
+  ) {
+    const loggedInUserName = ctx.user.name;
+    const snippets = await this.getUserSnippets(ctx, {
+      ...input,
+      name: loggedInUserName,
+    });
+    return snippets;
+  }
+
   async getUserSnippets(ctx: RequestContext, input: GetUserSnippetsDtoType) {
     const { limit } = input;
     const defaultLimit = limit ?? FIND_SNIPPETS_DEFAULT_LIMIT;
@@ -234,12 +246,15 @@ export class SnippetService {
       ...(!isCurrentUserOwner ? { isPrivate: false } : null),
     };
 
-    const snippets = await Snippet.find(newFilter)
-      .sort({ updatedAt: -1 })
-      .limit(defaultLimit + 1)
-      .populate("tags")
-      .populate("owner", "firstName lastName name email id")
-      .populate("folder", "title code id");
+    const [snippets, total] = await Promise.all([
+      Snippet.find(newFilter)
+        .sort({ updatedAt: -1 })
+        .limit(defaultLimit + 1)
+        .populate("tags")
+        .populate("owner", "firstName lastName name email id")
+        .populate("folder", "title code id"),
+      Snippet.countDocuments({ owner: foundUser._id }),
+    ]);
 
     const { nextCursor, data: paginatedData } = handleCursorPagination({
       data: snippets,
@@ -253,6 +268,7 @@ export class SnippetService {
             updatedAt: nextCursor.updatedAt,
           } satisfies GetUserSnippetsDtoType["cursor"])
         : null,
+      total,
     };
   }
 
@@ -270,12 +286,18 @@ export class SnippetService {
       owner: [...foundUser.friends],
     };
 
-    const foundSnippets = await Snippet.find(newFilter)
-      .sort({ updatedAt: -1 })
-      .limit(defaultLimit + 1)
-      .populate("owner", "firstName lastName name email id")
-      .populate("tags")
-      .populate("folder", "title slug id");
+    const [foundSnippets, total] = await Promise.all([
+      Snippet.find(newFilter)
+        .sort({ updatedAt: -1 })
+        .limit(defaultLimit + 1)
+        .populate("owner", "firstName lastName name email id")
+        .populate("tags")
+        .populate("folder", "title slug id"),
+      Snippet.countDocuments({
+        owner: [...foundUser.friends],
+        isPrivate: false,
+      }),
+    ]);
 
     const { nextCursor, data: paginatedData } = handleCursorPagination({
       data: foundSnippets,
@@ -288,6 +310,7 @@ export class SnippetService {
             updatedAt: nextCursor.updatedAt,
           } satisfies GetUserSnippetsDtoType["cursor"])
         : null,
+      total,
     };
   }
 

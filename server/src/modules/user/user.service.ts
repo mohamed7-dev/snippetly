@@ -13,7 +13,6 @@ import { RootFilterQuery } from "mongoose";
 
 export class UserService {
   private readonly PasswordHashService: PasswordHashService;
-
   constructor() {
     this.PasswordHashService = new PasswordHashService();
   }
@@ -127,11 +126,7 @@ export class UserService {
       { new: true }
     );
 
-    return {
-      data: updatedUser,
-      message: "User folders have been updated successfully.",
-      status: StatusCodes.OK,
-    };
+    return updatedUser;
   }
 
   public async delete(ctx: RequestContext, input: DeleteUserParamDtoType) {
@@ -177,13 +172,51 @@ export class UserService {
     return profile;
   }
 
+  public async getCurrentUserDashboard(ctx: RequestContext) {
+    const foundUser = await User.findOne({ name: ctx.user.name })
+      .select("-password")
+      .populate({
+        path: "folders",
+        select: "title code color id",
+        match: { limit: 5 },
+      })
+      .lean();
+
+    if (!foundUser) {
+      throw new HttpException(StatusCodes.NOT_FOUND, "User not found.");
+    }
+    const { SnippetService } = await import("../snippet/snippet.service");
+    const SnippetServiceInstance = new SnippetService();
+    const { data: snippets, total } =
+      await SnippetServiceInstance.getCurrentUserSnippets(ctx, {
+        limit: 5,
+      });
+
+    const foldersCount = foundUser.folders.length;
+    const friendsCount = foundUser.friends.length;
+    const friendsInboxCount = foundUser.friendshipInbox.length;
+    const friendsOutboxCount = foundUser.friendshipOutbox.length;
+    const snippetsCount = total;
+
+    return {
+      ...foundUser,
+      id: foundUser._id.toString(),
+      foldersCount,
+      friendsCount,
+      friendsInboxCount,
+      friendsOutboxCount,
+      snippetsCount,
+      snippets,
+    };
+  }
+
   public async getOne(_ctx: RequestContext, input: GetOneParamDtoType) {
     const foundUser = await User.findOne({ name: input.name })
       .select("-password")
-      .populate("folders", "title code")
-      .populate("friends", "firstName lastName name email")
-      .populate("friendshipInbox", "firstName lastName name email")
-      .populate("friendshipOutbox", "firstName lastName name email")
+      .populate("folders", "title code color id")
+      .populate("friends", "firstName lastName name email id")
+      .populate("friendshipInbox", "firstName lastName name email id")
+      .populate("friendshipOutbox", "firstName lastName name email id")
       .exec();
 
     if (!foundUser) {
@@ -245,8 +278,8 @@ export class UserService {
       }
     )
       .select("-password")
-      .populate("friendshipInbox", "firstName lastName name email")
-      .populate("friendshipOutbox", "firstName lastName name email");
+      .populate("friendshipInbox", "firstName lastName name email id")
+      .populate("friendshipOutbox", "firstName lastName name email id");
 
     // update friend's inbox
     const updatedFriend = await User.findOneAndUpdate(
@@ -257,8 +290,8 @@ export class UserService {
       { new: true }
     )
       .select("-password")
-      .populate("friendshipInbox", "firstName lastName name email")
-      .populate("friendshipOutbox", "firstName lastName name email");
+      .populate("friendshipInbox", "firstName lastName name email id")
+      .populate("friendshipOutbox", "firstName lastName name email id");
 
     return { updatedFriend, updatedUser };
   }
@@ -293,8 +326,8 @@ export class UserService {
       { new: true }
     )
       .select("-password")
-      .populate("friendshipInbox", "firstName lastName name email")
-      .populate("friendshipOutbox", "firstName lastName name email");
+      .populate("friendshipInbox", "firstName lastName name email id")
+      .populate("friendshipOutbox", "firstName lastName name email id");
 
     // update logged in user's friends field and inbox field
     const updatedUser = await User.findOneAndUpdate(
@@ -306,8 +339,8 @@ export class UserService {
       { new: true }
     )
       .select("-password")
-      .populate("friendshipInbox", "firstName lastName name email")
-      .populate("friendshipOutbox", "firstName lastName name email");
+      .populate("friendshipInbox", "firstName lastName name email id")
+      .populate("friendshipOutbox", "firstName lastName name email id");
 
     return { updatedFriend, updatedUser };
   }
@@ -376,8 +409,8 @@ export class UserService {
       { new: true }
     )
       .select("-password")
-      .populate("friendshipInbox", "firstName lastName name email")
-      .populate("friendshipOutbox", "firstName lastName name email");
+      .populate("friendshipInbox", "firstName lastName name email id")
+      .populate("friendshipOutbox", "firstName lastName name email id");
 
     // update user's inbox field
     const updatedUser = await User.findOneAndUpdate(
@@ -388,8 +421,8 @@ export class UserService {
       { new: true }
     )
       .select("-password")
-      .populate("friendshipInbox", "firstName lastName name email")
-      .populate("friendshipOutbox", "firstName lastName name email");
+      .populate("friendshipInbox", "firstName lastName name email id")
+      .populate("friendshipOutbox", "firstName lastName name email id");
 
     return { updatedFriend, updatedUser };
   }

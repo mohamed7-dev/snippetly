@@ -1,6 +1,8 @@
 import z from "zod";
 import { SelectUserDto } from "./select-user.dto";
 import { SelectFolderDto } from "../../folder/dto/select-folder.dto";
+import { SelectSnippetDto } from "../../snippet/dto/select-snippet.dto";
+import { GetUserSnippetsResponseDto } from "../../snippet/dto/response.dto";
 
 // Common<Current User, User Profile, Friendship>
 const CommonSchema = z.object({
@@ -10,6 +12,7 @@ const CommonSchema = z.object({
       lastName: true,
       name: true,
       email: true,
+      id: true,
     })
   ),
   friendshipInbox: z.array(
@@ -18,6 +21,7 @@ const CommonSchema = z.object({
       lastName: true,
       name: true,
       email: true,
+      id: true,
     })
   ),
   friendshipOutbox: z.array(
@@ -26,9 +30,12 @@ const CommonSchema = z.object({
       lastName: true,
       name: true,
       email: true,
+      id: true,
     })
   ),
-  folders: z.array(SelectFolderDto.pick({ title: true, code: true })),
+  folders: z.array(
+    SelectFolderDto.pick({ title: true, code: true, id: true, color: true })
+  ),
 });
 
 // Basic User Info Stripped from all important info
@@ -58,3 +65,20 @@ export const GetCurrentUserDto = SelectUserDto.omit({
 
 // Get User Profile
 export const GetUserProfile = UserRes.extend(CommonSchema.shape);
+
+// Get Current User Dashboard
+export const GetCurrentUserDashboardResDto = UserRes.omit({
+  friendshipInbox: true,
+  friends: true,
+  friendshipOutbox: true,
+}).extend({
+  foldersCount: z.number(),
+  friendsCount: z.number(),
+  friendsInboxCount: z.number(),
+  friendsOutboxCount: z.number(),
+  snippetsCount: z.number(),
+  snippets: GetUserSnippetsResponseDto,
+});
+export type GetCurrentUserDashboardResDtoType = z.infer<
+  typeof GetCurrentUserDashboardResDto
+>;

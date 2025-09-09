@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import ReactDOM from 'react-dom/client'
 import { RouterProvider, createRouter } from '@tanstack/react-router'
+import { queryClient } from './components/providers/tanstack-query-provider.tsx'
 
 // Import the generated route tree
 import { routeTree } from './routeTree.gen'
@@ -11,7 +12,9 @@ import reportWebVitals from './reportWebVitals.ts'
 // Create a new router instance
 const router = createRouter({
   routeTree,
-  context: {},
+  context: {
+    queryClient,
+  },
   defaultPreload: 'intent',
   scrollRestoration: true,
   defaultStructuralSharing: true,

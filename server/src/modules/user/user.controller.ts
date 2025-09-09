@@ -3,6 +3,7 @@ import { UserService } from "./user.service";
 import { UpdateUserDtoType } from "./dto/update-user.dto";
 import {
   FriendshipResponseDto,
+  GetCurrentUserDashboardResDto,
   GetCurrentUserDto,
   GetUserProfile,
   UserRes,
@@ -62,6 +63,23 @@ export class UserController {
     const foundUser = await this.UserService.getCurrentUser(req.context);
     const { success, data: parsedData } =
       GetCurrentUserDto.safeParse(foundUser);
+    if (!success) return this.throwServerError();
+
+    res.status(StatusCodes.OK).json({
+      message: "Fetched successfully.",
+      data: parsedData,
+    });
+  };
+
+  public getCurrentUserDashboard = async (req: Request, res: Response) => {
+    const dashboardInfo = await this.UserService.getCurrentUserDashboard(
+      req.context
+    );
+    const {
+      success,
+      data: parsedData,
+      error,
+    } = GetCurrentUserDashboardResDto.safeParse(dashboardInfo);
     if (!success) return this.throwServerError();
 
     res.status(StatusCodes.OK).json({

@@ -109,6 +109,29 @@ export class SnippetController {
     });
   };
 
+  public getCurrentUserSnippets = async (
+    req: Request<{}, {}, {}, Omit<GetUserSnippetsDtoType, "name">>,
+    res: Response
+  ) => {
+    const { data, nextCursor, total } =
+      await this.SnippetService.getCurrentUserSnippets(req.context, {
+        ...req.query,
+      });
+
+    const { success, data: parsedData } =
+      GetUserSnippetsResponseDto.safeParse(data);
+    if (!success) {
+      throw new InternalServerError();
+    }
+
+    res.status(StatusCodes.OK).json({
+      message: "Fetched successfully.",
+      data: parsedData,
+      nextCursor,
+      total,
+    });
+  };
+
   public getUserSnippets = async (
     req: Request<
       Pick<GetUserSnippetsDtoType, "name">,
@@ -118,10 +141,11 @@ export class SnippetController {
     >,
     res: Response
   ) => {
-    const { data, nextCursor } = await this.SnippetService.getUserSnippets(
-      req.context,
-      { ...req.params, ...req.query }
-    );
+    const { data, nextCursor, total } =
+      await this.SnippetService.getUserSnippets(req.context, {
+        ...req.params,
+        ...req.query,
+      });
     const isCurrentUserOwner = req.context.user.name === req.params.name;
     let dataToReturn:
       | GetUserSnippetsResponseDtoType
@@ -145,6 +169,7 @@ export class SnippetController {
       message: "Fetched successfully.",
       data: dataToReturn,
       nextCursor,
+      total,
     });
   };
 
@@ -157,7 +182,7 @@ export class SnippetController {
     >,
     res: Response
   ) => {
-    const { data, nextCursor } =
+    const { data, nextCursor, total } =
       await this.SnippetService.getUserFriendsSnippets(req.context, {
         ...req.params,
         ...req.query,
@@ -171,6 +196,7 @@ export class SnippetController {
       message: "Fetched successfully.",
       data: parsedData,
       nextCursor,
+      total,
     });
   };
 

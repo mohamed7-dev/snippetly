@@ -7,6 +7,7 @@ export const SelectUserDto = baseModelSchema.extend({
   email: z.email().trim(),
   firstName: z.string().trim(),
   lastName: z.string().trim(),
+  acceptedPolicies: z.boolean(),
   emailVerifiedAt: z.date().nullable().optional(),
   refreshTokens: z.array(z.string()),
   emailVerificationToken: z.uuidv4().nullable().optional(),

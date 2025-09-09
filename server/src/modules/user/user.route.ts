@@ -55,6 +55,11 @@ export class UserRoute implements Route {
       this.controller.getCurrentUserProfile
     );
     this.router.get(
+      `${this.path}/current/dashboard`,
+      authMiddleware,
+      this.controller.getCurrentUserDashboard
+    );
+    this.router.get(
       `${this.path}/:name`,
       zodValidatorMiddleware(GetOneParamDto, "Params"),
       this.controller.getUserProfile
