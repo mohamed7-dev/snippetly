@@ -17,7 +17,7 @@ export function zodValidatorMiddleware(
           req.params = (schema as ZodSchema).parse(req.params);
           break;
         case "Query":
-          req.query = (schema as ZodSchema).parse(req.query);
+          req.validatedQuery = (schema as ZodSchema).parse(req.query);
           break;
       }
       next();

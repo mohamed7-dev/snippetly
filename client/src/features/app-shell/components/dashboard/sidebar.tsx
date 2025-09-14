@@ -1,4 +1,4 @@
-import { getCurrentUserDashboardOptions } from '@/features/user/lib/api'
+import { getCurrentUserDashboardOptions } from '@/features/dashboard/lib/api'
 import { clientRoutes } from '@/lib/routes'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
@@ -13,13 +13,21 @@ export function DashboardSidebar() {
         <nav className="space-y-2">
           <Link
             to={clientRoutes.dashboard}
-            className="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md bg-primary/10 text-primary"
+            activeProps={{
+              className: 'bg-primary/10 text-primary hover:bg-primary/10',
+            }}
+            activeOptions={{ exact: true }}
+            className="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
           >
             <Code2Icon className="h-4 w-4" />
             All Snippets
           </Link>
           <Link
             to={clientRoutes.collections}
+            activeOptions={{ exact: true }}
+            activeProps={{
+              className: 'bg-primary/10 text-primary hover:bg-primary/10',
+            }}
             className="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
           >
             <BookOpenIcon className="h-4 w-4" />
@@ -27,6 +35,10 @@ export function DashboardSidebar() {
           </Link>
           <Link
             to={clientRoutes.friends}
+            activeOptions={{ exact: true }}
+            activeProps={{
+              className: 'bg-primary/10 text-primary hover:bg-primary/10',
+            }}
             className="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
           >
             <UsersIcon className="h-4 w-4" />

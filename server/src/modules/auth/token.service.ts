@@ -7,28 +7,31 @@ import {
 } from "../../config";
 import { HttpException } from "../../common/lib/exception";
 import { StatusCodes } from "http-status-codes";
-import { UserService } from "../user/user.service";
 import { TOKEN_EXPIRES } from "./constants";
 import crypto from "crypto";
 import { Request } from "express";
+import { UserReadService } from "../user/user-read.service";
+import { UserRepository } from "../user/user.repository";
 
-export type JWTPayload = Request["user"];
+export type JWTPayload = Request["context"]["user"];
 
 export class TokenService {
-  private readonly UserService: UserService;
+  private readonly UserReadService: UserReadService;
+  private readonly UserRepository: UserRepository;
   constructor() {
-    this.UserService = new UserService();
+    this.UserReadService = new UserReadService();
+    this.UserRepository = new UserRepository();
   }
 
   public signAccessJWT(payload: JWTPayload) {
     return jwt.sign(payload, ACCESS_JWTOKEN_SECRET, {
-      expiresIn: JWT_ACCESS_EXPIRES,
+      expiresIn: JWT_ACCESS_EXPIRES / 1000,
     });
   }
 
   public signRefreshJWT(payload: JWTPayload) {
     return jwt.sign(payload, REFRESH_JWTOKEN_SECRET, {
-      expiresIn: JWT_REFRESH_EXPIRES,
+      expiresIn: JWT_REFRESH_EXPIRES / 1000,
     });
   }
 
@@ -39,7 +42,7 @@ export class TokenService {
   public async verifyRefreshToken(
     token: string,
     cb: (
-      err: jwt.VerifyErrors,
+      err: jwt.VerifyErrors | null,
       decoded: jwt.JwtPayload & JWTPayload
     ) => Promise<unknown> | unknown
   ) {
@@ -55,111 +58,104 @@ export class TokenService {
   }
 
   public async generateEmailVerificationToken(email: string) {
+    const foundUser = await this.findUserByEmail(email);
+
     const generatedToken = this.generateRandomUUID();
 
-    const foundUser = await this.UserService.findOneQueryBuilder({
-      email,
-    }).select("-password");
+    const [updatedUser] = await this.UserRepository.update(foundUser.id, {
+      emailVerificationToken: generatedToken,
+      emailVerificationTokenExpiresAt: TOKEN_EXPIRES,
+    });
 
-    if (!foundUser) {
-      throw new HttpException(
-        StatusCodes.NOT_FOUND,
-        `User with email ${email} is not found`
-      );
-    }
-
-    const foundVToken = foundUser?.emailVerificationToken;
-    if (foundVToken) {
-      foundUser.emailVerificationToken = null;
-      foundUser.emailVerificationExpiresAt = null;
-      await foundUser.save();
-    }
-
-    foundUser.emailVerificationToken = generatedToken;
-    foundUser.emailVerificationExpiresAt = TOKEN_EXPIRES;
-
-    await foundUser.save();
-    return { token: generatedToken, user: foundUser };
+    return { token: generatedToken, user: updatedUser };
   }
 
   public async verifyEmailVerificationToken(token: string) {
-    const foundUserWithToken = await this.UserService.findOneQueryBuilder({
-      emailVerificationToken: token,
-    });
+    const foundUserWithToken = await this.UserReadService.findOneByEmailVToken(
+      token
+    );
 
-    if (!foundUserWithToken) {
+    if (
+      !foundUserWithToken ||
+      !foundUserWithToken.emailVerificationTokenExpiresAt
+    ) {
       throw new HttpException(StatusCodes.UNAUTHORIZED, "Invalid token.");
     }
 
     const isTokenExpired =
-      new Date(foundUserWithToken.emailVerificationExpiresAt) < new Date();
+      new Date(foundUserWithToken.emailVerificationTokenExpiresAt) < new Date();
 
     if (isTokenExpired) {
       throw new HttpException(StatusCodes.UNAUTHORIZED, "Invalid token.");
     }
 
-    foundUserWithToken.emailVerificationToken = null;
-    foundUserWithToken.emailVerificationExpiresAt = null;
-    foundUserWithToken.emailVerifiedAt = new Date();
+    const [updatedUser] = await this.UserRepository.update(
+      foundUserWithToken.id,
+      {
+        emailVerificationToken: null,
+        emailVerificationTokenExpiresAt: null,
+        emailVerifiedAt: new Date(),
+      }
+    );
 
-    await foundUserWithToken.save();
-
-    return foundUserWithToken;
+    return updatedUser;
   }
 
   public async generateResetPasswordToken(email: string) {
+    const foundUser = await this.findUserByEmail(email);
     const generatedToken = this.generateRandomUUID();
 
-    const foundUser = await this.UserService.findOneQueryBuilder({
-      email,
-    }).select("-password");
-    if (!foundUser) {
-      throw new HttpException(
-        StatusCodes.NOT_FOUND,
-        `User with email ${email} is not found`
-      );
-    }
+    const [updatedUser] = await this.UserRepository.update(foundUser.id, {
+      resetPasswordToken: generatedToken,
+      resetPasswordTokenExpiresAt: TOKEN_EXPIRES,
+    });
 
-    const foundRToken = foundUser?.resetPasswordToken;
-    if (foundRToken) {
-      foundUser.resetPasswordToken = null;
-      foundUser.resetPasswordExpiresAt = null;
-      await foundUser.save();
-    }
-
-    foundUser.resetPasswordToken = generatedToken;
-    foundUser.resetPasswordExpiresAt = TOKEN_EXPIRES;
-
-    await foundUser.save();
-    return { token: generatedToken, user: foundUser };
+    return { token: generatedToken, user: updatedUser };
   }
 
   public async verifyResetPasswordToken(token: string) {
-    const foundUserWithToken = await this.UserService.findOneQueryBuilder({
-      resetPasswordToken: token,
-    });
+    const foundUserWithToken = await this.UserReadService.findOneByResetToken(
+      token
+    );
 
-    if (!foundUserWithToken) {
+    if (
+      !foundUserWithToken ||
+      !foundUserWithToken.resetPasswordTokenExpiresAt
+    ) {
       throw new HttpException(StatusCodes.UNAUTHORIZED, "Invalid token.");
     }
 
     const isTokenExpired =
-      new Date(foundUserWithToken.resetPasswordExpiresAt) < new Date();
+      new Date(foundUserWithToken.resetPasswordTokenExpiresAt) < new Date();
 
     if (isTokenExpired) {
       throw new HttpException(StatusCodes.UNAUTHORIZED, "Invalid token.");
     }
+    const [updatedUser] = await this.UserRepository.update(
+      foundUserWithToken.id,
+      {
+        resetPasswordToken: null,
+        resetPasswordTokenExpiresAt: null,
+      }
+    );
 
-    foundUserWithToken.resetPasswordToken = null;
-    foundUserWithToken.resetPasswordExpiresAt = null;
-
-    await foundUserWithToken.save();
-
-    return foundUserWithToken;
+    return updatedUser;
   }
 
   private generateRandomUUID() {
     const token = crypto.randomUUID();
     return token;
+  }
+
+  private async findUserByEmail(email: string) {
+    const foundUser = await this.UserReadService.findOneSlim("email", email);
+
+    if (!foundUser) {
+      throw new HttpException(
+        StatusCodes.NOT_FOUND,
+        `User with email ${email} is not found`
+      );
+    }
+    return foundUser;
   }
 }

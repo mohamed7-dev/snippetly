@@ -14,6 +14,7 @@ export const signupSchema = z
     lastName: z.string().nonempty().min(1, 'Last name is required.'),
     email: z.string().email(),
     acceptedPolicies: z.boolean(),
+    isPrivate: z.boolean(),
   })
   .extend(commonSchema.shape)
   .superRefine((data, ctx) => {

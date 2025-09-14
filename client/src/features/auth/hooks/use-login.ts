@@ -3,8 +3,8 @@ import type { LoginSchema } from '../lib/schema'
 import { serverEndpoints } from '@/lib/routes'
 import type { AxiosError } from 'axios'
 import type { ErrorResponse, SharedSuccessRes } from '@/lib/types'
-import type { User } from '@/features/user'
 import { api } from '@/lib/api'
+import type { User } from '@/features/user/lib/types'
 
 type LoginSuccessRes = SharedSuccessRes<{ accessToken: string; user: User }>
 type LoginErrorRes = AxiosError<ErrorResponse>

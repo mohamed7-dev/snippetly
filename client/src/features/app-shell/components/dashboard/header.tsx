@@ -12,8 +12,30 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { useLogout } from '@/features/auth/hooks/use-logout'
+import { toast } from 'sonner'
+import { useNavigate } from '@tanstack/react-router'
+import { clientRoutes } from '@/lib/routes'
+import { useAuth } from '@/features/auth'
 
 export function DashBoardHeader() {
+  const navigate = useNavigate()
+  const { logout: logoutOnClient } = useAuth()
+  const { mutateAsync: logout, isPending } = useLogout({
+    onSuccess: (data) => {
+      toast.success(data.message)
+      navigate({ from: '/dashboard', to: clientRoutes.landing })
+      logoutOnClient()
+    },
+    onError: (error) => {
+      toast.error(error.response?.statusText, { description: error.message })
+    },
+  })
+
+  const handleLogout = async () => {
+    await logout()
+  }
+
   return (
     <HeaderWrapper className="justify-between">
       <div className="flex items-center gap-4">
@@ -61,7 +83,7 @@ export function DashBoardHeader() {
               <span>Friends</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem disabled={isPending} onClick={handleLogout}>
               <LogOutIcon className="mr-2 h-4 w-4" />
               <span>Log out</span>
             </DropdownMenuItem>

@@ -2,179 +2,186 @@ import { StatusCodes } from "http-status-codes";
 import { HttpException } from "../../common/lib/exception";
 import { CreateSnippetDtoType } from "./dto/create-snippet.dto";
 import { UpdateSnippetDtoType } from "./dto/update-snippet.dto";
-import { ISnippet, PopulatedSnippetDocument, Snippet } from "./snippet.model";
 import { GetUserSnippetsDtoType } from "./dto/get-user-snippets.dto";
 import { UserService } from "../user/user.service";
 import {
   createUniqueSlug,
   handleCursorPagination,
 } from "../../common/lib/utils";
-import { FolderService } from "../folder/folder.service";
-import { RequestContext } from "../../common/middlewares";
 import { TagService } from "../tag/tag.service";
-import { FIND_SNIPPETS_DEFAULT_LIMIT } from "./constants";
+import {
+  DISCOVER_SNIPPETS_DEFAULT_LIMIT,
+  FIND_SNIPPETS_DEFAULT_LIMIT,
+} from "./constants";
 import { ForkSnippetDtoType } from "./dto/fork-snippet.dto";
-import { RootFilterQuery } from "mongoose";
 import { DeleteSnippetDtoType } from "./dto/delete-snippet.dto";
 import { GetSnippetDtoType } from "./dto/get-snippet.dto";
+import { DiscoverSnippetsDtoType } from "./dto/discover-snippets.dto";
+import { RequestContext } from "../../common/middlewares/request-context-middleware";
+import { CollectionService } from "../collections/collection.service";
+import { CollectionReadService } from "../collections/collection-read.service";
+import { SnippetRepository } from "./snippet.repository";
+import { NonNullableFields } from "../../common/types/utils";
+import { SnippetsTagsRepository } from "./snippets-tags.repository";
+import { SnippetsReadService } from "./snippets-read.service";
+import { TagReadService } from "../tag/tag-read.service";
+import { UserReadService } from "../user/user-read.service";
+import { GetCollectionSnippetsDtoType } from "./dto/get-collection-snippets";
 
 export class SnippetService {
   public readonly UserService: UserService;
-  public readonly FolderService: FolderService;
+  public readonly CollectionService: CollectionService;
+  public readonly CollectionReadService: CollectionReadService;
   public readonly TagService: TagService;
+  public readonly SnippetRepository: SnippetRepository;
+  private readonly SnippetsTagsRepository: SnippetsTagsRepository;
+  private readonly SnippetsReadService: SnippetsReadService;
+  private readonly TagReadService: TagReadService;
+  private readonly UserReadService: UserReadService;
 
   constructor() {
     this.UserService = new UserService();
-    this.FolderService = new FolderService();
+    this.UserReadService = new UserReadService();
+    this.CollectionService = new CollectionService();
+    this.CollectionReadService = new CollectionReadService();
     this.TagService = new TagService();
+    this.TagReadService = new TagReadService();
+    this.SnippetRepository = new SnippetRepository();
+    this.SnippetsTagsRepository = new SnippetsTagsRepository();
+    this.SnippetsReadService = new SnippetsReadService();
   }
 
-  async create(ctx: RequestContext, input: CreateSnippetDtoType) {
-    const { title, tags, folder, ...rest } = input;
+  public async create(
+    ctx: NonNullableFields<RequestContext>,
+    input: CreateSnippetDtoType
+  ) {
+    const { title, tags, collection, ...rest } = input;
 
-    const foundFolder = await this.FolderService.findOneQueryBuilder({
-      code: folder,
-    });
+    const [foundCollection] = await this.CollectionReadService.findOneSlim(
+      "slug",
+      collection
+    );
 
-    if (!foundFolder) {
+    if (!foundCollection) {
       throw new HttpException(
         StatusCodes.NOT_FOUND,
-        `Folder ${folder} is not found.`
+        `Collection ${collection} is not found.`
       );
     }
 
-    const newSnippet = new Snippet({
-      title,
-      folder: foundFolder._id,
-      slug: createUniqueSlug(input.title),
-      owner: ctx.user.id,
-      ...rest,
-    });
-
-    newSnippet.folder = foundFolder.id;
-
-    if (tags && tags.length) {
-      const foundTags = await this.TagService.ensureTagsExistence(tags);
-      newSnippet.tags = foundTags.map((tag) => tag.id);
-    }
-
-    const [createdSnippet] = await Promise.all([
-      await newSnippet.save(),
-      this.FolderService.updateFolderSnippets(
-        {
-          snippetId: newSnippet.id,
-          folderId: newSnippet.folder.toString(),
-          operation: "Push",
-        },
-        ctx
-      ),
+    const [newSnippet] = await this.SnippetRepository.insert([
+      {
+        title,
+        collectionId: foundCollection.id,
+        slug: createUniqueSlug(input.title),
+        creatorId: ctx.user.id,
+        ...rest,
+      },
     ]);
 
-    return createdSnippet;
+    if (tags && tags.length) {
+      const tagsDocs = await this.TagService.ensureTagsExistence(
+        tags,
+        ctx.user.id
+      );
+      await this.SnippetsTagsRepository.insert(
+        tagsDocs.map((tag) => ({
+          tagId: tag.id,
+          snippetId: newSnippet.id,
+        }))
+      );
+    }
+
+    return newSnippet;
   }
 
-  async update(ctx: RequestContext, input: UpdateSnippetDtoType) {
+  public async update(
+    ctx: NonNullableFields<RequestContext>,
+    input: UpdateSnippetDtoType
+  ) {
     const { data, slug } = input;
     const userId = ctx.user.id;
-    const foundSnippet = await this.findOneQueryBuilder({ slug });
+    const foundSnippet = await this.SnippetsReadService.findOneSlim(
+      "slug",
+      slug
+    );
 
-    if (!foundSnippet || foundSnippet.owner.toString() !== userId) {
+    if (!foundSnippet || foundSnippet.creatorId !== userId) {
       throw new HttpException(StatusCodes.NOT_FOUND, "Snippet not found.");
     }
 
-    const { title, addTags, removeTags, folder, ...rest } = data;
-
-    let addTagsIds = [];
-    let removeTagsIds = [];
+    const { addTags, removeTags, collection, ...rest } = data;
 
     if (addTags && addTags.length) {
-      const tagDocs = await this.TagService.ensureTagsExistence(addTagsIds);
-      addTagsIds = tagDocs.map((doc) => doc.id);
+      const tagDocs = await this.TagService.ensureTagsExistence(
+        addTags,
+        userId
+      );
+
+      await this.SnippetsTagsRepository.insert(
+        tagDocs.map((tag) => ({
+          tagId: tag.id,
+          snippetId: foundSnippet.id,
+        }))
+      );
     }
+
     if (removeTags && removeTags.length) {
-      const tagDocs = await this.TagService.findTagsQueryBuilder({
-        name: { $in: removeTags.map((t) => t.toLowerCase()) },
-      });
-      removeTagsIds = tagDocs.map((doc) => doc.id);
+      await this.removeSnippetTags(removeTags, foundSnippet.id);
     }
 
-    let folderId = null;
-    if (folder) {
-      const foundFolder = await this.FolderService.findOneQueryBuilder({
-        slug: folder,
-      });
-      if (!foundFolder) {
-        folderId = null;
+    let collectionId = null;
+    if (collection) {
+      const [foundCollection] = await this.CollectionReadService.findOneSlim(
+        "slug",
+        collection
+      );
+      if (!foundCollection.id) {
+        collectionId = null;
+      } else {
+        collectionId = foundCollection.id;
       }
-      folderId = foundFolder._id;
     }
-
-    const [updatedSnippet] = await Promise.all([
-      Snippet.findOneAndUpdate(
-        { slug },
-        {
-          ...(title ? { slug: createUniqueSlug(title) } : {}),
-          ...(addTagsIds.length > 0 && {
-            $addToSet: { tags: { $each: addTagsIds } },
-          }),
-          ...(removeTagsIds.length > 0 && {
-            $pull: { tags: { $in: removeTagsIds } },
-          }),
-          ...(!!folder && !!folderId && { folder: folderId }),
-          ...rest,
-          $currentDate: { updatedAt: true },
-        },
-        { new: true }
-      ),
-      !!folderId &&
-        this.FolderService.updateFolderSnippets(
-          {
-            folderId: foundSnippet.folder.toString(),
-            snippetId: foundSnippet.id,
-            operation: "Pull",
-          },
-          ctx
-        ),
-      !!folderId &&
-        this.FolderService.updateFolderSnippets(
-          {
-            folderId,
-            snippetId: foundSnippet.id,
-            operation: "Push",
-          },
-          ctx
-        ),
-    ]);
-
-    return { updatedSnippet, newFolderId: folderId };
+    const [updatedSnippet] = await this.SnippetRepository.update(
+      foundSnippet.id,
+      {
+        ...rest,
+        ...(collectionId ? { collectionId } : {}),
+      }
+    );
+    return { updatedSnippet, collectionId };
   }
 
-  async delete(ctx: RequestContext, input: DeleteSnippetDtoType) {
+  public async delete(
+    ctx: NonNullableFields<RequestContext>,
+    input: DeleteSnippetDtoType
+  ) {
     const { slug } = input;
     const userId = ctx.user.id;
 
-    const foundSnippet = await this.findOneQueryBuilder({ slug });
+    const foundSnippet = await this.SnippetsReadService.findOneSlim(
+      "slug",
+      slug
+    );
 
-    if (!foundSnippet || foundSnippet.owner.toString() !== userId) {
+    if (!foundSnippet || foundSnippet.creatorId !== userId) {
       throw new HttpException(StatusCodes.NOT_FOUND, "Snippet not found.");
     }
-    const deletedSnippet = await Snippet.findOneAndDelete({ slug });
 
-    await this.FolderService.updateFolderSnippets(
-      {
-        snippetId: deletedSnippet.id,
-        folderId: deletedSnippet.folder.toString(),
-        operation: "Pull",
-      },
-      ctx
-    );
+    await this.SnippetRepository.delete(foundSnippet.id);
 
     return foundSnippet;
   }
 
-  async fork(ctx: RequestContext, input: ForkSnippetDtoType) {
-    const { slug, folder } = input;
-    const foundSnippet = await this.findOneQueryBuilder({ slug: input.slug });
+  public async fork(
+    ctx: NonNullableFields<RequestContext>,
+    input: ForkSnippetDtoType
+  ) {
+    const { slug, collection } = input;
+    const foundSnippet = await this.SnippetsReadService.findOneWithTags(
+      "slug",
+      slug
+    );
     if (!foundSnippet) {
       throw new HttpException(
         StatusCodes.NOT_FOUND,
@@ -184,188 +191,247 @@ export class SnippetService {
     if (!foundSnippet.allowForking) {
       throw new HttpException(
         StatusCodes.FORBIDDEN,
-        `Forking ${slug} is not allowed.`
+        `Forking ${foundSnippet.title} is not allowed.`
       );
     }
+    const userId = ctx.user.id;
+
+    if (foundSnippet.creatorId === userId) {
+      throw new HttpException(
+        StatusCodes.CONFLICT,
+        `Snippet ${foundSnippet.title} is already in your snippets list.`
+      );
+    }
+
     const {
       title,
       description,
       code,
-      parseFormat,
+      language,
       isPrivate,
       allowForking,
       tags,
     } = foundSnippet;
 
-    const foundFolder = await this.FolderService.findOneQueryBuilder({
-      code: folder,
-    });
-    if (!foundFolder) {
-      throw new HttpException(
-        StatusCodes.NOT_FOUND,
-        `Folder ${folder} is not found.`
-      );
-    }
-    const newSnippet = await Snippet.create({
+    const newSnippet = await this.create(ctx, {
       title,
-      slug: createUniqueSlug(title),
       description,
-      code,
-      parseFormat,
       isPrivate,
       allowForking,
-      tags,
-      folder: foundFolder._id,
-      owner: ctx.user.id,
+      code,
+      language,
+      collection,
+      tags: tags.map((tag) => tag.tag.name),
     });
 
+    // track forked snippets
     return newSnippet;
   }
 
-  async getCurrentUserSnippets(
-    ctx: RequestContext,
-    input: Omit<GetUserSnippetsDtoType, "name">
+  public async discover(_ctx: RequestContext, input: DiscoverSnippetsDtoType) {
+    const { limit } = input;
+    const defaultLimit = limit ?? DISCOVER_SNIPPETS_DEFAULT_LIMIT;
+
+    // TODO: extend discover to include forked count
+    const { data, total } = await this.SnippetsReadService.discover({
+      ...input,
+      limit: defaultLimit,
+    });
+
+    const { nextCursor, data: paginatedData } = handleCursorPagination({
+      data: data,
+      limit: defaultLimit,
+    });
+
+    return {
+      items: paginatedData,
+      nextCursor: nextCursor
+        ? ({
+            updatedAt: nextCursor.updatedAt,
+          } satisfies DiscoverSnippetsDtoType["cursor"])
+        : null,
+      total,
+    };
+  }
+
+  public async getCurrentUserSnippets(
+    ctx: NonNullableFields<RequestContext>,
+    input: Omit<GetUserSnippetsDtoType, "creator">
   ) {
     const loggedInUserName = ctx.user.name;
     const snippets = await this.getUserSnippets(ctx, {
       ...input,
-      name: loggedInUserName,
+      creator: loggedInUserName,
     });
     return snippets;
   }
 
-  async getUserSnippets(ctx: RequestContext, input: GetUserSnippetsDtoType) {
-    const { limit } = input;
-    const defaultLimit = limit ?? FIND_SNIPPETS_DEFAULT_LIMIT;
-
-    const { foundUser, filter } = await this.getFilter(ctx, input);
-
-    const isCurrentUserOwner = ctx.user.name === foundUser.name;
-    const newFilter = {
-      ...filter,
-      ...(!isCurrentUserOwner ? { isPrivate: false } : null),
-    };
-
-    const [snippets, total] = await Promise.all([
-      Snippet.find(newFilter)
-        .sort({ updatedAt: -1 })
-        .limit(defaultLimit + 1)
-        .populate("tags")
-        .populate("owner", "firstName lastName name email id")
-        .populate("folder", "title code id"),
-      Snippet.countDocuments({ owner: foundUser._id }),
-    ]);
-
-    const { nextCursor, data: paginatedData } = handleCursorPagination({
-      data: snippets,
-      limit: defaultLimit,
-    });
-
-    return {
-      data: paginatedData,
-      nextCursor: nextCursor
-        ? ({
-            updatedAt: nextCursor.updatedAt,
-          } satisfies GetUserSnippetsDtoType["cursor"])
-        : null,
-      total,
-    };
-  }
-
-  async getUserFriendsSnippets(
+  public async getUserSnippets(
     ctx: RequestContext,
     input: GetUserSnippetsDtoType
   ) {
-    const { limit } = input;
+    const { limit, creator } = input;
     const defaultLimit = limit ?? FIND_SNIPPETS_DEFAULT_LIMIT;
 
-    const { foundUser, filter } = await this.getFilter(ctx, input);
-    const newFilter = {
-      ...filter,
-      isPrivate: false,
-      owner: [...foundUser.friends],
-    };
-
-    const [foundSnippets, total] = await Promise.all([
-      Snippet.find(newFilter)
-        .sort({ updatedAt: -1 })
-        .limit(defaultLimit + 1)
-        .populate("owner", "firstName lastName name email id")
-        .populate("tags")
-        .populate("folder", "title slug id"),
-      Snippet.countDocuments({
-        owner: [...foundUser.friends],
-        isPrivate: false,
-      }),
-    ]);
-
-    const { nextCursor, data: paginatedData } = handleCursorPagination({
-      data: foundSnippets,
-      limit: defaultLimit,
-    });
-    return {
-      data: paginatedData,
-      nextCursor: nextCursor
-        ? ({
-            updatedAt: nextCursor.updatedAt,
-          } satisfies GetUserSnippetsDtoType["cursor"])
-        : null,
-      total,
-    };
-  }
-
-  async findOne(ctx: RequestContext, input: GetSnippetDtoType) {
-    const loggedInUserId = ctx.user?.id;
-
-    let foundSnippet = (await this.findOneQueryBuilder({
-      slug: input.slug,
-    })
-      .populate("owner", "firstName lastName name email id")
-      .populate("tags")
-      .populate(
-        "folder",
-        "title code id"
-      )) as unknown as PopulatedSnippetDocument;
-
-    if (
-      loggedInUserId !== foundSnippet.owner._id.toString() &&
-      foundSnippet.isPrivate
-    ) {
-      throw new HttpException(StatusCodes.NOT_FOUND, "Snippet not found.");
-    }
-    return foundSnippet;
-  }
-
-  public findOneQueryBuilder(filter: RootFilterQuery<ISnippet>) {
-    return Snippet.findOne(filter);
-  }
-
-  private async getFilter(_ctx: RequestContext, input: GetUserSnippetsDtoType) {
-    const { query, cursor, name } = input;
-    const foundUser = await this.UserService.findOneQueryBuilder({
-      name,
-    });
+    const foundUser = await this.UserReadService.findOneSlim("name", creator);
 
     if (!foundUser) {
       throw new HttpException(
         StatusCodes.NOT_FOUND,
-        `User ${name} is not found.`
+        `User with the name ${creator} is not found.`
       );
     }
 
-    const filter: any = {
-      owner: foundUser._id,
+    const isCurrentUserOwner = ctx?.user?.name === foundUser.name;
+
+    const { data, total } = await this.SnippetsReadService.findUserSnippets(
+      {
+        ...input,
+        limit: defaultLimit,
+      },
+      foundUser.id,
+      isCurrentUserOwner
+    );
+
+    // TODO: add stats that includes forked count
+
+    const { nextCursor, data: paginatedData } = handleCursorPagination({
+      data,
+      limit: defaultLimit,
+    });
+
+    return {
+      items: paginatedData,
+      nextCursor: nextCursor
+        ? ({
+            updatedAt: nextCursor.updatedAt,
+          } satisfies GetUserSnippetsDtoType["cursor"])
+        : null,
+      total,
     };
+  }
 
-    if (cursor) {
-      filter.updatedAt = { $lt: new Date(cursor.updatedAt) };
+  public async getCurrentUserFriendsSnippets(
+    ctx: NonNullableFields<RequestContext>,
+    input: Omit<GetUserSnippetsDtoType, "creator">
+  ) {
+    const loggedInUserName = ctx.user.name;
+    const snippets = await this.getUserFriendsSnippets(ctx, {
+      ...input,
+      creator: loggedInUserName,
+    });
+    return snippets;
+  }
+
+  public async getUserFriendsSnippets(
+    _ctx: RequestContext,
+    input: GetUserSnippetsDtoType
+  ) {
+    const { limit, creator } = input;
+    const defaultLimit = limit ?? FIND_SNIPPETS_DEFAULT_LIMIT;
+    const foundUser = await this.UserReadService.findOneSlim("name", creator);
+    if (!foundUser) {
+      throw new HttpException(
+        StatusCodes.NOT_FOUND,
+        `User with the name ${creator} is not found.`
+      );
     }
 
-    if (query) {
-      const regex = new RegExp(query, "i");
-      filter.$or = [{ title: regex }, { description: regex }];
+    const { data, total } =
+      await this.SnippetsReadService.findUserFriendsSnippets(
+        {
+          ...input,
+          limit: defaultLimit,
+        },
+        foundUser.id
+      );
+
+    const { nextCursor, data: paginatedData } = handleCursorPagination({
+      data,
+      limit: defaultLimit,
+    });
+    return {
+      items: paginatedData,
+      nextCursor: nextCursor
+        ? ({
+            updatedAt: nextCursor.updatedAt,
+          } satisfies GetUserSnippetsDtoType["cursor"])
+        : null,
+      total,
+    };
+  }
+
+  public async findOne(ctx: RequestContext, input: GetSnippetDtoType) {
+    let foundSnippet = await this.SnippetsReadService.findOneSlim(
+      "slug",
+      input.slug
+    );
+
+    if (!foundSnippet) {
+      throw new HttpException(StatusCodes.NOT_FOUND, "Snippet not found.");
     }
 
-    return { foundUser, filter };
+    const isOwner = ctx.user?.id === foundSnippet.creatorId;
+
+    const fullSnippet = await this.SnippetRepository.findOne(
+      "id",
+      foundSnippet.id,
+      isOwner
+    );
+
+    if (!fullSnippet) {
+      throw new HttpException(StatusCodes.NOT_FOUND, "Snippet not found.");
+    }
+    return fullSnippet;
+  }
+
+  public async getSnippetsByCollection(
+    ctx: RequestContext,
+    input: GetCollectionSnippetsDtoType
+  ) {
+    const defaultLimit = input.limit ?? FIND_SNIPPETS_DEFAULT_LIMIT;
+    const [foundCollection] = await this.CollectionReadService.findOneSlim(
+      "slug",
+      input.collection
+    );
+    const isCurrentUserOwner = foundCollection.creatorId === ctx.user?.id;
+
+    let { data, total } =
+      await this.SnippetsReadService.findSnippetsByCollection(
+        {
+          ...input,
+          limit: defaultLimit,
+        },
+        foundCollection.id,
+        isCurrentUserOwner
+      );
+
+    const { data: items, nextCursor } = handleCursorPagination({
+      data,
+      limit: defaultLimit,
+    });
+
+    return {
+      items,
+      nextCursor: nextCursor
+        ? ({
+            updatedAt: nextCursor.updatedAt,
+          } satisfies GetCollectionSnippetsDtoType["cursor"])
+        : null,
+      total,
+      collection: foundCollection,
+    };
+  }
+
+  private async removeSnippetTags(names: string[], snippetId: number) {
+    const normalized = names.map((n) => n.trim().toLowerCase());
+
+    const tagsToRemove = await this.TagReadService.findTagsByNames(normalized);
+
+    const tagIds = tagsToRemove.map((t) => t.id);
+
+    if (tagIds.length === 0) return; // nothing to remove
+
+    await this.SnippetsTagsRepository.delete({ snippetId, tagIds });
   }
 }

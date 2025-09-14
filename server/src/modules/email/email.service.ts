@@ -1,4 +1,4 @@
-import { transporter } from "../../common/lib/nodemailer";
+import { transporter } from "../../config/nodemailer.config";
 
 export class EmailService {
   static async sendVerificationEmail({

@@ -1,0 +1,41 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1757697534789,
+      "tag": "0000_initial-schema",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1757716861882,
+      "tag": "0001_added-is-private-column-to-users",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1757759941050,
+      "tag": "0002_added-default-empty-array-to-users",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1757767707234,
+      "tag": "0003_changed-timestamps-name",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1757890424656,
+      "tag": "0004_added-fts-and-note-field",
+      "breakpoints": true
+    }
+  ]
+}

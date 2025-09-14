@@ -1,19 +1,14 @@
 import { Request, Response } from "express";
 import { UserService } from "./user.service";
 import { UpdateUserDtoType } from "./dto/update-user.dto";
-import {
-  FriendshipResponseDto,
-  GetCurrentUserDashboardResDto,
-  GetCurrentUserDto,
-  GetUserProfile,
-  UserRes,
-} from "./dto/response.dto";
 import { InternalServerError } from "../../common/lib/exception";
 import { AuthService } from "../auth/auth.service";
-import { FriendshipParamDtoType } from "./dto/friendship.dto";
-import { DeleteUserParamDtoType } from "./dto/delete-user.dto";
-import { GetOneParamDtoType } from "./dto/get-one.dto";
 import { StatusCodes } from "http-status-codes";
+import { DeleteUserDtoType } from "./dto/delete-user.dto";
+import { GetCurrentUserFriendsDtoType } from "./dto/get-current-user-friends.dto";
+import { GetUserDtoType } from "./dto/get-user.dto";
+import { ManageFriendshipDtoType } from "./dto/manage-friendship.dto";
+import { DiscoverUsersDtoType } from "./dto/discover-users.dto";
 
 export class UserController {
   private readonly UserService: UserService;
@@ -36,19 +31,14 @@ export class UserController {
       data: req.body,
       name: req.params.name,
     });
-    const { success, data: parsedData } = UserRes.safeParse(updatedUser);
-    if (!success) return this.throwServerError();
-    await this.AuthService.logout(req.context, res);
+    // i don't know if i am going to log the user out or not
     res.status(StatusCodes.OK).json({
-      message: `User info has been updated successfully, you need to log back in to start new session.`,
-      data: parsedData,
+      message: `User info has been updated successfully.`,
+      data: updatedUser,
     });
   };
 
-  public delete = async (
-    req: Request<DeleteUserParamDtoType>,
-    res: Response
-  ) => {
+  public delete = async (req: Request<DeleteUserDtoType>, res: Response) => {
     await this.AuthService.logout(req.context, res).then(async () => {
       return await this.UserService.delete(req.context, req.params);
     });
@@ -60,14 +50,71 @@ export class UserController {
   };
 
   public getCurrentUserProfile = async (req: Request, res: Response) => {
-    const foundUser = await this.UserService.getCurrentUser(req.context);
-    const { success, data: parsedData } =
-      GetCurrentUserDto.safeParse(foundUser);
-    if (!success) return this.throwServerError();
+    const foundUser = await this.UserService.getCurrentUserProfile(req.context);
+    // delete the isCurrentUserFriend field
+    res.status(StatusCodes.OK).json({
+      message: "Fetched successfully.",
+      data: foundUser,
+    });
+  };
+
+  public getCurrentUserFriends = async (
+    req: Request<{}, {}, {}, GetCurrentUserFriendsDtoType>,
+    res: Response
+  ) => {
+    const data = await this.UserService.getCurrentUserFriends(
+      req.context,
+      req.validatedQuery
+    );
 
     res.status(StatusCodes.OK).json({
       message: "Fetched successfully.",
-      data: parsedData,
+      ...data,
+    });
+  };
+
+  public getCurrentUserInbox = async (
+    req: Request<{}, {}, {}, GetCurrentUserFriendsDtoType>,
+    res: Response
+  ) => {
+    const data = await this.UserService.getCurrentUserInbox(
+      req.context,
+      req.validatedQuery
+    );
+
+    res.status(StatusCodes.OK).json({
+      message: "Fetched successfully.",
+      ...data,
+    });
+  };
+
+  public getCurrentUserOutbox = async (
+    req: Request<{}, {}, {}, GetCurrentUserFriendsDtoType>,
+    res: Response
+  ) => {
+    const data = await this.UserService.getCurrentUserOutbox(
+      req.context,
+      req.validatedQuery
+    );
+
+    res.status(StatusCodes.OK).json({
+      message: "Fetched successfully.",
+      ...data,
+    });
+  };
+
+  public discoverUsers = async (
+    req: Request<{}, {}, {}, DiscoverUsersDtoType>,
+    res: Response
+  ) => {
+    const data = await this.UserService.discoverUsers(
+      req.context,
+      req.validatedQuery as DiscoverUsersDtoType
+    );
+
+    res.status(StatusCodes.OK).json({
+      message: "Fetched successfully.",
+      ...data,
     });
   };
 
@@ -75,44 +122,38 @@ export class UserController {
     const dashboardInfo = await this.UserService.getCurrentUserDashboard(
       req.context
     );
-    const {
-      success,
-      data: parsedData,
-      error,
-    } = GetCurrentUserDashboardResDto.safeParse(dashboardInfo);
-    if (!success) return this.throwServerError();
 
     res.status(StatusCodes.OK).json({
       message: "Fetched successfully.",
-      data: parsedData,
+      data: dashboardInfo,
     });
   };
 
   public getUserProfile = async (
-    req: Request<GetOneParamDtoType>,
+    req: Request<GetUserDtoType>,
     res: Response
   ) => {
-    const foundUser = await this.UserService.getOne(req.context, req.params);
+    const userProfileData = await this.UserService.getUserProfile(
+      req.context,
+      req.params
+    );
 
+    const isOwner = userProfileData.profile.id === req.context.user?.id;
     let parsedData = null;
-    if (req.params.name === req.context.user?.name) {
-      const { success, data } = GetCurrentUserDto.safeParse(foundUser);
-      if (!success) return this.throwServerError();
-      parsedData = data;
+    if (isOwner) {
+      // use owner dto
     } else {
-      const { success, data: data } = GetUserProfile.safeParse(foundUser);
-      if (!success) return this.throwServerError();
-      parsedData = data;
+      // use public dto
     }
 
     res.status(StatusCodes.OK).json({
       message: "Fetched successfully.",
-      data: parsedData,
+      data: userProfileData,
     });
   };
 
   public sendFriendshipRequest = async (
-    req: Request<FriendshipParamDtoType>,
+    req: Request<ManageFriendshipDtoType>,
     res: Response
   ) => {
     const data = await this.UserService.sendFriendshipRequest(
@@ -120,54 +161,39 @@ export class UserController {
       req.params
     );
 
-    const { success, data: parsedData } = FriendshipResponseDto.safeParse({
-      user: data.updatedUser,
-      friend: data.updatedFriend,
-    });
-
-    if (!success) return this.throwServerError();
     res.status(StatusCodes.OK).json({
       message: "Friendship request has been sent successfully.",
-      data: parsedData,
+      data: data,
     });
   };
 
   public acceptFriendshipRequest = async (
-    req: Request<FriendshipParamDtoType>,
+    req: Request<ManageFriendshipDtoType>,
     res: Response
   ) => {
     const data = await this.UserService.acceptFriendshipRequest(
       req.context,
       req.params
     );
-    const { success, data: parsedData } = FriendshipResponseDto.safeParse({
-      user: data.updatedUser,
-      friend: data.updatedFriend,
-    });
-    if (!success) return this.throwServerError();
+
     res.status(StatusCodes.OK).json({
       message: "Friendship request has been accepted successfully.",
-      data: parsedData,
+      data: data,
     });
   };
 
   public rejectFriendshipRequest = async (
-    req: Request<FriendshipParamDtoType>,
+    req: Request<ManageFriendshipDtoType>,
     res: Response
   ) => {
     const data = await this.UserService.rejectFriendshipRequest(
       req.context,
       req.params
     );
-    const { success, data: parsedData } = FriendshipResponseDto.safeParse({
-      user: data.updatedUser,
-      friend: data.updatedFriend,
-    });
-    if (!success) return this.throwServerError();
 
     res.status(StatusCodes.OK).json({
       message: "Friendship request has been rejected successfully.",
-      data: parsedData,
+      data: data,
     });
   };
 

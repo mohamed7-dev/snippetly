@@ -1,4 +1,4 @@
-import type { User } from '@/features/user'
+import type { User } from '@/features/user/lib/types'
 import { api } from '@/lib/api'
 import { serverEndpoints } from '@/lib/routes'
 import type { SharedSuccessRes } from '@/lib/types'

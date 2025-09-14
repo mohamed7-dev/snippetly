@@ -35,10 +35,7 @@ export class AuthRoute implements Route {
       authMiddleware,
       this.controller.logout
     );
-    this.router.put(
-      `${this.path}/refresh-token`,
-      this.controller.generateRefreshToken
-    );
+    this.router.put(`${this.path}/refresh`, this.controller.refreshAccessToken);
 
     // These routes are public since resetting password or
     // verifying an email could be done when the user is not authenticated

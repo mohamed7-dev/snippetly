@@ -5,4 +5,4 @@ export const ResetPasswordDto = z.object({
   password: UpdateUserPasswordDto.shape.password,
 });
 
-export type ResetPasswordDtoType = z.infer<typeof ResetPasswordDto>;
+export type ResetPasswordDtoType = Required<z.infer<typeof ResetPasswordDto>>;

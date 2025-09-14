@@ -33,9 +33,9 @@ const CommonSchema = z.object({
       id: true,
     })
   ),
-  folders: z.array(
-    SelectFolderDto.pick({ title: true, code: true, id: true, color: true })
-  ),
+  // folders: z.array(
+  //   SelectFolderDto.pick({ title: true, code: true, id: true, color: true })
+  // ),
 });
 
 // Basic User Info Stripped from all important info
@@ -67,17 +67,21 @@ export const GetCurrentUserDto = SelectUserDto.omit({
 export const GetUserProfile = UserRes.extend(CommonSchema.shape);
 
 // Get Current User Dashboard
-export const GetCurrentUserDashboardResDto = UserRes.omit({
-  friendshipInbox: true,
-  friends: true,
-  friendshipOutbox: true,
-}).extend({
-  foldersCount: z.number(),
-  friendsCount: z.number(),
-  friendsInboxCount: z.number(),
-  friendsOutboxCount: z.number(),
-  snippetsCount: z.number(),
-  snippets: GetUserSnippetsResponseDto,
+export const GetCurrentUserDashboardResDto = z.object({
+  data: UserRes.omit({
+    friendshipInbox: true,
+    friends: true,
+    friendshipOutbox: true,
+  }).extend({
+    snippets: GetUserSnippetsResponseDto,
+  }),
+  stats: z.object({
+    foldersCount: z.number(),
+    friendsCount: z.number(),
+    friendsInboxCount: z.number(),
+    friendsOutboxCount: z.number(),
+    snippetsCount: z.number(),
+  }),
 });
 export type GetCurrentUserDashboardResDtoType = z.infer<
   typeof GetCurrentUserDashboardResDto

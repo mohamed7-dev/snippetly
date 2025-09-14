@@ -1,21 +1,37 @@
-import { RootFilterQuery } from "mongoose";
-import { ValueOrElement } from "../../common/types/utils";
-import { ITag, Tag } from "./tag.model";
+import { TagRepository } from "./tag.repository";
+import { TagReadService } from "./tag-read.service";
 
 export class TagService {
-  async ensureTagsExistence(tags: string[]) {
-    return await Promise.all(
-      tags.map(async (tagName: string) => {
-        return Tag.findOneAndUpdate(
-          { name: tagName.toLowerCase() },
-          { name: tagName.toLowerCase() },
-          { new: true, upsert: true }
-        );
-      })
-    );
+  private readonly TagRepository: TagRepository;
+  private readonly TagReadService: TagReadService;
+
+  constructor() {
+    this.TagRepository = new TagRepository();
+    this.TagReadService = new TagReadService();
   }
 
-  async findTagsQueryBuilder(filter: RootFilterQuery<ITag>) {
-    return Tag.find(filter);
+  async getPopularTags() {
+    const result = await this.TagReadService.findPopularTags();
+    return result;
+  }
+
+  async ensureTagsExistence(tags: string[], addedBy: number) {
+    const normalizedTags = tags.map((t) => t.toLowerCase());
+
+    const results = await Promise.all(
+      normalizedTags.map(async (tagName) => {
+        const [tag] = await this.TagRepository.insert([
+          {
+            name: tagName,
+            usageCount: 1, // initial count
+            addedBy,
+          },
+        ]);
+
+        return tag;
+      })
+    );
+
+    return results;
   }
 }

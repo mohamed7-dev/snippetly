@@ -11,67 +11,87 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as DashboardRouteRouteImport } from './routes/dashboard.route'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
-import { Route as DashboardFriendsRouteImport } from './routes/dashboard.friends'
-import { Route as DashboardCollectionsRouteRouteImport } from './routes/dashboard.collections.route'
-import { Route as DashboardCollectionsIndexRouteImport } from './routes/dashboard.collections.index'
-import { Route as DashboardCollectionsSlugRouteImport } from './routes/dashboard.collections.$slug'
+import { Route as publicIndexRouteImport } from './routes/(public)/index'
+import { Route as protectedDashboardRouteRouteImport } from './routes/(protected)/dashboard/route'
+import { Route as protectedDashboardIndexRouteImport } from './routes/(protected)/dashboard/index'
+import { Route as publicProfileNameRouteRouteImport } from './routes/(public)/profile/$name/route'
+import { Route as protectedDashboardRequestsRouteRouteImport } from './routes/(protected)/dashboard/requests/route'
+import { Route as protectedDashboardFriendsRouteRouteImport } from './routes/(protected)/dashboard/friends/route'
+import { Route as protectedDashboardDiscoverRouteRouteImport } from './routes/(protected)/dashboard/discover/route'
 import { Route as authauthLayoutAuthLayoutRouteRouteImport } from './routes/(auth)/(auth-layout)/_auth-layout/route'
+import { Route as protectedDashboardSnippetsIndexRouteImport } from './routes/(protected)/dashboard/snippets/index'
+import { Route as protectedDashboardCollectionsIndexRouteImport } from './routes/(protected)/dashboard/collections/index'
 import { Route as authauthLayoutAuthLayoutSignupRouteImport } from './routes/(auth)/(auth-layout)/_auth-layout/signup'
 import { Route as authauthLayoutAuthLayoutLoginRouteImport } from './routes/(auth)/(auth-layout)/_auth-layout/login'
 import { Route as authauthLayoutAuthLayoutForgotPasswordRouteImport } from './routes/(auth)/(auth-layout)/_auth-layout/forgot-password'
+import { Route as protectedDashboardSnippetsNewRouteRouteImport } from './routes/(protected)/dashboard/snippets/new/route'
+import { Route as protectedDashboardCollectionsNewRouteRouteImport } from './routes/(protected)/dashboard/collections/new/route'
+import { Route as protectedDashboardSnippetsSlugIndexRouteImport } from './routes/(protected)/dashboard/snippets/$slug/index'
+import { Route as protectedDashboardCollectionsSlugIndexRouteImport } from './routes/(protected)/dashboard/collections/$slug/index'
+import { Route as protectedDashboardSnippetsSlugEditRouteRouteImport } from './routes/(protected)/dashboard/snippets/$slug/edit/route'
+import { Route as protectedDashboardCollectionsSlugEditRouteRouteImport } from './routes/(protected)/dashboard/collections/$slug/edit/route'
 
 const authauthLayoutRouteImport = createFileRoute('/(auth)/(auth-layout)')()
 
-const DashboardRouteRoute = DashboardRouteRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const authauthLayoutRoute = authauthLayoutRouteImport.update({
   id: '/(auth)/(auth-layout)',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DashboardIndexRoute = DashboardIndexRouteImport.update({
+const publicIndexRoute = publicIndexRouteImport.update({
+  id: '/(public)/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const protectedDashboardRouteRoute = protectedDashboardRouteRouteImport.update({
+  id: '/(protected)/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const protectedDashboardIndexRoute = protectedDashboardIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => DashboardRouteRoute,
+  getParentRoute: () => protectedDashboardRouteRoute,
 } as any)
-const DashboardFriendsRoute = DashboardFriendsRouteImport.update({
-  id: '/friends',
-  path: '/friends',
-  getParentRoute: () => DashboardRouteRoute,
+const publicProfileNameRouteRoute = publicProfileNameRouteRouteImport.update({
+  id: '/(public)/profile/$name',
+  path: '/profile/$name',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const DashboardCollectionsRouteRoute =
-  DashboardCollectionsRouteRouteImport.update({
-    id: '/collections',
-    path: '/collections',
-    getParentRoute: () => DashboardRouteRoute,
+const protectedDashboardRequestsRouteRoute =
+  protectedDashboardRequestsRouteRouteImport.update({
+    id: '/requests',
+    path: '/requests',
+    getParentRoute: () => protectedDashboardRouteRoute,
   } as any)
-const DashboardCollectionsIndexRoute =
-  DashboardCollectionsIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => DashboardCollectionsRouteRoute,
+const protectedDashboardFriendsRouteRoute =
+  protectedDashboardFriendsRouteRouteImport.update({
+    id: '/friends',
+    path: '/friends',
+    getParentRoute: () => protectedDashboardRouteRoute,
   } as any)
-const DashboardCollectionsSlugRoute =
-  DashboardCollectionsSlugRouteImport.update({
-    id: '/$slug',
-    path: '/$slug',
-    getParentRoute: () => DashboardCollectionsRouteRoute,
+const protectedDashboardDiscoverRouteRoute =
+  protectedDashboardDiscoverRouteRouteImport.update({
+    id: '/discover',
+    path: '/discover',
+    getParentRoute: () => protectedDashboardRouteRoute,
   } as any)
 const authauthLayoutAuthLayoutRouteRoute =
   authauthLayoutAuthLayoutRouteRouteImport.update({
     id: '/_auth-layout',
     getParentRoute: () => authauthLayoutRoute,
+  } as any)
+const protectedDashboardSnippetsIndexRoute =
+  protectedDashboardSnippetsIndexRouteImport.update({
+    id: '/snippets/',
+    path: '/snippets/',
+    getParentRoute: () => protectedDashboardRouteRoute,
+  } as any)
+const protectedDashboardCollectionsIndexRoute =
+  protectedDashboardCollectionsIndexRouteImport.update({
+    id: '/collections/',
+    path: '/collections/',
+    getParentRoute: () => protectedDashboardRouteRoute,
   } as any)
 const authauthLayoutAuthLayoutSignupRoute =
   authauthLayoutAuthLayoutSignupRouteImport.update({
@@ -91,105 +111,178 @@ const authauthLayoutAuthLayoutForgotPasswordRoute =
     path: '/forgot-password',
     getParentRoute: () => authauthLayoutAuthLayoutRouteRoute,
   } as any)
+const protectedDashboardSnippetsNewRouteRoute =
+  protectedDashboardSnippetsNewRouteRouteImport.update({
+    id: '/snippets/new',
+    path: '/snippets/new',
+    getParentRoute: () => protectedDashboardRouteRoute,
+  } as any)
+const protectedDashboardCollectionsNewRouteRoute =
+  protectedDashboardCollectionsNewRouteRouteImport.update({
+    id: '/collections/new',
+    path: '/collections/new',
+    getParentRoute: () => protectedDashboardRouteRoute,
+  } as any)
+const protectedDashboardSnippetsSlugIndexRoute =
+  protectedDashboardSnippetsSlugIndexRouteImport.update({
+    id: '/snippets/$slug/',
+    path: '/snippets/$slug/',
+    getParentRoute: () => protectedDashboardRouteRoute,
+  } as any)
+const protectedDashboardCollectionsSlugIndexRoute =
+  protectedDashboardCollectionsSlugIndexRouteImport.update({
+    id: '/collections/$slug/',
+    path: '/collections/$slug/',
+    getParentRoute: () => protectedDashboardRouteRoute,
+  } as any)
+const protectedDashboardSnippetsSlugEditRouteRoute =
+  protectedDashboardSnippetsSlugEditRouteRouteImport.update({
+    id: '/snippets/$slug/edit',
+    path: '/snippets/$slug/edit',
+    getParentRoute: () => protectedDashboardRouteRoute,
+  } as any)
+const protectedDashboardCollectionsSlugEditRouteRoute =
+  protectedDashboardCollectionsSlugEditRouteRouteImport.update({
+    id: '/collections/$slug/edit',
+    path: '/collections/$slug/edit',
+    getParentRoute: () => protectedDashboardRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
+  '/dashboard': typeof protectedDashboardRouteRouteWithChildren
   '/': typeof authauthLayoutAuthLayoutRouteRouteWithChildren
-  '/dashboard': typeof DashboardRouteRouteWithChildren
-  '/dashboard/collections': typeof DashboardCollectionsRouteRouteWithChildren
-  '/dashboard/friends': typeof DashboardFriendsRoute
-  '/dashboard/': typeof DashboardIndexRoute
-  '/dashboard/collections/$slug': typeof DashboardCollectionsSlugRoute
-  '/dashboard/collections/': typeof DashboardCollectionsIndexRoute
+  '/dashboard/discover': typeof protectedDashboardDiscoverRouteRoute
+  '/dashboard/friends': typeof protectedDashboardFriendsRouteRoute
+  '/dashboard/requests': typeof protectedDashboardRequestsRouteRoute
+  '/profile/$name': typeof publicProfileNameRouteRoute
+  '/dashboard/': typeof protectedDashboardIndexRoute
+  '/dashboard/collections/new': typeof protectedDashboardCollectionsNewRouteRoute
+  '/dashboard/snippets/new': typeof protectedDashboardSnippetsNewRouteRoute
   '/forgot-password': typeof authauthLayoutAuthLayoutForgotPasswordRoute
   '/login': typeof authauthLayoutAuthLayoutLoginRoute
   '/signup': typeof authauthLayoutAuthLayoutSignupRoute
+  '/dashboard/collections': typeof protectedDashboardCollectionsIndexRoute
+  '/dashboard/snippets': typeof protectedDashboardSnippetsIndexRoute
+  '/dashboard/collections/$slug/edit': typeof protectedDashboardCollectionsSlugEditRouteRoute
+  '/dashboard/snippets/$slug/edit': typeof protectedDashboardSnippetsSlugEditRouteRoute
+  '/dashboard/collections/$slug': typeof protectedDashboardCollectionsSlugIndexRoute
+  '/dashboard/snippets/$slug': typeof protectedDashboardSnippetsSlugIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof authauthLayoutAuthLayoutRouteRouteWithChildren
-  '/dashboard/friends': typeof DashboardFriendsRoute
-  '/dashboard': typeof DashboardIndexRoute
-  '/dashboard/collections/$slug': typeof DashboardCollectionsSlugRoute
-  '/dashboard/collections': typeof DashboardCollectionsIndexRoute
+  '/dashboard/discover': typeof protectedDashboardDiscoverRouteRoute
+  '/dashboard/friends': typeof protectedDashboardFriendsRouteRoute
+  '/dashboard/requests': typeof protectedDashboardRequestsRouteRoute
+  '/profile/$name': typeof publicProfileNameRouteRoute
+  '/dashboard': typeof protectedDashboardIndexRoute
+  '/dashboard/collections/new': typeof protectedDashboardCollectionsNewRouteRoute
+  '/dashboard/snippets/new': typeof protectedDashboardSnippetsNewRouteRoute
   '/forgot-password': typeof authauthLayoutAuthLayoutForgotPasswordRoute
   '/login': typeof authauthLayoutAuthLayoutLoginRoute
   '/signup': typeof authauthLayoutAuthLayoutSignupRoute
+  '/dashboard/collections': typeof protectedDashboardCollectionsIndexRoute
+  '/dashboard/snippets': typeof protectedDashboardSnippetsIndexRoute
+  '/dashboard/collections/$slug/edit': typeof protectedDashboardCollectionsSlugEditRouteRoute
+  '/dashboard/snippets/$slug/edit': typeof protectedDashboardSnippetsSlugEditRouteRoute
+  '/dashboard/collections/$slug': typeof protectedDashboardCollectionsSlugIndexRoute
+  '/dashboard/snippets/$slug': typeof protectedDashboardSnippetsSlugIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/dashboard': typeof DashboardRouteRouteWithChildren
-  '/dashboard/collections': typeof DashboardCollectionsRouteRouteWithChildren
-  '/dashboard/friends': typeof DashboardFriendsRoute
-  '/dashboard/': typeof DashboardIndexRoute
+  '/(protected)/dashboard': typeof protectedDashboardRouteRouteWithChildren
+  '/(public)/': typeof publicIndexRoute
   '/(auth)/(auth-layout)': typeof authauthLayoutRouteWithChildren
   '/(auth)/(auth-layout)/_auth-layout': typeof authauthLayoutAuthLayoutRouteRouteWithChildren
-  '/dashboard/collections/$slug': typeof DashboardCollectionsSlugRoute
-  '/dashboard/collections/': typeof DashboardCollectionsIndexRoute
+  '/(protected)/dashboard/discover': typeof protectedDashboardDiscoverRouteRoute
+  '/(protected)/dashboard/friends': typeof protectedDashboardFriendsRouteRoute
+  '/(protected)/dashboard/requests': typeof protectedDashboardRequestsRouteRoute
+  '/(public)/profile/$name': typeof publicProfileNameRouteRoute
+  '/(protected)/dashboard/': typeof protectedDashboardIndexRoute
+  '/(protected)/dashboard/collections/new': typeof protectedDashboardCollectionsNewRouteRoute
+  '/(protected)/dashboard/snippets/new': typeof protectedDashboardSnippetsNewRouteRoute
   '/(auth)/(auth-layout)/_auth-layout/forgot-password': typeof authauthLayoutAuthLayoutForgotPasswordRoute
   '/(auth)/(auth-layout)/_auth-layout/login': typeof authauthLayoutAuthLayoutLoginRoute
   '/(auth)/(auth-layout)/_auth-layout/signup': typeof authauthLayoutAuthLayoutSignupRoute
+  '/(protected)/dashboard/collections/': typeof protectedDashboardCollectionsIndexRoute
+  '/(protected)/dashboard/snippets/': typeof protectedDashboardSnippetsIndexRoute
+  '/(protected)/dashboard/collections/$slug/edit': typeof protectedDashboardCollectionsSlugEditRouteRoute
+  '/(protected)/dashboard/snippets/$slug/edit': typeof protectedDashboardSnippetsSlugEditRouteRoute
+  '/(protected)/dashboard/collections/$slug/': typeof protectedDashboardCollectionsSlugIndexRoute
+  '/(protected)/dashboard/snippets/$slug/': typeof protectedDashboardSnippetsSlugIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
     | '/dashboard'
-    | '/dashboard/collections'
+    | '/'
+    | '/dashboard/discover'
     | '/dashboard/friends'
+    | '/dashboard/requests'
+    | '/profile/$name'
     | '/dashboard/'
-    | '/dashboard/collections/$slug'
-    | '/dashboard/collections/'
+    | '/dashboard/collections/new'
+    | '/dashboard/snippets/new'
     | '/forgot-password'
     | '/login'
     | '/signup'
+    | '/dashboard/collections'
+    | '/dashboard/snippets'
+    | '/dashboard/collections/$slug/edit'
+    | '/dashboard/snippets/$slug/edit'
+    | '/dashboard/collections/$slug'
+    | '/dashboard/snippets/$slug'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/dashboard/discover'
     | '/dashboard/friends'
+    | '/dashboard/requests'
+    | '/profile/$name'
     | '/dashboard'
-    | '/dashboard/collections/$slug'
-    | '/dashboard/collections'
+    | '/dashboard/collections/new'
+    | '/dashboard/snippets/new'
     | '/forgot-password'
     | '/login'
     | '/signup'
+    | '/dashboard/collections'
+    | '/dashboard/snippets'
+    | '/dashboard/collections/$slug/edit'
+    | '/dashboard/snippets/$slug/edit'
+    | '/dashboard/collections/$slug'
+    | '/dashboard/snippets/$slug'
   id:
     | '__root__'
-    | '/'
-    | '/dashboard'
-    | '/dashboard/collections'
-    | '/dashboard/friends'
-    | '/dashboard/'
+    | '/(protected)/dashboard'
+    | '/(public)/'
     | '/(auth)/(auth-layout)'
     | '/(auth)/(auth-layout)/_auth-layout'
-    | '/dashboard/collections/$slug'
-    | '/dashboard/collections/'
+    | '/(protected)/dashboard/discover'
+    | '/(protected)/dashboard/friends'
+    | '/(protected)/dashboard/requests'
+    | '/(public)/profile/$name'
+    | '/(protected)/dashboard/'
+    | '/(protected)/dashboard/collections/new'
+    | '/(protected)/dashboard/snippets/new'
     | '/(auth)/(auth-layout)/_auth-layout/forgot-password'
     | '/(auth)/(auth-layout)/_auth-layout/login'
     | '/(auth)/(auth-layout)/_auth-layout/signup'
+    | '/(protected)/dashboard/collections/'
+    | '/(protected)/dashboard/snippets/'
+    | '/(protected)/dashboard/collections/$slug/edit'
+    | '/(protected)/dashboard/snippets/$slug/edit'
+    | '/(protected)/dashboard/collections/$slug/'
+    | '/(protected)/dashboard/snippets/$slug/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  DashboardRouteRoute: typeof DashboardRouteRouteWithChildren
+  protectedDashboardRouteRoute: typeof protectedDashboardRouteRouteWithChildren
+  publicIndexRoute: typeof publicIndexRoute
   authauthLayoutRoute: typeof authauthLayoutRouteWithChildren
+  publicProfileNameRouteRoute: typeof publicProfileNameRouteRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/dashboard': {
-      id: '/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/(auth)/(auth-layout)': {
       id: '/(auth)/(auth-layout)'
       path: '/'
@@ -197,40 +290,54 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof authauthLayoutRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dashboard/': {
-      id: '/dashboard/'
+    '/(public)/': {
+      id: '/(public)/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof publicIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(protected)/dashboard': {
+      id: '/(protected)/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof protectedDashboardRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(protected)/dashboard/': {
+      id: '/(protected)/dashboard/'
       path: '/'
       fullPath: '/dashboard/'
-      preLoaderRoute: typeof DashboardIndexRouteImport
-      parentRoute: typeof DashboardRouteRoute
+      preLoaderRoute: typeof protectedDashboardIndexRouteImport
+      parentRoute: typeof protectedDashboardRouteRoute
     }
-    '/dashboard/friends': {
-      id: '/dashboard/friends'
+    '/(public)/profile/$name': {
+      id: '/(public)/profile/$name'
+      path: '/profile/$name'
+      fullPath: '/profile/$name'
+      preLoaderRoute: typeof publicProfileNameRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(protected)/dashboard/requests': {
+      id: '/(protected)/dashboard/requests'
+      path: '/requests'
+      fullPath: '/dashboard/requests'
+      preLoaderRoute: typeof protectedDashboardRequestsRouteRouteImport
+      parentRoute: typeof protectedDashboardRouteRoute
+    }
+    '/(protected)/dashboard/friends': {
+      id: '/(protected)/dashboard/friends'
       path: '/friends'
       fullPath: '/dashboard/friends'
-      preLoaderRoute: typeof DashboardFriendsRouteImport
-      parentRoute: typeof DashboardRouteRoute
+      preLoaderRoute: typeof protectedDashboardFriendsRouteRouteImport
+      parentRoute: typeof protectedDashboardRouteRoute
     }
-    '/dashboard/collections': {
-      id: '/dashboard/collections'
-      path: '/collections'
-      fullPath: '/dashboard/collections'
-      preLoaderRoute: typeof DashboardCollectionsRouteRouteImport
-      parentRoute: typeof DashboardRouteRoute
-    }
-    '/dashboard/collections/': {
-      id: '/dashboard/collections/'
-      path: '/'
-      fullPath: '/dashboard/collections/'
-      preLoaderRoute: typeof DashboardCollectionsIndexRouteImport
-      parentRoute: typeof DashboardCollectionsRouteRoute
-    }
-    '/dashboard/collections/$slug': {
-      id: '/dashboard/collections/$slug'
-      path: '/$slug'
-      fullPath: '/dashboard/collections/$slug'
-      preLoaderRoute: typeof DashboardCollectionsSlugRouteImport
-      parentRoute: typeof DashboardCollectionsRouteRoute
+    '/(protected)/dashboard/discover': {
+      id: '/(protected)/dashboard/discover'
+      path: '/discover'
+      fullPath: '/dashboard/discover'
+      preLoaderRoute: typeof protectedDashboardDiscoverRouteRouteImport
+      parentRoute: typeof protectedDashboardRouteRoute
     }
     '/(auth)/(auth-layout)/_auth-layout': {
       id: '/(auth)/(auth-layout)/_auth-layout'
@@ -238,6 +345,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof authauthLayoutAuthLayoutRouteRouteImport
       parentRoute: typeof authauthLayoutRoute
+    }
+    '/(protected)/dashboard/snippets/': {
+      id: '/(protected)/dashboard/snippets/'
+      path: '/snippets'
+      fullPath: '/dashboard/snippets'
+      preLoaderRoute: typeof protectedDashboardSnippetsIndexRouteImport
+      parentRoute: typeof protectedDashboardRouteRoute
+    }
+    '/(protected)/dashboard/collections/': {
+      id: '/(protected)/dashboard/collections/'
+      path: '/collections'
+      fullPath: '/dashboard/collections'
+      preLoaderRoute: typeof protectedDashboardCollectionsIndexRouteImport
+      parentRoute: typeof protectedDashboardRouteRoute
     }
     '/(auth)/(auth-layout)/_auth-layout/signup': {
       id: '/(auth)/(auth-layout)/_auth-layout/signup'
@@ -260,40 +381,93 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof authauthLayoutAuthLayoutForgotPasswordRouteImport
       parentRoute: typeof authauthLayoutAuthLayoutRouteRoute
     }
+    '/(protected)/dashboard/snippets/new': {
+      id: '/(protected)/dashboard/snippets/new'
+      path: '/snippets/new'
+      fullPath: '/dashboard/snippets/new'
+      preLoaderRoute: typeof protectedDashboardSnippetsNewRouteRouteImport
+      parentRoute: typeof protectedDashboardRouteRoute
+    }
+    '/(protected)/dashboard/collections/new': {
+      id: '/(protected)/dashboard/collections/new'
+      path: '/collections/new'
+      fullPath: '/dashboard/collections/new'
+      preLoaderRoute: typeof protectedDashboardCollectionsNewRouteRouteImport
+      parentRoute: typeof protectedDashboardRouteRoute
+    }
+    '/(protected)/dashboard/snippets/$slug/': {
+      id: '/(protected)/dashboard/snippets/$slug/'
+      path: '/snippets/$slug'
+      fullPath: '/dashboard/snippets/$slug'
+      preLoaderRoute: typeof protectedDashboardSnippetsSlugIndexRouteImport
+      parentRoute: typeof protectedDashboardRouteRoute
+    }
+    '/(protected)/dashboard/collections/$slug/': {
+      id: '/(protected)/dashboard/collections/$slug/'
+      path: '/collections/$slug'
+      fullPath: '/dashboard/collections/$slug'
+      preLoaderRoute: typeof protectedDashboardCollectionsSlugIndexRouteImport
+      parentRoute: typeof protectedDashboardRouteRoute
+    }
+    '/(protected)/dashboard/snippets/$slug/edit': {
+      id: '/(protected)/dashboard/snippets/$slug/edit'
+      path: '/snippets/$slug/edit'
+      fullPath: '/dashboard/snippets/$slug/edit'
+      preLoaderRoute: typeof protectedDashboardSnippetsSlugEditRouteRouteImport
+      parentRoute: typeof protectedDashboardRouteRoute
+    }
+    '/(protected)/dashboard/collections/$slug/edit': {
+      id: '/(protected)/dashboard/collections/$slug/edit'
+      path: '/collections/$slug/edit'
+      fullPath: '/dashboard/collections/$slug/edit'
+      preLoaderRoute: typeof protectedDashboardCollectionsSlugEditRouteRouteImport
+      parentRoute: typeof protectedDashboardRouteRoute
+    }
   }
 }
 
-interface DashboardCollectionsRouteRouteChildren {
-  DashboardCollectionsSlugRoute: typeof DashboardCollectionsSlugRoute
-  DashboardCollectionsIndexRoute: typeof DashboardCollectionsIndexRoute
+interface protectedDashboardRouteRouteChildren {
+  protectedDashboardDiscoverRouteRoute: typeof protectedDashboardDiscoverRouteRoute
+  protectedDashboardFriendsRouteRoute: typeof protectedDashboardFriendsRouteRoute
+  protectedDashboardRequestsRouteRoute: typeof protectedDashboardRequestsRouteRoute
+  protectedDashboardIndexRoute: typeof protectedDashboardIndexRoute
+  protectedDashboardCollectionsNewRouteRoute: typeof protectedDashboardCollectionsNewRouteRoute
+  protectedDashboardSnippetsNewRouteRoute: typeof protectedDashboardSnippetsNewRouteRoute
+  protectedDashboardCollectionsIndexRoute: typeof protectedDashboardCollectionsIndexRoute
+  protectedDashboardSnippetsIndexRoute: typeof protectedDashboardSnippetsIndexRoute
+  protectedDashboardCollectionsSlugEditRouteRoute: typeof protectedDashboardCollectionsSlugEditRouteRoute
+  protectedDashboardSnippetsSlugEditRouteRoute: typeof protectedDashboardSnippetsSlugEditRouteRoute
+  protectedDashboardCollectionsSlugIndexRoute: typeof protectedDashboardCollectionsSlugIndexRoute
+  protectedDashboardSnippetsSlugIndexRoute: typeof protectedDashboardSnippetsSlugIndexRoute
 }
 
-const DashboardCollectionsRouteRouteChildren: DashboardCollectionsRouteRouteChildren =
+const protectedDashboardRouteRouteChildren: protectedDashboardRouteRouteChildren =
   {
-    DashboardCollectionsSlugRoute: DashboardCollectionsSlugRoute,
-    DashboardCollectionsIndexRoute: DashboardCollectionsIndexRoute,
+    protectedDashboardDiscoverRouteRoute: protectedDashboardDiscoverRouteRoute,
+    protectedDashboardFriendsRouteRoute: protectedDashboardFriendsRouteRoute,
+    protectedDashboardRequestsRouteRoute: protectedDashboardRequestsRouteRoute,
+    protectedDashboardIndexRoute: protectedDashboardIndexRoute,
+    protectedDashboardCollectionsNewRouteRoute:
+      protectedDashboardCollectionsNewRouteRoute,
+    protectedDashboardSnippetsNewRouteRoute:
+      protectedDashboardSnippetsNewRouteRoute,
+    protectedDashboardCollectionsIndexRoute:
+      protectedDashboardCollectionsIndexRoute,
+    protectedDashboardSnippetsIndexRoute: protectedDashboardSnippetsIndexRoute,
+    protectedDashboardCollectionsSlugEditRouteRoute:
+      protectedDashboardCollectionsSlugEditRouteRoute,
+    protectedDashboardSnippetsSlugEditRouteRoute:
+      protectedDashboardSnippetsSlugEditRouteRoute,
+    protectedDashboardCollectionsSlugIndexRoute:
+      protectedDashboardCollectionsSlugIndexRoute,
+    protectedDashboardSnippetsSlugIndexRoute:
+      protectedDashboardSnippetsSlugIndexRoute,
   }
 
-const DashboardCollectionsRouteRouteWithChildren =
-  DashboardCollectionsRouteRoute._addFileChildren(
-    DashboardCollectionsRouteRouteChildren,
+const protectedDashboardRouteRouteWithChildren =
+  protectedDashboardRouteRoute._addFileChildren(
+    protectedDashboardRouteRouteChildren,
   )
-
-interface DashboardRouteRouteChildren {
-  DashboardCollectionsRouteRoute: typeof DashboardCollectionsRouteRouteWithChildren
-  DashboardFriendsRoute: typeof DashboardFriendsRoute
-  DashboardIndexRoute: typeof DashboardIndexRoute
-}
-
-const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
-  DashboardCollectionsRouteRoute: DashboardCollectionsRouteRouteWithChildren,
-  DashboardFriendsRoute: DashboardFriendsRoute,
-  DashboardIndexRoute: DashboardIndexRoute,
-}
-
-const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(
-  DashboardRouteRouteChildren,
-)
 
 interface authauthLayoutAuthLayoutRouteRouteChildren {
   authauthLayoutAuthLayoutForgotPasswordRoute: typeof authauthLayoutAuthLayoutForgotPasswordRoute
@@ -328,9 +502,10 @@ const authauthLayoutRouteWithChildren = authauthLayoutRoute._addFileChildren(
 )
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  DashboardRouteRoute: DashboardRouteRouteWithChildren,
+  protectedDashboardRouteRoute: protectedDashboardRouteRouteWithChildren,
+  publicIndexRoute: publicIndexRoute,
   authauthLayoutRoute: authauthLayoutRouteWithChildren,
+  publicProfileNameRouteRoute: publicProfileNameRouteRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

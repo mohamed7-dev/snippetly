@@ -1,6 +1,6 @@
 import morgan, { StreamOptions } from "morgan";
 import { LOG_FORMAT, NODE_ENV } from "../../config";
-import { ServerLogger } from "../logger-alternative";
+import { ServerLogger } from "../logger";
 
 const stream: StreamOptions = {
   write: (message: string) =>

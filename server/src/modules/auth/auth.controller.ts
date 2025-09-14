@@ -44,30 +44,30 @@ export class AuthController {
     request: Request<{}, {}, SignupDtoType>,
     response: Response
   ) => {
-    const { data, message, status } = await this.AuthService.signup(
+    const data = await this.AuthService.signup(
       request.context,
       request.body,
       response
     );
-    let dataToReturn = null;
-    if (status === StatusCodes.CREATED) {
+    if ("accessToken" in data) {
       const { success, data: parsedData } = SignupResponseDto.safeParse(data);
       if (!success) {
         throw new InternalServerError();
       }
-      dataToReturn = parsedData;
+      return response.status(StatusCodes.CREATED).json({
+        message: "User account has been created successfully.",
+        data: parsedData,
+      });
     }
-    response.status(status).json({
-      message,
-      data: dataToReturn ?? data,
+
+    return response.status(StatusCodes.CONFLICT).json({
+      message: `User account with the same name ${request.body.name} already exists, but you can use one of the generated names.`,
+      data,
     });
   };
 
-  public generateRefreshToken = async (
-    request: Request,
-    response: Response
-  ) => {
-    const data = await this.AuthService.generateRefreshToken(
+  public refreshAccessToken = async (request: Request, response: Response) => {
+    const data = await this.AuthService.refreshAccessToken(
       request.context,
       response
     );
@@ -76,8 +76,9 @@ export class AuthController {
     if (!success) {
       throw new InternalServerError();
     }
+
     response.status(StatusCodes.OK).json({
-      message: "Refresh token has been generated successfully.",
+      message: "Access token has been refreshed successfully.",
       data: parsedData,
     });
   };

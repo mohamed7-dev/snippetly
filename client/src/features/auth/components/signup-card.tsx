@@ -48,6 +48,7 @@ export function SignupCard() {
       email: '',
       password: '',
       acceptedPolicies: false,
+      isPrivate: false,
     },
     resolver: zodResolver(signupSchema),
   })
@@ -165,40 +166,42 @@ export function SignupCard() {
               </FormItem>
             )}
           />
-          <FormField
-            control={signupForm.control}
-            name="password"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Password</FormLabel>
-                <FormControl>
-                  <Input
-                    type="password"
-                    placeholder={'*'.repeat(12)}
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={signupForm.control}
-            name="passwordConfirm"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Password Confirmation</FormLabel>
-                <FormControl>
-                  <Input
-                    type="password"
-                    placeholder={'*'.repeat(12)}
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={signupForm.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Password</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="password"
+                      placeholder={'*'.repeat(12)}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={signupForm.control}
+              name="passwordConfirm"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Password Confirmation</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="password"
+                      placeholder={'*'.repeat(12)}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
 
           {/* Password requirements */}
           <div className="space-y-2">
@@ -213,38 +216,52 @@ export function SignupCard() {
             </div>
           </div>
 
-          <div className="flex items-center space-x-2">
-            <FormField
-              control={signupForm.control}
-              name="acceptedPolicies"
-              render={({ field }) => (
-                <FormItem className="flex items-center gap-2">
-                  <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={(checked) => {
-                        signupForm.setValue(
-                          'acceptedPolicies',
-                          checked as boolean,
-                        )
-                      }}
-                    />
-                  </FormControl>
-                  <FormLabel className="text-sm">
-                    I agree to the{' '}
-                    <Link to="." className="text-primary hover:underline">
-                      Terms of Service
-                    </Link>{' '}
-                    and{' '}
-                    <Link to="." className="text-primary hover:underline">
-                      Privacy Policy
-                    </Link>
-                  </FormLabel>
-                </FormItem>
-              )}
-            />
-          </div>
-
+          <FormField
+            control={signupForm.control}
+            name="acceptedPolicies"
+            render={({ field }) => (
+              <FormItem className="flex items-center gap-2">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={(checked) => {
+                      signupForm.setValue(
+                        'acceptedPolicies',
+                        checked as boolean,
+                      )
+                    }}
+                  />
+                </FormControl>
+                <FormLabel className="text-sm">
+                  I agree to the{' '}
+                  <Link to="." className="text-primary hover:underline">
+                    Terms of Service
+                  </Link>{' '}
+                  and{' '}
+                  <Link to="." className="text-primary hover:underline">
+                    Privacy Policy
+                  </Link>
+                </FormLabel>
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={signupForm.control}
+            name="isPrivate"
+            render={({ field }) => (
+              <FormItem className="flex items-center gap-2">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={(checked) => {
+                      signupForm.setValue('isPrivate', checked as boolean)
+                    }}
+                  />
+                </FormControl>
+                <FormLabel className="text-sm">Make account private?</FormLabel>
+              </FormItem>
+            )}
+          />
           <LoadingButton isLoading={isPending} type="submit" className="w-full">
             Create Account
           </LoadingButton>

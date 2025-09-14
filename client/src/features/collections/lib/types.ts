@@ -1,9 +1,13 @@
 export interface Collection {
-  id: string
+  id: number
   title: string
-  code: string
+  slug: string
+  description: string | null
   color: string
-  description: string
-  isPrivate?: boolean
+  isPrivate: boolean
   allowForking: boolean
+  forkedFrom: number | null
+  createdAt: Date
+  updatedAt: Date
+  creatorId: number
 }

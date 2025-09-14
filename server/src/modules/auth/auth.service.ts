@@ -8,29 +8,35 @@ import { JWTPayload, TokenService } from "./token.service";
 import { REFRESH_TOKEN_COOKIE_KEY } from "./constants";
 import { PasswordHashService } from "./password-hash.service";
 import { EmailService } from "../email/email.service";
-import { APP_URL } from "../../config";
+import { APP_URL, JWT_REFRESH_EXPIRES } from "../../config";
 import { ResetPasswordDtoType } from "./dto/reset-password.dto";
 import { SendVEmailDtoType } from "./dto/send-v-email.dto";
 import { VerifyTokenDtoType } from "./dto/verify-token.dto";
 import { SendREmailDtoType } from "./dto/send-r-email.dto";
-import { RequestContext } from "../../common/middlewares";
+import { UserReadService } from "../user/user-read.service";
+import { UserRepository } from "../user/user.repository";
+import { RequestContext } from "../../common/middlewares/request-context-middleware";
 
 export class AuthService {
   private readonly UserService: UserService;
+  private readonly UserRepository: UserRepository;
+  private readonly UserReadService: UserReadService;
   private readonly TokenService: TokenService;
   private readonly PasswordHashService: PasswordHashService;
 
   constructor() {
     this.UserService = new UserService();
+    this.UserReadService = new UserReadService();
     this.TokenService = new TokenService();
     this.PasswordHashService = new PasswordHashService();
+    this.UserRepository = new UserRepository();
   }
 
   public async login(ctx: RequestContext, input: LoginDtoType, res: Response) {
     const { name, password } = input;
     const refreshToken = ctx.req.cookies?.[REFRESH_TOKEN_COOKIE_KEY] as string;
 
-    const foundUser = await this.UserService.findOneQueryBuilder({ name });
+    const foundUser = await this.UserReadService.findOneSlim("name", name);
 
     if (!foundUser)
       throw new HttpException(StatusCodes.NOT_FOUND, "User not found.");
@@ -43,7 +49,7 @@ export class AuthService {
     if (!isPasswordValid)
       throw new HttpException(StatusCodes.UNAUTHORIZED, "Invalid credentials.");
 
-    //check if the refresh token is reused
+    // check if the refresh token exists, if so rotate it
     let newRefreshTokenArray = !refreshToken
       ? foundUser.refreshTokens
       : foundUser.refreshTokens.filter((rt) => rt !== refreshToken);
@@ -55,11 +61,12 @@ export class AuthService {
             2) RT is stolen
             3) If 1 & 2, reuse detection is needed to clear all RTs when user logs in
       */
-      const foundToken = await this.UserService.findOneQueryBuilder({
-        refreshTokens: refreshToken,
-      });
+      const foundToken = await this.UserReadService.findOneByRefreshToken(
+        refreshToken
+      );
 
-      // Detected refresh token reuse!
+      // danger: if refresh token is not found, then the user tries to re-use it
+      // so we need to delete all refresh tokens to log the user out of all sessions.
       if (!foundToken) {
         // clear out aLL previous refresh tokens
         newRefreshTokenArray = [];
@@ -75,8 +82,9 @@ export class AuthService {
         email: foundUser.email,
       });
 
-    foundUser.refreshTokens = [...newRefreshTokenArray, newRefreshToken];
-    let updatedUser = await foundUser.save();
+    const [updatedUser] = await this.UserRepository.update(foundUser.id, {
+      refreshTokens: [...newRefreshTokenArray, newRefreshToken],
+    });
 
     this.setRefreshTokenCookie(res, newRefreshToken);
 
@@ -97,11 +105,7 @@ export class AuthService {
         res
       );
 
-      return {
-        data: { accessToken: data.accessToken, user: newUser },
-        message: "User account has been registered successfully.",
-        status: StatusCodes.CREATED,
-      };
+      return { accessToken: data.accessToken, user: newUser };
     } catch (error) {
       if (
         error instanceof HttpException &&
@@ -110,37 +114,31 @@ export class AuthService {
         const suggestedNames = await this.UserService.suggestUniqueNames(
           input.name
         );
-        return {
-          data: suggestedNames,
-          message: "User account already taken.",
-          status: StatusCodes.CONFLICT,
-        };
+        return { suggestedNames };
       }
       throw error;
     }
   }
 
-  public async generateRefreshToken(ctx: RequestContext, res: Response) {
+  public async refreshAccessToken(ctx: RequestContext, res: Response) {
     const refreshToken = ctx.req.cookies[REFRESH_TOKEN_COOKIE_KEY];
 
     if (!refreshToken) return this.throwSessionError();
 
     this.clearRefreshTokenCookie(res);
 
-    const foundUserWithToken = await this.UserService.findOneQueryBuilder({
-      refreshTokens: refreshToken,
-    });
+    const foundUserWithToken = await this.UserReadService.findOneByRefreshToken(
+      refreshToken
+    );
 
     if (!foundUserWithToken) {
       this.TokenService.verifyRefreshToken(
         refreshToken,
         async (err, decoded) => {
           if (err) return this.throwSessionError();
-          const hackedUser = await this.UserService.findOneQueryBuilder({
-            _id: decoded.id,
+          await this.UserRepository.update(decoded.id, {
+            refreshTokens: [],
           });
-          hackedUser.refreshTokens = [];
-          await hackedUser.save();
         }
       );
       return this.throwSessionError();
@@ -152,9 +150,9 @@ export class AuthService {
 
     this.TokenService.verifyRefreshToken(refreshToken, async (err, decoded) => {
       if (err) {
-        // expired refresh token
-        foundUserWithToken.refreshTokens = [...newRefreshTokenArray];
-        await foundUserWithToken.save();
+        await this.UserRepository.update(decoded.id, {
+          refreshTokens: [...newRefreshTokenArray],
+        });
       }
       if (err || foundUserWithToken.id !== decoded.id) {
         return this.throwSessionError();
@@ -167,36 +165,44 @@ export class AuthService {
         id: foundUserWithToken.id,
         email: foundUserWithToken.email,
       });
-    foundUserWithToken.refreshTokens = [
-      ...newRefreshTokenArray,
-      newRefreshToken,
-    ];
-    await foundUserWithToken.save();
+
+    const [updatedUser] = await this.UserRepository.update(
+      foundUserWithToken.id,
+      {
+        refreshTokens: [...newRefreshTokenArray, newRefreshToken],
+      }
+    );
+
     this.setRefreshTokenCookie(res, newRefreshToken);
 
-    return { accessToken: newAccessToken, user: foundUserWithToken };
+    return { accessToken: newAccessToken, user: updatedUser };
   }
 
   public async logout(ctx: RequestContext, res: Response) {
     const refreshToken = ctx.req.cookies?.[REFRESH_TOKEN_COOKIE_KEY] as string;
-
     if (!refreshToken) return this.throwSessionError();
 
-    const foundUserWithToken = await this.UserService.findOneQueryBuilder({
-      refreshTokens: refreshToken,
-    });
+    const foundUserWithToken = await this.UserReadService.findOneByRefreshToken(
+      refreshToken
+    );
 
     if (!foundUserWithToken) {
       this.clearRefreshTokenCookie(res);
       return this.throwSessionError();
     }
-    foundUserWithToken.refreshTokens = foundUserWithToken.refreshTokens.filter(
+
+    const filteredUserTokens = foundUserWithToken.refreshTokens.filter(
       (rt) => rt !== refreshToken
     );
-    await foundUserWithToken.save();
+
+    const [updatedUser] = await this.UserRepository.update(
+      foundUserWithToken.id,
+      { refreshTokens: filteredUserTokens }
+    );
+
     this.clearRefreshTokenCookie(res);
 
-    return foundUserWithToken;
+    return updatedUser;
   }
 
   public async sendVerificationEmail(
@@ -282,7 +288,7 @@ export class AuthService {
       httpOnly: true,
       sameSite: "none",
       secure: true,
-      expires: new Date(this.TokenService.decodeToken(refreshToken).exp * 1000),
+      maxAge: JWT_REFRESH_EXPIRES,
     });
   }
 }

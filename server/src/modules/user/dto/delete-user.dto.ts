@@ -1,8 +1,8 @@
 import z from "zod";
 import { SelectUserDto } from "./select-user.dto";
 
-export const DeleteUserParamDto = z.object({
+export const DeleteUserDto = z.object({
   name: SelectUserDto.shape.name,
 });
 
-export type DeleteUserParamDtoType = z.infer<typeof DeleteUserParamDto>;
+export type DeleteUserDtoType = z.infer<typeof DeleteUserDto>;

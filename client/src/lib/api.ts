@@ -29,7 +29,7 @@ function processQueue(token: string | null) {
 api.interceptors.request.use((config) => {
   const token = getAccessToken()
   if (token && config.headers) {
-    config.headers.Authorization = `Bearer ${token}`
+    config.headers.Authorization = 'Bearer '.concat(token)
   }
   return config
 })
@@ -44,7 +44,7 @@ api.interceptors.response.use(
         return new Promise((resolve) => {
           refreshQueue.push((token) => {
             if (token) {
-              original.headers.Authorization = `Bearer ${token}`
+              original.headers.Authorization = 'Bearer '.concat(token)
               resolve(api(original))
             } else {
               resolve(Promise.reject(error))
@@ -64,7 +64,7 @@ api.interceptors.response.use(
         setAuth(newToken, getUser())
 
         processQueue(newToken)
-        original.headers.Authorization = `Bearer ${newToken}`
+        original.headers.Authorization = 'Bearer '.concat(newToken)
         return api(original)
       } catch (err) {
         processQueue(null)

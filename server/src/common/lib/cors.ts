@@ -6,11 +6,12 @@ export const allowedOrigins = ["http://localhost:3000"];
 
 export const corsOptions: CorsOptions = {
   origin: (origin, callback) => {
-    if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+    if ((origin && allowedOrigins.indexOf(origin) !== -1) || !origin) {
       callback(null, true);
     } else {
       callback(new HttpException(StatusCodes.FORBIDDEN, "Blocked by CORS."));
     }
   },
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   optionsSuccessStatus: 200,
 };

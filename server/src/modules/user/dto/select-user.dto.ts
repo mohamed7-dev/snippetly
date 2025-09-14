@@ -1,22 +1,18 @@
 import z from "zod";
-import { baseModelSchema, objectIdSchema } from "../../../common/lib/zod";
+import { createSelectSchema } from "drizzle-zod";
+import { usersTable } from "../../../common/db/schema";
 
-export const SelectUserDto = baseModelSchema.extend({
-  name: z.string().trim(),
-  password: z.string().trim(),
-  email: z.email().trim(),
-  firstName: z.string().trim(),
-  lastName: z.string().trim(),
-  acceptedPolicies: z.boolean(),
-  emailVerifiedAt: z.date().nullable().optional(),
-  refreshTokens: z.array(z.string()),
-  emailVerificationToken: z.uuidv4().nullable().optional(),
-  emailVerificationExpiresAt: z.date().nullable().optional(),
-  // Relations (ObjectIds)
-  folders: z.array(objectIdSchema).default([]),
-  friendshipInbox: z.array(objectIdSchema).default([]),
-  friendshipOutbox: z.array(objectIdSchema).default([]),
-  friends: z.array(objectIdSchema).default([]),
+const nameSchema = z
+  .string()
+  .trim()
+  .min(1, "Name is required")
+  .regex(/^\S+$/, "Name must not contain spaces");
+
+export const SelectUserDto = createSelectSchema(usersTable, {
+  name: nameSchema,
+  email: z.email(),
+  emailVerificationToken: z.uuidv4().nullable(),
+  resetPasswordToken: z.uuidv4().nullable(),
 });
 
 export type SelectUserDtoType = z.infer<typeof SelectUserDto>;

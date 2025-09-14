@@ -1,25 +1,39 @@
 import { StatusCodes } from "http-status-codes";
 import { HttpException } from "../../common/lib/exception";
-import { IUser, User } from "./user.model";
 import { CreateUserDtoType } from "./dto/create-user.dto";
 import { UpdateUserDtoType } from "./dto/update-user.dto";
 import { PasswordHashService } from "../auth/password-hash.service";
 import { UpdateUserPasswordDtoType } from "./dto/update-password.dto";
-import { FriendshipParamDtoType } from "./dto/friendship.dto";
-import { DeleteUserParamDtoType } from "./dto/delete-user.dto";
-import { RequestContext } from "../../common/middlewares";
-import { GetOneParamDtoType } from "./dto/get-one.dto";
-import { RootFilterQuery } from "mongoose";
+import {
+  DEFAULT_FIND_USERS_LIMIT,
+  DEFAULT_USERS_PENDING_FRIENDS_LIMIT,
+} from "./constants";
+import { handleCursorPagination } from "../../common/lib/utils";
+import { UserReadService } from "./user-read.service";
+import { UserRepository } from "./user.repository";
+import { DeleteUserDtoType } from "./dto/delete-user.dto";
+import { DiscoverUsersDtoType } from "./dto/discover-users.dto";
+import { GetCurrentUserFriendsDtoType } from "./dto/get-current-user-friends.dto";
+import { ManageFriendshipDtoType } from "./dto/manage-friendship.dto";
+import { RequestContext } from "../../common/middlewares/request-context-middleware";
+import { NonNullableFields } from "../../common/types/utils";
+import { GetUserDtoType } from "./dto/get-user.dto";
 
 export class UserService {
   private readonly PasswordHashService: PasswordHashService;
+  private UserReadService: UserReadService;
+  private UserRepository: UserRepository;
+
   constructor() {
     this.PasswordHashService = new PasswordHashService();
+    this.UserReadService = new UserReadService();
+    this.UserRepository = new UserRepository();
   }
 
+  // Done
   public async create(_ctx: RequestContext, input: CreateUserDtoType) {
-    const { firstName, lastName, name, email, password } = input;
-    const foundUser = await User.findOne({ name });
+    const { password, ...rest } = input;
+    const foundUser = await this.UserReadService.findOneSlim("name", rest.name);
 
     if (foundUser) {
       throw new HttpException(
@@ -30,25 +44,23 @@ export class UserService {
 
     const hashedPassword = await this.PasswordHashService.hash(password);
 
-    const newUser = await User.create({
-      firstName,
-      lastName,
-      name,
-      email,
-      password: hashedPassword,
-    });
-    delete newUser.password;
+    const [newUser] = await this.UserRepository.insert([
+      {
+        ...rest,
+        password: hashedPassword,
+      },
+    ]);
+
     return newUser;
   }
 
+  // Done
   public async suggestUniqueNames(baseName: string) {
-    const suggestions = [];
+    const suggestions: string[] = [];
     const existingNames = new Set(
-      (
-        await User.find({ name: new RegExp(`^${baseName}`, "i") }).select(
-          "name"
-        )
-      ).map((u) => u.name.toLowerCase())
+      (await this.UserReadService.findManySlim("name", `%${baseName}%`)).map(
+        (u) => u.name.toLowerCase()
+      )
     );
 
     // Try appending numbers
@@ -61,7 +73,11 @@ export class UserService {
     return suggestions;
   }
 
-  public async update(ctx: RequestContext, input: UpdateUserDtoType) {
+  // Done
+  public async update(
+    ctx: NonNullableFields<RequestContext>,
+    input: UpdateUserDtoType
+  ) {
     const { data, name } = input;
 
     if ("password" in data) {
@@ -71,188 +87,263 @@ export class UserService {
       );
     }
 
-    const loggedInUserName = ctx.user.name;
+    const foundUser = await this.UserReadService.findOneSlim("name", name);
 
-    if (loggedInUserName !== name) {
-      throw new HttpException(StatusCodes.NOT_FOUND, "User not found.");
+    if (!foundUser || ctx.user.id !== foundUser.id) {
+      throw new HttpException(
+        StatusCodes.NOT_FOUND,
+        `User with name ${name} is not found`
+      );
     }
 
-    const updatedUser = await User.findOneAndUpdate({ name }, data, {
-      new: true,
-    }).select("-password");
+    const [updatedUser] = await this.UserRepository.update(ctx.user.id, data);
 
     return updatedUser;
   }
 
+  // Done
   public async updatePassword(
     ctx: RequestContext,
     input: UpdateUserPasswordDtoType
   ) {
-    const email = ctx.user?.email ?? input.email;
+    const loggedInUserEmail = ctx.user?.email;
 
-    const updatedUser = await User.findOneAndUpdate(
-      { email },
-      { password: await this.PasswordHashService.hash(input.password) },
-      {
-        new: true,
-      }
-    ).select("-password");
+    if (loggedInUserEmail && loggedInUserEmail !== input.email) {
+      // if user is logged in and the input.email is not his email
+      // then reject the request.
+      throw new HttpException(StatusCodes.NOT_FOUND, "User account not found.");
+    }
 
-    return {
-      data: updatedUser,
-      message: "Password has been updated successfully",
-      status: StatusCodes.OK,
-    };
-  }
-
-  public async updateUserFolders(
-    {
-      folderId,
-      userId,
-      operation,
-    }: {
-      folderId: string;
-      userId: string;
-      operation: "Pull" | "Push";
-    },
-    _ctx: RequestContext
-  ) {
-    const updatedUser = await User.findOneAndUpdate(
-      { id: userId },
-      {
-        ...(operation === "Push" ? { $addToSet: { folders: folderId } } : null),
-        ...(operation === "Pull" ? { $pull: { folders: folderId } } : null),
-      },
-      { new: true }
+    const foundUser = await this.UserReadService.findOneSlim(
+      "email",
+      input.email
     );
+
+    if (!foundUser) {
+      throw new HttpException(StatusCodes.NOT_FOUND, "User account not found.");
+    }
+
+    const updatedUser = await this.UserRepository.update(foundUser.id, {
+      password: await this.PasswordHashService.hash(input.password),
+    });
 
     return updatedUser;
   }
 
-  public async delete(ctx: RequestContext, input: DeleteUserParamDtoType) {
+  // Done
+  public async delete(
+    ctx: NonNullableFields<RequestContext>,
+    input: DeleteUserDtoType
+  ) {
     const name = input.name;
-    const loggedInUserName = ctx.user.name;
 
-    const foundUser = await this.findOneQueryBuilder({ name });
+    const foundUser = await this.UserReadService.findOneSlim("name", name);
 
-    if (!foundUser || loggedInUserName !== name) {
-      throw new HttpException(StatusCodes.NOT_FOUND, "User not found.");
+    if (!foundUser || ctx.user.id !== foundUser.id) {
+      throw new HttpException(
+        StatusCodes.NOT_FOUND,
+        `User with name ${name} is not found`
+      );
     }
 
-    const deletedUser = await User.findOneAndDelete({ name });
+    await this.UserRepository.delete(foundUser.id);
 
-    // Pull the userId from all other users' friends arrays
-    await User.updateMany(
-      {
-        $or: [
-          { friends: deletedUser._id },
-          { friendshipInbox: deletedUser._id },
-          { friendshipOutbox: deletedUser._id },
-        ],
-      },
-      {
-        $pull: {
-          friends: deletedUser._id,
-          friendshipInbox: deletedUser._id,
-          friendshipOutbox: deletedUser._id,
-        },
-      }
-    );
     return foundUser;
   }
 
-  public async getCurrentUser(ctx: RequestContext) {
-    const profile = await this.getOne(ctx, { name: ctx.user.name });
-    if (profile.id !== ctx.user.id) {
-      throw new HttpException(
-        StatusCodes.FORBIDDEN,
-        "You are not allowed to view this profile."
-      );
-    }
-    return profile;
-  }
+  // Done
+  public async discoverUsers(
+    _ctx: RequestContext,
+    input: DiscoverUsersDtoType
+  ) {
+    const { limit } = input;
+    const defaultLimit = limit ?? DEFAULT_FIND_USERS_LIMIT;
 
-  public async getCurrentUserDashboard(ctx: RequestContext) {
-    const foundUser = await User.findOne({ name: ctx.user.name })
-      .select("-password")
-      .populate({
-        path: "folders",
-        select: "title code color id",
-        match: { limit: 5 },
-      })
-      .lean();
+    const { data, total } = await this.UserReadService.discoverUsers({
+      ...input,
+      limit: defaultLimit,
+    });
 
-    if (!foundUser) {
-      throw new HttpException(StatusCodes.NOT_FOUND, "User not found.");
-    }
-    const { SnippetService } = await import("../snippet/snippet.service");
-    const SnippetServiceInstance = new SnippetService();
-    const { data: snippets, total } =
-      await SnippetServiceInstance.getCurrentUserSnippets(ctx, {
-        limit: 5,
-      });
-
-    const foldersCount = foundUser.folders.length;
-    const friendsCount = foundUser.friends.length;
-    const friendsInboxCount = foundUser.friendshipInbox.length;
-    const friendsOutboxCount = foundUser.friendshipOutbox.length;
-    const snippetsCount = total;
+    const { nextCursor, data: items } = handleCursorPagination({
+      data,
+      limit: defaultLimit,
+    });
 
     return {
-      ...foundUser,
-      id: foundUser._id.toString(),
-      foldersCount,
-      friendsCount,
-      friendsInboxCount,
-      friendsOutboxCount,
-      snippetsCount,
-      snippets,
+      items,
+      nextCursor: nextCursor
+        ? ({
+            snippetsCount: nextCursor.snippetsCount,
+            id: nextCursor.id,
+          } satisfies DiscoverUsersDtoType["cursor"])
+        : null,
+      total,
     };
   }
 
-  public async getOne(_ctx: RequestContext, input: GetOneParamDtoType) {
-    const foundUser = await User.findOne({ name: input.name })
-      .select("-password")
-      .populate("folders", "title code color id")
-      .populate("friends", "firstName lastName name email id")
-      .populate("friendshipInbox", "firstName lastName name email id")
-      .populate("friendshipOutbox", "firstName lastName name email id")
-      .exec();
+  // Done
+  public async getCurrentUserProfile(ctx: NonNullableFields<RequestContext>) {
+    const data = await this.getUserProfile(ctx, { name: ctx.user.name });
+    if (data.profile.id !== ctx.user.id) {
+      throw new HttpException(StatusCodes.NOT_FOUND, "User account not found.");
+    }
+    return data;
+  }
+
+  public async getCurrentUserFriends(
+    ctx: NonNullableFields<RequestContext>,
+    input: GetCurrentUserFriendsDtoType
+  ) {
+    const { limit } = input;
+    const defaultLimit = limit ?? DEFAULT_USERS_PENDING_FRIENDS_LIMIT;
+    const { data, total } = await this.UserReadService.getUserFriends({
+      ...input,
+      limit: defaultLimit,
+      userId: ctx.user.id,
+    });
+
+    const { data: items, nextCursor } = handleCursorPagination({
+      data,
+      limit: defaultLimit,
+    });
+
+    return {
+      items,
+      nextCursor: nextCursor
+        ? ({
+            id: nextCursor.id,
+          } satisfies GetCurrentUserFriendsDtoType["cursor"])
+        : null,
+      total,
+    };
+  }
+
+  public async getCurrentUserInbox(
+    ctx: NonNullableFields<RequestContext>,
+    input: GetCurrentUserFriendsDtoType
+  ) {
+    const { limit } = input;
+    const defaultLimit = limit ?? DEFAULT_USERS_PENDING_FRIENDS_LIMIT;
+
+    const { data, total } = await this.UserReadService.getUserInbox({
+      ...input,
+      limit: defaultLimit,
+      userId: ctx.user.id,
+    });
+
+    const { data: items, nextCursor } = handleCursorPagination({
+      data,
+      limit: defaultLimit,
+    });
+
+    return {
+      items,
+      nextCursor: nextCursor
+        ? ({
+            id: nextCursor.id,
+          } satisfies GetCurrentUserFriendsDtoType["cursor"])
+        : null,
+      total,
+    };
+  }
+
+  public async getCurrentUserOutbox(
+    ctx: NonNullableFields<RequestContext>,
+    input: GetCurrentUserFriendsDtoType
+  ) {
+    const { limit } = input;
+    const defaultLimit = limit ?? DEFAULT_USERS_PENDING_FRIENDS_LIMIT;
+
+    const { data, total } = await this.UserReadService.getUserOutbox({
+      ...input,
+      limit: defaultLimit,
+      userId: ctx.user.id,
+    });
+
+    const { data: items, nextCursor } = handleCursorPagination({
+      data,
+      limit: defaultLimit,
+    });
+
+    return {
+      items,
+      nextCursor: nextCursor
+        ? ({
+            id: nextCursor.id,
+          } satisfies GetCurrentUserFriendsDtoType["cursor"])
+        : null,
+      total,
+    };
+  }
+
+  // Done
+  public async getCurrentUserDashboard(ctx: NonNullableFields<RequestContext>) {
+    const [foundUser] = await this.UserReadService.getUserForDashboard({
+      userId: ctx.user.id,
+    });
 
     if (!foundUser) {
       throw new HttpException(StatusCodes.NOT_FOUND, "User not found.");
     }
 
-    return foundUser;
-  }
-
-  public findOneQueryBuilder(filter: RootFilterQuery<IUser>) {
-    return User.findOne(filter);
-  }
-
-  public async sendFriendshipRequest(
-    ctx: RequestContext,
-    input: FriendshipParamDtoType
-  ) {
-    const { friend_name: friendName } = input;
-    const name = ctx.user.name;
-
-    // Note: name is the logged in user name
-    const { friend: foundPotentialFriend, user } = await this.getFriendAndUser({
-      friendName,
-      name,
+    const [stats] = await this.UserReadService.getUserActivityStats({
+      userId: foundUser.id,
     });
 
-    if (!foundPotentialFriend || !user) {
-      throw new HttpException(
-        StatusCodes.BAD_REQUEST,
-        "Invalid friendship request."
-      );
+    return {
+      user: foundUser,
+      stats,
+    };
+  }
+
+  // Done
+  public async getUserProfile(ctx: RequestContext, input: GetUserDtoType) {
+    const { name } = input;
+    const foundUser = await this.UserReadService.findOneSlim("name", name);
+    if (!foundUser) {
+      throw new HttpException(StatusCodes.NOT_FOUND, "User not found.");
+    }
+    const isCurrentUserOwner = ctx.user?.id === foundUser.id;
+    const userProfile = await this.UserReadService.getUserProfile(
+      foundUser.id,
+      isCurrentUserOwner,
+      ctx.user?.id
+    );
+
+    const isCurrentUserAFriend =
+      Boolean(userProfile?.friendshipsReceived) ||
+      Boolean(userProfile?.friendshipsRequested);
+
+    if (!userProfile) {
+      throw new HttpException(StatusCodes.NOT_FOUND, "User account not found.");
     }
 
+    const [stats] = await this.UserReadService.getUserActivityStats({
+      userId: foundUser.id,
+    });
+
+    return { profile: userProfile, isCurrentUserAFriend, stats };
+  }
+
+  // Done
+  public async sendFriendshipRequest(
+    ctx: NonNullableFields<RequestContext>,
+    input: ManageFriendshipDtoType
+  ) {
+    const { friend_name: friendName } = input;
+    const loggedInUserName = ctx.user.name;
+
+    // Note: name is the logged in user name
+    const { friend: foundPotentialFriend, user: loggedInUser } =
+      await this.getFriendAndUser({
+        friendName,
+        name: loggedInUserName,
+      });
+
     if (
-      user.friends.includes(foundPotentialFriend.id) ||
-      user.id === foundPotentialFriend.id
+      !foundPotentialFriend ||
+      !loggedInUser ||
+      loggedInUser.id === foundPotentialFriend.id
     ) {
       throw new HttpException(
         StatusCodes.BAD_REQUEST,
@@ -260,171 +351,119 @@ export class UserService {
       );
     }
 
-    if (user.friendshipOutbox.includes(foundPotentialFriend.id)) {
+    const foundRequest = await this.UserReadService.getFriendshipRequestInfo({
+      requesterId: loggedInUser.id,
+      addresseeId: foundPotentialFriend.id,
+    });
+
+    // if the user already sent a request to the friend
+    if (foundRequest) {
       throw new HttpException(
         StatusCodes.CONFLICT,
         `Friendship request has already been sent to the user ${friendName}`
       );
     }
 
-    // update logged in user's outbox
-    const updatedUser = await User.findOneAndUpdate(
-      { name: name },
+    const [newFriendship] = await this.UserRepository.insertFriendship([
       {
-        $addToSet: { friendshipOutbox: foundPotentialFriend._id },
+        requesterId: loggedInUser.id,
+        addresseeId: foundPotentialFriend.id,
+        status: "pending",
       },
-      {
-        new: true,
-      }
-    )
-      .select("-password")
-      .populate("friendshipInbox", "firstName lastName name email id")
-      .populate("friendshipOutbox", "firstName lastName name email id");
+    ]);
 
-    // update friend's inbox
-    const updatedFriend = await User.findOneAndUpdate(
-      { name: friendName },
-      {
-        $addToSet: { friendshipInbox: updatedUser._id },
-      },
-      { new: true }
-    )
-      .select("-password")
-      .populate("friendshipInbox", "firstName lastName name email id")
-      .populate("friendshipOutbox", "firstName lastName name email id");
-
-    return { updatedFriend, updatedUser };
+    return newFriendship;
   }
 
+  // Done
   public async acceptFriendshipRequest(
-    ctx: RequestContext,
-    input: FriendshipParamDtoType
+    ctx: NonNullableFields<RequestContext>,
+    input: ManageFriendshipDtoType
   ) {
     const { friend_name: friendName } = input;
-    const name = ctx.user.name;
-    // Note: name is the logged in user name to whom the request was sent
-    const { friend, user } = await this.getFriendAndUser({ friendName, name });
+    const loggedInUserName = ctx.user.name;
+    const { friend: requester, user: addressee } = await this.getFriendAndUser({
+      friendName,
+      name: loggedInUserName,
+    });
 
-    if (
-      user.id === friend.id ||
-      !friend.friendshipOutbox.includes(user.id) ||
-      !user.friendshipInbox.includes(friend.id)
-    ) {
+    if (!requester || !addressee || addressee.id === requester.id) {
       throw new HttpException(
         StatusCodes.BAD_REQUEST,
-        "Invalid friendship request."
+        "Invalid friendship acceptance request."
       );
     }
 
-    // update friend's friends field and outbox field
-    const updatedFriend = await User.findOneAndUpdate(
-      { name: friendName },
-      {
-        $pull: { friendshipOutbox: user._id },
-        $addToSet: { friends: user._id },
-      },
-      { new: true }
-    )
-      .select("-password")
-      .populate("friendshipInbox", "firstName lastName name email id")
-      .populate("friendshipOutbox", "firstName lastName name email id");
+    const foundRequest = await this.UserReadService.getFriendshipRequestInfo({
+      requesterId: requester.id,
+      addresseeId: addressee.id,
+    });
 
-    // update logged in user's friends field and inbox field
-    const updatedUser = await User.findOneAndUpdate(
-      { name },
-      {
-        $pull: { friendshipInbox: friend._id },
-        $addToSet: { friends: friend._id },
-      },
-      { new: true }
-    )
-      .select("-password")
-      .populate("friendshipInbox", "firstName lastName name email id")
-      .populate("friendshipOutbox", "firstName lastName name email id");
+    if (!foundRequest) {
+      throw new HttpException(
+        StatusCodes.BAD_REQUEST,
+        `Invalid friendship acceptance request, ${requester.name} didn't send you a request.`
+      );
+    }
 
-    return { updatedFriend, updatedUser };
+    const [updatedFriendship] = await this.UserRepository.updateFriendship(
+      foundRequest.id,
+      { status: "accepted" }
+    );
+
+    return updatedFriendship;
   }
 
+  // Done
   public async rejectFriendshipRequest(
-    ctx: RequestContext,
-    input: FriendshipParamDtoType
+    ctx: NonNullableFields<RequestContext>,
+    input: ManageFriendshipDtoType
   ) {
     const { friend_name: friendName } = input;
     const name = ctx.user.name;
 
     // Note: name is the logged in user name to whom the request was sent
-    const { friend, user } = await this.getFriendAndUser({ friendName, name });
+    const { friend: requester, user: addressee } = await this.getFriendAndUser({
+      friendName,
+      name,
+    });
 
-    if (user.id === friend.id) {
+    if (!addressee || !requester || requester.id === addressee.id) {
       throw new HttpException(
         StatusCodes.BAD_REQUEST,
-        "Invalid friendship request."
+        "Invalid friendship rejection request."
       );
     }
 
-    // if friend is in friends array of the user, then delete it from both sides
-    if (user.friends.includes(friend.id)) {
-      // update friend's outbox field
-      const updatedFriend = await User.findOneAndUpdate(
-        { name: friendName },
-        {
-          $pull: { friends: user._id },
-        },
-        { new: true }
-      ).select("-password");
+    const foundRequest = await this.UserReadService.getFriendshipRequestInfo({
+      requesterId: requester.id,
+      addresseeId: addressee.id,
+    });
 
-      // update user's inbox field
-      const updatedUser = await User.findOneAndUpdate(
-        { name },
-        {
-          $pull: { friends: friend._id },
-        },
-        { new: true }
-      ).select("-password");
-
-      return {
-        data: { updatedFriend, updatedUser },
-        message: "Friendship request has been rejected successfully.",
-        status: StatusCodes.OK,
-      };
-    }
-
-    // if friend in not in the friends array of the user, then reject the request
-    if (
-      !friend.friendshipOutbox.includes(user.id) ||
-      !user.friendshipInbox.includes(friend.id)
-    ) {
+    if (!foundRequest) {
       throw new HttpException(
         StatusCodes.BAD_REQUEST,
-        "Invalid friendship request."
+        "Invalid friendship rejection request."
       );
     }
 
-    // update friend's outbox field
-    const updatedFriend = await User.findOneAndUpdate(
-      { name: friendName },
-      {
-        $pull: { friendshipOutbox: user._id },
-      },
-      { new: true }
-    )
-      .select("-password")
-      .populate("friendshipInbox", "firstName lastName name email id")
-      .populate("friendshipOutbox", "firstName lastName name email id");
+    // if friendship was accepted before and reject is invoked, then
+    // we need to end the relationship
+    if (foundRequest.status === "accepted") {
+      await this.UserRepository.deleteFriendship(foundRequest.id);
 
-    // update user's inbox field
-    const updatedUser = await User.findOneAndUpdate(
-      { name },
-      {
-        $pull: { friendshipInbox: friend._id },
-      },
-      { new: true }
-    )
-      .select("-password")
-      .populate("friendshipInbox", "firstName lastName name email id")
-      .populate("friendshipOutbox", "firstName lastName name email id");
+      return foundRequest;
+    }
 
-    return { updatedFriend, updatedUser };
+    // if status is pending, then we need to mark request as rejected
+    // may be later on the user accepts again
+    // TODO: set up cron job
+    const updatedFriendship = await this.UserRepository.updateFriendship(
+      foundRequest.id,
+      { status: "rejected" }
+    );
+
+    return updatedFriendship;
   }
 
   private async getFriendAndUser({
@@ -434,13 +473,9 @@ export class UserService {
     friendName: string;
     name: string;
   }) {
-    const friend = await this.findOneQueryBuilder({
-      name: friendName,
-    }).select("-password");
+    const user = await this.UserReadService.findOneSlim("name", name);
+    const friend = await this.UserReadService.findOneSlim("name", friendName);
 
-    const user = await this.findOneQueryBuilder({
-      name,
-    }).select("-password");
     return { user, friend };
   }
 }

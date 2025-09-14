@@ -9,6 +9,8 @@ import { DeleteSnippetDto } from "./dto/delete-snippet.dto";
 import { GetUserSnippetsDto } from "./dto/get-user-snippets.dto";
 import { ForkSnippetDto } from "./dto/fork-snippet.dto";
 import { GetSnippetDto } from "./dto/get-snippet.dto";
+import { DiscoverSnippetsDto } from "./dto/discover-snippets.dto";
+import { GetCollectionSnippetsDto } from "./dto/get-collection-snippets";
 
 export class SnippetRoute implements Route {
   public path: string = "/snippets";
@@ -20,18 +22,85 @@ export class SnippetRoute implements Route {
   }
 
   private initializeRoutes() {
+    // Create first (no conflict)
     this.router.post(
       `${this.path}/`,
       authMiddleware,
       zodValidatorMiddleware(CreateSnippetDto, "Body"),
       this.controller.create
     );
-    this.router.delete(
-      `${this.path}/:slug`,
-      authMiddleware,
-      zodValidatorMiddleware(DeleteSnippetDto, "Params"),
-      this.controller.delete
+
+    // Collection-based (static prefix wins over :slug)
+    this.router.get(
+      `${this.path}/collection/:collection`,
+      zodValidatorMiddleware(
+        GetCollectionSnippetsDto.omit({ collection: true }),
+        "Query"
+      ),
+      zodValidatorMiddleware(
+        GetCollectionSnippetsDto.pick({ collection: true }),
+        "Params"
+      ),
+      this.controller.getSnippetsByCollection
     );
+
+    // Discover (must come before :slug)
+    this.router.get(
+      `${this.path}/discover`,
+      zodValidatorMiddleware(DiscoverSnippetsDto, "Query"),
+      this.controller.discover
+    );
+
+    // User-specific (static "current" must come before :name)
+    this.router.get(
+      `${this.path}/user/current/friends`,
+      authMiddleware,
+      zodValidatorMiddleware(
+        GetUserSnippetsDto.omit({ creator: true }),
+        "Query"
+      ),
+      this.controller.getCurrentUserFriendsSnippets
+    );
+
+    this.router.get(
+      `${this.path}/user/current`,
+      authMiddleware,
+      zodValidatorMiddleware(
+        GetUserSnippetsDto.omit({ creator: true }),
+        "Query"
+      ),
+      this.controller.getCurrentUserSnippets
+    );
+
+    // User by name (friends first, then generic :name)
+    this.router.get(
+      `${this.path}/user/:name/friends`,
+      authMiddleware,
+      zodValidatorMiddleware(
+        GetUserSnippetsDto.omit({ creator: true }),
+        "Query"
+      ),
+      zodValidatorMiddleware(
+        GetUserSnippetsDto.pick({ creator: true }),
+        "Params"
+      ),
+      this.controller.getUserFriendsSnippets as any
+    );
+
+    this.router.get(
+      `${this.path}/user/:name`,
+      zodValidatorMiddleware(
+        GetUserSnippetsDto.omit({ creator: true }),
+        "Query"
+      ),
+      zodValidatorMiddleware(
+        GetUserSnippetsDto.pick({ creator: true }),
+        "Params"
+      ),
+      this.controller.getUserSnippets as any
+    );
+
+    // Fork/update/delete (explicit :slug variants before generic :slug GET)
     this.router.put(
       `${this.path}/:slug/fork`,
       authMiddleware,
@@ -39,6 +108,7 @@ export class SnippetRoute implements Route {
       zodValidatorMiddleware(ForkSnippetDto.omit({ slug: true }), "Body"),
       this.controller.fork
     );
+
     this.router.put(
       `${this.path}/:slug`,
       authMiddleware,
@@ -46,29 +116,19 @@ export class SnippetRoute implements Route {
       zodValidatorMiddleware(UpdateSnippetDto.shape.data, "Body"),
       this.controller.update
     );
+
+    this.router.delete(
+      `${this.path}/:slug`,
+      authMiddleware,
+      zodValidatorMiddleware(DeleteSnippetDto, "Params"),
+      this.controller.delete
+    );
+
+    // Finally — the most generic :slug GET
     this.router.get(
       `${this.path}/:slug`,
       zodValidatorMiddleware(GetSnippetDto, "Params"),
       this.controller.getSnippet
-    );
-    this.router.get(
-      `${this.path}/user/current`,
-      authMiddleware,
-      zodValidatorMiddleware(GetUserSnippetsDto.omit({ name: true }), "Query"),
-      this.controller.getCurrentUserSnippets
-    );
-    this.router.get(
-      `${this.path}/user/:name/friends`,
-      authMiddleware,
-      zodValidatorMiddleware(GetUserSnippetsDto.omit({ name: true }), "Query"),
-      zodValidatorMiddleware(GetUserSnippetsDto.pick({ name: true }), "Params"),
-      this.controller.getUserFriendsSnippets as any
-    );
-    this.router.get(
-      `${this.path}/user/:name`,
-      zodValidatorMiddleware(GetUserSnippetsDto.omit({ name: true }), "Query"),
-      zodValidatorMiddleware(GetUserSnippetsDto.pick({ name: true }), "Params"),
-      this.controller.getUserSnippets as any
     );
   }
 }

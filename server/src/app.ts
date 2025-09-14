@@ -5,14 +5,14 @@ import cors from "cors";
 import { morganMiddleware } from "./common/middlewares/morgan.middleware";
 import ErrorMiddleWare from "./common/middlewares/error.middleware";
 import expressListRoutes from "express-list-routes";
-import { connectToDatabase } from "./common/lib/db";
 import { Route } from "./common/types/express";
-import { DefaultLogger } from "./common/logger-alternative/default-logger";
-import { Logger, ServerLogger } from "./common/logger-alternative";
+import { DefaultLogger } from "./common/logger/default-logger";
+import { Logger, ServerLogger } from "./common/logger";
 import { requestContextMiddleware } from "./common/middlewares/request-context-middleware";
 import cookieParser from "cookie-parser";
 import { corsOptions } from "./common/lib/cors";
 import { provideCredentialsMiddleware } from "./common/middlewares/provide-credentials.middleware";
+import { Database } from "./common/db";
 
 export class App {
   public app: Application;
@@ -56,7 +56,7 @@ export class App {
   }
 
   public async connectToDatabase() {
-    await connectToDatabase();
+    await Database.connect();
   }
 
   private listRoutes() {

@@ -7,7 +7,7 @@ export function provideCredentialsMiddleware(
   next: NextFunction
 ) {
   const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
+  if (origin && allowedOrigins.includes(origin)) {
     res.header("Access-Control-Allow-Credentials", "true");
   }
   next();

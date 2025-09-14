@@ -1,10 +1,11 @@
-import { JwtPayload } from "jsonwebtoken";
-import { IUser } from "../../modules/user/user.model";
+import { RequestContext } from "../middlewares/request-context-middleware";
+import { NonNullableFields } from "./utils";
 
 declare global {
   namespace Express {
     export interface Request {
-      user: (Pick<IUser, "id" | "name" | "email"> & JwtPayload) | null;
+      context: NonNullableFields<RequestContext>;
+      validatedQuery: object;
     }
   }
 }

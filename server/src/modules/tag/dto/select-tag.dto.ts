@@ -1,8 +1,7 @@
 import z from "zod";
+import { createSelectSchema } from "drizzle-zod";
+import { tagsTable } from "../../../common/db/schema";
 
-export const SelectTagDto = z.object({
-  name: z.string().nonempty().min(1, "Name can't be empty."),
-  description: z.string().optional(),
-});
+export const SelectTagDto = createSelectSchema(tagsTable);
 
 export type SelectTagDtoType = z.infer<typeof SelectTagDto>;

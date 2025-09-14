@@ -3,7 +3,14 @@ import { SelectUserDto } from "../../user/dto/select-user.dto";
 
 // Login
 export const LoginResponseDto = z.object({
-  user: SelectUserDto.omit({ password: true, refreshTokens: true }),
+  user: SelectUserDto.omit({
+    password: true,
+    refreshTokens: true,
+    emailVerificationToken: true,
+    emailVerificationTokenExpiresAt: true,
+    resetPasswordToken: true,
+    resetPasswordTokenExpiresAt: true,
+  }),
   accessToken: z.jwt(),
 });
 

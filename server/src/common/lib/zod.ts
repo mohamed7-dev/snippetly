@@ -1,21 +1,8 @@
 import z from "zod";
 
-// Mongo ObjectId
-export const ObjectIdStringSchema = z
-  .string()
-  .trim()
-  .regex(
-    /^[a-fA-F0-9]{24}$/,
-    "Invalid MongoDB ObjectId (must be 24 hex chars)"
-  );
-
-export const objectIdSchema = z
-  .transform((val) => val.toString())
-  .refine((val) => ObjectIdStringSchema.safeParse(val).success);
-
 // Base Model
 export const baseModelSchema = z.object({
-  id: ObjectIdStringSchema,
+  id: z.number(),
   createdAt: z.date(),
   updatedAt: z.date(),
 });

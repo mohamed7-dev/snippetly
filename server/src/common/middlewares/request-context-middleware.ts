@@ -1,24 +1,19 @@
 import type { NextFunction, Request, Response } from "express";
-import { ServerLogger } from "../logger-alternative";
-import jwt from "jsonwebtoken";
+import { ServerLogger } from "../logger";
+import jwt, { JwtPayload } from "jsonwebtoken";
 import { ACCESS_JWTOKEN_SECRET } from "../../config";
+import { User } from "../db/schema";
+
+export type RequestUser = Pick<User, "id" | "name" | "email"> & JwtPayload;
 
 export type RequestContext = {
   requestId: string;
-  user: Request["user"] | null;
+  user: RequestUser | null;
   req: Request;
   logger: typeof ServerLogger;
 };
 
-declare global {
-  namespace Express {
-    interface Request {
-      context: RequestContext;
-    }
-  }
-}
-
-function extractUserInfo(req: Request): null | Request["user"] {
+function extractUserInfo(req: Request): null | RequestUser {
   const authHeader =
     req.headers.authorization || (req.headers.Authorization as string);
 
@@ -28,12 +23,12 @@ function extractUserInfo(req: Request): null | Request["user"] {
 
   const token = authHeader.split(" ")[1];
 
-  let userInfo: null | Request["user"] = null;
-  jwt.verify(token, ACCESS_JWTOKEN_SECRET, (err, user) => {
+  let userInfo: null | RequestUser = null;
+  jwt.verify(token, ACCESS_JWTOKEN_SECRET!, (err, user) => {
     if (err) {
       userInfo = null;
     } else {
-      userInfo = user as Request["user"];
+      userInfo = user as RequestUser;
     }
   });
   return userInfo;
@@ -45,7 +40,11 @@ export function requestContextMiddleware(
   next: NextFunction
 ) {
   const requestId = crypto.randomUUID();
-  const user = extractUserInfo(req);
+  // in the controller, we know that protected routes can't reach
+  // the point of accessing the user object without an error being thrown
+  // in an earlier stage.
+  // so it's safe to make it non nullable
+  const user = extractUserInfo(req) as RequestUser;
 
   req.context = {
     requestId,

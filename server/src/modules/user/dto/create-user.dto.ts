@@ -9,6 +9,7 @@ export const CreateUserDto = SelectUserDto.pick({
   password: true,
   email: true,
   acceptedPolicies: true,
+  isPrivate: true,
 }).extend({ password: STRONG_PASSWORD_SCHEMA });
 
 export type CreateUserDtoType = z.infer<typeof CreateUserDto>;
