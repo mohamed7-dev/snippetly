@@ -28,11 +28,23 @@ import {
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
 import { getCurrentUserCollectionsOptions } from '../../lib/api'
 import { InfiniteLoader } from '@/components/loaders/infinite-loader'
+import { useDeleteConfirmation } from '@/components/providers/delete-confirmation-provider'
+import { useDeleteCollection } from '../../hooks/use-delete-collection'
 
 export function CollectionsGridSection() {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useSuspenseInfiniteQuery(getCurrentUserCollectionsOptions)
   const collections = data.pages?.flatMap((page) => page.items) ?? []
+  const { confirm } = useDeleteConfirmation()
+  const { mutateAsync: deleteCollection, isPending: isDeleting } =
+    useDeleteCollection()
+
+  const handleDelete = (slug: string) => {
+    confirm({
+      title: 'Delete Collections',
+      onConfirm: async () => await deleteCollection({ slug }),
+    })
+  }
   return (
     <React.Fragment>
       {/* Collections Grid */}
@@ -49,8 +61,8 @@ export function CollectionsGridSection() {
                   <div className="flex-1">
                     <CardTitle className="text-lg font-heading group-hover:text-primary transition-colors">
                       <Link
-                        to={clientRoutes.collection}
-                        params={{ slug: collection.code }}
+                        to={'/dashboard/collections/$slug'}
+                        params={{ slug: collection.slug }}
                       >
                         {collection.title}
                       </Link>
@@ -73,8 +85,8 @@ export function CollectionsGridSection() {
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem asChild>
                       <Link
-                        to={clientRoutes.collection}
-                        params={{ slug: collection.code }}
+                        to={'/dashboard/collections/$slug'}
+                        params={{ slug: collection.slug }}
                       >
                         <EyeIcon className="mr-2 h-4 w-4" />
                         View Collection
@@ -82,15 +94,19 @@ export function CollectionsGridSection() {
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link
-                        to={clientRoutes.editCollection}
-                        params={{ slug: collection.code }}
+                        to={'/dashboard/collections/$slug/edit'}
+                        params={{ slug: collection.slug }}
                       >
                         <EditIcon className="mr-2 h-4 w-4" />
                         Edit
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem className="text-destructive focus:text-destructive">
+                    <DropdownMenuItem
+                      className="text-destructive focus:text-destructive"
+                      onClick={() => handleDelete(collection.slug)}
+                      disabled={isDeleting}
+                    >
                       <Trash2Icon className="mr-2 h-4 w-4" />
                       Delete
                     </DropdownMenuItem>
@@ -100,7 +116,7 @@ export function CollectionsGridSection() {
 
               <div className="flex items-center gap-2 mt-3">
                 <Badge variant="outline" className="text-xs">
-                  {collection.snippets.length} snippets
+                  {collection.snippets?.length} snippets
                 </Badge>
                 {!collection.isPrivate && (
                   <Badge variant="secondary" className="text-xs">
@@ -116,16 +132,16 @@ export function CollectionsGridSection() {
             <CardContent className="pt-0">
               {/* Preview snippets */}
               <div className="space-y-2 mb-4">
-                {collection.snippets.slice(0, 3).map((snippet, index) => (
+                {collection.snippets?.slice(0, 3).map((snippet, index) => (
                   <div key={index} className="flex items-center gap-2 text-sm">
                     <div className="h-2 w-2 rounded-full bg-muted-foreground/50" />
                     <span className="flex-1 truncate">{snippet.title}</span>
                     <Badge variant="outline" className="text-xs font-mono">
-                      {snippet.parseFormat}
+                      {snippet.language}
                     </Badge>
                   </div>
                 ))}
-                {collection.snippets.length > 3 && (
+                {collection.snippets?.length > 3 && (
                   <div className="text-xs text-muted-foreground text-center pt-1">
                     +{collection.snippets.length - 3} more snippets
                   </div>

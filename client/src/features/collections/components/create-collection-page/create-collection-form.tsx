@@ -25,6 +25,7 @@ import { useCreateCollection } from '../../hooks/use-create-collection'
 import { toast } from 'sonner'
 import { useNavigate } from '@tanstack/react-router'
 import { useEnterTag } from '@/hooks/use-enter-tag'
+import { cn } from '@/lib/utils'
 
 export const CREATE_COLLECTION_FORM_NAME = 'create-collection-form'
 
@@ -39,7 +40,7 @@ export function CreateCollectionForm() {
   const [inputValue, setInputValue] = React.useState('')
 
   const handleTagChange = (tag: string) => {
-    createCollectionForm.setValue('tags', [...tags!, tag])
+    createCollectionForm.setValue('tags', [...(tags ?? []), tag])
     setInputValue('')
   }
   useEnterTag({ tags, inputElem: inputRef, onValueChange: handleTagChange })
@@ -49,6 +50,13 @@ export function CreateCollectionForm() {
       'tags',
       createCollectionForm.watch('tags')?.filter((t) => t !== tag),
     )
+  }
+
+  const handleSelectingTags = (tag: string) => {
+    // if found then return undefined
+    const foundTag = tags?.find((t) => t === tag)
+    if (foundTag) return undefined
+    createCollectionForm.setValue('tags', [...(tags ?? []), tag])
   }
 
   const {
@@ -144,7 +152,9 @@ export function CreateCollectionForm() {
                     <ToggleGroupItem
                       key={color.name}
                       title={color.name}
-                      className={`h-12 w-full rounded-lg ${color.class} hover:${color.class} hover:scale-105 transition-transform border-2 border-transparent hover:border-primary`}
+                      className={cn(
+                        `h-12 w-full rounded-lg ${color.class} hover:${color.class} hover:scale-105 transition-transform border-2 border-transparent hover:border-primary`,
+                      )}
                       value={color.code}
                       aria-label={`Toggle ${color.name}`}
                     />
@@ -226,6 +236,7 @@ export function CreateCollectionForm() {
                     key={tag.name}
                     variant="outline"
                     className="text-xs cursor-pointer hover:bg-primary/10"
+                    onClick={() => handleSelectingTags(tag.name)}
                   >
                     {tag.name}
                   </Badge>

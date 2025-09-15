@@ -6,7 +6,7 @@ import { getCurrentUserCollectionsOptions } from '../../lib/api'
 export function StatsSection() {
   const { data } = useSuspenseInfiniteQuery(getCurrentUserCollectionsOptions)
   const stats = data.pages?.[0]?.stats
-
+  console.log(stats)
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
       <Card>
@@ -15,7 +15,7 @@ export function StatsSection() {
             <BookOpenIcon className="h-4 w-4 text-primary" />
             <span className="text-sm font-medium">Total Collections</span>
           </div>
-          <p className="text-2xl font-bold mt-1">{stats.collectionsCount}</p>
+          <p className="text-2xl font-bold mt-1">{stats.totalCollections}</p>
         </CardContent>
       </Card>
       <Card>
@@ -24,7 +24,7 @@ export function StatsSection() {
             <Code2Icon className="h-4 w-4 text-secondary" />
             <span className="text-sm font-medium">Total Snippets</span>
           </div>
-          <p className="text-2xl font-bold mt-1">{stats.snippetsCount}</p>
+          <p className="text-2xl font-bold mt-1">{stats.totalSnippets}</p>
         </CardContent>
       </Card>
       <Card>
@@ -33,7 +33,7 @@ export function StatsSection() {
             <EyeIcon className="h-4 w-4 text-accent" />
             <span className="text-sm font-medium">Public Collections</span>
           </div>
-          <p className="text-2xl font-bold mt-1">{stats.publicCount}</p>
+          <p className="text-2xl font-bold mt-1">{stats.publicCollections}</p>
         </CardContent>
       </Card>
       <Card>

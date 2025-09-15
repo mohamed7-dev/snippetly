@@ -25,6 +25,7 @@ import { Route as authauthLayoutAuthLayoutSignupRouteImport } from './routes/(au
 import { Route as authauthLayoutAuthLayoutLoginRouteImport } from './routes/(auth)/(auth-layout)/_auth-layout/login'
 import { Route as authauthLayoutAuthLayoutForgotPasswordRouteImport } from './routes/(auth)/(auth-layout)/_auth-layout/forgot-password'
 import { Route as protectedDashboardSnippetsNewRouteRouteImport } from './routes/(protected)/dashboard/snippets/new/route'
+import { Route as protectedDashboardSnippetsSlugRouteRouteImport } from './routes/(protected)/dashboard/snippets/$slug/route'
 import { Route as protectedDashboardCollectionsNewRouteRouteImport } from './routes/(protected)/dashboard/collections/new/route'
 import { Route as protectedDashboardSnippetsSlugIndexRouteImport } from './routes/(protected)/dashboard/snippets/$slug/index'
 import { Route as protectedDashboardCollectionsSlugIndexRouteImport } from './routes/(protected)/dashboard/collections/$slug/index'
@@ -117,6 +118,12 @@ const protectedDashboardSnippetsNewRouteRoute =
     path: '/snippets/new',
     getParentRoute: () => protectedDashboardRouteRoute,
   } as any)
+const protectedDashboardSnippetsSlugRouteRoute =
+  protectedDashboardSnippetsSlugRouteRouteImport.update({
+    id: '/snippets/$slug',
+    path: '/snippets/$slug',
+    getParentRoute: () => protectedDashboardRouteRoute,
+  } as any)
 const protectedDashboardCollectionsNewRouteRoute =
   protectedDashboardCollectionsNewRouteRouteImport.update({
     id: '/collections/new',
@@ -125,9 +132,9 @@ const protectedDashboardCollectionsNewRouteRoute =
   } as any)
 const protectedDashboardSnippetsSlugIndexRoute =
   protectedDashboardSnippetsSlugIndexRouteImport.update({
-    id: '/snippets/$slug/',
-    path: '/snippets/$slug/',
-    getParentRoute: () => protectedDashboardRouteRoute,
+    id: '/',
+    path: '/',
+    getParentRoute: () => protectedDashboardSnippetsSlugRouteRoute,
   } as any)
 const protectedDashboardCollectionsSlugIndexRoute =
   protectedDashboardCollectionsSlugIndexRouteImport.update({
@@ -137,9 +144,9 @@ const protectedDashboardCollectionsSlugIndexRoute =
   } as any)
 const protectedDashboardSnippetsSlugEditRouteRoute =
   protectedDashboardSnippetsSlugEditRouteRouteImport.update({
-    id: '/snippets/$slug/edit',
-    path: '/snippets/$slug/edit',
-    getParentRoute: () => protectedDashboardRouteRoute,
+    id: '/edit',
+    path: '/edit',
+    getParentRoute: () => protectedDashboardSnippetsSlugRouteRoute,
   } as any)
 const protectedDashboardCollectionsSlugEditRouteRoute =
   protectedDashboardCollectionsSlugEditRouteRouteImport.update({
@@ -157,6 +164,7 @@ export interface FileRoutesByFullPath {
   '/profile/$name': typeof publicProfileNameRouteRoute
   '/dashboard/': typeof protectedDashboardIndexRoute
   '/dashboard/collections/new': typeof protectedDashboardCollectionsNewRouteRoute
+  '/dashboard/snippets/$slug': typeof protectedDashboardSnippetsSlugRouteRouteWithChildren
   '/dashboard/snippets/new': typeof protectedDashboardSnippetsNewRouteRoute
   '/forgot-password': typeof authauthLayoutAuthLayoutForgotPasswordRoute
   '/login': typeof authauthLayoutAuthLayoutLoginRoute
@@ -166,7 +174,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/collections/$slug/edit': typeof protectedDashboardCollectionsSlugEditRouteRoute
   '/dashboard/snippets/$slug/edit': typeof protectedDashboardSnippetsSlugEditRouteRoute
   '/dashboard/collections/$slug': typeof protectedDashboardCollectionsSlugIndexRoute
-  '/dashboard/snippets/$slug': typeof protectedDashboardSnippetsSlugIndexRoute
+  '/dashboard/snippets/$slug/': typeof protectedDashboardSnippetsSlugIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof authauthLayoutAuthLayoutRouteRouteWithChildren
@@ -199,6 +207,7 @@ export interface FileRoutesById {
   '/(public)/profile/$name': typeof publicProfileNameRouteRoute
   '/(protected)/dashboard/': typeof protectedDashboardIndexRoute
   '/(protected)/dashboard/collections/new': typeof protectedDashboardCollectionsNewRouteRoute
+  '/(protected)/dashboard/snippets/$slug': typeof protectedDashboardSnippetsSlugRouteRouteWithChildren
   '/(protected)/dashboard/snippets/new': typeof protectedDashboardSnippetsNewRouteRoute
   '/(auth)/(auth-layout)/_auth-layout/forgot-password': typeof authauthLayoutAuthLayoutForgotPasswordRoute
   '/(auth)/(auth-layout)/_auth-layout/login': typeof authauthLayoutAuthLayoutLoginRoute
@@ -221,6 +230,7 @@ export interface FileRouteTypes {
     | '/profile/$name'
     | '/dashboard/'
     | '/dashboard/collections/new'
+    | '/dashboard/snippets/$slug'
     | '/dashboard/snippets/new'
     | '/forgot-password'
     | '/login'
@@ -230,7 +240,7 @@ export interface FileRouteTypes {
     | '/dashboard/collections/$slug/edit'
     | '/dashboard/snippets/$slug/edit'
     | '/dashboard/collections/$slug'
-    | '/dashboard/snippets/$slug'
+    | '/dashboard/snippets/$slug/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -262,6 +272,7 @@ export interface FileRouteTypes {
     | '/(public)/profile/$name'
     | '/(protected)/dashboard/'
     | '/(protected)/dashboard/collections/new'
+    | '/(protected)/dashboard/snippets/$slug'
     | '/(protected)/dashboard/snippets/new'
     | '/(auth)/(auth-layout)/_auth-layout/forgot-password'
     | '/(auth)/(auth-layout)/_auth-layout/login'
@@ -388,6 +399,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof protectedDashboardSnippetsNewRouteRouteImport
       parentRoute: typeof protectedDashboardRouteRoute
     }
+    '/(protected)/dashboard/snippets/$slug': {
+      id: '/(protected)/dashboard/snippets/$slug'
+      path: '/snippets/$slug'
+      fullPath: '/dashboard/snippets/$slug'
+      preLoaderRoute: typeof protectedDashboardSnippetsSlugRouteRouteImport
+      parentRoute: typeof protectedDashboardRouteRoute
+    }
     '/(protected)/dashboard/collections/new': {
       id: '/(protected)/dashboard/collections/new'
       path: '/collections/new'
@@ -397,10 +415,10 @@ declare module '@tanstack/react-router' {
     }
     '/(protected)/dashboard/snippets/$slug/': {
       id: '/(protected)/dashboard/snippets/$slug/'
-      path: '/snippets/$slug'
-      fullPath: '/dashboard/snippets/$slug'
+      path: '/'
+      fullPath: '/dashboard/snippets/$slug/'
       preLoaderRoute: typeof protectedDashboardSnippetsSlugIndexRouteImport
-      parentRoute: typeof protectedDashboardRouteRoute
+      parentRoute: typeof protectedDashboardSnippetsSlugRouteRoute
     }
     '/(protected)/dashboard/collections/$slug/': {
       id: '/(protected)/dashboard/collections/$slug/'
@@ -411,10 +429,10 @@ declare module '@tanstack/react-router' {
     }
     '/(protected)/dashboard/snippets/$slug/edit': {
       id: '/(protected)/dashboard/snippets/$slug/edit'
-      path: '/snippets/$slug/edit'
+      path: '/edit'
       fullPath: '/dashboard/snippets/$slug/edit'
       preLoaderRoute: typeof protectedDashboardSnippetsSlugEditRouteRouteImport
-      parentRoute: typeof protectedDashboardRouteRoute
+      parentRoute: typeof protectedDashboardSnippetsSlugRouteRoute
     }
     '/(protected)/dashboard/collections/$slug/edit': {
       id: '/(protected)/dashboard/collections/$slug/edit'
@@ -426,19 +444,36 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface protectedDashboardSnippetsSlugRouteRouteChildren {
+  protectedDashboardSnippetsSlugEditRouteRoute: typeof protectedDashboardSnippetsSlugEditRouteRoute
+  protectedDashboardSnippetsSlugIndexRoute: typeof protectedDashboardSnippetsSlugIndexRoute
+}
+
+const protectedDashboardSnippetsSlugRouteRouteChildren: protectedDashboardSnippetsSlugRouteRouteChildren =
+  {
+    protectedDashboardSnippetsSlugEditRouteRoute:
+      protectedDashboardSnippetsSlugEditRouteRoute,
+    protectedDashboardSnippetsSlugIndexRoute:
+      protectedDashboardSnippetsSlugIndexRoute,
+  }
+
+const protectedDashboardSnippetsSlugRouteRouteWithChildren =
+  protectedDashboardSnippetsSlugRouteRoute._addFileChildren(
+    protectedDashboardSnippetsSlugRouteRouteChildren,
+  )
+
 interface protectedDashboardRouteRouteChildren {
   protectedDashboardDiscoverRouteRoute: typeof protectedDashboardDiscoverRouteRoute
   protectedDashboardFriendsRouteRoute: typeof protectedDashboardFriendsRouteRoute
   protectedDashboardRequestsRouteRoute: typeof protectedDashboardRequestsRouteRoute
   protectedDashboardIndexRoute: typeof protectedDashboardIndexRoute
   protectedDashboardCollectionsNewRouteRoute: typeof protectedDashboardCollectionsNewRouteRoute
+  protectedDashboardSnippetsSlugRouteRoute: typeof protectedDashboardSnippetsSlugRouteRouteWithChildren
   protectedDashboardSnippetsNewRouteRoute: typeof protectedDashboardSnippetsNewRouteRoute
   protectedDashboardCollectionsIndexRoute: typeof protectedDashboardCollectionsIndexRoute
   protectedDashboardSnippetsIndexRoute: typeof protectedDashboardSnippetsIndexRoute
   protectedDashboardCollectionsSlugEditRouteRoute: typeof protectedDashboardCollectionsSlugEditRouteRoute
-  protectedDashboardSnippetsSlugEditRouteRoute: typeof protectedDashboardSnippetsSlugEditRouteRoute
   protectedDashboardCollectionsSlugIndexRoute: typeof protectedDashboardCollectionsSlugIndexRoute
-  protectedDashboardSnippetsSlugIndexRoute: typeof protectedDashboardSnippetsSlugIndexRoute
 }
 
 const protectedDashboardRouteRouteChildren: protectedDashboardRouteRouteChildren =
@@ -449,6 +484,8 @@ const protectedDashboardRouteRouteChildren: protectedDashboardRouteRouteChildren
     protectedDashboardIndexRoute: protectedDashboardIndexRoute,
     protectedDashboardCollectionsNewRouteRoute:
       protectedDashboardCollectionsNewRouteRoute,
+    protectedDashboardSnippetsSlugRouteRoute:
+      protectedDashboardSnippetsSlugRouteRouteWithChildren,
     protectedDashboardSnippetsNewRouteRoute:
       protectedDashboardSnippetsNewRouteRoute,
     protectedDashboardCollectionsIndexRoute:
@@ -456,12 +493,8 @@ const protectedDashboardRouteRouteChildren: protectedDashboardRouteRouteChildren
     protectedDashboardSnippetsIndexRoute: protectedDashboardSnippetsIndexRoute,
     protectedDashboardCollectionsSlugEditRouteRoute:
       protectedDashboardCollectionsSlugEditRouteRoute,
-    protectedDashboardSnippetsSlugEditRouteRoute:
-      protectedDashboardSnippetsSlugEditRouteRoute,
     protectedDashboardCollectionsSlugIndexRoute:
       protectedDashboardCollectionsSlugIndexRoute,
-    protectedDashboardSnippetsSlugIndexRoute:
-      protectedDashboardSnippetsSlugIndexRoute,
   }
 
 const protectedDashboardRouteRouteWithChildren =

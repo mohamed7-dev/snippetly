@@ -4,6 +4,7 @@ export interface Snippet {
   createdAt: Date
   updatedAt: Date
   description: string | null
+  note: string | null
   title: string
   slug: string
   allowForking: boolean

@@ -88,7 +88,7 @@ export class SnippetRoute implements Route {
     );
 
     this.router.get(
-      `${this.path}/user/:name`,
+      `${this.path}/user/:creator`,
       zodValidatorMiddleware(
         GetUserSnippetsDto.omit({ creator: true }),
         "Query"

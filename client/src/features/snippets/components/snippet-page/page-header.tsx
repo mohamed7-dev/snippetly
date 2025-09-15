@@ -1,11 +1,14 @@
 import { Button } from '@/components/ui/button'
 import { Link, useParams } from '@tanstack/react-router'
 import { ArrowLeftIcon, EditIcon } from 'lucide-react'
-import { CopyButton } from './copy-button'
+import { CopyButton } from '../copy-button'
+import { useSuspenseQuery } from '@tanstack/react-query'
+import { getSnippetQueryOptions } from '../../lib/api'
 
 export function PageHeader() {
   const params = useParams({ from: '/(protected)/dashboard/snippets/$slug/' })
-
+  const { data } = useSuspenseQuery(getSnippetQueryOptions(params.slug))
+  const snippet = data.data
   return (
     <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
       <div className="flex items-center justify-between px-6 py-4">
@@ -19,7 +22,7 @@ export function PageHeader() {
         </div>
 
         <div className="flex items-center gap-3">
-          <CopyButton />
+          <CopyButton code={snippet.code} />
 
           <Button size="sm" asChild>
             <Link

@@ -9,10 +9,6 @@ type RefreshAccessTokenSuccessRes = SharedSuccessRes<{
 }>
 
 export async function refreshAccessToken(): Promise<RefreshAccessTokenSuccessRes> {
-  const res = await api.put(
-    serverEndpoints.refreshToken,
-    {},
-    { withCredentials: true },
-  )
+  const res = await api.put(serverEndpoints.refreshToken)
   return res.data
 }

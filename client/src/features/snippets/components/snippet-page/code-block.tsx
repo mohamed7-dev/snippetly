@@ -4,7 +4,7 @@ import { useParams } from '@tanstack/react-router'
 import { getSnippetQueryOptions } from '../../lib/api'
 import hljs from 'highlight.js'
 import React from 'react'
-import { CopyButton } from './copy-button'
+import { CopyButton } from '../copy-button'
 
 export function CodeBlock() {
   const params = useParams({ from: '/(protected)/dashboard/snippets/$slug/' })
@@ -19,7 +19,7 @@ export function CodeBlock() {
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="font-heading text-lg">Code</CardTitle>
-          <CopyButton />
+          <CopyButton code={snippet.code} />
         </div>
       </CardHeader>
       <CardContent className="pt-0">

@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import {
   Card,
   CardContent,
@@ -15,17 +14,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import {
-  Copy,
-  Edit,
-  Trash2,
-  MoreHorizontal,
-  Check,
-  Share,
-  Eye,
-} from 'lucide-react'
+import { Trash2Icon, MoreHorizontalIcon, EditIcon, EyeIcon } from 'lucide-react'
 import type { Snippet } from '../../lib/types'
 import type { Tag } from '@/features/tags/lib/types'
+import { CopyButton } from '../copy-button'
+import { Link } from '@tanstack/react-router'
+import { useDeleteConfirmation } from '@/components/providers/delete-confirmation-provider'
+import { useDeleteSnippet } from '../../hooks/use-delete-snippet'
 
 type SnippetItem = Pick<
   Snippet,
@@ -42,28 +37,20 @@ type SnippetItem = Pick<
 type SnippetCardProps = {
   snippet: SnippetItem
   onCopy?: (code: string) => void
-  onEdit?: (slug: string) => void
   onDelete?: (slug: string) => void
 }
 
-export function SnippetCard({
-  snippet,
-  onCopy,
-  onEdit,
-  onDelete,
-}: SnippetCardProps) {
-  const [copied, setCopied] = useState(false)
-
-  const handleCopy = async () => {
-    if (onCopy) {
-      onCopy(snippet.code)
-    } else {
-      await navigator.clipboard.writeText(snippet.code)
-    }
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+export function SnippetCard({ snippet, onCopy, onDelete }: SnippetCardProps) {
+  const { confirm } = useDeleteConfirmation()
+  const { mutateAsync: deleteSnippet, isPending: isDeleting } =
+    useDeleteSnippet()
+  const handleDelete = () => {
+    confirm({
+      title: 'Delete snippet',
+      onConfirm: async () => await deleteSnippet({ slug: snippet.slug }),
+    })
+    onDelete?.(snippet.slug)
   }
-
   return (
     <Card className="border-border hover:shadow-lg transition-all duration-200 group">
       <CardHeader className="pb-3">
@@ -83,36 +70,57 @@ export function SnippetCard({
                 size="sm"
                 className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
               >
-                <MoreHorizontal className="h-4 w-4" />
+                <MoreHorizontalIcon className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={handleCopy}>
-                {copied ? (
-                  <Check className="mr-2 h-4 w-4 text-primary" />
-                ) : (
-                  <Copy className="mr-2 h-4 w-4" />
-                )}
-                {copied ? 'Copied!' : 'Copy Code'}
+              <DropdownMenuItem asChild>
+                <CopyButton
+                  code={snippet.code}
+                  variant={'ghost'}
+                  className="w-full justify-start"
+                  onClick={() => onCopy}
+                />
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onEdit?.(snippet.slug)}>
-                <Edit className="mr-2 h-4 w-4" />
-                Edit
+              <DropdownMenuItem asChild>
+                <Button
+                  variant={'ghost'}
+                  size={'sm'}
+                  className="w-full justify-start"
+                  asChild
+                >
+                  <Link
+                    to="/dashboard/snippets/$slug/edit"
+                    params={{ slug: snippet.slug }}
+                  >
+                    <EditIcon className="mr-2 h-4 w-4" />
+                    Edit
+                  </Link>
+                </Button>
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Share className="mr-2 h-4 w-4" />
-                Share
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Eye className="mr-2 h-4 w-4" />
-                View Details
+              <DropdownMenuItem asChild>
+                <Button
+                  variant={'ghost'}
+                  size={'sm'}
+                  className="w-full justify-start"
+                  asChild
+                >
+                  <Link
+                    to="/dashboard/snippets/$slug"
+                    params={{ slug: snippet.slug }}
+                  >
+                    <EyeIcon className="mr-2 h-4 w-4" />
+                    View Details
+                  </Link>
+                </Button>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="text-destructive focus:text-destructive"
-                onClick={() => onDelete?.(snippet.slug)}
+                onClick={handleDelete}
+                disabled={isDeleting}
               >
-                <Trash2 className="mr-2 h-4 w-4" />
+                <Trash2Icon className="mr-2 h-4 w-4" />
                 Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -128,7 +136,7 @@ export function SnippetCard({
             </Badge>
           )}
           <span className="text-xs text-muted-foreground ml-auto">
-            {snippet.createdAt.toLocaleDateString()}
+            {snippet.createdAt?.toLocaleDateString()}
           </span>
         </div>
       </CardHeader>
@@ -152,21 +160,15 @@ export function SnippetCard({
             : null}
         </div>
         <div className="flex items-center gap-2 mt-4 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button size="sm" variant="outline" onClick={handleCopy}>
-            {copied ? (
-              <Check className="h-3 w-3 mr-1" />
-            ) : (
-              <Copy className="h-3 w-3 mr-1" />
-            )}
-            {copied ? 'Copied' : 'Copy'}
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => onEdit?.(snippet.slug)}
-          >
-            <Edit className="h-3 w-3 mr-1" />
-            Edit
+          <CopyButton code={snippet.code} onClick={() => onCopy} />
+          <Button size="sm" variant="ghost" asChild>
+            <Link
+              to="/dashboard/snippets/$slug/edit"
+              params={{ slug: snippet.slug }}
+            >
+              <EditIcon className="h-3 w-3 mr-1" />
+              Edit
+            </Link>
           </Button>
         </div>
       </CardContent>

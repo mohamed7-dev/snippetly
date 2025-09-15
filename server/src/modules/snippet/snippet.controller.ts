@@ -160,7 +160,7 @@ export class SnippetController {
         ...(req.validatedQuery as Omit<GetUserSnippetsDtoType, "creator">),
       });
 
-    const isCurrentUserOwner = req.context.user.name === req.params.creator;
+    const isCurrentUserOwner = req.context.user?.name === req.params.creator;
     let dataToReturn: any;
     if (isCurrentUserOwner) {
       // use owner dto

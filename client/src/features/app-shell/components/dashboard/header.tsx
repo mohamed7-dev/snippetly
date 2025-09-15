@@ -17,6 +17,7 @@ import { toast } from 'sonner'
 import { useNavigate } from '@tanstack/react-router'
 import { clientRoutes } from '@/lib/routes'
 import { useAuth } from '@/features/auth'
+import { Link } from '@tanstack/react-router'
 
 export function DashBoardHeader() {
   const navigate = useNavigate()
@@ -50,9 +51,11 @@ export function DashBoardHeader() {
       </div>
 
       <div className="flex items-center gap-3">
-        <Button size="sm">
-          <PlusIcon className="h-4 w-4 mr-2" />
-          New Snippet
+        <Button size="sm" asChild>
+          <Link to="/dashboard/snippets/new">
+            <PlusIcon className="h-4 w-4 mr-2" />
+            New Snippet
+          </Link>
         </Button>
 
         <DropdownMenu>

@@ -9,6 +9,7 @@ import {
 import { AuthProvider } from '@/features/auth'
 import { Toaster } from 'sonner'
 import type { QueryClient } from '@tanstack/react-query'
+import { DeleteConfirmationProvider } from '@/components/providers/delete-confirmation-provider'
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient
@@ -17,7 +18,9 @@ export const Route = createRootRouteWithContext<{
     <div className="min-h-screen bg-background">
       <TanstackQueryProvider>
         <AuthProvider>
-          <Outlet />
+          <DeleteConfirmationProvider>
+            <Outlet />
+          </DeleteConfirmationProvider>
           <Toaster position="top-center" />
         </AuthProvider>
       </TanstackQueryProvider>

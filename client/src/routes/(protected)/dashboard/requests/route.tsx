@@ -1,9 +1,21 @@
+import { PageLoader } from '@/components/loaders/page-loader'
+import { RequestPageView } from '@/components/views/request-page-view'
+import { getCurrentUserDashboardOptions } from '@/features/dashboard/lib/api'
+import { getCurrentUserInbox } from '@/features/user/lib/api'
 import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/(protected)/dashboard/requests')({
-  component: RouteComponent,
+  component: RequestPage,
+  loader: async ({ context: { queryClient } }) => {
+    await queryClient.ensureInfiniteQueryData(getCurrentUserInbox)
+    await queryClient.ensureQueryData(getCurrentUserDashboardOptions)
+  },
+  pendingComponent: () => (
+    <PageLoader containerProps={{ className: 'min-h-screen' }} />
+  ),
+  errorComponent: (error) => <>{JSON.stringify(error.error)}</>,
 })
 
-function RouteComponent() {
-  return <div>Hello "/(protected)/dashboard/requests"!</div>
+function RequestPage() {
+  return <RequestPageView />
 }

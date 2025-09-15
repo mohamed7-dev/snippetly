@@ -1,6 +1,5 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { clientRoutes } from '@/lib/routes'
 import { Link } from '@tanstack/react-router'
 import { FilterIcon, PlusIcon, SearchIcon } from 'lucide-react'
 import React from 'react'
@@ -30,7 +29,7 @@ export function MainContentHeader() {
             Filter
           </Button>
           <Button size="sm" asChild>
-            <Link to={clientRoutes.newCollection}>
+            <Link to={'/dashboard/collections/new'}>
               <PlusIcon className="h-4 w-4 mr-2" />
               <span>New Collection</span>
             </Link>

@@ -16,7 +16,7 @@ export const DiscoverUsersDto = z.object({
       }
     })
     .optional(),
-  query: z.string().nonempty(),
+  query: z.string().nonempty().optional(),
 });
 
 export type DiscoverUsersDtoType = z.infer<typeof DiscoverUsersDto>;

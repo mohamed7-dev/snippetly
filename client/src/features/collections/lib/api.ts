@@ -46,10 +46,10 @@ type GetCurrentUserCollectionsSuccessRes = SharedPaginatedSuccessRes<
   Cursor
 > & {
   stats: {
-    collectionsCount: number
-    snippetsCount: number
+    totalCollections: number
+    totalSnippets: number
     forkedCount: number
-    publicCount: number
+    publicCollections: number
   }
 }
 
@@ -68,3 +68,38 @@ export const getCurrentUserCollectionsOptions = infiniteQueryOptions({
   initialPageParam: null,
   getNextPageParam: (lastPage) => lastPage.nextCursor,
 })
+
+// Get Profile Snippets
+type GetProfileCollection = Collection & {
+  tags: Pick<Tag, 'name'>[]
+  creator: Pick<User, 'name' | 'image' | 'firstName' | 'lastName' | 'id'>
+} & {
+  snippets: Pick<Snippet, 'title' | 'slug' | 'language' | 'code' | 'id'>[]
+  snippetsCount: number
+}
+type GetProfileCollectionsSuccessRes =
+  SharedPaginatedSuccessRes<GetProfileCollection> & {
+    stats: {
+      userId: number
+      totalCollections: number
+      publicCollections: number
+      totalSnippets: number
+    }
+  }
+
+export const getProfileCollectionsOptions = (name: string) =>
+  infiniteQueryOptions({
+    queryKey: ['collection', 'user', name],
+    queryFn: async ({ pageParam }: { pageParam: Cursor | null }) => {
+      const params = new URLSearchParams()
+      if (pageParam) {
+        params.set('cursor', JSON.stringify(pageParam))
+      }
+      const res = await api.get<GetProfileCollectionsSuccessRes>(
+        `${serverEndpoints.getUserCollections(name)}${params ? '?' + params : ''}`,
+      )
+      return res.data
+    },
+    initialPageParam: null,
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
+  })

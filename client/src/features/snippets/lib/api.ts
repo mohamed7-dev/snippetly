@@ -72,3 +72,28 @@ export const getCurrentSnippetsOptions = infiniteQueryOptions({
   initialPageParam: null,
   getNextPageParam: (lastPage) => lastPage.nextCursor,
 })
+
+// Get Profile Snippets
+type GetProfileSnippet = Snippet & {
+  tags: Pick<Tag, 'name'>[]
+  creator: Pick<User, 'name' | 'image' | 'firstName' | 'lastName' | 'id'>
+  collection: Pick<Collection, 'title' | 'slug' | 'color' | 'id'>
+}
+type GetProfileSnippetsSuccessRes = SharedPaginatedSuccessRes<GetProfileSnippet>
+
+export const getProfileSnippetsOptions = (name: string) =>
+  infiniteQueryOptions({
+    queryKey: ['snippets', 'user', name],
+    queryFn: async ({ pageParam }: { pageParam: Cursor | null }) => {
+      const params = new URLSearchParams()
+      if (pageParam) {
+        params.set('cursor', JSON.stringify(pageParam))
+      }
+      const res = await api.get<GetProfileSnippetsSuccessRes>(
+        `${serverEndpoints.getUserSnippets(name)}${params ? '?' + params : ''}`,
+      )
+      return res.data
+    },
+    initialPageParam: null,
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
+  })

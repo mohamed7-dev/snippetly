@@ -125,7 +125,8 @@ export class UserController {
 
     res.status(StatusCodes.OK).json({
       message: "Fetched successfully.",
-      data: dashboardInfo,
+      data: dashboardInfo.user,
+      stats: dashboardInfo.stats,
     });
   };
 
@@ -148,7 +149,11 @@ export class UserController {
 
     res.status(StatusCodes.OK).json({
       message: "Fetched successfully.",
-      data: userProfileData,
+      data: {
+        ...userProfileData.profile,
+        isCurrentUserAFriend: userProfileData.isCurrentUserAFriend,
+      },
+      stats: userProfileData.stats,
     });
   };
 

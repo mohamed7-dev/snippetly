@@ -14,7 +14,7 @@ export function LoadingButton({
   return (
     <Button {...rest} disabled={isLoading || rest.disabled}>
       {isLoading && <LoaderPinwheelIcon />}
-      {children}
+      {!isLoading && children}
     </Button>
   )
 }

@@ -63,7 +63,7 @@ export class CollectionRoute implements Route {
       this.controller.getCurrentUserCollections
     );
     this.router.get(
-      `${this.path}`,
+      `${this.path}/user/:creator`,
       zodValidatorMiddleware(
         FindCollectionsDto.omit({ creator: true }),
         "Query"

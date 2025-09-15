@@ -115,18 +115,17 @@ export class UserReadService {
       Database.client
         .select({
           name: tagsTable.name,
+          addedBy: tagsTable.addedBy,
         })
         .from(tagsTable)
-        .where(eq(tagsTable.addedBy, usersTable.id))
         .limit(5)
         .orderBy(desc(tagsTable.createdAt))
     );
 
-    const snippetsCount = sql<number>`(
-      SELECT COUNT(*)
-      FROM ${snippetsTable} s
-      WHERE s.creator_id = ${usersTable.id}
-    )`;
+    const snippetsCount = Database.client.$count(
+      snippetsTable,
+      eq(snippetsTable.creatorId, usersTable.id)
+    );
 
     // Build base selection
     let query = Database.client
@@ -138,7 +137,6 @@ export class UserReadService {
         lastName: usersTable.lastName,
         email: usersTable.email,
         bio: usersTable.bio,
-        snippetsCount: snippetsCount,
         friendsCount: Database.client.$count(
           friendshipsTable,
           and(
@@ -149,8 +147,10 @@ export class UserReadService {
             )
           )
         ),
+        snippetsCount,
+        // snippetsCount,
         recentTags: sql<string>`(
-          SELECT json_agg(row_to_json(s)) 
+          SELECT json_agg(row_to_json(s))
           FROM recent_tags s
         )`.as("recentTags"),
       })
@@ -176,6 +176,7 @@ export class UserReadService {
         )
       )
       .limit(limit + 1)
+      // .leftJoin(recentTags, eq(recentTags.addedBy, usersTable.id))
       // Sort DESC by snippetsCount, then tie-break by id
       .orderBy(desc(snippetsCount), desc(usersTable.id));
 
@@ -316,12 +317,14 @@ export class UserReadService {
         lastName: usersTable.lastName,
         image: usersTable.image,
         bio: usersTable.bio,
+        requestSentAt: friendsInbox.createdAt,
         snippetsCount: Database.client.$count(
           snippetsTable,
           eq(snippetsTable.creatorId, usersTable.id)
         ),
       })
       .from(usersTable)
+      .leftJoin(friendsInbox, eq(friendsInbox.requesterId, usersTable.id))
       .where(
         and(
           inArray(usersTable.id, sql`(${friendsInbox.requesterId})`),
@@ -416,6 +419,25 @@ export class UserReadService {
 
   // Done
   async getUserForDashboard({ userId }: { userId: number }) {
+    const snippetTags = Database.client.$with("snippet_tags").as(
+      Database.client
+        .select({
+          snippetId: sql<number>`t.snippet_id`.as("snippet_id"),
+          tags: sql<string | null>`
+                json_agg(row_to_json(t)) FILTER (WHERE t.id IS NOT NULL)
+          `.as("tags"),
+        })
+        .from(
+          sql`(
+            SELECT st.snippet_id, tg.id, tg.name
+            FROM ${snippetsTagsTable} st
+            JOIN ${tagsTable} tg ON tg.id = st.tag_id
+            ORDER BY st.created_at DESC
+          ) t`
+        )
+        .groupBy(sql`t.snippet_id`)
+    );
+
     const userSnippets = Database.client.$with("user_snippets").as(
       Database.client
         .select({
@@ -428,26 +450,10 @@ export class UserReadService {
           createdAt: snippetsTable.createdAt,
           updatedAt: snippetsTable.updatedAt,
           creatorId: snippetsTable.creatorId,
-          tags: sql<string | null>`
-          (
-            SELECT json_agg(row_to_json(t))
-            FROM (
-              SELECT tg.id, tg.name
-              FROM ${snippetsTagsTable} st
-              LEFT JOIN ${tagsTable} tg ON tg.id = st.tag_id
-              WHERE st.snippet_id = ${snippetsTable.id}
-              ORDER BY st.created_at DESC
-              LIMIT 5
-            ) t
-          )
-          `.as("tags"),
+          tags: snippetTags.tags,
         })
         .from(snippetsTable)
-        .leftJoin(
-          snippetsTagsTable,
-          eq(snippetsTagsTable.snippetId, snippetsTable.id)
-        )
-        .innerJoin(tagsTable, eq(snippetsTagsTable.tagId, tagsTable.id))
+        .leftJoin(snippetTags, eq(snippetTags.snippetId, snippetsTable.id))
         .where(eq(snippetsTable.creatorId, userId))
         .orderBy(desc(snippetsTable.updatedAt))
         .limit(5)
@@ -475,7 +481,7 @@ export class UserReadService {
     );
 
     const foundUser = await Database.client
-      .with(userSnippets, userCollections)
+      .with(snippetTags, userSnippets, userCollections)
       .select({
         id: usersTable.id,
         name: usersTable.name,

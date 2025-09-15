@@ -14,6 +14,7 @@ export function SnippetsGridSection() {
   )
   const snippets = data.pages?.flatMap((p) => p.items) ?? []
   const total = data.pages?.[0].total
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">

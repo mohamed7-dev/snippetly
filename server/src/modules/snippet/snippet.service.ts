@@ -136,7 +136,7 @@ export class SnippetService {
         "slug",
         collection
       );
-      if (!foundCollection.id) {
+      if (!foundCollection) {
         collectionId = null;
       } else {
         collectionId = foundCollection.id;

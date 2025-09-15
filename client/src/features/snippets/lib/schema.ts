@@ -12,3 +12,14 @@ export const createSnippetSchema = z.object({
   collection: z.string(),
 })
 export type CreateSnippetSchema = z.infer<typeof createSnippetSchema>
+
+// Edit Snippet
+export const editSnippetSchema = createSnippetSchema
+  .omit({ tags: true })
+  .extend({
+    addTags: z.array(z.string()).optional(),
+    removeTags: z.array(z.string()).optional(),
+  })
+  .partial()
+
+export type EditSnippetSchema = z.infer<typeof editSnippetSchema>

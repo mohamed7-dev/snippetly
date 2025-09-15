@@ -24,7 +24,7 @@ import { Sidebar } from './sidebar'
 import { useCreateSnippet } from '../../hooks/use-create-snippet'
 import { toast } from 'sonner'
 import { useNavigate } from '@tanstack/react-router'
-import { CodeEditorField } from './code-editor-field'
+import { CodeEditorField } from '../shared/code-editor-field'
 
 export const CREATE_SNIPPET_FORM = 'create-snippet-form'
 export function CreateSnippetForm() {

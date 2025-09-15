@@ -11,7 +11,7 @@ export function CollectionPageHeader() {
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" asChild>
           <Link
-            to={clientRoutes.collections}
+            to={'/dashboard/collections'}
             className="flex items-center gap-2"
           >
             <ArrowLeftIcon className="h-4 w-4" />

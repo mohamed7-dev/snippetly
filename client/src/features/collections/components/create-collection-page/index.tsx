@@ -14,7 +14,7 @@ export function CreateCollectionPage() {
       title: '',
       description: '',
       color: '',
-      isPrivate: false,
+      isPrivate: true,
       allowForking: true,
       tags: [],
     },
