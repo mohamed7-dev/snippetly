@@ -1,3 +1,4 @@
+import { InfiniteLoader } from '@/components/loaders/infinite-loader'
 import { Button } from '@/components/ui/button'
 import { SnippetCard } from '@/features/snippets/components/snippet-card'
 import { getSnippetsByCollectionOptions } from '@/features/snippets/lib/api'
@@ -9,9 +10,8 @@ export function SnippetsGridSection() {
   const params = useParams({
     from: '/(protected)/dashboard/collections/$slug/',
   })
-  const { data } = useSuspenseInfiniteQuery(
-    getSnippetsByCollectionOptions(params.slug),
-  )
+  const { data, hasNextPage, isFetchingNextPage, fetchNextPage } =
+    useSuspenseInfiniteQuery(getSnippetsByCollectionOptions(params.slug))
   const snippets = data.pages?.flatMap((p) => p.items) ?? []
   const total = data.pages?.[0].total
 
@@ -33,25 +33,30 @@ export function SnippetsGridSection() {
           <SnippetCard key={snippet.id} snippet={snippet} />
         ))}
       </div>
-
-      {/* Empty State */}
-      {snippets.length === 0 && (
-        <div className="text-center py-12">
-          <Code2Icon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="font-heading font-semibold text-lg mb-2">
-            No snippets in this collection
-          </h3>
-          <p className="text-muted-foreground mb-4">
-            Add your first snippet to get started
-          </p>
-          <Button asChild>
-            <Link to="/dashboard/snippets/new">
-              <PlusIcon className="h-4 w-4 mr-2" />
-              Add Snippet
-            </Link>
-          </Button>
-        </div>
-      )}
+      <InfiniteLoader
+        hasNextPage={hasNextPage}
+        isFetchingNextPage={isFetchingNextPage}
+        fetchNextPage={fetchNextPage}
+        Content={
+          !snippets?.length ? (
+            <div className="text-center py-12">
+              <Code2Icon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="font-heading font-semibold text-lg mb-2">
+                No snippets in this collection
+              </h3>
+              <p className="text-muted-foreground mb-4">
+                Add your first snippet to get started
+              </p>
+              <Button asChild>
+                <Link to="/dashboard/snippets/new">
+                  <PlusIcon className="h-4 w-4 mr-2" />
+                  Add Snippet
+                </Link>
+              </Button>
+            </div>
+          ) : null
+        }
+      />
     </div>
   )
 }

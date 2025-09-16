@@ -18,3 +18,12 @@ export interface User {
   createdAt: Date
   updatedAt: Date
 }
+
+export interface Friendship {
+  requesterId: number
+  addresseeId: number
+  status: 'pending' | 'accepted' | 'rejected'
+  id: number
+  createdAt: Date
+  updatedAt: Date
+}

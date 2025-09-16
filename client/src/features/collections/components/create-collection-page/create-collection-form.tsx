@@ -79,8 +79,8 @@ export function CreateCollectionForm() {
     },
   })
 
-  const onSubmit = async (values: CreateCollectionSchema) => {
-    await createCollection(values)
+  const onSubmit = async ({ isPublic, ...values }: CreateCollectionSchema) => {
+    await createCollection({ ...values, isPrivate: !isPublic })
   }
 
   return (
@@ -165,10 +165,10 @@ export function CreateCollectionForm() {
           />
 
           <div className="space-y-2">
-            <Label htmlFor="visibility">Visibility</Label>
+            <Label>Visibility</Label>
             <FormField
               control={createCollectionForm.control}
-              name="isPrivate"
+              name="isPublic"
               render={({ field }) => (
                 <FormItem className="flex items-center space-x-2 h-10 px-3 py-2 border border-border rounded-md bg-input">
                   <FormControl>

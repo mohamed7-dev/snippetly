@@ -4,17 +4,12 @@ import { CreateUserDtoType } from "./dto/create-user.dto";
 import { UpdateUserDtoType } from "./dto/update-user.dto";
 import { PasswordHashService } from "../auth/password-hash.service";
 import { UpdateUserPasswordDtoType } from "./dto/update-password.dto";
-import {
-  DEFAULT_FIND_USERS_LIMIT,
-  DEFAULT_USERS_PENDING_FRIENDS_LIMIT,
-} from "./constants";
+import { DEFAULT_FIND_USERS_LIMIT } from "./constants";
 import { handleCursorPagination } from "../../common/lib/utils";
 import { UserReadService } from "./user-read.service";
 import { UserRepository } from "./user.repository";
 import { DeleteUserDtoType } from "./dto/delete-user.dto";
 import { DiscoverUsersDtoType } from "./dto/discover-users.dto";
-import { GetCurrentUserFriendsDtoType } from "./dto/get-current-user-friends.dto";
-import { ManageFriendshipDtoType } from "./dto/manage-friendship.dto";
 import { RequestContext } from "../../common/middlewares/request-context-middleware";
 import { NonNullableFields } from "../../common/types/utils";
 import { GetUserDtoType } from "./dto/get-user.dto";
@@ -152,10 +147,7 @@ export class UserService {
   }
 
   // Done
-  public async discoverUsers(
-    _ctx: RequestContext,
-    input: DiscoverUsersDtoType
-  ) {
+  public async discoverUsers(ctx: RequestContext, input: DiscoverUsersDtoType) {
     const { limit } = input;
     const defaultLimit = limit ?? DEFAULT_FIND_USERS_LIMIT;
 
@@ -164,8 +156,13 @@ export class UserService {
       limit: defaultLimit,
     });
 
+    // filter out current user from results if logged in
+    const filteredItems = ctx.user?.id
+      ? data.filter((user) => user.id !== ctx.user?.id)
+      : data;
+
     const { nextCursor, data: items } = handleCursorPagination({
-      data,
+      data: filteredItems,
       limit: defaultLimit,
     });
 
@@ -177,7 +174,7 @@ export class UserService {
             id: nextCursor.id,
           } satisfies DiscoverUsersDtoType["cursor"])
         : null,
-      total,
+      total: data.length < filteredItems.length ? total - 1 : total,
     };
   }
 
@@ -188,92 +185,6 @@ export class UserService {
       throw new HttpException(StatusCodes.NOT_FOUND, "User account not found.");
     }
     return data;
-  }
-
-  public async getCurrentUserFriends(
-    ctx: NonNullableFields<RequestContext>,
-    input: GetCurrentUserFriendsDtoType
-  ) {
-    const { limit } = input;
-    const defaultLimit = limit ?? DEFAULT_USERS_PENDING_FRIENDS_LIMIT;
-    const { data, total } = await this.UserReadService.getUserFriends({
-      ...input,
-      limit: defaultLimit,
-      userId: ctx.user.id,
-    });
-
-    const { data: items, nextCursor } = handleCursorPagination({
-      data,
-      limit: defaultLimit,
-    });
-
-    return {
-      items,
-      nextCursor: nextCursor
-        ? ({
-            id: nextCursor.id,
-          } satisfies GetCurrentUserFriendsDtoType["cursor"])
-        : null,
-      total,
-    };
-  }
-
-  public async getCurrentUserInbox(
-    ctx: NonNullableFields<RequestContext>,
-    input: GetCurrentUserFriendsDtoType
-  ) {
-    const { limit } = input;
-    const defaultLimit = limit ?? DEFAULT_USERS_PENDING_FRIENDS_LIMIT;
-
-    const { data, total } = await this.UserReadService.getUserInbox({
-      ...input,
-      limit: defaultLimit,
-      userId: ctx.user.id,
-    });
-
-    const { data: items, nextCursor } = handleCursorPagination({
-      data,
-      limit: defaultLimit,
-    });
-
-    return {
-      items,
-      nextCursor: nextCursor
-        ? ({
-            id: nextCursor.id,
-          } satisfies GetCurrentUserFriendsDtoType["cursor"])
-        : null,
-      total,
-    };
-  }
-
-  public async getCurrentUserOutbox(
-    ctx: NonNullableFields<RequestContext>,
-    input: GetCurrentUserFriendsDtoType
-  ) {
-    const { limit } = input;
-    const defaultLimit = limit ?? DEFAULT_USERS_PENDING_FRIENDS_LIMIT;
-
-    const { data, total } = await this.UserReadService.getUserOutbox({
-      ...input,
-      limit: defaultLimit,
-      userId: ctx.user.id,
-    });
-
-    const { data: items, nextCursor } = handleCursorPagination({
-      data,
-      limit: defaultLimit,
-    });
-
-    return {
-      items,
-      nextCursor: nextCursor
-        ? ({
-            id: nextCursor.id,
-          } satisfies GetCurrentUserFriendsDtoType["cursor"])
-        : null,
-      total,
-    };
   }
 
   // Done
@@ -311,8 +222,8 @@ export class UserService {
     );
 
     const isCurrentUserAFriend =
-      Boolean(userProfile?.friendshipsReceived) ||
-      Boolean(userProfile?.friendshipsRequested);
+      (userProfile?.friendshipsReceived?.length ?? 0) > 0 ||
+      (userProfile?.friendshipsRequested?.length ?? 0) > 0;
 
     if (!userProfile) {
       throw new HttpException(StatusCodes.NOT_FOUND, "User account not found.");
@@ -323,159 +234,5 @@ export class UserService {
     });
 
     return { profile: userProfile, isCurrentUserAFriend, stats };
-  }
-
-  // Done
-  public async sendFriendshipRequest(
-    ctx: NonNullableFields<RequestContext>,
-    input: ManageFriendshipDtoType
-  ) {
-    const { friend_name: friendName } = input;
-    const loggedInUserName = ctx.user.name;
-
-    // Note: name is the logged in user name
-    const { friend: foundPotentialFriend, user: loggedInUser } =
-      await this.getFriendAndUser({
-        friendName,
-        name: loggedInUserName,
-      });
-
-    if (
-      !foundPotentialFriend ||
-      !loggedInUser ||
-      loggedInUser.id === foundPotentialFriend.id
-    ) {
-      throw new HttpException(
-        StatusCodes.BAD_REQUEST,
-        "Invalid friendship request."
-      );
-    }
-
-    const foundRequest = await this.UserReadService.getFriendshipRequestInfo({
-      requesterId: loggedInUser.id,
-      addresseeId: foundPotentialFriend.id,
-    });
-
-    // if the user already sent a request to the friend
-    if (foundRequest) {
-      throw new HttpException(
-        StatusCodes.CONFLICT,
-        `Friendship request has already been sent to the user ${friendName}`
-      );
-    }
-
-    const [newFriendship] = await this.UserRepository.insertFriendship([
-      {
-        requesterId: loggedInUser.id,
-        addresseeId: foundPotentialFriend.id,
-        status: "pending",
-      },
-    ]);
-
-    return newFriendship;
-  }
-
-  // Done
-  public async acceptFriendshipRequest(
-    ctx: NonNullableFields<RequestContext>,
-    input: ManageFriendshipDtoType
-  ) {
-    const { friend_name: friendName } = input;
-    const loggedInUserName = ctx.user.name;
-    const { friend: requester, user: addressee } = await this.getFriendAndUser({
-      friendName,
-      name: loggedInUserName,
-    });
-
-    if (!requester || !addressee || addressee.id === requester.id) {
-      throw new HttpException(
-        StatusCodes.BAD_REQUEST,
-        "Invalid friendship acceptance request."
-      );
-    }
-
-    const foundRequest = await this.UserReadService.getFriendshipRequestInfo({
-      requesterId: requester.id,
-      addresseeId: addressee.id,
-    });
-
-    if (!foundRequest) {
-      throw new HttpException(
-        StatusCodes.BAD_REQUEST,
-        `Invalid friendship acceptance request, ${requester.name} didn't send you a request.`
-      );
-    }
-
-    const [updatedFriendship] = await this.UserRepository.updateFriendship(
-      foundRequest.id,
-      { status: "accepted" }
-    );
-
-    return updatedFriendship;
-  }
-
-  // Done
-  public async rejectFriendshipRequest(
-    ctx: NonNullableFields<RequestContext>,
-    input: ManageFriendshipDtoType
-  ) {
-    const { friend_name: friendName } = input;
-    const name = ctx.user.name;
-
-    // Note: name is the logged in user name to whom the request was sent
-    const { friend: requester, user: addressee } = await this.getFriendAndUser({
-      friendName,
-      name,
-    });
-
-    if (!addressee || !requester || requester.id === addressee.id) {
-      throw new HttpException(
-        StatusCodes.BAD_REQUEST,
-        "Invalid friendship rejection request."
-      );
-    }
-
-    const foundRequest = await this.UserReadService.getFriendshipRequestInfo({
-      requesterId: requester.id,
-      addresseeId: addressee.id,
-    });
-
-    if (!foundRequest) {
-      throw new HttpException(
-        StatusCodes.BAD_REQUEST,
-        "Invalid friendship rejection request."
-      );
-    }
-
-    // if friendship was accepted before and reject is invoked, then
-    // we need to end the relationship
-    if (foundRequest.status === "accepted") {
-      await this.UserRepository.deleteFriendship(foundRequest.id);
-
-      return foundRequest;
-    }
-
-    // if status is pending, then we need to mark request as rejected
-    // may be later on the user accepts again
-    // TODO: set up cron job
-    const updatedFriendship = await this.UserRepository.updateFriendship(
-      foundRequest.id,
-      { status: "rejected" }
-    );
-
-    return updatedFriendship;
-  }
-
-  private async getFriendAndUser({
-    friendName,
-    name,
-  }: {
-    friendName: string;
-    name: string;
-  }) {
-    const user = await this.UserReadService.findOneSlim("name", name);
-    const friend = await this.UserReadService.findOneSlim("name", friendName);
-
-    return { user, friend };
   }
 }

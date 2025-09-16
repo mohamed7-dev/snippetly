@@ -16,6 +16,7 @@ import { SendREmailDtoType } from "./dto/send-r-email.dto";
 import { UserReadService } from "../user/user-read.service";
 import { UserRepository } from "../user/user.repository";
 import { RequestContext } from "../../common/middlewares/request-context-middleware";
+import { isDevelopment } from "../../common/lib/utils";
 
 export class AuthService {
   private readonly UserService: UserService;
@@ -279,7 +280,7 @@ export class AuthService {
     res.clearCookie(REFRESH_TOKEN_COOKIE_KEY, {
       httpOnly: true,
       sameSite: "none",
-      secure: true,
+      secure: isDevelopment ? false : true,
     });
   }
 
@@ -287,7 +288,7 @@ export class AuthService {
     res.cookie(REFRESH_TOKEN_COOKIE_KEY, refreshToken, {
       httpOnly: true,
       sameSite: "none",
-      secure: true,
+      secure: isDevelopment ? false : true,
       maxAge: JWT_REFRESH_EXPIRES,
     });
   }

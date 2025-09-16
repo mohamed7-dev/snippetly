@@ -10,7 +10,7 @@ import type { AxiosError } from 'axios'
 import { api } from '@/lib/api'
 import { serverEndpoints } from '@/lib/routes'
 
-type Input = CreateSnippetSchema
+type Input = Omit<CreateSnippetSchema, 'isPublic'> & { isPrivate: boolean }
 type CreateSnippetSuccessRes = SharedSuccessRes<Snippet>
 type CreateSnippetErrorRes = AxiosError<ErrorResponse>
 

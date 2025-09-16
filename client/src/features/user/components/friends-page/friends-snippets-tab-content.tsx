@@ -11,9 +11,13 @@ import {
 import { useInfiniteQuery } from '@tanstack/react-query'
 import React from 'react'
 import { getCurrentUserFriendsSnippets } from '../../lib/api'
+import { InfiniteLoader } from '@/components/loaders/infinite-loader'
+import { Code2Icon, PlusIcon } from 'lucide-react'
+import { Link } from '@tanstack/react-router'
 
 export function FriendsSnippetsTabContent() {
-  const { data } = useInfiniteQuery(getCurrentUserFriendsSnippets)
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useInfiniteQuery(getCurrentUserFriendsSnippets)
   const snippets = data?.pages?.flatMap((p) => p.items) ?? []
 
   return (
@@ -82,11 +86,11 @@ export function FriendsSnippetsTabContent() {
               </div>
               <div className="flex items-center justify-between mt-4">
                 <span className="text-xs text-muted-foreground">
-                  {snippet.createdAt?.toLocaleDateString()}
+                  {new Date(snippet.createdAt)?.toLocaleDateString()}
                 </span>
               </div>
               <div className="flex items-center gap-1 mt-3 flex-wrap">
-                {snippet.tags.map((tag) => (
+                {snippet.tags?.map((tag) => (
                   <Badge key={tag.name} variant="outline" className="text-xs">
                     #{tag.name}
                   </Badge>
@@ -96,6 +100,30 @@ export function FriendsSnippetsTabContent() {
           </Card>
         ))}
       </div>
+      <InfiniteLoader
+        isFetchingNextPage={isFetchingNextPage}
+        hasNextPage={hasNextPage}
+        fetchNextPage={fetchNextPage}
+        Content={
+          !snippets.length ? (
+            <div className="text-center py-12">
+              <Code2Icon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="font-heading font-semibold text-lg mb-2">
+                No friends yet
+              </h3>
+              <p className="text-muted-foreground mb-4">
+                Add your first friend to start learning from others.
+              </p>
+              <Button asChild>
+                <Link to="/dashboard/discover">
+                  <PlusIcon className="h-4 w-4 mr-2" />
+                  <span>Discover Developers</span>
+                </Link>
+              </Button>
+            </div>
+          ) : null
+        }
+      />
     </React.Fragment>
   )
 }

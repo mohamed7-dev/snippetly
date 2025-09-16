@@ -3,6 +3,8 @@ import { FriendsTabContent } from './friends-tab-content'
 import { FriendsSnippetsTabContent } from './friends-snippets-tab-content'
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
 import { getCurrentUserFriends } from '../../lib/api'
+import React from 'react'
+import { PageLoader } from '@/components/loaders/page-loader'
 
 export function TabsSection() {
   const { data } = useSuspenseInfiniteQuery(getCurrentUserFriends)
@@ -15,7 +17,9 @@ export function TabsSection() {
       </TabsList>
 
       <TabsContent value="friends" className="space-y-6">
-        <FriendsTabContent />
+        <React.Suspense fallback={<PageLoader />}>
+          <FriendsTabContent />
+        </React.Suspense>
       </TabsContent>
 
       <TabsContent value="snippets" className="space-y-6">

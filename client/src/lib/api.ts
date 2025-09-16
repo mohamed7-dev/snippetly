@@ -1,10 +1,6 @@
 import axios from 'axios'
-import {
-  getAccessToken,
-  getUser,
-  setAuth,
-} from '@/features/auth/lib/auth-store'
 import { refreshAccessToken } from '@/features/auth/lib/api'
+import { authStore } from '@/features/auth/lib/auth-store'
 
 export const API_SERVER_URL = import.meta.env.VITE_API_SERVER_URL
 
@@ -12,6 +8,19 @@ if (!API_SERVER_URL) {
   throw new Error('Missing API_SERVER_URL Env Variable..')
 }
 
+/**
+ * @description
+ * For Public API Endpoints
+ */
+export const publicApi = axios.create({
+  baseURL: API_SERVER_URL,
+  // withCredentials: true, // 👈 send cookies (refresh token lives here)
+})
+
+/**
+ * @description
+ * For Protected API Endpoints
+ */
 export const api = axios.create({
   baseURL: API_SERVER_URL,
   withCredentials: true, // 👈 send cookies (refresh token lives here)
@@ -27,7 +36,7 @@ function processQueue(token: string | null) {
 
 // attach token
 api.interceptors.request.use((config) => {
-  const token = getAccessToken()
+  const token = authStore.getAccessToken()
   if (token && config.headers) {
     config.headers.Authorization = 'Bearer '.concat(token)
   }
@@ -57,12 +66,11 @@ api.interceptors.response.use(
       isRefreshing = true
 
       try {
-        const data = await refreshAccessToken()
-        const newToken = data.data.accessToken
+        const res = await refreshAccessToken()
+        const newToken = res.data.data.accessToken
 
         // ⚡ sync both store + context (context picks up from store)
-        setAuth(newToken, getUser())
-
+        authStore.setAccessToken?.(newToken)
         processQueue(newToken)
         original.headers.Authorization = 'Bearer '.concat(newToken)
         return api(original)

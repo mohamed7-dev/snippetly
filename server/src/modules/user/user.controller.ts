@@ -58,51 +58,6 @@ export class UserController {
     });
   };
 
-  public getCurrentUserFriends = async (
-    req: Request<{}, {}, {}, GetCurrentUserFriendsDtoType>,
-    res: Response
-  ) => {
-    const data = await this.UserService.getCurrentUserFriends(
-      req.context,
-      req.validatedQuery
-    );
-
-    res.status(StatusCodes.OK).json({
-      message: "Fetched successfully.",
-      ...data,
-    });
-  };
-
-  public getCurrentUserInbox = async (
-    req: Request<{}, {}, {}, GetCurrentUserFriendsDtoType>,
-    res: Response
-  ) => {
-    const data = await this.UserService.getCurrentUserInbox(
-      req.context,
-      req.validatedQuery
-    );
-
-    res.status(StatusCodes.OK).json({
-      message: "Fetched successfully.",
-      ...data,
-    });
-  };
-
-  public getCurrentUserOutbox = async (
-    req: Request<{}, {}, {}, GetCurrentUserFriendsDtoType>,
-    res: Response
-  ) => {
-    const data = await this.UserService.getCurrentUserOutbox(
-      req.context,
-      req.validatedQuery
-    );
-
-    res.status(StatusCodes.OK).json({
-      message: "Fetched successfully.",
-      ...data,
-    });
-  };
-
   public discoverUsers = async (
     req: Request<{}, {}, {}, DiscoverUsersDtoType>,
     res: Response
@@ -154,51 +109,6 @@ export class UserController {
         isCurrentUserAFriend: userProfileData.isCurrentUserAFriend,
       },
       stats: userProfileData.stats,
-    });
-  };
-
-  public sendFriendshipRequest = async (
-    req: Request<ManageFriendshipDtoType>,
-    res: Response
-  ) => {
-    const data = await this.UserService.sendFriendshipRequest(
-      req.context,
-      req.params
-    );
-
-    res.status(StatusCodes.OK).json({
-      message: "Friendship request has been sent successfully.",
-      data: data,
-    });
-  };
-
-  public acceptFriendshipRequest = async (
-    req: Request<ManageFriendshipDtoType>,
-    res: Response
-  ) => {
-    const data = await this.UserService.acceptFriendshipRequest(
-      req.context,
-      req.params
-    );
-
-    res.status(StatusCodes.OK).json({
-      message: "Friendship request has been accepted successfully.",
-      data: data,
-    });
-  };
-
-  public rejectFriendshipRequest = async (
-    req: Request<ManageFriendshipDtoType>,
-    res: Response
-  ) => {
-    const data = await this.UserService.rejectFriendshipRequest(
-      req.context,
-      req.params
-    );
-
-    res.status(StatusCodes.OK).json({
-      message: "Friendship request has been rejected successfully.",
-      data: data,
     });
   };
 

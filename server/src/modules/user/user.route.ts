@@ -9,11 +9,14 @@ import { ManageFriendshipDto } from "./dto/manage-friendship.dto";
 import { GetCurrentUserFriendsDto } from "./dto/get-current-user-friends.dto";
 import { DiscoverUsersDto } from "./dto/discover-users.dto";
 import { GetUserDto } from "./dto/get-user.dto";
+import { FriendshipController } from "./friendship.controller";
 
 export class UserRoute implements Route {
   public path: string = "/users";
   public router: Router = Router();
   public controller: UserController = new UserController();
+  public FriendshipController: FriendshipController =
+    new FriendshipController();
 
   constructor() {
     this.initializeRoutes();
@@ -37,19 +40,25 @@ export class UserRoute implements Route {
       `${this.path}/add-friend/:friend_name`,
       authMiddleware,
       zodValidatorMiddleware(ManageFriendshipDto, "Params"),
-      this.controller.sendFriendshipRequest
+      this.FriendshipController.sendFriendshipRequest
     );
     this.router.put(
       `${this.path}/accept-friend/:friend_name`,
       authMiddleware,
       zodValidatorMiddleware(ManageFriendshipDto, "Params"),
-      this.controller.acceptFriendshipRequest
+      this.FriendshipController.acceptFriendshipRequest
     );
     this.router.put(
       `${this.path}/reject-friend/:friend_name`,
       authMiddleware,
       zodValidatorMiddleware(ManageFriendshipDto, "Params"),
-      this.controller.rejectFriendshipRequest
+      this.FriendshipController.rejectFriendshipRequest
+    );
+    this.router.put(
+      `${this.path}/cancel-friend/:friend_name`,
+      authMiddleware,
+      zodValidatorMiddleware(ManageFriendshipDto, "Params"),
+      this.FriendshipController.cancelFriendshipRequest
     );
     this.router.get(
       `${this.path}/discover`,
@@ -66,19 +75,19 @@ export class UserRoute implements Route {
       `${this.path}/current/friends`,
       authMiddleware,
       zodValidatorMiddleware(GetCurrentUserFriendsDto, "Query"),
-      this.controller.getCurrentUserFriends as any
+      this.FriendshipController.getCurrentUserFriends as any
     );
     this.router.get(
       `${this.path}/current/inbox`,
       authMiddleware,
       zodValidatorMiddleware(GetCurrentUserFriendsDto, "Query"),
-      this.controller.getCurrentUserInbox as any
+      this.FriendshipController.getCurrentUserInbox as any
     );
     this.router.get(
       `${this.path}/current/outbox`,
       authMiddleware,
       zodValidatorMiddleware(GetCurrentUserFriendsDto, "Query"),
-      this.controller.getCurrentUserOutbox as any
+      this.FriendshipController.getCurrentUserOutbox as any
     );
     this.router.get(
       `${this.path}/current/dashboard`,

@@ -6,7 +6,6 @@ import { getCurrentUserCollectionsOptions } from '../../lib/api'
 export function StatsSection() {
   const { data } = useSuspenseInfiniteQuery(getCurrentUserCollectionsOptions)
   const stats = data.pages?.[0]?.stats
-  console.log(stats)
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
       <Card>

@@ -1,6 +1,6 @@
 import { StrictMode } from 'react'
 import ReactDOM from 'react-dom/client'
-import { RouterProvider, createRouter } from '@tanstack/react-router'
+import { createRouter } from '@tanstack/react-router'
 import { queryClient } from './components/providers/tanstack-query-provider.tsx'
 
 // Import the generated route tree
@@ -8,12 +8,16 @@ import { routeTree } from './routeTree.gen'
 
 import './styles.css'
 import reportWebVitals from './reportWebVitals.ts'
+import { App } from './app.tsx'
 
 // Create a new router instance
-const router = createRouter({
+export const router = createRouter({
   routeTree,
   context: {
     queryClient,
+    // auth will initially be undefined
+    // We'll be passing down the auth state from within a React component
+    authContext: undefined,
   },
   defaultPreload: 'intent',
   scrollRestoration: true,
@@ -34,7 +38,7 @@ if (rootElement && !rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement)
   root.render(
     <StrictMode>
-      <RouterProvider router={router} />
+      <App />
     </StrictMode>,
   )
 }

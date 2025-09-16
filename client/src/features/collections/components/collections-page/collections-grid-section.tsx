@@ -165,25 +165,26 @@ export function CollectionsGridSection() {
         hasNextPage={hasNextPage}
         isFetchingNextPage={isFetchingNextPage}
         isManual={true}
+        Content={
+          !collections.length ? (
+            <div className="text-center py-12">
+              <BookOpenIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="font-heading font-semibold text-lg mb-2">
+                No collections yet
+              </h3>
+              <p className="text-muted-foreground mb-4">
+                Create your first collection to organize your code snippets
+              </p>
+              <Button asChild>
+                <Link to={clientRoutes.newCollection}>
+                  <PlusIcon className="h-4 w-4 mr-2" />
+                  Create Collection
+                </Link>
+              </Button>
+            </div>
+          ) : null
+        }
       />
-      {/* Empty State */}
-      {collections.length === 0 && (
-        <div className="text-center py-12">
-          <BookOpenIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="font-heading font-semibold text-lg mb-2">
-            No collections yet
-          </h3>
-          <p className="text-muted-foreground mb-4">
-            Create your first collection to organize your code snippets
-          </p>
-          <Button asChild>
-            <Link to={clientRoutes.newCollection}>
-              <PlusIcon className="h-4 w-4 mr-2" />
-              Create Collection
-            </Link>
-          </Button>
-        </div>
-      )}
     </React.Fragment>
   )
 }

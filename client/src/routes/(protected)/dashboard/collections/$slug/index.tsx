@@ -9,9 +9,7 @@ export const Route = createFileRoute(
 )({
   component: RouteComponent,
   loader: async ({ context: { queryClient }, params: { slug } }) => {
-    await queryClient.ensureInfiniteQueryData(
-      getSnippetsByCollectionOptions(slug),
-    )
+    queryClient.prefetchInfiniteQuery(getSnippetsByCollectionOptions(slug))
     await queryClient.ensureQueryData(getCollectionQueryOptions(slug))
   },
   pendingComponent: () => (

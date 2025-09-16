@@ -7,7 +7,7 @@ import { createFileRoute } from '@tanstack/react-router'
 export const Route = createFileRoute('/(protected)/dashboard/requests')({
   component: RequestPage,
   loader: async ({ context: { queryClient } }) => {
-    await queryClient.ensureInfiniteQueryData(getCurrentUserInbox)
+    queryClient.prefetchInfiniteQuery(getCurrentUserInbox)
     await queryClient.ensureQueryData(getCurrentUserDashboardOptions)
   },
   pendingComponent: () => (

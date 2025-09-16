@@ -7,7 +7,7 @@ import { createFileRoute } from '@tanstack/react-router'
 export const Route = createFileRoute('/(protected)/dashboard/collections/')({
   component: CollectionsPage,
   loader: async ({ context: { queryClient } }) => {
-    await queryClient.ensureInfiniteQueryData(getCurrentUserCollectionsOptions)
+    queryClient.prefetchInfiniteQuery(getCurrentUserCollectionsOptions)
     await queryClient.ensureQueryData(getCurrentUserDashboardOptions)
   },
   pendingComponent: () => (

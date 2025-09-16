@@ -11,7 +11,7 @@ import {
 
 export function DashboardSidebar() {
   const query = useSuspenseQuery(getCurrentUserDashboardOptions)
-  const collections = query.data.data.collections
+  const collections = query.data.data.collections ?? []
   return (
     <aside className="w-64 border-r border-border bg-muted/30 min-h-[calc(100vh-73px)]">
       <div className="p-6">
@@ -78,7 +78,7 @@ export function DashboardSidebar() {
             Collections
           </h3>
           <div className="space-y-1">
-            {collections.map((collection) => (
+            {collections?.map((collection) => (
               <Link
                 key={collection.id}
                 to={'/dashboard/collections/$slug'}

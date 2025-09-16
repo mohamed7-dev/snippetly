@@ -2,6 +2,7 @@ import React from 'react'
 import { MainContentHeader } from './main-content-header'
 import { StatsSection } from './stats-section'
 import { SnippetsSection } from './snippets-section'
+import { PageLoader } from '@/components/loaders/page-loader'
 
 export function DashboardPage() {
   return (
@@ -11,7 +12,9 @@ export function DashboardPage() {
         {/* Stats Cards */}
         <StatsSection />
       </div>
-      <SnippetsSection />
+      <React.Suspense fallback={<PageLoader />}>
+        <SnippetsSection />
+      </React.Suspense>
     </React.Fragment>
   )
 }

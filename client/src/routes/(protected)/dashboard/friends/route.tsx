@@ -5,8 +5,8 @@ import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/(protected)/dashboard/friends')({
   component: FriendsPage,
-  loader: async ({ context: { queryClient } }) => {
-    await queryClient.ensureInfiniteQueryData(getCurrentUserFriends)
+  loader: ({ context: { queryClient } }) => {
+    queryClient.prefetchInfiniteQuery(getCurrentUserFriends)
   },
   pendingComponent: () => (
     <PageLoader containerProps={{ className: 'min-h-screen' }} />

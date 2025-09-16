@@ -136,7 +136,7 @@ export function SnippetCard({ snippet, onCopy, onDelete }: SnippetCardProps) {
             </Badge>
           )}
           <span className="text-xs text-muted-foreground ml-auto">
-            {snippet.createdAt?.toLocaleDateString()}
+            {new Date(snippet.createdAt)?.toLocaleDateString()}
           </span>
         </div>
       </CardHeader>
@@ -148,7 +148,7 @@ export function SnippetCard({ snippet, onCopy, onDelete }: SnippetCardProps) {
         </div>
         <div className="flex items-center gap-1 mt-3 flex-wrap">
           {'tags' in snippet
-            ? snippet.tags.map((tag) => (
+            ? snippet?.tags?.map((tag) => (
                 <Badge
                   key={tag.name}
                   variant="outline"

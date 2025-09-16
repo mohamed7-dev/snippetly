@@ -20,6 +20,8 @@ import { Link, useParams } from '@tanstack/react-router'
 import { clientRoutes } from '@/lib/routes'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { getCollectionQueryOptions } from '../../lib/api'
+import { useDeleteConfirmation } from '@/components/providers/delete-confirmation-provider'
+import { useDeleteCollection } from '../../hooks/use-delete-collection'
 
 export function MainContentHeader() {
   const params = useParams({
@@ -27,6 +29,15 @@ export function MainContentHeader() {
   })
   const { data } = useSuspenseQuery(getCollectionQueryOptions(params.slug))
   const collection = data.data
+
+  const { confirm } = useDeleteConfirmation()
+  const { mutateAsync: deleteCollection } = useDeleteCollection()
+  const handleDeletingCollection = () => {
+    confirm({
+      title: `Delete Collection ${collection.title}`,
+      onConfirm: async () => await deleteCollection({ slug: params.slug }),
+    })
+  }
   return (
     <div className="mb-8">
       <div className="flex items-start justify-between mb-6">
@@ -115,7 +126,10 @@ export function MainContentHeader() {
                 Edit Collection
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem className="text-destructive focus:text-destructive">
+            <DropdownMenuItem
+              className="text-destructive focus:text-destructive"
+              onClick={handleDeletingCollection}
+            >
               <Trash2Icon className="mr-2 h-4 w-4" />
               Delete Collection
             </DropdownMenuItem>

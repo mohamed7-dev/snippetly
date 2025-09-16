@@ -51,8 +51,8 @@ export function CreateSnippetForm() {
     },
   })
 
-  const onSubmit = async (values: CreateSnippetSchema) => {
-    await createSnippet(values)
+  const onSubmit = async ({ isPublic, ...values }: CreateSnippetSchema) => {
+    await createSnippet({ ...values, isPrivate: !isPublic })
   }
   return (
     <form
@@ -137,7 +137,7 @@ export function CreateSnippetForm() {
                 <Label htmlFor="visibility">Visibility</Label>
                 <FormField
                   control={createSnippetForm.control}
-                  name="isPrivate"
+                  name="isPublic"
                   render={({ field }) => (
                     <FormItem className="flex items-center space-x-2 h-10 px-3 py-2 border border-border rounded-md bg-input">
                       <FormControl>

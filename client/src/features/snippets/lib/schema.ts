@@ -6,7 +6,7 @@ export const createSnippetSchema = z.object({
   note: z.string().optional(),
   language: z.string().nonempty(),
   code: z.string().nonempty(),
-  isPrivate: z.boolean(),
+  isPublic: z.boolean(),
   allowForking: z.boolean(),
   tags: z.array(z.string()).optional(),
   collection: z.string(),

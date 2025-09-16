@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc --noEmit",
     "start": "node --env-file=.env.production dist/index.js",
-    "dev": "tsx watch --tsconfig ./tsconfig.json --env-file=.env src/index.ts",
+    "dev": "NODE_ENV=development tsx watch --tsconfig ./tsconfig.json --env-file=.env src/index.ts",
     "db:generate": "npx drizzle-kit generate --config=./src/config/drizzle.config.ts",
     "db:push": "npx drizzle-kit push --config=./src/config/drizzle.config.ts",
     "db:studio": "npx drizzle-kit studio --config=./src/config/drizzle.config.ts",

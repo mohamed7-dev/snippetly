@@ -3,8 +3,6 @@ import {
   arrayContains,
   desc,
   eq,
-  getTableColumns,
-  inArray,
   isNotNull,
   like,
   lt,
@@ -14,17 +12,14 @@ import {
 import { Database } from "../../common/db";
 import {
   collectionsTable,
-  Friendship,
   friendshipsTable,
   snippetsTable,
   snippetsTagsTable,
+  Tags,
   tagsTable,
   usersTable,
 } from "../../common/db/schema";
 import { DiscoverUsersDtoType } from "./dto/discover-users.dto";
-import { GetCurrentUserFriendsDtoType } from "./dto/get-current-user-friends.dto";
-import { HttpException } from "../../common/lib/exception";
-import { StatusCodes } from "http-status-codes";
 
 export class UserReadService {
   /**
@@ -111,25 +106,12 @@ export class UserReadService {
     limit,
     query: searchString,
   }: DiscoverUsersDtoType & Required<Pick<DiscoverUsersDtoType, "limit">>) {
-    const recentTags = Database.client.$with("recent_tags").as(
-      Database.client
-        .select({
-          name: tagsTable.name,
-          addedBy: tagsTable.addedBy,
-        })
-        .from(tagsTable)
-        .limit(5)
-        .orderBy(desc(tagsTable.createdAt))
-    );
-
     const snippetsCount = Database.client.$count(
       snippetsTable,
       eq(snippetsTable.creatorId, usersTable.id)
     );
 
-    // Build base selection
-    let query = Database.client
-      .with(recentTags)
+    const query = Database.client
       .select({
         id: usersTable.id,
         name: usersTable.name,
@@ -148,11 +130,16 @@ export class UserReadService {
           )
         ),
         snippetsCount,
-        // snippetsCount,
-        recentTags: sql<string>`(
-          SELECT json_agg(row_to_json(s))
-          FROM recent_tags s
-        )`.as("recentTags"),
+        tags: sql<Pick<Tags, "name" | "id" | "addedBy">[] | []>`(
+          SELECT COALESCE(json_agg(row_to_json(tag_row)), '[]'::json)
+          FROM (
+            SELECT t.name, t.id, t.added_by
+            FROM ${tagsTable} t
+            WHERE t.added_by = ${usersTable.id}
+            ORDER BY t.created_at DESC
+            LIMIT 5
+          ) tag_row
+        )`.as("tags"),
       })
       .from(usersTable)
       .where(
@@ -176,8 +163,6 @@ export class UserReadService {
         )
       )
       .limit(limit + 1)
-      // .leftJoin(recentTags, eq(recentTags.addedBy, usersTable.id))
-      // Sort DESC by snippetsCount, then tie-break by id
       .orderBy(desc(snippetsCount), desc(usersTable.id));
 
     const [data, total] = await Promise.all([
@@ -199,225 +184,6 @@ export class UserReadService {
     return { data, total };
   }
 
-  async getUserFriends({
-    userId,
-    limit,
-    cursor,
-    query: searchString,
-  }: GetCurrentUserFriendsDtoType &
-    Required<Pick<GetCurrentUserFriendsDtoType, "limit">> & {
-      userId: number;
-    }) {
-    // Subquery: Get friend IDs for current user
-    const friendsSubquery = sql`
-    SELECT CASE
-      WHEN f.requester_id = ${userId} THEN f.addressee_id
-      ELSE f.requester_id
-    END as friend_id
-    FROM ${friendshipsTable} f
-    WHERE f.status = 'accepted'
-      AND (f.requester_id = ${userId} OR f.addressee_id = ${userId})
-  `;
-
-    // Subquery: recent 3 snippets for each friend (as JSON array)
-    const recentSnippets = sql<string[]>`(
-    SELECT json_agg(row_to_json(sn))
-    FROM (
-      SELECT s.id, s.title, s.slug, s.code, s.language, s.created_at
-      FROM ${snippetsTable} s
-      WHERE s.creator_id = ${usersTable.id}
-      ORDER BY s.created_at DESC
-      LIMIT 3
-    ) sn
-  )`;
-
-    // Snippets count
-    const snippetsCount = sql<number>`(
-      SELECT COUNT(*)
-      FROM ${snippetsTable} s
-      WHERE s.creator_id = ${usersTable.id}
-    )`;
-
-    let query = Database.client
-      .select({
-        id: usersTable.id,
-        name: usersTable.name,
-        firstName: usersTable.firstName,
-        lastName: usersTable.lastName,
-        image: usersTable.image,
-        bio: usersTable.bio,
-        recentSnippets,
-        snippetsCount,
-      })
-      .from(usersTable)
-      .where(
-        and(
-          inArray(usersTable.id, sql`(${friendsSubquery})`),
-          cursor ? lt(usersTable.id, cursor.id) : undefined,
-          searchString
-            ? or(
-                like(usersTable.name, `%${searchString}%`),
-                like(usersTable.email, `%${searchString}%`)
-              )
-            : undefined
-        )
-      )
-      .limit(limit + 1)
-      .orderBy(desc(usersTable.id));
-
-    const [data, total] = await Promise.all([
-      query,
-      Database.client.$count(
-        usersTable,
-        and(
-          inArray(usersTable.id, sql`(${friendsSubquery})`),
-          searchString
-            ? or(
-                like(usersTable.name, `%${searchString}%`),
-                like(usersTable.email, `%${searchString}%`)
-              )
-            : undefined
-        )
-      ),
-    ]);
-    return { data, total };
-  }
-
-  async getUserInbox({
-    userId,
-    limit,
-    cursor,
-    query: searchString,
-  }: GetCurrentUserFriendsDtoType &
-    Required<Pick<GetCurrentUserFriendsDtoType, "limit">> & {
-      userId: number;
-    }) {
-    // Get friends in the inbox of the userId where the userId is an addressee
-    const friendsInbox = Database.client.$with("friends_inbox").as(
-      Database.client
-        .select({
-          createdAt: friendshipsTable.createdAt,
-          requesterId: friendshipsTable.requesterId,
-        })
-        .from(friendshipsTable)
-        .where(
-          and(
-            eq(friendshipsTable.status, "accepted"),
-            eq(friendshipsTable.addresseeId, userId)
-          )
-        )
-    );
-
-    let query = Database.client
-      .with(friendsInbox)
-      .select({
-        id: usersTable.id,
-        name: usersTable.name,
-        firstName: usersTable.firstName,
-        lastName: usersTable.lastName,
-        image: usersTable.image,
-        bio: usersTable.bio,
-        requestSentAt: friendsInbox.createdAt,
-        snippetsCount: Database.client.$count(
-          snippetsTable,
-          eq(snippetsTable.creatorId, usersTable.id)
-        ),
-      })
-      .from(usersTable)
-      .leftJoin(friendsInbox, eq(friendsInbox.requesterId, usersTable.id))
-      .where(
-        and(
-          inArray(usersTable.id, sql`(${friendsInbox.requesterId})`),
-          cursor ? lt(usersTable.id, cursor.id) : undefined,
-          searchString
-            ? or(
-                like(usersTable.name, `%${searchString}%`),
-                like(usersTable.email, `%${searchString}%`)
-              )
-            : undefined
-        )
-      )
-      .limit(limit + 1)
-      .orderBy(desc(usersTable.id));
-
-    // TODO: adapt count to the searchString
-    const [data, total] = await Promise.all([
-      query,
-      Database.client.$count(
-        friendshipsTable,
-        eq(friendshipsTable.addresseeId, userId)
-      ),
-    ]);
-    return { data, total };
-  }
-
-  async getUserOutbox({
-    userId,
-    limit,
-    cursor,
-    query: searchString,
-  }: GetCurrentUserFriendsDtoType &
-    Required<Pick<GetCurrentUserFriendsDtoType, "limit">> & {
-      userId: number;
-    }) {
-    // Get friends in the inbox of the userId where the userId is an addressee
-    const friendsOutbox = Database.client.$with("friends_inbox").as(
-      Database.client
-        .select({
-          createdAt: friendshipsTable.createdAt,
-          addresseeId: friendshipsTable.addresseeId,
-        })
-        .from(friendshipsTable)
-        .where(
-          and(
-            eq(friendshipsTable.status, "accepted"),
-            eq(friendshipsTable.requesterId, userId)
-          )
-        )
-    );
-
-    let query = Database.client
-      .with(friendsOutbox)
-      .select({
-        id: usersTable.id,
-        name: usersTable.name,
-        firstName: usersTable.firstName,
-        lastName: usersTable.lastName,
-        image: usersTable.image,
-        bio: usersTable.bio,
-        snippetsCount: Database.client.$count(
-          snippetsTable,
-          eq(snippetsTable.creatorId, usersTable.id)
-        ),
-      })
-      .from(usersTable)
-      .where(
-        and(
-          inArray(usersTable.id, sql`(${friendsOutbox.addresseeId})`),
-          cursor ? lt(usersTable.id, cursor.id) : undefined,
-          searchString
-            ? or(
-                like(usersTable.name, `%${searchString}%`),
-                like(usersTable.email, `%${searchString}%`)
-              )
-            : undefined
-        )
-      )
-      .limit(limit + 1)
-      .orderBy(desc(usersTable.id));
-
-    // TODO: adapt count to the searchString
-    const [data, total] = await Promise.all([
-      query,
-      Database.client.$count(
-        friendshipsTable,
-        eq(friendshipsTable.requesterId, userId)
-      ),
-    ]);
-    return { data, total };
-  }
-
-  // Done
   async getUserForDashboard({ userId }: { userId: number }) {
     const snippetTags = Database.client.$with("snippet_tags").as(
       Database.client
@@ -506,7 +272,6 @@ export class UserReadService {
     return foundUser;
   }
 
-  // Done
   async getUserActivityStats({ userId }: { userId: number }) {
     const stats = await Database.client
       .select({
@@ -563,25 +328,6 @@ export class UserReadService {
     return stats;
   }
 
-  async getFriendshipRequestInfo({
-    addresseeId,
-    requesterId,
-  }: Pick<Friendship, "addresseeId" | "requesterId">) {
-    const [foundRequest] = await Database.client
-      .select({
-        ...getTableColumns(friendshipsTable),
-      })
-      .from(friendshipsTable)
-      .where(
-        and(
-          eq(friendshipsTable.requesterId, requesterId),
-          eq(friendshipsTable.addresseeId, addresseeId)
-        )
-      );
-
-    return foundRequest;
-  }
-
   async getUserProfile(
     id: number,
     isCurrentUserOwner: boolean,
@@ -602,8 +348,7 @@ export class UserReadService {
             loggedInUserId
               ? and(
                   eq(t.status, "accepted"),
-                  eq(t.requesterId, loggedInUserId),
-                  eq(t.addresseeId, id)
+                  eq(t.requesterId, loggedInUserId) // logged-in is requester
                 )
               : undefined,
         },
@@ -612,8 +357,7 @@ export class UserReadService {
             loggedInUserId
               ? and(
                   eq(t.status, "accepted"),
-                  eq(t.addresseeId, loggedInUserId),
-                  eq(t.requesterId, id)
+                  eq(t.addresseeId, loggedInUserId) // logged-in is addressee
                 )
               : undefined,
         },

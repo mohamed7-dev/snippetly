@@ -2,14 +2,13 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { getProfileSnippetsOptions } from '@/features/snippets/lib/api'
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
-import { useParams } from '@tanstack/react-router'
+import { Link, useParams } from '@tanstack/react-router'
 import { GitForkIcon } from 'lucide-react'
 
 export function SnippetsTabContent() {
   const { name } = useParams({ from: '/(public)/profile/$name' })
   const { data } = useSuspenseInfiniteQuery(getProfileSnippetsOptions(name))
   const snippets = data.pages?.flatMap((p) => p.items) ?? []
-  console.log(snippets)
   return (
     <div className="grid gap-4 md:grid-cols-2">
       {snippets.map((snippet) => (
@@ -17,7 +16,14 @@ export function SnippetsTabContent() {
           <CardHeader>
             <div className="flex items-start justify-between">
               <div>
-                <CardTitle className="text-lg">{snippet.title}</CardTitle>
+                <CardTitle className="text-lg hover:text-primary">
+                  <Link
+                    to="/dashboard/snippets/$slug"
+                    params={{ slug: snippet.slug }}
+                  >
+                    {snippet.title}
+                  </Link>
+                </CardTitle>
                 <p className="text-sm text-muted-foreground">
                   {snippet.description}
                 </p>

@@ -1,4 +1,4 @@
-import { LoginCard } from '@/features/auth'
+import { LoginCard } from '@/features/auth/components/login-card'
 
 export function LoginPageView() {
   return (

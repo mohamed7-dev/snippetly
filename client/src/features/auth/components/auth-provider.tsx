@@ -1,38 +1,53 @@
 import React from 'react'
-import {
-  getAccessToken,
-  getUser,
-  setAuth,
-  type LoggedInUser,
-} from '../lib/auth-store'
+import type { User } from '@/features/user/lib/types'
+import { jwtDecode } from 'jwt-decode'
+import { authStore } from '../lib/auth-store'
 
-type AuthContextValue = {
-  user: ReturnType<typeof getUser>
+export type LoggedInUser = Pick<User, 'email' | 'name' | 'id'> | null
+
+export interface AuthContextValue {
   accessToken: string | null
-  login: (token: string, user: LoggedInUser) => void
+  login: (token: string) => void
   logout: () => void
+  updateAccessToken: (token: string) => void
+  getCurrentUser: () => LoggedInUser
 }
 
-const AuthContext = React.createContext<AuthContextValue | undefined>(undefined)
+export const AuthContext = React.createContext<AuthContextValue | undefined>(
+  undefined,
+)
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = React.useState(getUser())
-  const [accessToken, setAccessToken] = React.useState(getAccessToken())
+  const [accessToken, setAccessToken] = React.useState<string | null>(null)
 
-  const login = (token: string, user: any) => {
-    setUser(user)
+  const login = (token: string) => {
     setAccessToken(token)
-    setAuth(token, user) // sync module store
   }
 
   const logout = () => {
-    setUser(null)
     setAccessToken(null)
-    setAuth(null, null) // sync module store
   }
 
+  const updateAccessToken = (token: string) => {
+    setAccessToken(token)
+  }
+
+  const getCurrentUser = () => {
+    if (accessToken) {
+      const decoded = jwtDecode<LoggedInUser>(accessToken)
+      return decoded
+    }
+    return null
+  }
+
+  React.useEffect(() => {
+    authStore.subscribe(setAccessToken)
+  }, [])
+
   return (
-    <AuthContext.Provider value={{ user, accessToken, login, logout }}>
+    <AuthContext.Provider
+      value={{ accessToken, login, logout, updateAccessToken, getCurrentUser }}
+    >
       {children}
     </AuthContext.Provider>
   )

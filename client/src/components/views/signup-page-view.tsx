@@ -1,4 +1,4 @@
-import { SignupCard } from '@/features/auth'
+import { SignupCard } from '@/features/auth/components/signup-card'
 
 export function SignupPageView() {
   return (

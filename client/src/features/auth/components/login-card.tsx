@@ -19,6 +19,7 @@ import { LoadingButton } from '@/components/inputs/loading-button'
 import { toast } from 'sonner'
 import { ProcessStatus } from '@/components/feedback/process-status'
 import { useAuth } from './auth-provider'
+import { authStore } from '../lib/auth-store'
 
 export function LoginCard() {
   const { login: authenticateUserOnClient } = useAuth()
@@ -40,15 +41,9 @@ export function LoginCard() {
     onSuccess: (data) => {
       console.log('Success Login', data)
       toast.success(data.message)
-      const user = data.data.user
       const accessToken = data.data.accessToken
-      authenticateUserOnClient(accessToken, {
-        name: user.name,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        id: user.id,
-      })
+      authenticateUserOnClient(accessToken)
+      authStore.setAccessToken(accessToken)
       navigate({ to: clientRoutes.dashboard, from: clientRoutes.login })
     },
     onError: (error) => {

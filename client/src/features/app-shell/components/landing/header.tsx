@@ -3,8 +3,11 @@ import { Link } from '@tanstack/react-router'
 import { HeaderWrapper } from '../header-wrapper'
 import { Logo } from '../logo'
 import { clientRoutes } from '@/lib/routes'
+import { useAuth } from '@/features/auth/components/auth-provider'
 
 export function LandingHeader() {
+  const { getCurrentUser } = useAuth()
+  const user = getCurrentUser()
   return (
     <HeaderWrapper className="py-0">
       <div className="container mx-auto sm:px-6 lg:px-8">
@@ -26,14 +29,20 @@ export function LandingHeader() {
               Testimonials
             </Link>
           </nav>
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" asChild>
-              <Link to={clientRoutes.login}>Sign In</Link>
+          {user ? (
+            <Button className="items-center" variant="ghost" asChild>
+              <Link to={clientRoutes.dashboard}>Go To Dashboard</Link>
             </Button>
-            <Button asChild>
-              <Link to={clientRoutes.signup}>Get Started</Link>
-            </Button>
-          </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" asChild>
+                <Link to={clientRoutes.login}>Sign In</Link>
+              </Button>
+              <Button asChild>
+                <Link to={clientRoutes.signup}>Get Started</Link>
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </HeaderWrapper>

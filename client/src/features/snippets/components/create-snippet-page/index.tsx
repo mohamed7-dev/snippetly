@@ -12,7 +12,7 @@ export function CreateSnippetPage() {
       description: '',
       code: '',
       language: '',
-      isPrivate: true,
+      isPublic: true,
       allowForking: true,
     },
     resolver: zodResolver(createSnippetSchema),

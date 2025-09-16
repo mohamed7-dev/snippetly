@@ -3,6 +3,8 @@ import { InboxTabContent } from './inbox-tab-content'
 import { OutboxTabContent } from './outbox-tab-content'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { getCurrentUserDashboardOptions } from '@/features/dashboard/lib/api'
+import React from 'react'
+import { PageLoader } from '@/components/loaders/page-loader'
 
 export function TabsSection() {
   const {
@@ -21,7 +23,9 @@ export function TabsSection() {
       </TabsList>
 
       <TabsContent value="incoming" className="space-y-4">
-        <InboxTabContent />
+        <React.Suspense fallback={<PageLoader />}>
+          <InboxTabContent />
+        </React.Suspense>
       </TabsContent>
 
       <TabsContent value="sent" className="space-y-4">

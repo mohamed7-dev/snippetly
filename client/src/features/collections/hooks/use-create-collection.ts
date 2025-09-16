@@ -6,7 +6,7 @@ import type { ErrorResponse, SharedSuccessRes } from '@/lib/types'
 import type { Collection } from '../lib/types'
 import type { AxiosError } from 'axios'
 
-type Input = CreateCollectionSchema
+type Input = Omit<CreateCollectionSchema, 'isPublic'> & { isPrivate: boolean }
 type CreateCollectionSuccessRes = SharedSuccessRes<Collection>
 type CreateCollectionErrorRes = AxiosError<ErrorResponse>
 

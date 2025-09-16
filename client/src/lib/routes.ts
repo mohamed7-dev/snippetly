@@ -37,6 +37,8 @@ export const serverEndpoints = {
     `/users/accept-friend/${friendName}`,
   rejectFriendshipRequest: (friendName: string) =>
     `/users/reject-friend/${friendName}`,
+  cancelFriendshipRequest: (friendName: string) =>
+    `/users/cancel-friend/${friendName}`,
   discoverUsers: '/users/discover',
   getCurrentUserProfile: '/users/current',
   getCurrentUserFriends: '/users/current/friends',

@@ -30,6 +30,7 @@ import {
 import { getCurrentUserCollectionsOptions } from '@/features/collections/lib/api'
 import { useGetCreateSnippetMutationState } from '../../hooks/use-create-snippet'
 import { useEnterTag } from '@/hooks/use-enter-tag'
+import { InfiniteLoader } from '@/components/loaders/infinite-loader'
 
 export function Sidebar() {
   const { data } = useSuspenseQuery(getPopularTagsOptions)
@@ -49,9 +50,12 @@ export function Sidebar() {
   const [mutationState] = useGetCreateSnippetMutationState()
   const isPending = mutationState?.status === 'pending'
 
-  const { data: collectionsData } = useSuspenseInfiniteQuery(
-    getCurrentUserCollectionsOptions,
-  )
+  const {
+    data: collectionsData,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useSuspenseInfiniteQuery(getCurrentUserCollectionsOptions)
   const collections = collectionsData.pages?.flatMap((p) => p.items) ?? []
 
   const handleDeselectingTags = (tag: string) => {
@@ -157,6 +161,16 @@ export function Sidebar() {
                         {collection.title}
                       </SelectItem>
                     ))}
+                    <InfiniteLoader
+                      hasNextPage={hasNextPage}
+                      fetchNextPage={fetchNextPage}
+                      isFetchingNextPage={isFetchingNextPage}
+                      Content={
+                        <SelectItem value={'not-selectable'} disabled>
+                          No more items
+                        </SelectItem>
+                      }
+                    />
                   </SelectContent>
                 </Select>
               </FormItem>

@@ -16,12 +16,13 @@ import { useLogout } from '@/features/auth/hooks/use-logout'
 import { toast } from 'sonner'
 import { useNavigate } from '@tanstack/react-router'
 import { clientRoutes } from '@/lib/routes'
-import { useAuth } from '@/features/auth'
 import { Link } from '@tanstack/react-router'
+import { useAuth } from '@/features/auth/components/auth-provider'
 
 export function DashBoardHeader() {
   const navigate = useNavigate()
-  const { logout: logoutOnClient } = useAuth()
+  const { logout: logoutOnClient, getCurrentUser } = useAuth()
+  const user = getCurrentUser()
   const { mutateAsync: logout, isPending } = useLogout({
     onSuccess: (data) => {
       toast.success(data.message)
@@ -66,24 +67,35 @@ export function DashBoardHeader() {
                   src="/placeholder.svg?height=32&width=32"
                   alt="User"
                 />
-                <AvatarFallback>JD</AvatarFallback>
+                <AvatarFallback>{user?.name?.slice(0, 1)}</AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56" align="end" forceMount>
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">John Doe</p>
+                <p className="text-sm font-medium leading-none">
+                  {user?.name ?? ''}
+                </p>
                 <p className="text-xs leading-none text-muted-foreground">
-                  john@example.com
+                  {user?.email}
                 </p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
 
-            <DropdownMenuItem>
-              <UsersIcon className="mr-2 h-4 w-4" />
-              <span>Friends</span>
+            <DropdownMenuItem asChild>
+              <Button
+                variant={'ghost'}
+                size={'sm'}
+                className="justify-start"
+                asChild
+              >
+                <Link to="/dashboard/friends">
+                  <UsersIcon className="mr-2 h-4 w-4" />
+                  <span>Friends</span>
+                </Link>
+              </Button>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem disabled={isPending} onClick={handleLogout}>

@@ -1,16 +1,31 @@
-import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { CalendarIcon, UsersIcon } from 'lucide-react'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { getUserProfile } from '../../lib/api'
 import { useParams } from '@tanstack/react-router'
+import { useSendFriendshipRequest } from '../../hooks/use-send-friendship-request'
+import { toast } from 'sonner'
+import { LoadingButton } from '@/components/inputs/loading-button'
 
 export function ProfileInfo() {
   const { name } = useParams({ from: '/(public)/profile/$name' })
   const { data } = useSuspenseQuery(getUserProfile(name))
   const profile = data.data
   const stats = data.stats
+  const {
+    mutateAsync: sendRequest,
+    isPending,
+    reset,
+  } = useSendFriendshipRequest({
+    onSuccess: (data) => {
+      toast.success(data.message)
+      reset()
+    },
+    onError: (error) => {
+      toast.error(error.message)
+    },
+  })
   return (
     <Card>
       <CardContent className="pt-6">
@@ -53,13 +68,15 @@ export function ProfileInfo() {
 
             {!profile.isCurrentUserAFriend && (
               <div className="flex gap-2">
-                <Button
+                <LoadingButton
+                  isLoading={isPending}
                   variant="outline"
-                  // onClick={handleSendFriendRequest}
+                  disabled={isPending}
+                  onClick={() => sendRequest({ friendName: name })}
                 >
                   <UsersIcon className="h-4 w-4 mr-2" />
                   Add Friend
-                </Button>
+                </LoadingButton>
               </div>
             )}
           </div>

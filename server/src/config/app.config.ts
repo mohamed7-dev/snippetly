@@ -25,4 +25,4 @@ export const JWT_ACCESS_EXPIRES = isDevelopment
   : 15 * 60 * 1000; // 15 minutes;
 export const JWT_REFRESH_EXPIRES = isDevelopment
   ? 7 * 24 * 60 * 60 * 1000 // 7 days
-  : 7 * 24 * 60 * 60 * 1000; //7 days;
+  : 7 * 24 * 60 * 60 * 1000; // 7 days;
