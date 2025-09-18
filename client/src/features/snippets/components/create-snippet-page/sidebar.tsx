@@ -157,7 +157,10 @@ export function Sidebar() {
                   </FormControl>
                   <SelectContent>
                     {collections.map((collection) => (
-                      <SelectItem key={collection.id} value={collection.slug}>
+                      <SelectItem
+                        key={collection.publicId}
+                        value={collection.publicId}
+                      >
                         {collection.title}
                       </SelectItem>
                     ))}

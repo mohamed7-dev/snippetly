@@ -43,7 +43,7 @@ export function CreateSnippetForm() {
       navigate({
         from: '/dashboard/snippets/new',
         to: '/dashboard/snippets/$slug',
-        params: { slug: data.data.slug },
+        params: { slug: data.data.publicId },
       })
     },
     onError: (error) => {

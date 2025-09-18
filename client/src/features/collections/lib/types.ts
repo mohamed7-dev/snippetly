@@ -1,13 +1,19 @@
 export interface Collection {
-  id: number
   title: string
-  slug: string
+  publicId: string
   description: string | null
   color: string
   isPrivate: boolean
   allowForking: boolean
-  forkedFrom: number | null
-  createdAt: Date
-  updatedAt: Date
-  creatorId: number
+  isForked: boolean
+  addedAt: string
+  lastUpdatedAt: string
+  creatorName: string
+}
+
+export type CollectionStats = {
+  totalCollections: number
+  publicCollections: number
+  totalSnippets: number
+  forkedCollections: number
 }

@@ -21,16 +21,19 @@ export function OutboxTabContent() {
     <React.Fragment>
       <div className="space-y-4">
         {users.map((request) => (
-          <Card key={request.id} className="hover:shadow-md transition-shadow">
+          <Card
+            key={request.username}
+            className="hover:shadow-md transition-shadow"
+          >
             <CardContent className="pt-6">
               <div className="flex items-start gap-4">
                 <Avatar className="h-12 w-12">
                   <AvatarImage
                     src={request.image || '/placeholder.svg'}
-                    alt={request.name}
+                    alt={request.username}
                   />
                   <AvatarFallback>
-                    {request.name
+                    {request.fullName
                       .split(' ')
                       .map((n) => n[0])
                       .join('')}
@@ -42,13 +45,13 @@ export function OutboxTabContent() {
                     <div className="flex items-center gap-2">
                       <Link
                         to={`/profile/$name`}
-                        params={{ name: request.name }}
+                        params={{ name: request.username }}
                         className="font-semibold hover:text-primary"
                       >
                         {request.firstName.concat(' ', request.lastName)}
                       </Link>
                       <span className="text-sm text-muted-foreground">
-                        @{request.name}
+                        @{request.username}
                       </span>
                       <Badge variant="secondary" className="text-xs">
                         Sent{' '}
@@ -71,13 +74,16 @@ export function OutboxTabContent() {
                       variant="outline"
                       disabled={isCancelling}
                       onClick={() =>
-                        cancelRequest({ friendName: request.name })
+                        cancelRequest({ friendName: request.username })
                       }
                     >
                       <XIcon className="h-4 w-4 mr-1" />
                       Cancel Request
                     </LoadingButton>
-                    <Link to={`/profile/$name`} params={{ name: request.name }}>
+                    <Link
+                      to={`/profile/$name`}
+                      params={{ name: request.username }}
+                    >
                       <Button size="sm" variant="ghost">
                         View Profile
                       </Button>

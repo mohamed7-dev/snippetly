@@ -1,98 +1,290 @@
 import z from "zod";
-import { SelectTagDto } from "../../tag/dto/select-tag.dto";
-import { SelectUserDto } from "../../user/dto/select-user.dto";
-import { SelectSnippetDto } from "../../snippet/dto/select-snippet.dto";
 import { SelectCollectionDto } from "./select-collection.dto";
+import { SelectUserDto } from "../../user/dto/select-user.dto";
+import { SelectTagDto } from "../../tag/dto/select-tag.dto";
+import { SelectSnippetDto } from "../../snippet/dto/select-snippet.dto";
 
-// Find Collections
-export const FindCollectionsResponseDto = z.object({
-  items: z.array(
-    SelectCollectionDto.extend({
+//######################## Mutation #####################
+const CommonMutationSchema = SelectCollectionDto.omit({
+  id: true,
+  creatorId: true,
+}).extend({
+  creatorName: z.string(),
+});
+
+export const CreateCollectionResDto = CommonMutationSchema.omit({
+  forkedFrom: true,
+  updatedAt: true,
+}).transform((val) => {
+  const { createdAt, slug, ...rest } = val;
+  return {
+    ...rest,
+    addedAt: createdAt,
+    publicId: slug,
+  };
+});
+
+export const UpdateCollectionResDto = CommonMutationSchema.transform((val) => {
+  const { createdAt, updatedAt, slug, forkedFrom, ...rest } = val;
+  return {
+    ...rest,
+    addedAt: createdAt,
+    lastUpdatedAt: updatedAt,
+    publicId: slug,
+    isForked: !!forkedFrom,
+  };
+});
+
+export const ForkCollectionResDto = CommonMutationSchema.omit({
+  updatedAt: true,
+}).transform((val) => {
+  const { createdAt, forkedFrom, slug, ...rest } = val;
+  return {
+    ...rest,
+    addedAt: createdAt,
+    publicId: slug,
+    isForked: !!forkedFrom,
+  };
+});
+
+// ############################ Query ########################
+
+// discover collections
+export const DiscoverCollectionsResDto = z.array(
+  SelectCollectionDto.omit({
+    isPrivate: true,
+    id: true,
+    creatorId: true,
+    forkedFrom: true,
+    updatedAt: true,
+  })
+    .extend({
       creator: SelectUserDto.pick({
         name: true,
         firstName: true,
         lastName: true,
-        email: true,
-        id: true,
+        image: true,
+      }),
+      tags: z.array(SelectTagDto.pick({ name: true })),
+    })
+    .transform((val) => {
+      const {
+        slug,
+        creator: { name, ...creatorRes },
+        createdAt,
+        ...rest
+      } = val;
+      return {
+        ...rest,
+        addedAt: createdAt,
+        publicId: slug,
+        creator: {
+          ...creatorRes,
+          username: name,
+          fullName: creatorRes.firstName.concat(" ", creatorRes.lastName),
+        },
+      };
+    })
+);
+
+// Common Schema
+const UserCollectionsSchema = z.object({
+  stats: z.object({
+    totalCollections: z.number(),
+    publicCollections: z.number(),
+    totalSnippets: z.number(),
+    forkedCollections: z.number(),
+  }),
+  collections: z.array(
+    SelectCollectionDto.omit({
+      id: true,
+      creatorId: true,
+      oldSlugs: true,
+    }).extend({
+      snippetsCount: z.number(),
+      creator: SelectUserDto.pick({
+        name: true,
+        firstName: true,
+        lastName: true,
+        image: true,
       }),
       tags: z.array(SelectTagDto.pick({ name: true })),
       snippets: z.array(
         SelectSnippetDto.pick({
           title: true,
-          id: true,
           slug: true,
-          parseFormat: true,
-          isPrivate: true,
-          allowForking: true,
+          language: true,
+          createdAt: true,
         })
       ),
-      snippetsCount: z.number(),
-      forkedCount: z.number(),
     })
-  ),
-  stats: z
-    .object({
-      collectionsCount: z.number(),
-      snippetsCount: z.number(),
-      forkedCount: z.number(),
-      publicCount: z.number(),
-    })
-    .nullish(),
-});
-
-export type FindFoldersResponseDtoType = z.infer<typeof FindFoldersResponseDto>;
-
-export const FindPublicFoldersResponseDto = FindFoldersResponseDto.omit({
-  items: true,
-}).extend({
-  items: z.array(
-    FindFoldersResponseDto.shape.items
-      .unwrap()
-      .omit({
-        isPrivate: true,
-        snippets: true,
-      })
-      .extend({
-        snippets: z.array(
-          FindFoldersResponseDto.shape.items
-            .unwrap()
-            .shape.snippets.unwrap()
-            .omit({
-              isPrivate: true,
-            })
-        ),
-      })
   ),
 });
 
-export type FindPublicFoldersResponseDtoType = z.infer<
-  typeof FindPublicFoldersResponseDto
+// Get Current User Collections (Owner)
+export const GetCurrentUserCollectionsResDto = z.object({
+  stats: UserCollectionsSchema.shape.stats,
+  collections: z.array(
+    UserCollectionsSchema.shape.collections.unwrap().transform((val) => {
+      const {
+        creator: { name, ...creatorRest },
+        snippets,
+        createdAt,
+        slug,
+        updatedAt,
+        forkedFrom,
+        ...rest
+      } = val;
+      return {
+        ...rest,
+        publicId: slug,
+        addedAt: createdAt,
+        lastUpdatedAt: updatedAt,
+        isForked: !!forkedFrom,
+        creator: {
+          ...creatorRest,
+          username: name,
+          fullName: creatorRest.firstName.concat(" ", creatorRest.lastName),
+        },
+        snippets: snippets.map((snippet) => {
+          const { slug, createdAt, ...rest } = snippet;
+          return {
+            ...rest,
+            publicId: slug,
+            addedAt: createdAt,
+          };
+        }),
+      };
+    })
+  ),
+});
+export type GetCurrentUserCollectionsResDtoType = z.infer<
+  typeof GetCurrentUserCollectionsResDto
 >;
 
-// Find Folder
-export const FindFolderResDto = FindFoldersResponseDto.shape.items
+// Get Current User Collections (Public)
+export const GetPublicUserCollectionsResDto = z.object({
+  stats: UserCollectionsSchema.shape.stats,
+  collections: z.array(
+    UserCollectionsSchema.shape.collections
+      .unwrap()
+      .omit({
+        forkedFrom: true,
+        updatedAt: true,
+        isPrivate: true,
+      })
+      .transform((val) => {
+        const {
+          creator: { name, ...creatorRest },
+          snippets,
+          createdAt,
+          slug,
+          ...rest
+        } = val;
+        return {
+          ...rest,
+          publicId: slug,
+          addedAt: createdAt,
+          creator: {
+            ...creatorRest,
+            username: name,
+            fullName: creatorRest.firstName.concat(" ", creatorRest.lastName),
+          },
+          snippets: snippets.map((snippet) => {
+            const { slug, createdAt, ...rest } = snippet;
+            return {
+              ...rest,
+              publicId: slug,
+              addedAt: createdAt,
+            };
+          }),
+        };
+      })
+  ),
+});
+export type GetPublicUserCollectionsResDtoType = z.infer<
+  typeof GetPublicUserCollectionsResDto
+>;
+
+// Get Collection (Owner)
+
+export const GetCollectionResDto = UserCollectionsSchema.shape.collections
   .unwrap()
   .extend({
-    snippets: z
-      .array(
-        SelectSnippetDto.pick({
-          title: true,
-          slug: true,
-          id: true,
-          isPrivate: true,
-        })
-      )
-      .default([]),
+    snippetsCount: z.number(),
+  })
+  .transform((val) => {
+    const {
+      creator: { name, ...creatorRest },
+      snippets,
+      createdAt,
+      slug,
+      updatedAt,
+      forkedFrom,
+      ...rest
+    } = val;
+    return {
+      ...rest,
+      publicId: slug,
+      addedAt: createdAt,
+      lastUpdatedAt: updatedAt,
+      isForked: !!forkedFrom,
+      creator: {
+        ...creatorRest,
+        username: name,
+        fullName: creatorRest.firstName.concat(" ", creatorRest.lastName),
+      },
+      snippets: snippets.map((snippet) => {
+        const { slug, createdAt, ...rest } = snippet;
+        return {
+          ...rest,
+          publicId: slug,
+          addedAt: createdAt,
+        };
+      }),
+    };
   });
-export type FindFolderResDtoType = z.infer<typeof FindFolderResDto>;
+export type GetCollectionResDtoType = z.infer<typeof GetCollectionResDto>;
 
-export const FindPublicFolderResDto =
-  FindPublicFoldersResponseDto.shape.items.unwrap();
+// Get Collection (Public)
 
-export type FindPublicFolderResDtoType = z.infer<typeof FindPublicFolderResDto>;
-
-// Create Folder Response
-export const CreateCollectionResDto = SelectCollectionDto;
-
-// Update Folder Response
-export const UpdateCollectionResDto = SelectCollectionDto;
+export const GetPublicCollectionResDto = UserCollectionsSchema.shape.collections
+  .unwrap()
+  .omit({
+    forkedFrom: true,
+    updatedAt: true,
+    isPrivate: true,
+  })
+  .extend({
+    snippetsCount: z.number(),
+  })
+  .transform((val) => {
+    const {
+      creator: { name, ...creatorRest },
+      snippets,
+      createdAt,
+      slug,
+      ...rest
+    } = val;
+    return {
+      ...rest,
+      publicId: slug,
+      addedAt: createdAt,
+      creator: {
+        ...creatorRest,
+        username: name,
+        fullName: creatorRest.firstName.concat(" ", creatorRest.lastName),
+      },
+      snippets: snippets.map((snippet) => {
+        const { slug, createdAt, ...rest } = snippet;
+        return {
+          ...rest,
+          publicId: slug,
+          addedAt: createdAt,
+        };
+      }),
+    };
+  });
+export type GetPublicCollectionResDtoType = z.infer<
+  typeof GetPublicCollectionResDto
+>;

@@ -51,7 +51,7 @@ export function CollectionsGridSection() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {collections.map((collection) => (
           <Card
-            key={collection.id}
+            key={collection.publicId}
             className="border-border hover:shadow-lg transition-shadow group"
           >
             <CardHeader className="pb-3">
@@ -62,7 +62,7 @@ export function CollectionsGridSection() {
                     <CardTitle className="text-lg font-heading group-hover:text-primary transition-colors">
                       <Link
                         to={'/dashboard/collections/$slug'}
-                        params={{ slug: collection.slug }}
+                        params={{ slug: collection.publicId }}
                       >
                         {collection.title}
                       </Link>
@@ -86,7 +86,7 @@ export function CollectionsGridSection() {
                     <DropdownMenuItem asChild>
                       <Link
                         to={'/dashboard/collections/$slug'}
-                        params={{ slug: collection.slug }}
+                        params={{ slug: collection.publicId }}
                       >
                         <EyeIcon className="mr-2 h-4 w-4" />
                         View Collection
@@ -95,7 +95,7 @@ export function CollectionsGridSection() {
                     <DropdownMenuItem asChild>
                       <Link
                         to={'/dashboard/collections/$slug/edit'}
-                        params={{ slug: collection.slug }}
+                        params={{ slug: collection.publicId }}
                       >
                         <EditIcon className="mr-2 h-4 w-4" />
                         Edit
@@ -104,7 +104,7 @@ export function CollectionsGridSection() {
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       className="text-destructive focus:text-destructive"
-                      onClick={() => handleDelete(collection.slug)}
+                      onClick={() => handleDelete(collection.publicId)}
                       disabled={isDeleting}
                     >
                       <Trash2Icon className="mr-2 h-4 w-4" />
@@ -123,9 +123,12 @@ export function CollectionsGridSection() {
                     Public
                   </Badge>
                 )}
-                <span className="text-xs text-muted-foreground ml-auto">
-                  Updated {new Date(collection.updatedAt).toLocaleDateString()}
-                </span>
+                {collection.lastUpdatedAt && (
+                  <span className="text-xs text-muted-foreground ml-auto">
+                    Updated{' '}
+                    {new Date(collection.lastUpdatedAt).toLocaleDateString()}
+                  </span>
+                )}
               </div>
             </CardHeader>
 

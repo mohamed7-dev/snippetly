@@ -21,12 +21,14 @@ export const usersTable = pgTable(
   {
     ...baseTable,
     name: text("name").notNull(),
+    oldNames: text("old_names").array().default([]).notNull(),
     firstName: text("firstName").notNull(),
     lastName: text("lastName").notNull(),
     email: text("email").notNull(),
     password: text("password").notNull(),
     bio: text("bio"),
     image: text("image"),
+    rememberMe: boolean("remember_me").default(false).notNull(),
     isPrivate: boolean("is_private").default(false).notNull(),
     acceptedPolicies: boolean("accepted_policies").default(true).notNull(),
     emailVerifiedAt: timestamp("email_verified_at", { mode: "date" }),
@@ -43,6 +45,7 @@ export const usersTable = pgTable(
   },
   (t) => [
     uniqueIndex().on(t.name),
+    index().on(t.oldNames),
     uniqueIndex().on(t.email),
     index().on(t.firstName),
     index().on(t.lastName),
@@ -66,6 +69,7 @@ export const friendshipStatus = pgEnum("friendship_status", [
   "pending",
   "accepted",
   "rejected",
+  "cancelled",
 ]);
 
 export const friendshipsTable = pgTable(
@@ -75,12 +79,13 @@ export const friendshipsTable = pgTable(
     requesterId: integer("requester_id")
       .references(() => usersTable.id, { onDelete: "cascade" })
       .notNull(),
-
     addresseeId: integer("addressee_id")
       .references(() => usersTable.id, { onDelete: "cascade" })
       .notNull(),
-
     status: friendshipStatus("status").default("pending").notNull(),
+    acceptedAt: timestamp("accepted_at", { mode: "date" }),
+    rejectedAt: timestamp("rejected_at", { mode: "date" }),
+    cancelledAt: timestamp("cancelled_at", { mode: "date" }),
   },
   (t) => [
     unique().on(t.requesterId, t.addresseeId),
@@ -110,7 +115,8 @@ export const collectionsTable = pgTable(
   {
     ...baseTable,
     title: text("title").notNull(),
-    slug: text("slug").unique().notNull(),
+    slug: text("slug").notNull(),
+    oldSlugs: text("old_slugs").array().default([]).notNull(),
     description: text("description"),
     color: text("color").notNull(),
     isPrivate: boolean("is_private").default(false).notNull(),
@@ -129,6 +135,8 @@ export const collectionsTable = pgTable(
   },
   (t) => [
     index().on(t.creatorId),
+    index().on(t.oldSlugs),
+    uniqueIndex().on(t.slug),
     index("collection_title_search_index").using(
       "gin",
       sql`to_tsvector('english', ${t.title})`
@@ -165,7 +173,8 @@ export const snippetsTable = pgTable(
   {
     ...baseTable,
     title: text("title").notNull(),
-    slug: text("slug").unique().notNull(),
+    slug: text("slug").notNull(),
+    oldSlugs: text("old_slugs").array().default([]).notNull(),
     code: text("code").notNull(),
     language: text("language").notNull(),
     description: text("description"),
@@ -192,6 +201,8 @@ export const snippetsTable = pgTable(
   (t) => [
     index().on(t.creatorId),
     index().on(t.collectionId),
+    index().on(t.oldSlugs),
+    uniqueIndex().on(t.slug),
     index("snippet_title_search_index").using(
       "gin",
       sql`to_tsvector('english', ${t.title})`

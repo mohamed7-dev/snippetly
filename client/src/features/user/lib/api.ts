@@ -2,7 +2,7 @@ import { api } from '@/lib/api'
 import { serverEndpoints } from '@/lib/routes'
 import type { SharedPaginatedSuccessRes, SharedSuccessRes } from '@/lib/types'
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query'
-import type { User } from './types'
+import type { Friendship, User, UserActivityStats } from './types'
 import type { Collection } from '@/features/collections/lib/types'
 import type { Snippet } from '@/features/snippets/lib/types'
 import type { Tag } from '@/features/tags/lib/types'
@@ -10,21 +10,33 @@ import type { Tag } from '@/features/tags/lib/types'
 // Get User Profile
 type ProfileItem = Pick<
   User,
-  'name' | 'firstName' | 'lastName' | 'id' | 'image' | 'bio' | 'createdAt'
-> & {
-  isCurrentUserAFriend: boolean
-}
-type GetUserProfileSuccessRes = SharedSuccessRes<ProfileItem> & {
-  stats: {
-    snippetsCount: number
-    collectionsCount: number
-    forkedSnippetsCount: number
-    forkedCollectionsCount: number
-    friendsCount: number
-    friendsInboxCount: number
-    friendsOutboxCount: number
-  }
-}
+  | 'username'
+  | 'firstName'
+  | 'lastName'
+  | 'fullName'
+  | 'image'
+  | 'bio'
+  | 'joinedAt'
+  | 'lastUpdatedAt'
+  | 'acceptedPolicies'
+  | 'emailVerifiedAt'
+  | 'isPrivate'
+>
+
+type GetUserProfileSuccessRes = SharedSuccessRes<{
+  profile: Omit<
+    ProfileItem,
+    'acceptedPolicies' | 'isPrivate' | 'emailVerifiedAt' | 'lastUpdatedAt'
+  > &
+    Partial<
+      Pick<
+        ProfileItem,
+        'acceptedPolicies' | 'isPrivate' | 'emailVerifiedAt' | 'lastUpdatedAt'
+      >
+    >
+  stats: UserActivityStats
+  isCurrentUserAFriend?: boolean
+}>
 export const getUserProfile = (name: string) =>
   queryOptions({
     queryKey: ['users', 'profiles', name],
@@ -36,16 +48,18 @@ export const getUserProfile = (name: string) =>
     },
   })
 
+// ######################### Shared Types #######################
 type Cursor = {
   id: number
 }
+
 type UserItem = Pick<
   User,
-  'id' | 'name' | 'firstName' | 'lastName' | 'image' | 'bio'
-> & {
-  snippetsCount: number
-  requestSentAt: Date
-}
+  'username' | 'firstName' | 'lastName' | 'fullName' | 'image' | 'bio'
+> &
+  Pick<Friendship, 'requestStatus' | 'requestSentAt'> & {
+    snippetsCount: number
+  }
 
 // Get Current User Inbox
 type GetCurrentUserInboxSuccessRes = SharedPaginatedSuccessRes<UserItem[]>
@@ -84,9 +98,9 @@ export const getCurrentUserOutbox = infiniteQueryOptions({
 })
 
 // Get Current User Friends
-type UserFriendItem = Omit<UserItem, 'requestSentAt'> & {
-  recentSnippets: Pick<Snippet, 'title' | 'slug' | 'code' | 'language'>[]
-  snippetsCount: number
+type UserFriendItem = UserItem & {
+  requestAcceptedAt: string
+  recentSnippets: Pick<Snippet, 'title' | 'publicId' | 'addedAt' | 'language'>[]
 }
 type GetCurrentUserFriendsSuccessRes = SharedPaginatedSuccessRes<
   UserFriendItem[]
@@ -108,10 +122,17 @@ export const getCurrentUserFriends = infiniteQueryOptions({
 })
 
 // Get Current User Friends Snippets
-type UserFriendSnippetItem = Snippet & {
-  friend: Pick<User, 'name' | 'firstName' | 'lastName' | 'image' | 'id'>
-  collection: Pick<Collection, 'title' | 'slug' | 'id' | 'color'>
+type UserFriendSnippetItem = Omit<
+  Snippet,
+  'lastUpdatedAt' | 'isPrivate' | 'notes'
+> & {
+  creator: Pick<
+    User,
+    'username' | 'firstName' | 'lastName' | 'fullName' | 'image'
+  >
+  collection: Pick<Collection, 'title' | 'publicId' | 'color'>
   tags: Pick<Tag, 'name'>[]
+  forkedCount: number
 }
 type GetCurrentUserFriendsSnippetsSuccessRes = SharedPaginatedSuccessRes<
   UserFriendSnippetItem[]

@@ -41,7 +41,7 @@ export function StatsSection() {
             <GitForkIcon className="h-4 w-4 text-accent" />
             <span className="text-sm font-medium">Forked Collections</span>
           </div>
-          <p className="text-2xl font-bold mt-1">{stats.forkedCount}</p>
+          <p className="text-2xl font-bold mt-1">{stats.forkedCollections}</p>
         </CardContent>
       </Card>
     </div>

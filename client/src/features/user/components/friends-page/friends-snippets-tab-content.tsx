@@ -36,14 +36,19 @@ export function FriendsSnippetsTabContent() {
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         {snippets.map((snippet) => (
           <Card
-            key={snippet.id}
+            key={snippet.publicId}
             className="border-border hover:shadow-lg transition-shadow"
           >
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <CardTitle className="text-lg font-heading">
-                    {snippet.title}
+                  <CardTitle className="text-lg font-heading hover:text-primary">
+                    <Link
+                      to="/dashboard/snippets/$slug"
+                      params={{ slug: snippet.publicId }}
+                    >
+                      {snippet.title}
+                    </Link>
                   </CardTitle>
                   <CardDescription className="mt-1">
                     {snippet.description}
@@ -53,22 +58,18 @@ export function FriendsSnippetsTabContent() {
               <div className="flex items-center gap-2 mt-3">
                 <Avatar className="h-6 w-6">
                   <AvatarImage
-                    src={snippet.friend.image || '/placeholder.svg'}
-                    alt={snippet.friend.name}
+                    src={snippet.creator.image || '/placeholder.svg'}
+                    alt={snippet.creator.username}
                   />
                   <AvatarFallback>
-                    {snippet.friend.name
+                    {snippet.creator.fullName
                       .split(' ')
                       .map((n) => n[0])
                       .join('')}
                   </AvatarFallback>
                 </Avatar>
                 <span className="text-sm text-muted-foreground">
-                  by{' '}
-                  {snippet.friend.firstName.concat(
-                    ' ',
-                    snippet.friend.lastName,
-                  )}
+                  by {snippet.creator.fullName}
                 </span>
                 <Badge
                   variant="secondary"
@@ -86,7 +87,7 @@ export function FriendsSnippetsTabContent() {
               </div>
               <div className="flex items-center justify-between mt-4">
                 <span className="text-xs text-muted-foreground">
-                  {new Date(snippet.createdAt)?.toLocaleDateString()}
+                  {new Date(snippet.addedAt)?.toLocaleDateString()}
                 </span>
               </div>
               <div className="flex items-center gap-1 mt-3 flex-wrap">

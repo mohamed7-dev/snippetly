@@ -24,7 +24,6 @@ export function useRefresh(
       options?.onSuccess?.(data, variables, context)
     },
     onError: (error, variables, context) => {
-      console.log(error)
       options?.onError?.(error, variables, context)
     },
   })

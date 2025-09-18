@@ -12,7 +12,7 @@ export function SnippetsGridSection() {
   })
   const { data, hasNextPage, isFetchingNextPage, fetchNextPage } =
     useSuspenseInfiniteQuery(getSnippetsByCollectionOptions(params.slug))
-  const snippets = data.pages?.flatMap((p) => p.items) ?? []
+  const snippets = data.pages?.flatMap((p) => p.items.snippets) ?? []
   const total = data.pages?.[0].total
 
   return (
@@ -30,7 +30,7 @@ export function SnippetsGridSection() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         {snippets.map((snippet) => (
-          <SnippetCard key={snippet.id} snippet={snippet} />
+          <SnippetCard key={snippet.publicId} snippet={snippet} />
         ))}
       </div>
       <InfiniteLoader

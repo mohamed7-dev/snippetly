@@ -5,7 +5,7 @@ import { getCurrentUserDashboardOptions } from '../lib/api'
 
 export function StatsSection() {
   const query = useSuspenseQuery(getCurrentUserDashboardOptions)
-  const stats = query.data.stats
+  const stats = query.data.data.stats
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
       <Card>

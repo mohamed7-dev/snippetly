@@ -39,15 +39,11 @@ export function LoginCard() {
     error,
   } = useLogin({
     onSuccess: (data) => {
-      console.log('Success Login', data)
       toast.success(data.message)
       const accessToken = data.data.accessToken
       authenticateUserOnClient(accessToken)
       authStore.setAccessToken(accessToken)
       navigate({ to: clientRoutes.dashboard, from: clientRoutes.login })
-    },
-    onError: (error) => {
-      console.log('Error Login', error)
     },
   })
   const onSubmit = async (values: LoginSchema) => {

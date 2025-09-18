@@ -1,15 +1,25 @@
-import { and, desc, eq, getTableColumns, like, lt, or, sql } from "drizzle-orm";
+import {
+  and,
+  arrayContains,
+  desc,
+  eq,
+  getTableColumns,
+  lt,
+  or,
+  sql,
+} from "drizzle-orm";
 import { Database } from "../../common/db";
 import {
   collectionsTable,
   collectionsTagsTable,
+  Snippet,
   snippetsTable,
+  Tags,
   tagsTable,
   usersTable,
 } from "../../common/db/schema";
 import {
   DiscoverCollectionsDtoType,
-  FindCollectionDtoType,
   FindCollectionsDtoType,
 } from "./dto/find-collection.dto";
 
@@ -18,15 +28,39 @@ export class CollectionReadService {
    * NO Joined fields
    */
   async findOneSlim(by: "slug" | "id", value: number | string) {
-    return await Database.client
-      .select()
-      .from(collectionsTable)
-      .where(
+    return await Database.client.query.collectionsTable.findFirst({
+      where: (t, { or, eq }) =>
         or(
-          by === "id" ? eq(collectionsTable.id, value as number) : undefined,
-          by === "slug" ? eq(collectionsTable.slug, value as string) : undefined
-        )
-      );
+          by === "id" ? eq(t.id, value as number) : undefined,
+          by === "slug" ? eq(t.slug, value as string) : undefined
+        ),
+    });
+  }
+  /**
+   * NO Joined fields
+   */
+  async findOneSlimByOldSlug(slug: string) {
+    return await Database.client.query.collectionsTable.findFirst({
+      where: (t) => arrayContains(t.oldSlugs, [slug]),
+    });
+  }
+
+  async findOneSlimWithCreator(by: "slug" | "id", value: number | string) {
+    return await Database.client.query.collectionsTable.findFirst({
+      where: (t, { or, eq }) =>
+        or(
+          by === "id" ? eq(t.id, value as number) : undefined,
+          by === "slug" ? eq(t.slug, value as string) : undefined
+        ),
+      with: {
+        creator: {
+          columns: {
+            password: false,
+            refreshTokens: false,
+          },
+        },
+      },
+    });
   }
 
   async findOneWithTags(by: "slug" | "id", value: number | string) {
@@ -63,18 +97,22 @@ export class CollectionReadService {
             firstName: usersTable.firstName,
             lastName: usersTable.lastName,
           },
-          tags: sql<null | string>`
-        (
-            SELECT json_agg(row_to_json(t))
-            FROM (
-                SELECT tg.id, tg.name
-                FROM ${collectionsTagsTable} ct
-                INNER JOIN ${tagsTable} tg ON tg.id = ct.tag_id
-                WHERE ct.collection_id = ${collectionsTable.id}
-                ORDER BY tg.name ASC
-            ) t
-        )
-        `.as("tags"),
+          forkedCount: Database.client.$count(
+            collectionsTable,
+            eq(collectionsTable.forkedFrom, collectionsTable.id)
+          ),
+          tags: sql<Pick<Tags, "name">[] | []>`
+          (
+              SELECT COALESCE(json_agg(row_to_json(t)), '[]'::json)
+              FROM (
+                  SELECT tg.id, tg.name
+                  FROM ${collectionsTagsTable} ct
+                  INNER JOIN ${tagsTable} tg ON tg.id = ct.tag_id
+                  WHERE ct.collection_id = ${collectionsTable.id}
+                  ORDER BY tg.name ASC
+              ) t
+          )
+          `.as("tags"),
         })
         .from(collectionsTable)
         .innerJoin(usersTable, eq(collectionsTable.creatorId, usersTable.id))
@@ -116,76 +154,75 @@ export class CollectionReadService {
       limit,
       query,
       cursor,
-    }: Omit<FindCollectionsDtoType, "creator"> &
+    }: Omit<FindCollectionsDtoType, "creatorName"> &
       Required<Pick<FindCollectionsDtoType, "limit">>,
     creatorId: number,
     isCurrentUserOwner: boolean
   ) {
-    const [data, total] = await Promise.all([
-      Database.client
-        .select({
-          ...getTableColumns(collectionsTable),
-          creator: {
-            id: usersTable.id,
-            name: usersTable.name,
-            image: usersTable.image,
-            firstName: usersTable.firstName,
-            lastName: usersTable.lastName,
+    const collectionsQuery = Database.client.query.collectionsTable.findMany({
+      where: (t, { eq, or, and, lt }) =>
+        and(
+          eq(t.creatorId, creatorId),
+          isCurrentUserOwner ? undefined : eq(t.isPrivate, false),
+          cursor ? lt(t.updatedAt, cursor.updatedAt) : undefined,
+          query
+            ? or(
+                sql`to_tsvector('english', ${t.title}) @@ plainto_tsquery('english', ${query})`,
+                sql`to_tsvector('english', ${t.description}) @@ plainto_tsquery('english', ${query})`
+              )
+            : undefined
+        ),
+      orderBy: (t, { desc }) => desc(t.updatedAt),
+      limit: limit + 1,
+      with: {
+        creator: {
+          columns: {
+            name: true,
+            firstName: true,
+            lastName: true,
+            image: true,
+            id: true,
           },
-          tags: sql<null | string>`
-          (
-            SELECT json_agg(row_to_json(t))
-            FROM (
-                SELECT tg.id, tg.name
-                FROM ${collectionsTagsTable} ct
-                INNER JOIN ${tagsTable} tg ON tg.id = ct.tag_id
-                WHERE ct.collection_id = ${collectionsTable.id}
-                ORDER BY tg.name ASC
-            ) t
-          )
-          `.as("tags"),
-          snippets: sql<null | string>`
-          (
-            SELECT json_agg(row_to_json(t))
-            FROM (
-                SELECT s.id, s.title, s.slug, s.language
-                FROM ${snippetsTable} s
-                WHERE s.collection_id = ${collectionsTable.id}
-                ORDER BY s.created_at DESC
-                LIMIT 3
-            ) t
-          )
-          `.as("snippets"),
-          snippetsCount: sql<number>`
-          (
-            SELECT COUNT(*)
-            FROM ${snippetsTable} s
-            WHERE s.collection_id = ${collectionsTable.id}
-          )
-          `.as("snippets_count"),
-        })
-        .from(collectionsTable)
-        .innerJoin(usersTable, eq(collectionsTable.creatorId, usersTable.id))
-        .where(
-          and(
-            eq(collectionsTable.creatorId, creatorId),
-            isCurrentUserOwner
-              ? undefined
-              : eq(collectionsTable.isPrivate, false),
-            cursor
-              ? lt(collectionsTable.updatedAt, cursor.updatedAt)
-              : undefined,
-            query
-              ? or(
-                  sql`to_tsvector('english', ${collectionsTable.title}) @@ plainto_tsquery('english', ${query})`,
-                  sql`to_tsvector('english', ${collectionsTable.description}) @@ plainto_tsquery('english', ${query})`
-                )
-              : undefined
-          )
-        )
-        .limit(limit + 1)
-        .orderBy(desc(collectionsTable.updatedAt)),
+        },
+        tags: {
+          with: {
+            tag: {
+              columns: {
+                name: true,
+                id: true,
+              },
+            },
+          },
+        },
+        snippets: {
+          limit: 3,
+          orderBy: (t, { desc }) => desc(t.updatedAt),
+          columns: {
+            title: true,
+            slug: true,
+            language: true,
+            id: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
+      },
+      columns: {
+        oldSlugs: false,
+      },
+    });
 
+    const collectionSnippetsCountQuery = Database.client
+      .select({
+        collectionId: snippetsTable.collectionId,
+        count: sql<number>`count(*)`,
+      })
+      .from(snippetsTable)
+      .groupBy(snippetsTable.collectionId);
+
+    const [data, snippetsCounts, total] = await Promise.all([
+      collectionsQuery,
+      collectionSnippetsCountQuery,
       Database.client.$count(
         collectionsTable,
         and(
@@ -203,32 +240,57 @@ export class CollectionReadService {
       ),
     ]);
 
-    return { data, total };
+    // Map collectionId → count
+    const countsMap = Object.fromEntries(
+      snippetsCounts.map((c) => [c.collectionId, Number(c.count)])
+    );
+    const collections = data.map((col) => ({
+      ...col,
+      snippetsCount: countsMap[col.id.toString()] ?? 0,
+      tags: col.tags.map((tag) => ({ name: tag.tag.name })),
+    }));
+
+    return { data: collections, total };
   }
 
   async getUserCollectionsStats(userId: number) {
     const [stats] = await Database.client
       .select({
-        userId: usersTable.id,
         totalCollections: Database.client.$count(
           collectionsTable,
           eq(collectionsTable.creatorId, userId)
         ),
         publicCollections: Database.client.$count(
           collectionsTable,
-          eq(collectionsTable.isPrivate, false)
+          and(
+            eq(collectionsTable.creatorId, userId),
+            eq(collectionsTable.isPrivate, false)
+          )
         ),
-        totalSnippets: Database.client.$count(
-          snippetsTable,
-          eq(snippetsTable.collectionId, collectionsTable.id)
+        totalSnippets: sql<string>`
+          (
+            select count(*) 
+            from ${snippetsTable} 
+            where ${snippetsTable.collectionId} in (
+              select ${collectionsTable.id}
+              from ${collectionsTable}
+              where ${collectionsTable.creatorId} = ${userId}
+            )
+          )
+        `.as("totalSnippets"),
+        forkedCollections: Database.client.$count(
+          collectionsTable,
+          eq(collectionsTable.forkedFrom, collectionsTable.id)
         ),
       })
-      .from(usersTable)
-      .leftJoin(
-        collectionsTable,
-        eq(collectionsTable.creatorId, usersTable.id)
-      );
+      .from(collectionsTable)
+      .where(eq(collectionsTable.creatorId, userId));
 
-    return stats;
+    return Object.fromEntries(
+      Object.entries(stats).map(([key, value]) => [
+        key,
+        typeof value === "number" ? value : Number(value),
+      ])
+    );
   }
 }

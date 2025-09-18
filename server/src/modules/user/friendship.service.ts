@@ -107,26 +107,22 @@ export class FriendshipService {
     };
   }
 
-  // Done
   public async sendFriendshipRequest(
     ctx: NonNullableFields<RequestContext>,
     input: ManageFriendshipDtoType
   ) {
     const { friend_name: friendName } = input;
-    const loggedInUserName = ctx.user.name;
 
-    // Note: name is the logged in user name
-    const { friend: foundPotentialFriend, user: loggedInUser } =
-      await this.getFriendAndUser({
-        friendName,
-        name: loggedInUserName,
-      });
+    const { friend: addressee, user: requester } = await this.getFriendAndUser({
+      friendName,
+      loggedInUserId: ctx.user.id,
+    });
 
-    if (
-      !foundPotentialFriend ||
-      !loggedInUser ||
-      loggedInUser.id === foundPotentialFriend.id
-    ) {
+    if (addressee && "redirect" in addressee) {
+      return addressee;
+    }
+
+    if (!addressee || !requester || requester.id === addressee.id) {
       throw new HttpException(
         StatusCodes.BAD_REQUEST,
         "Invalid friendship request."
@@ -135,8 +131,8 @@ export class FriendshipService {
 
     const foundRequest =
       await this.FriendshipReadService.getFriendshipRequestInfo({
-        requesterId: loggedInUser.id,
-        addresseeId: foundPotentialFriend.id,
+        requesterId: requester.id,
+        addresseeId: addressee.id,
       });
 
     // if the user already sent a request to the friend
@@ -149,8 +145,8 @@ export class FriendshipService {
 
     const [newFriendship] = await this.FriendshipRepository.insertFriendship([
       {
-        requesterId: loggedInUser.id,
-        addresseeId: foundPotentialFriend.id,
+        requesterId: requester.id,
+        addresseeId: addressee.id,
         status: "pending",
       },
     ]);
@@ -158,17 +154,19 @@ export class FriendshipService {
     return newFriendship;
   }
 
-  // Done
   public async acceptFriendshipRequest(
     ctx: NonNullableFields<RequestContext>,
     input: ManageFriendshipDtoType
   ) {
     const { friend_name: friendName } = input;
-    const loggedInUserName = ctx.user.name;
     const { friend: requester, user: addressee } = await this.getFriendAndUser({
       friendName,
-      name: loggedInUserName,
+      loggedInUserId: ctx.user.id,
     });
+
+    if (addressee && "redirect" in addressee) {
+      return addressee;
+    }
 
     if (!requester || !addressee || addressee.id === requester.id) {
       throw new HttpException(
@@ -193,24 +191,25 @@ export class FriendshipService {
     const [updatedFriendship] =
       await this.FriendshipRepository.updateFriendship(foundRequest.id, {
         status: "accepted",
+        acceptedAt: new Date(),
       });
 
     return updatedFriendship;
   }
 
-  // Done
   public async rejectFriendshipRequest(
     ctx: NonNullableFields<RequestContext>,
     input: ManageFriendshipDtoType
   ) {
     const { friend_name: friendName } = input;
-    const name = ctx.user.name;
 
-    // Note: name is the logged in user name to whom the request was sent
     const { friend: requester, user: addressee } = await this.getFriendAndUser({
       friendName,
-      name,
+      loggedInUserId: ctx.user.id,
     });
+    if (addressee && "redirect" in addressee) {
+      return addressee;
+    }
 
     if (!addressee || !requester || requester.id === addressee.id) {
       throw new HttpException(
@@ -235,10 +234,11 @@ export class FriendshipService {
     // if status is pending, then we need to mark request as rejected
     // may be later on the user accepts again, or to send a notification
     // TODO: set up cron job
-    const updatedFriendship = await this.FriendshipRepository.updateFriendship(
-      foundRequest.id,
-      { status: "rejected" }
-    );
+    const [updatedFriendship] =
+      await this.FriendshipRepository.updateFriendship(foundRequest.id, {
+        status: "rejected",
+        rejectedAt: new Date(),
+      });
 
     return updatedFriendship;
   }
@@ -248,13 +248,14 @@ export class FriendshipService {
     input: ManageFriendshipDtoType
   ) {
     const { friend_name: friendName } = input;
-    const name = ctx.user.name;
 
-    // Note: requester is the only one who can cancel the request.
     const { friend: addressee, user: requester } = await this.getFriendAndUser({
       friendName,
-      name,
+      loggedInUserId: ctx.user.id,
     });
+    if (addressee && "redirect" in addressee) {
+      return addressee;
+    }
 
     if (!addressee || !requester || requester.id === addressee.id) {
       throw new HttpException(
@@ -279,24 +280,36 @@ export class FriendshipService {
     // if status is pending, then we need to mark request as rejected
     // may be later on the user accepts again, or to send a notification
     // TODO: set up cron job
-    const updatedFriendship = await this.FriendshipRepository.updateFriendship(
-      foundRequest.id,
-      { status: "rejected" }
-    );
+    const [updatedFriendship] =
+      await this.FriendshipRepository.updateFriendship(foundRequest.id, {
+        status: "cancelled",
+        cancelledAt: new Date(),
+      });
 
     return updatedFriendship;
   }
 
   private async getFriendAndUser({
     friendName,
-    name,
+    loggedInUserId,
   }: {
     friendName: string;
-    name: string;
+    loggedInUserId: number;
   }) {
-    const user = await this.UserReadService.findOneSlim("name", name);
+    const user = await this.UserReadService.findOneSlim("id", loggedInUserId);
+    if (!user) {
+      throw new HttpException(StatusCodes.NOT_FOUND, "User not found.");
+    }
     const friend = await this.UserReadService.findOneSlim("name", friendName);
-
+    if (!friend) {
+      const foundUserWithOldName = await this.UserReadService.findOneByOldNames(
+        friendName
+      );
+      if (!foundUserWithOldName) {
+        throw new HttpException(StatusCodes.NOT_FOUND, "Friend not found.");
+      }
+      return { friend: { redirect: true, name: foundUserWithOldName.name } };
+    }
     return { user, friend };
   }
 }

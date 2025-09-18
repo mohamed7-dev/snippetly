@@ -4,11 +4,21 @@ import type { ErrorResponse, SharedSuccessRes } from '@/lib/types'
 import { useMutation, type MutationOptions } from '@tanstack/react-query'
 import type { AxiosError } from 'axios'
 import { toast } from 'sonner'
+import type { Friendship } from '../lib/types'
 
 type Input = {
   friendName: string
 }
-type RejectFriendshipRequestSuccessRes = SharedSuccessRes<null>
+type RejectFriendshipRequestSuccessRes = SharedSuccessRes<
+  Pick<
+    Friendship,
+    | 'addresseeId'
+    | 'requesterId'
+    | 'requestStatus'
+    | 'requestSentAt'
+    | 'requestRejectedAt'
+  >
+>
 
 type RejectFriendshipRequestErrorRes = AxiosError<ErrorResponse>
 export function useRejectFriendshipRequest(

@@ -4,7 +4,7 @@ import jwt, { JwtPayload } from "jsonwebtoken";
 import { ACCESS_JWTOKEN_SECRET } from "../../config";
 import { User } from "../db/schema";
 
-export type RequestUser = Pick<User, "id" | "name" | "email"> & JwtPayload;
+export type RequestUser = Pick<User, "email" | "id" | "image"> & JwtPayload;
 
 export type RequestContext = {
   requestId: string;

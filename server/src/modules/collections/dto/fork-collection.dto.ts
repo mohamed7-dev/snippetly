@@ -1,7 +1,7 @@
 import z from "zod";
 import { SelectCollectionDto } from "./select-collection.dto";
 
-export const ForkFolderDto = SelectCollectionDto.pick({
-  slug: true,
+export const ForkCollectionDto = z.object({
+  slug: SelectCollectionDto.shape.slug,
 });
-export type ForkFolderDtoType = z.infer<typeof ForkFolderDto>;
+export type ForkCollectionDtoType = z.infer<typeof ForkCollectionDto>;

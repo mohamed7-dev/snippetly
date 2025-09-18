@@ -52,17 +52,27 @@ export function EditSnippetForm() {
     onSuccess: (data) => {
       toast.success(data.message)
       reset()
-      queryClient.invalidateQueries({ queryKey: ['snippets', data.data.slug] })
+      queryClient.invalidateQueries({
+        queryKey: ['snippets', data.data.publicId],
+      })
     },
     onError: (error) => {
       toast.error(error.message)
     },
   })
-  const onSubmit = async ({ collection, ...rest }: EditSnippetSchema) => {
-    const isCollectionChanged = collection !== initialCollection.slug
+  const onSubmit = async ({
+    collection,
+    isPublic,
+    ...rest
+  }: EditSnippetSchema) => {
+    const isCollectionChanged = collection !== initialCollection.publicId
 
     await updateSnippet({
-      data: { ...rest, ...(isCollectionChanged ? { collection } : {}) },
+      data: {
+        ...rest,
+        isPrivate: !isPublic,
+        ...(isCollectionChanged ? { collection } : {}),
+      },
       slug,
     })
   }
@@ -150,7 +160,7 @@ export function EditSnippetForm() {
                 <Label htmlFor="visibility">Visibility</Label>
                 <FormField
                   control={editSnippetForm.control}
-                  name="isPrivate"
+                  name="isPublic"
                   render={({ field }) => (
                     <FormItem className="flex items-center space-x-2 h-10 px-3 py-2 border border-border rounded-md bg-input">
                       <FormControl>

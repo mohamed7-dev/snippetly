@@ -8,7 +8,11 @@ import { JWTPayload, TokenService } from "./token.service";
 import { REFRESH_TOKEN_COOKIE_KEY } from "./constants";
 import { PasswordHashService } from "./password-hash.service";
 import { EmailService } from "../email/email.service";
-import { APP_URL, JWT_REFRESH_EXPIRES } from "../../config";
+import {
+  APP_URL,
+  JWT_REFRESH_EXPIRES,
+  JWT_REFRESH_REMEMBER_EXPIRES,
+} from "../../config";
 import { ResetPasswordDtoType } from "./dto/reset-password.dto";
 import { SendVEmailDtoType } from "./dto/send-v-email.dto";
 import { VerifyTokenDtoType } from "./dto/verify-token.dto";
@@ -34,7 +38,7 @@ export class AuthService {
   }
 
   public async login(ctx: RequestContext, input: LoginDtoType, res: Response) {
-    const { name, password } = input;
+    const { name, password, rememberMe } = input;
     const refreshToken = ctx.req.cookies?.[REFRESH_TOKEN_COOKIE_KEY] as string;
 
     const foundUser = await this.UserReadService.findOneSlim("name", name);
@@ -77,17 +81,21 @@ export class AuthService {
     }
 
     const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
-      this.generateJWT({
-        name: foundUser.name,
-        id: foundUser.id,
-        email: foundUser.email,
-      });
+      this.generateJWT(
+        {
+          id: foundUser.id,
+          email: foundUser.email,
+          image: foundUser.image,
+        },
+        rememberMe ?? false
+      );
 
     const [updatedUser] = await this.UserRepository.update(foundUser.id, {
       refreshTokens: [...newRefreshTokenArray, newRefreshToken],
+      rememberMe: rememberMe ?? false,
     });
 
-    this.setRefreshTokenCookie(res, newRefreshToken);
+    this.setRefreshTokenCookie(res, newRefreshToken, rememberMe ?? false);
 
     return { accessToken: newAccessToken, user: updatedUser };
   }
@@ -161,11 +169,15 @@ export class AuthService {
     });
     // Refresh token rotation
     const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
-      this.generateJWT({
-        name: foundUserWithToken.name,
-        id: foundUserWithToken.id,
-        email: foundUserWithToken.email,
-      });
+      this.generateJWT(
+        {
+          id: foundUserWithToken.id,
+          email: foundUserWithToken.email,
+          image: foundUserWithToken.image,
+        },
+
+        foundUserWithToken.rememberMe
+      );
 
     const [updatedUser] = await this.UserRepository.update(
       foundUserWithToken.id,
@@ -174,7 +186,11 @@ export class AuthService {
       }
     );
 
-    this.setRefreshTokenCookie(res, newRefreshToken);
+    this.setRefreshTokenCookie(
+      res,
+      newRefreshToken,
+      foundUserWithToken.rememberMe
+    );
 
     return { accessToken: newAccessToken, user: updatedUser };
   }
@@ -262,9 +278,9 @@ export class AuthService {
     return { user: updatedUser, token };
   }
 
-  private generateJWT(payload: JWTPayload) {
+  private generateJWT(payload: JWTPayload, rememberMe: boolean) {
     return {
-      refreshToken: this.TokenService.signRefreshJWT(payload),
+      refreshToken: this.TokenService.signRefreshJWT(payload, rememberMe),
       accessToken: this.TokenService.signAccessJWT(payload),
     };
   }
@@ -284,12 +300,16 @@ export class AuthService {
     });
   }
 
-  private setRefreshTokenCookie(res: Response, refreshToken: string) {
+  private setRefreshTokenCookie(
+    res: Response,
+    refreshToken: string,
+    rememberMe: boolean
+  ) {
     res.cookie(REFRESH_TOKEN_COOKIE_KEY, refreshToken, {
       httpOnly: true,
       sameSite: "none",
       secure: isDevelopment ? false : true,
-      maxAge: JWT_REFRESH_EXPIRES,
+      maxAge: rememberMe ? JWT_REFRESH_REMEMBER_EXPIRES : JWT_REFRESH_EXPIRES,
     });
   }
 }

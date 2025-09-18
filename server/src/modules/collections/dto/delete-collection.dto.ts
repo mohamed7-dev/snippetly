@@ -1,6 +1,8 @@
 import z from "zod";
 import { SelectCollectionDto } from "./select-collection.dto";
 
-export const DeleteFolderDto = SelectCollectionDto.pick({ slug: true });
+export const DeleteCollectionDto = z.object({
+  slug: SelectCollectionDto.shape.slug,
+});
 
-export type DeleteFolderDtoType = z.infer<typeof DeleteFolderDto>;
+export type DeleteCollectionDtoType = z.infer<typeof DeleteCollectionDto>;

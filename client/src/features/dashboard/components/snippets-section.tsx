@@ -4,18 +4,18 @@ import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { Code2Icon, PlusIcon } from 'lucide-react'
 import { SnippetCard } from '@/features/snippets/components/snippet-card'
-import { getCurrentUserSnippetsOptions } from '@/features/snippets/lib/api'
 import { InfiniteLoader } from '@/components/loaders/infinite-loader'
+import { getCurrentSnippetsOptions } from '@/features/snippets/lib/api'
 
 export function SnippetsSection() {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    useSuspenseInfiniteQuery(getCurrentUserSnippetsOptions)
+    useSuspenseInfiniteQuery(getCurrentSnippetsOptions)
   const snippets = data.pages.flatMap((p) => p.items) ?? []
   return (
     <React.Fragment>
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         {snippets.map((snippet) => (
-          <SnippetCard key={snippet.id} snippet={snippet} />
+          <SnippetCard key={snippet.publicId} snippet={snippet} />
         ))}
       </div>
       <InfiniteLoader

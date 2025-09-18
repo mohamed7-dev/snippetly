@@ -4,7 +4,7 @@ import { Separator } from '@/components/ui/separator'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { GitForkIcon, GlobeIcon, LockIcon } from 'lucide-react'
 import { getSnippetQueryOptions } from '../../lib/api'
-import { useParams } from '@tanstack/react-router'
+import { Link, useParams } from '@tanstack/react-router'
 
 export function MainContentHeader() {
   const params = useParams({ from: '/(protected)/dashboard/snippets/$slug/' })
@@ -27,17 +27,21 @@ export function MainContentHeader() {
 
       <div className="flex items-center gap-4 flex-wrap">
         <div className="flex items-center gap-2">
-          <Avatar className="h-8 w-8">
-            <AvatarImage
-              src={snippet.creator.image || '/placeholder.svg'}
-              alt={snippet.creator.name}
-            />
-            <AvatarFallback>JD</AvatarFallback>
-          </Avatar>
+          <Link to="/profile/$name" params={{ name: snippet.creator.username }}>
+            <Avatar className="h-8 w-8">
+              <AvatarImage
+                src={snippet.creator.image || '/placeholder.svg'}
+                alt={snippet.creator.username}
+              />
+              <AvatarFallback>
+                {snippet.creator.username.slice(0, 3)}
+              </AvatarFallback>
+            </Avatar>
+          </Link>
           <div>
-            <p className="text-sm font-medium">{snippet.creator.name}</p>
+            <p className="text-sm font-medium">{snippet.creator.fullName}</p>
             <p className="text-xs text-muted-foreground">
-              @{snippet.creator.name}
+              @{snippet.creator.username}
             </p>
           </div>
         </div>

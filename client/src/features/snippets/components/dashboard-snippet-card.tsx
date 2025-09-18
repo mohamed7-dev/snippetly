@@ -22,15 +22,16 @@ import {
   Trash2Icon,
 } from 'lucide-react'
 import type { Snippet } from '../lib/types'
+import type { Tag } from '@/features/tags/lib/types'
 
 type DashboardSnippetCardProps = {
-  snippet: Snippet
+  snippet: Snippet & { tags: Pick<Tag, 'name'>[] }
 }
 
 export function DashboardSnippetCard({ snippet }: DashboardSnippetCardProps) {
   return (
     <Card
-      key={snippet.id}
+      key={snippet.publicId}
       className="border-border hover:shadow-lg transition-shadow"
     >
       <CardHeader className="pb-3">
@@ -80,7 +81,7 @@ export function DashboardSnippetCard({ snippet }: DashboardSnippetCardProps) {
             </Badge>
           )}
           <span className="text-xs text-muted-foreground ml-auto">
-            {snippet.createdAt}
+            {snippet.addedAt}
           </span>
         </div>
       </CardHeader>
@@ -92,8 +93,8 @@ export function DashboardSnippetCard({ snippet }: DashboardSnippetCardProps) {
         </div>
         <div className="flex items-center gap-1 mt-3">
           {snippet.tags.map((tag) => (
-            <Badge key={tag} variant="outline" className="text-xs">
-              {tag}
+            <Badge key={tag.name} variant="outline" className="text-xs">
+              {tag.name}
             </Badge>
           ))}
         </div>

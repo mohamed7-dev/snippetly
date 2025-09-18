@@ -1,6 +1,7 @@
 import {
   and,
   arrayContains,
+  count,
   desc,
   eq,
   isNotNull,
@@ -11,8 +12,10 @@ import {
 } from "drizzle-orm";
 import { Database } from "../../common/db";
 import {
+  Collection,
   collectionsTable,
   friendshipsTable,
+  Snippet,
   snippetsTable,
   snippetsTagsTable,
   Tags,
@@ -42,6 +45,16 @@ export class UserReadService {
           by === "email" ? eq(t.email, value as string) : undefined,
           by === "id" ? eq(t.id, value as number) : undefined
         ),
+    });
+  }
+
+  /**
+   * @description
+   * without joining.
+   */
+  public async findOneByOldNames(name: string) {
+    return await Database.client.query.usersTable.findFirst({
+      where: (t) => arrayContains(t.oldNames, [name]),
     });
   }
 
@@ -119,6 +132,8 @@ export class UserReadService {
         lastName: usersTable.lastName,
         email: usersTable.email,
         bio: usersTable.bio,
+        image: usersTable.image,
+        createdAt: usersTable.createdAt,
         friendsCount: Database.client.$count(
           friendshipsTable,
           and(
@@ -185,91 +200,59 @@ export class UserReadService {
   }
 
   async getUserForDashboard({ userId }: { userId: number }) {
-    const snippetTags = Database.client.$with("snippet_tags").as(
-      Database.client
-        .select({
-          snippetId: sql<number>`t.snippet_id`.as("snippet_id"),
-          tags: sql<string | null>`
-                json_agg(row_to_json(t)) FILTER (WHERE t.id IS NOT NULL)
-          `.as("tags"),
-        })
-        .from(
-          sql`(
-            SELECT st.snippet_id, tg.id, tg.name
-            FROM ${snippetsTagsTable} st
-            JOIN ${tagsTable} tg ON tg.id = st.tag_id
-            ORDER BY st.created_at DESC
-          ) t`
-        )
-        .groupBy(sql`t.snippet_id`)
-    );
-
-    const userSnippets = Database.client.$with("user_snippets").as(
-      Database.client
-        .select({
-          title: snippetsTable.title,
-          slug: snippetsTable.slug,
-          id: snippetsTable.id,
-          code: snippetsTable.code,
-          language: snippetsTable.language,
-          description: snippetsTable.description,
-          createdAt: snippetsTable.createdAt,
-          updatedAt: snippetsTable.updatedAt,
-          creatorId: snippetsTable.creatorId,
-          tags: snippetTags.tags,
-        })
-        .from(snippetsTable)
-        .leftJoin(snippetTags, eq(snippetTags.snippetId, snippetsTable.id))
-        .where(eq(snippetsTable.creatorId, userId))
-        .orderBy(desc(snippetsTable.updatedAt))
-        .limit(5)
-    );
-
-    const userCollections = Database.client.$with("user_collections").as(
-      Database.client
-        .select({
-          title: collectionsTable.title,
-          slug: collectionsTable.slug,
-          id: collectionsTable.id,
-          color: collectionsTable.color,
-          createdAt: collectionsTable.createdAt,
-          updatedAt: collectionsTable.updatedAt,
-          creatorId: collectionsTable.creatorId,
-          snippetsCount: Database.client.$count(
-            snippetsTable,
-            eq(collectionsTable.id, snippetsTable.collectionId)
-          ),
-        })
-        .from(collectionsTable)
-        .where(eq(collectionsTable.creatorId, userId))
-        .orderBy(desc(collectionsTable.createdAt))
-        .limit(5)
-    );
-
-    const foundUser = await Database.client
-      .with(snippetTags, userSnippets, userCollections)
+    const queryUser = Database.client.query.usersTable.findFirst({
+      where: (t, { eq }) => eq(t.id, userId),
+      columns: {
+        password: false,
+        refreshTokens: false,
+        oldNames: false,
+      },
+      with: {
+        collections: {
+          limit: 5,
+          orderBy: (t, { desc }) => desc(t.updatedAt),
+          columns: {
+            title: true,
+            slug: true,
+            color: true,
+            createdAt: true,
+            updatedAt: true,
+            id: true,
+          },
+        },
+      },
+    });
+    const snippetsCountQuery = Database.client
       .select({
-        id: usersTable.id,
-        name: usersTable.name,
-        firstName: usersTable.firstName,
-        lastName: usersTable.lastName,
-        image: usersTable.image,
-        email: usersTable.email,
-        snippets: sql<string | null>`(
-          SELECT json_agg(row_to_json(s))
-          FROM user_snippets s
-        )`.as("snippets"),
-        collections: sql<string | null>`(
-          SELECT json_agg(row_to_json(c))
-          FROM user_collections c
-        )`.as("collections"),
+        collectionId: snippetsTable.collectionId,
+        count: sql<number>`count(*)`,
       })
       .from(usersTable)
-      .leftJoin(userSnippets, eq(userSnippets.creatorId, usersTable.id))
-      .leftJoin(userCollections, eq(userCollections.creatorId, usersTable.id))
-      .where(eq(usersTable.id, userId));
+      .innerJoin(
+        collectionsTable,
+        eq(collectionsTable.creatorId, usersTable.id)
+      )
+      .innerJoin(
+        snippetsTable,
+        eq(snippetsTable.collectionId, collectionsTable.id)
+      )
+      .groupBy(snippetsTable.collectionId);
 
-    return foundUser;
+    const [foundUser, snippetsCounts] = await Promise.all([
+      queryUser,
+      snippetsCountQuery,
+    ]);
+
+    // Map collectionId → count
+    const countsMap = Object.fromEntries(
+      snippetsCounts.map((c) => [c.collectionId, Number(c.count)])
+    );
+    const collections = foundUser?.collections.map((col) => ({
+      ...col,
+      snippetsCount: countsMap[col.id.toString()] ?? 0,
+    }));
+
+    return { ...foundUser, collections };
   }
 
   async getUserActivityStats({ userId }: { userId: number }) {

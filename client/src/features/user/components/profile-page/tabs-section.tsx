@@ -8,7 +8,7 @@ import { getUserProfile } from '../../lib/api'
 export function TabsSection() {
   const { name } = useParams({ from: '/(public)/profile/$name' })
   const { data } = useSuspenseQuery(getUserProfile(name))
-  const stats = data.stats
+  const stats = data.data.stats
   return (
     <Tabs defaultValue="snippets">
       <TabsList>

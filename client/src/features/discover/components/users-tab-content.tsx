@@ -17,17 +17,20 @@ export function UsersTabContent() {
     <React.Fragment>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {users.map((user) => (
-          <Card key={user.id} className="hover:shadow-md transition-shadow">
+          <Card
+            key={user.username}
+            className="hover:shadow-md transition-shadow"
+          >
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <Avatar className="h-12 w-12">
                     <AvatarImage
                       src={user.image || '/placeholder.svg'}
-                      alt={user.name}
+                      alt={user.username}
                     />
                     <AvatarFallback>
-                      {user.name
+                      {user.username
                         .split(' ')
                         .map((n) => n[0])
                         .join('')}
@@ -36,13 +39,13 @@ export function UsersTabContent() {
                   <div>
                     <Link
                       to={'/profile/$name'}
-                      params={{ name: user.name }}
+                      params={{ name: user.username }}
                       className="font-semibold hover:text-primary"
                     >
-                      {user.firstName.concat('', user.lastName)}
+                      {user.fullName}
                     </Link>
                     <p className="text-sm text-muted-foreground">
-                      @{user.name}
+                      @{user.username}
                     </p>
                   </div>
                 </div>

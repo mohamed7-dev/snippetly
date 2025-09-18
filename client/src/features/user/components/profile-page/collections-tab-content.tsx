@@ -11,7 +11,10 @@ export function CollectionsTabContent() {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {collections.map((collection) => (
-        <Card key={collection.id} className="hover:shadow-md transition-shadow">
+        <Card
+          key={collection.publicId}
+          className="hover:shadow-md transition-shadow"
+        >
           <CardHeader>
             <div className="flex items-center gap-3">
               <div className={`w-4 h-4 rounded ${collection.color}`} />

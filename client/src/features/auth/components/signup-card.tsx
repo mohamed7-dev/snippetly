@@ -58,23 +58,12 @@ export function SignupCard() {
     error,
   } = useSignup({
     onSuccess: (data) => {
-      console.log('Success Signup', data)
       toast.success(data.message)
-      if ('accessToken' in data.data) {
+      if ('accessToken' in data.data && data.data.accessToken) {
         const accessToken = data.data.accessToken
-        const user = data.data.user
-        authenticateUserOnClient(accessToken, {
-          name: user.name,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          email: user.email,
-          id: user.id,
-        })
+        authenticateUserOnClient(accessToken)
         navigate({ to: clientRoutes.dashboard, from: clientRoutes.login })
       }
-    },
-    onError: (error) => {
-      console.log('Error Signup', error)
     },
   })
 

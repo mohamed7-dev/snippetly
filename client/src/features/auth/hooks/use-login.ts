@@ -4,9 +4,9 @@ import { serverEndpoints } from '@/lib/routes'
 import type { AxiosError } from 'axios'
 import type { ErrorResponse, SharedSuccessRes } from '@/lib/types'
 import { api } from '@/lib/api'
-import type { User } from '@/features/user/lib/types'
+import type { AuthUser } from '../lib/types'
 
-type LoginSuccessRes = SharedSuccessRes<{ accessToken: string; user: User }>
+type LoginSuccessRes = SharedSuccessRes<{ accessToken: string; user: AuthUser }>
 type LoginErrorRes = AxiosError<ErrorResponse>
 type Input = LoginSchema
 

@@ -60,14 +60,14 @@ export function MainContentHeader() {
                 <Avatar className="h-6 w-6">
                   <AvatarImage
                     src={collection.creator.image || '/placeholder.svg'}
-                    alt={collection.creator.name}
+                    alt={collection.creator.username}
                   />
                   <AvatarFallback>JD</AvatarFallback>
                 </Avatar>
                 <span className="text-sm text-muted-foreground">
                   by{' '}
                   <span className="font-medium text-foreground">
-                    {collection.creator.name}
+                    {collection.creator.fullName}
                   </span>
                 </span>
               </div>
@@ -77,10 +77,13 @@ export function MainContentHeader() {
                   <Code2Icon className="h-4 w-4" />
                   {collection.snippetsCount} snippets
                 </div>
-                <div className="flex items-center gap-1">
-                  <CalendarIcon className="h-4 w-4" />
-                  Updated {new Date(collection.updatedAt).toLocaleDateString()}
-                </div>
+                {collection.lastUpdatedAt && (
+                  <div className="flex items-center gap-1">
+                    <CalendarIcon className="h-4 w-4" />
+                    Updated{' '}
+                    {new Date(collection.lastUpdatedAt).toLocaleDateString()}
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center gap-2">
@@ -120,7 +123,7 @@ export function MainContentHeader() {
             <DropdownMenuItem asChild>
               <Link
                 to={clientRoutes.editCollection}
-                params={{ slug: collection.slug }}
+                params={{ slug: collection.publicId }}
               >
                 <EditIcon className="mr-2 h-4 w-4" />
                 Edit Collection

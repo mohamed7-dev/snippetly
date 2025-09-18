@@ -26,3 +26,6 @@ export const JWT_ACCESS_EXPIRES = isDevelopment
 export const JWT_REFRESH_EXPIRES = isDevelopment
   ? 7 * 24 * 60 * 60 * 1000 // 7 days
   : 7 * 24 * 60 * 60 * 1000; // 7 days;
+export const JWT_REFRESH_REMEMBER_EXPIRES = isDevelopment
+  ? 30 * 24 * 60 * 60 * 1000 // 7 days
+  : 30 * 24 * 60 * 60 * 1000; // 30 days;

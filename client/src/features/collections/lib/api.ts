@@ -2,19 +2,40 @@ import { api } from '@/lib/api'
 import { serverEndpoints } from '@/lib/routes'
 import type { SharedPaginatedSuccessRes, SharedSuccessRes } from '@/lib/types'
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query'
-import type { Collection } from './types'
+import type { Collection, CollectionStats } from './types'
 import type { User } from '@/features/user/lib/types'
 import type { Tag } from '@/features/tags/lib/types'
 import type { Snippet } from '@/features/snippets/lib/types'
 
-// Get Collection
-type CollectionItem = Collection & {
-  snippets: Pick<Snippet, 'title' | 'slug' | 'language' | 'code'>[]
-  tags: Pick<Tag, 'name'>[]
-  creator: Pick<User, 'firstName' | 'name' | 'email' | 'lastName' | 'image'>
-  snippetsCount: number
+//################################# Shared ############################
+type CreatorItem = Pick<
+  User,
+  'firstName' | 'username' | 'lastName' | 'fullName' | 'image'
+>
+type TagItem = Pick<Tag, 'name'>
+type SnippetItem = Pick<Snippet, 'addedAt' | 'title' | 'publicId' | 'language'>
+type CollectionItem = Pick<
+  Collection,
+  'title' | 'publicId' | 'color' | 'addedAt' | 'allowForking' | 'description'
+> &
+  Partial<Pick<Collection, 'isPrivate' | 'isForked' | 'lastUpdatedAt'>> & {
+    forkedCount?: number
+    snippetsCount?: number
+  }
+
+type UserCollection = CollectionItem & {
+  creator: CreatorItem
+  tags: TagItem[]
+  snippets: SnippetItem[]
 }
-type GetCollectionSuccessRes = SharedSuccessRes<CollectionItem>
+
+type Cursor = {
+  updatedAt: Date
+} | null
+// ########################################################################
+
+// Get Collection
+type GetCollectionSuccessRes = SharedSuccessRes<UserCollection>
 export const getCollectionQueryOptions = (slug: string) =>
   queryOptions({
     queryKey: ['collections', slug],
@@ -27,30 +48,20 @@ export const getCollectionQueryOptions = (slug: string) =>
   })
 
 // Get Current User Collections
-type Cursor = {
-  updatedAt: Date
-}
-
-type CollectionInList = Omit<Collection, 'snippets' | 'owner' | 'tags'> & {
-  owner: Pick<User, 'id' | 'name' | 'firstName' | 'lastName' | 'email'>
-  tags: Pick<Tag, 'name'>[]
-  snippets: Pick<
-    Snippet,
-    'title' | 'slug' | 'id' | 'isPrivate' | 'allowForking' | 'language'
-  >[]
-  snippetsCount: number
-}
-
 type GetCurrentUserCollectionsSuccessRes = SharedPaginatedSuccessRes<
-  CollectionInList[],
+  Array<
+    Omit<
+      UserCollection,
+      'isPrivate' | 'lastUpdatedAt' | 'isForked' | 'snippetsCount'
+    > &
+      Pick<
+        UserCollection,
+        'isPrivate' | 'lastUpdatedAt' | 'isForked' | 'snippetsCount'
+      >
+  >,
   Cursor
 > & {
-  stats: {
-    totalCollections: number
-    totalSnippets: number
-    forkedCount: number
-    publicCollections: number
-  }
+  stats: CollectionStats
 }
 
 export const getCurrentUserCollectionsOptions = infiniteQueryOptions({
@@ -70,22 +81,22 @@ export const getCurrentUserCollectionsOptions = infiniteQueryOptions({
 })
 
 // Get Profile Snippets
-type GetProfileCollection = Collection & {
-  tags: Pick<Tag, 'name'>[]
-  creator: Pick<User, 'name' | 'image' | 'firstName' | 'lastName' | 'id'>
-} & {
-  snippets: Pick<Snippet, 'title' | 'slug' | 'language' | 'code' | 'id'>[]
-  snippetsCount: number
-}
-type GetProfileCollectionsSuccessRes =
-  SharedPaginatedSuccessRes<GetProfileCollection> & {
-    stats: {
-      userId: number
-      totalCollections: number
-      publicCollections: number
-      totalSnippets: number
-    }
+
+type GetProfileCollectionsSuccessRes = SharedPaginatedSuccessRes<
+  Array<
+    Omit<UserCollection, 'snippetsCount'> &
+      Pick<UserCollection, 'snippetsCount'>
+  > & {
+    stats: CollectionStats
   }
+> & {
+  stats: {
+    userId: number
+    totalCollections: number
+    publicCollections: number
+    totalSnippets: number
+  }
+}
 
 export const getProfileCollectionsOptions = (name: string) =>
   infiniteQueryOptions({

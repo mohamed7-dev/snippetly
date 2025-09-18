@@ -1,6 +1,7 @@
 import { PageLoader } from '@/components/loaders/page-loader'
 import { EditSnippetPageView } from '@/components/views/edit-snippet-page-view'
 import { getCurrentUserCollectionsOptions } from '@/features/collections/lib/api'
+import { getSnippetQueryOptions } from '@/features/snippets/lib/api'
 import { getPopularTagsOptions } from '@/features/tags/lib/api'
 import { createFileRoute } from '@tanstack/react-router'
 
@@ -8,9 +9,16 @@ export const Route = createFileRoute(
   '/(protected)/dashboard/snippets/$slug/edit',
 )({
   component: EditSnippetPage,
-  loader: async ({ context: { queryClient } }) => {
-    await queryClient.ensureQueryData(getPopularTagsOptions)
-    await queryClient.ensureInfiniteQueryData(getCurrentUserCollectionsOptions)
+  loader: async ({ context: { queryClient }, params: { slug } }) => {
+    await queryClient.ensureQueryData(
+      getSnippetQueryOptions(
+        slug,
+        true,
+        (newSlug) => `/dashboard/snippets/${newSlug}/edit`,
+      ),
+    )
+    queryClient.prefetchQuery(getPopularTagsOptions)
+    queryClient.prefetchInfiniteQuery(getCurrentUserCollectionsOptions)
   },
   errorComponent: ({ error }) => console.log(JSON.stringify(error)),
   pendingComponent: () => (

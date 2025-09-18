@@ -24,7 +24,7 @@ export function FriendsTabContent() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {friends.map((friend) => (
           <Card
-            key={friend.id}
+            key={friend.username}
             className="border-border hover:shadow-lg transition-shadow"
           >
             <CardHeader className="pb-3">
@@ -33,21 +33,26 @@ export function FriendsTabContent() {
                   <Avatar className="h-12 w-12">
                     <AvatarImage
                       src={friend.image || '/placeholder.svg'}
-                      alt={friend.name}
+                      alt={friend.username}
                     />
                     <AvatarFallback>
-                      {friend.name
+                      {friend.fullName
                         .split(' ')
                         .map((n) => n[0])
                         .join('')}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <CardTitle className="text-base font-heading">
-                      {friend.firstName.concat(' ', friend.lastName)}
+                    <CardTitle className="text-base font-heading hover:text-primary">
+                      <Link
+                        to="/profile/$name"
+                        params={{ name: friend.username }}
+                      >
+                        {friend.fullName}
+                      </Link>
                     </CardTitle>
                     <p className="text-sm text-muted-foreground">
-                      @{friend.name}
+                      @{friend.username}
                     </p>
                   </div>
                 </div>
@@ -62,7 +67,7 @@ export function FriendsTabContent() {
                       <Button variant={'ghost'} asChild>
                         <Link
                           to="/profile/$name"
-                          params={{ name: friend.name }}
+                          params={{ name: friend.username }}
                         >
                           <EyeIcon className="mr-2 h-4 w-4" />
                           View Profile

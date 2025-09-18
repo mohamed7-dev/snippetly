@@ -10,20 +10,21 @@ import { infiniteQueryOptions } from '@tanstack/react-query'
 type Cursor = {
   snippetsCount: number
   id: number
-}
+} | null
 type UserItem = Pick<
   User,
-  'name' | 'bio' | 'firstName' | 'lastName' | 'email' | 'id' | 'image'
+  'username' | 'bio' | 'firstName' | 'lastName' | 'fullName' | 'email' | 'image'
 > & {
   snippetsCount: number
   friendsCount: number
   recentTags: Pick<Tag, 'name'>[]
 }
+
 type DiscoverUsersSuccessRes = SharedPaginatedSuccessRes<UserItem[], Cursor>
 
 export const discoverUsersQueryOptions = infiniteQueryOptions({
   queryKey: ['discover', 'users'],
-  queryFn: async ({ pageParam }: { pageParam: Cursor | null }) => {
+  queryFn: async ({ pageParam }: { pageParam: Cursor }) => {
     const searchParams = new URLSearchParams()
     if (pageParam) {
       searchParams.set('cursor', JSON.stringify(pageParam))
@@ -43,12 +44,21 @@ type SnippetsCursor = {
 }
 type SnippetItem = Pick<
   Snippet,
-  'title' | 'slug' | 'id' | 'language' | 'code' | 'isPrivate' | 'allowForking'
+  | 'publicId'
+  | 'title'
+  | 'language'
+  | 'code'
+  | 'addedAt'
+  | 'description'
+  | 'allowForking'
 > & {
   forkedCount: number
-  creator: Pick<User, 'name' | 'firstName' | 'lastName' | 'id' | 'image'>
-  collection: Pick<Collection, 'title' | 'slug' | 'id' | 'color'>
-  recentTags: Pick<Tag, 'name'>[]
+  creator: Pick<
+    User,
+    'username' | 'firstName' | 'lastName' | 'fullName' | 'image'
+  >
+  collection: Pick<Collection, 'title' | 'publicId' | 'color'>
+  tags: Pick<Tag, 'name'>[]
 }
 type DiscoverSnippetsSuccessRes = SharedPaginatedSuccessRes<
   SnippetItem[],

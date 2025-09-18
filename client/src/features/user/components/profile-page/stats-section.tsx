@@ -7,9 +7,9 @@ import { getUserProfile } from '../../lib/api'
 export function StatsSection() {
   const { name } = useParams({ from: '/(public)/profile/$name' })
   const { data } = useSuspenseQuery(getUserProfile(name))
-  const stats = data.stats
+  const stats = data.data.stats
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
       <Card>
         <CardContent className="pt-6">
           <div className="text-center">
@@ -41,8 +41,21 @@ export function StatsSection() {
         <CardContent className="pt-6">
           <div className="text-center">
             <GitForkIcon className="h-8 w-8 mx-auto mb-2 text-primary" />
-            <div className="text-2xl font-bold">89</div>
-            <p className="text-xs text-muted-foreground">Forks</p>
+            <div className="text-2xl font-bold">
+              {stats.forkedSnippetsCount}
+            </div>
+            <p className="text-xs text-muted-foreground">Forked Snippets</p>
+          </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardContent className="pt-6">
+          <div className="text-center">
+            <GitForkIcon className="h-8 w-8 mx-auto mb-2 text-primary" />
+            <div className="text-2xl font-bold">
+              {stats.forkedCollectionsCount}
+            </div>
+            <p className="text-xs text-muted-foreground">Forked Collections</p>
           </div>
         </CardContent>
       </Card>

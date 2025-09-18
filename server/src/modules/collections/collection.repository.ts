@@ -1,10 +1,15 @@
-import { count, eq, sql } from "drizzle-orm";
+import { and, desc, eq, getTableColumns, or, sql } from "drizzle-orm";
 import { Database } from "../../common/db";
 import {
   collectionsTable,
+  collectionsTagsTable,
   NewCollection,
   snippetsTable,
+  Tags,
+  tagsTable,
+  usersTable,
 } from "../../common/db/schema";
+import { alias } from "drizzle-orm/pg-core";
 
 export class CollectionRepository {
   public async insert(input: NewCollection[]) {
@@ -33,58 +38,63 @@ export class CollectionRepository {
     value: number | string,
     isOwner: boolean
   ) {
-    const [data, snippetsCount] = await Promise.all([
-      Database.client.query.collectionsTable.findFirst({
-        where: (t, { eq, or, and }) =>
-          and(
-            isOwner ? undefined : eq(t.isPrivate, false),
-            or(
-              by === "id"
-                ? eq(collectionsTable.id, value as number)
-                : undefined,
-              by === "slug"
-                ? eq(collectionsTable.slug, value as string)
-                : undefined
-            )
-          ),
-
-        with: {
-          creator: {
-            columns: {
-              id: true,
-              name: true,
-              lastName: true,
-              firstName: true,
-              image: true,
-            },
+    const queryCollection = Database.client.query.collectionsTable.findFirst({
+      where: (t, { eq, or, and }) =>
+        and(
+          isOwner ? undefined : eq(t.isPrivate, false),
+          or(
+            by === "id" ? eq(collectionsTable.id, value as number) : undefined,
+            by === "slug"
+              ? eq(collectionsTable.slug, value as string)
+              : undefined
+          )
+        ),
+      with: {
+        creator: {
+          columns: {
+            id: true,
+            name: true,
+            lastName: true,
+            firstName: true,
+            image: true,
           },
-          snippets: {
-            limit: 3,
-            orderBy: (t, { desc }) => desc(t.updatedAt),
-            columns: {
-              title: true,
-              slug: true,
-              language: true,
-              code: true,
-            },
+        },
+        snippets: {
+          limit: 3,
+          orderBy: (t, { desc }) => desc(t.updatedAt),
+          columns: {
+            title: true,
+            slug: true,
+            language: true,
+            code: true,
+            createdAt: true,
+            updatedAt: true,
+            id: true,
           },
-          tags: {
-            with: {
-              tag: {
-                columns: {
-                  name: true,
-                },
+        },
+        tags: {
+          with: {
+            tag: {
+              columns: {
+                name: true,
               },
             },
           },
         },
-      }),
-      by === "id" &&
-        Database.client.$count(
-          snippetsTable,
-          eq(snippetsTable.collectionId, value as number)
-        ),
+      },
+    });
+
+    const [collection, total] = await Promise.all([
+      queryCollection,
+      Database.client.$count(
+        snippetsTable,
+        eq(snippetsTable.collectionId, value as number)
+      ),
     ]);
-    return { data, snippetsCount };
+    return {
+      ...collection,
+      snippetsCount: total,
+      tags: collection?.tags.map((t) => ({ name: t.tag.name })),
+    } as unknown as typeof collection & { tags: Pick<Tags, "name">[] };
   }
 }

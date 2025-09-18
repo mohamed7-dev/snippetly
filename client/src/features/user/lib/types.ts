@@ -1,9 +1,10 @@
 export interface User {
   id: number
-  name: string
+  username: string
   isPrivate: boolean
   firstName: string
   lastName: string
+  fullName: string
   email: string
   password: string
   bio: string | null
@@ -15,15 +16,26 @@ export interface User {
   resetPasswordToken: string | null
   resetPasswordTokenExpiresAt: Date | null
   refreshTokens: string[]
-  createdAt: Date
-  updatedAt: Date
+  joinedAt: string
+  lastUpdatedAt: string
+}
+
+export type UserActivityStats = {
+  snippetsCount: number
+  collectionsCount: number
+  forkedSnippetsCount: number
+  forkedCollectionsCount: number
+  friendsCount: number
+  friendsInboxCount: number
+  friendsOutboxCount: number
 }
 
 export interface Friendship {
   requesterId: number
   addresseeId: number
-  status: 'pending' | 'accepted' | 'rejected'
-  id: number
-  createdAt: Date
-  updatedAt: Date
+  requestStatus: 'pending' | 'accepted' | 'rejected' | 'cancelled'
+  requestSentAt: string
+  requestAcceptedAt: string
+  requestRejectedAt: string
+  requestCancelledAt: string
 }

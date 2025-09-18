@@ -17,20 +17,23 @@ export function SnippetsTabContent() {
     <React.Fragment>
       <div className="grid gap-4 lg:grid-cols-2">
         {snippets.map((snippet) => (
-          <Card key={snippet.id} className="hover:shadow-md transition-shadow">
+          <Card
+            key={snippet.publicId}
+            className="hover:shadow-md transition-shadow"
+          >
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div>
                   <CardTitle className="text-lg hover:text-primary">
                     <Link
                       to={'/dashboard/snippets/$slug'}
-                      params={{ slug: snippet.slug }}
+                      params={{ slug: snippet.publicId }}
                     >
                       {snippet.title}
                     </Link>
                   </CardTitle>
                   <p className="text-sm text-muted-foreground">
-                    by @{snippet.creator.name}
+                    by @{snippet.creator.username}
                   </p>
                 </div>
                 <Badge variant="outline">{snippet.language}</Badge>

@@ -1,16 +1,15 @@
 export interface Snippet {
-  id: number
   isPrivate: boolean
-  createdAt: Date
-  updatedAt: Date
+  addedAt: string
+  lastUpdatedAt: string
   description: string | null
   note: string | null
   title: string
-  slug: string
+  publicId: string
   allowForking: boolean
-  forkedFrom: number | null
-  creatorId: number
+  isForked: boolean
   code: string
   language: string
-  collectionId: number
+  collectionPublicId: string
+  creatorName: string
 }

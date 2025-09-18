@@ -13,6 +13,7 @@ import { Database } from "../../common/db";
 import {
   Friendship,
   friendshipsTable,
+  Snippet,
   snippetsTable,
   usersTable,
 } from "../../common/db/schema";
@@ -20,6 +21,10 @@ import { GetCurrentUserFriendsDtoType } from "./dto/get-current-user-friends.dto
 import { alias } from "drizzle-orm/pg-core";
 
 export class FriendshipReadService {
+  /**
+   * @description
+   * Without join
+   */
   async getFriendshipRequestInfo({
     addresseeId,
     requesterId,
@@ -43,99 +48,121 @@ export class FriendshipReadService {
     userId,
     limit,
     cursor,
-    query: searchString,
   }: GetCurrentUserFriendsDtoType &
     Required<Pick<GetCurrentUserFriendsDtoType, "limit">> & {
       userId: number;
     }) {
-    // Alias friendships table
-    const f = alias(friendshipsTable, "f");
-
-    // Subquery: recent 3 snippets for each friend (as JSON array)
-    const recentSnippets = sql<string[]>`(
-        SELECT json_agg(row_to_json(sn))
-        FROM (
-          SELECT st.id, st.title, st.slug, st.code, st.language, st.created_at, st.updated_at
-          FROM ${snippetsTable} st
-          WHERE st.creator_id = ${usersTable.id}
-          ORDER BY st.created_at DESC
-          LIMIT 3
-        ) sn
-    )`;
-
-    // Snippets count
-    const snippetsCount = sql<number>`(
-        SELECT COUNT(*)
-        FROM ${snippetsTable} s
-        WHERE s.creator_id = ${usersTable.id}
-    )`;
-
-    // Query for friends
-    const query = Database.client
-      .select({
-        id: usersTable.id,
-        name: usersTable.name,
-        firstName: usersTable.firstName,
-        lastName: usersTable.lastName,
-        image: usersTable.image,
-        bio: usersTable.bio,
-        requestSentAt: f.createdAt, // <-- from friendships table
-        recentSnippets,
-        snippetsCount,
-      })
-      .from(usersTable)
-      .innerJoin(
-        f,
+    const friendsQuery = await Database.client.query.friendshipsTable.findMany({
+      where: (t, { and, eq, or }) =>
         and(
-          eq(f.status, "accepted"),
-          or(
-            and(eq(f.requesterId, userId), eq(usersTable.id, f.addresseeId)),
-            and(eq(f.addresseeId, userId), eq(usersTable.id, f.requesterId))
-          )
+          eq(t.status, "accepted"),
+          or(eq(t.requesterId, userId), eq(t.addresseeId, userId)),
+          cursor ? lt(t.id, cursor.id) : undefined
+        ),
+      limit: limit + 1,
+      orderBy: (t, { desc }) => desc(t.id),
+      with: {
+        requester: {
+          extras: {
+            snippetsCount: sql<string>`(
+                select count(*)
+                from ${snippetsTable} as s
+                inner join friendships as f
+                on f.requester_id = s.creator_id
+              )`.as("snippets_count"),
+          },
+          columns: {
+            name: true,
+            firstName: true,
+            lastName: true,
+            id: true,
+            image: true,
+            bio: true,
+          },
+          with: {
+            snippets: {
+              limit: 3,
+              orderBy: (t, { desc }) => desc(t.updatedAt),
+              columns: {
+                title: true,
+                slug: true,
+                language: true,
+                id: true,
+                createdAt: true,
+                updatedAt: true,
+              },
+            },
+          },
+        },
+        addressee: {
+          extras: {
+            snippetsCount: sql<string>`(
+                select count(*)
+                from ${snippetsTable} as s
+                inner join friendships as f
+                on f.addressee_id = s.creator_id
+              )`.as("snippets_count"),
+          },
+          columns: {
+            name: true,
+            firstName: true,
+            lastName: true,
+            id: true,
+            image: true,
+            bio: true,
+          },
+          with: {
+            snippets: {
+              limit: 3,
+              orderBy: (t, { desc }) => desc(t.updatedAt),
+              columns: {
+                title: true,
+                slug: true,
+                language: true,
+                id: true,
+                createdAt: true,
+                updatedAt: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const totalQuery = Database.client.$count(
+      friendshipsTable,
+      and(
+        eq(friendshipsTable.status, "accepted"),
+        or(
+          eq(friendshipsTable.requesterId, userId),
+          eq(friendshipsTable.addresseeId, userId)
         )
       )
-      .where(
-        and(
-          cursor ? lt(usersTable.id, cursor.id) : undefined,
-          searchString
-            ? or(
-                like(usersTable.name, `%${searchString}%`),
-                like(usersTable.email, `%${searchString}%`)
-              )
-            : undefined
-        )
-      )
-      .limit(limit + 1)
-      .orderBy(desc(usersTable.id));
+    );
 
-    // Total count (friends matching filters)
-    const totalQuery = Database.client
-      .select({ count: count() })
-      .from(usersTable)
-      .innerJoin(
-        f,
-        and(
-          eq(f.status, "accepted"),
-          or(
-            and(eq(f.requesterId, userId), eq(usersTable.id, f.addresseeId)),
-            and(eq(f.addresseeId, userId), eq(usersTable.id, f.requesterId))
-          )
-        )
-      )
-      .where(
-        and(
-          searchString
-            ? or(
-                like(usersTable.name, `%${searchString}%`),
-                like(usersTable.email, `%${searchString}%`)
-              )
-            : undefined
-        )
-      );
+    const [data, total] = await Promise.all([friendsQuery, totalQuery]);
 
-    const [data, total] = await Promise.all([query, totalQuery]);
-
-    return { data, total: total[0]?.count ?? 0 };
+    const friends = data.map((friendship) => {
+      if (friendship.requesterId === userId) {
+        const { snippets, ...rest } = friendship.addressee;
+        return {
+          ...rest,
+          recentSnippets: snippets,
+          requestSentAt: friendship.createdAt,
+          requestStatus: friendship.status,
+          requestAcceptedAt: friendship.acceptedAt,
+        };
+      }
+      const { snippets, ...rest } = friendship.requester;
+      return {
+        ...rest,
+        recentSnippets: snippets,
+        requestSentAt: friendship.createdAt,
+        requestStatus: friendship.status,
+        requestAcceptedAt: friendship.acceptedAt,
+      };
+    });
+    return { data: friends, total };
   }
 
   async getUserInbox({
@@ -176,6 +203,7 @@ export class FriendshipReadService {
         image: usersTable.image,
         bio: usersTable.bio,
         requestSentAt: fi.createdAt,
+        requestStatus: fi.status,
         snippetsCount: Database.client.$count(
           snippetsTable,
           eq(snippetsTable.creatorId, usersTable.id)
@@ -250,6 +278,7 @@ export class FriendshipReadService {
         image: usersTable.image,
         bio: usersTable.bio,
         requestSentAt: fi.createdAt,
+        requestStatus: fi.status,
         snippetsCount: Database.client.$count(
           snippetsTable,
           eq(snippetsTable.creatorId, usersTable.id)

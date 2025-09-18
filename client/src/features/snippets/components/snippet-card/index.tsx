@@ -24,13 +24,12 @@ import { useDeleteSnippet } from '../../hooks/use-delete-snippet'
 
 type SnippetItem = Pick<
   Snippet,
-  | 'id'
+  | 'publicId'
   | 'title'
-  | 'slug'
   | 'code'
   | 'language'
   | 'isPrivate'
-  | 'createdAt'
+  | 'addedAt'
   | 'description'
 > & { tags: Pick<Tag, 'name'>[] }
 
@@ -47,17 +46,22 @@ export function SnippetCard({ snippet, onCopy, onDelete }: SnippetCardProps) {
   const handleDelete = () => {
     confirm({
       title: 'Delete snippet',
-      onConfirm: async () => await deleteSnippet({ slug: snippet.slug }),
+      onConfirm: async () => await deleteSnippet({ slug: snippet.publicId }),
     })
-    onDelete?.(snippet.slug)
+    onDelete?.(snippet.publicId)
   }
   return (
     <Card className="border-border hover:shadow-lg transition-all duration-200 group">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <CardTitle className="text-lg font-heading group-hover:text-primary transition-colors">
-              {snippet.title}
+            <CardTitle className="text-lg font-heading group-hover:text-primary transition-colors hover:text-primary">
+              <Link
+                to={'/dashboard/snippets/$slug'}
+                params={{ slug: snippet.publicId }}
+              >
+                {snippet.title}
+              </Link>
             </CardTitle>
             <CardDescription className="mt-1 text-pretty">
               {snippet.description}
@@ -91,7 +95,7 @@ export function SnippetCard({ snippet, onCopy, onDelete }: SnippetCardProps) {
                 >
                   <Link
                     to="/dashboard/snippets/$slug/edit"
-                    params={{ slug: snippet.slug }}
+                    params={{ slug: snippet.publicId }}
                   >
                     <EditIcon className="mr-2 h-4 w-4" />
                     Edit
@@ -107,7 +111,7 @@ export function SnippetCard({ snippet, onCopy, onDelete }: SnippetCardProps) {
                 >
                   <Link
                     to="/dashboard/snippets/$slug"
-                    params={{ slug: snippet.slug }}
+                    params={{ slug: snippet.publicId }}
                   >
                     <EyeIcon className="mr-2 h-4 w-4" />
                     View Details
@@ -136,12 +140,12 @@ export function SnippetCard({ snippet, onCopy, onDelete }: SnippetCardProps) {
             </Badge>
           )}
           <span className="text-xs text-muted-foreground ml-auto">
-            {new Date(snippet.createdAt)?.toLocaleDateString()}
+            {new Date(snippet.addedAt)?.toLocaleDateString()}
           </span>
         </div>
       </CardHeader>
-      <CardContent className="pt-0">
-        <div className="bg-muted/50 rounded-lg p-3 font-mono text-sm overflow-hidden border">
+      <CardContent className="pt-0 flex-col justify-between">
+        <div className="h-48 bg-muted/50 rounded-lg p-3 font-mono text-sm overflow-hidden border">
           <pre className="text-foreground whitespace-pre-wrap line-clamp-6 text-xs leading-relaxed">
             {snippet.code}
           </pre>
@@ -164,7 +168,7 @@ export function SnippetCard({ snippet, onCopy, onDelete }: SnippetCardProps) {
           <Button size="sm" variant="ghost" asChild>
             <Link
               to="/dashboard/snippets/$slug/edit"
-              params={{ slug: snippet.slug }}
+              params={{ slug: snippet.publicId }}
             >
               <EditIcon className="h-3 w-3 mr-1" />
               Edit

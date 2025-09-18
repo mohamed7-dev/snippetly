@@ -25,16 +25,19 @@ export function InboxTabContent() {
     <React.Fragment>
       <div className="space-y-4">
         {users.map((request) => (
-          <Card key={request.id} className="hover:shadow-md transition-shadow">
+          <Card
+            key={request.username}
+            className="hover:shadow-md transition-shadow"
+          >
             <CardContent className="pt-6">
               <div className="flex items-start gap-4">
                 <Avatar className="h-12 w-12">
                   <AvatarImage
                     src={request.image || '/placeholder.svg'}
-                    alt={request.name}
+                    alt={request.username}
                   />
                   <AvatarFallback>
-                    {request.name
+                    {request.fullName
                       .split(' ')
                       .map((n) => n[0])
                       .join('')}
@@ -46,13 +49,13 @@ export function InboxTabContent() {
                     <div className="flex items-center gap-2">
                       <Link
                         to={`/profile/$name`}
-                        params={{ name: request.name }}
+                        params={{ name: request.username }}
                         className="font-semibold hover:text-primary"
                       >
-                        {request.firstName.concat(' ', request.lastName)}
+                        {request.fullName}
                       </Link>
                       <span className="text-sm text-muted-foreground">
-                        @{request.name}
+                        @{request.username}
                       </span>
                       <Badge variant="outline" className="text-xs">
                         {new Date(request.requestSentAt)?.toLocaleDateString()}
@@ -72,7 +75,7 @@ export function InboxTabContent() {
                       isLoading={isAccepting}
                       size="sm"
                       onClick={() =>
-                        acceptRequest({ friendName: request.name })
+                        acceptRequest({ friendName: request.username })
                       }
                       disabled={isAccepting}
                       className="bg-green-600 hover:bg-green-700"
@@ -86,13 +89,16 @@ export function InboxTabContent() {
                       size="sm"
                       variant="outline"
                       onClick={() =>
-                        rejectRequest({ friendName: request.name })
+                        rejectRequest({ friendName: request.username })
                       }
                     >
                       <XIcon className="h-4 w-4 mr-1" />
                       Decline
                     </LoadingButton>
-                    <Link to={'/profile/$name'} params={{ name: request.name }}>
+                    <Link
+                      to={'/profile/$name'}
+                      params={{ name: request.username }}
+                    >
                       <Button size="sm" variant="ghost">
                         View Profile
                       </Button>

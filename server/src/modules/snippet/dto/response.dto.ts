@@ -1,74 +1,362 @@
 import z from "zod";
-import { SelectTagDto } from "../../tag/dto/select-tag.dto";
 import { SelectSnippetDto } from "./select-snippet.dto";
+import { SelectTagDto } from "../../tag/dto/select-tag.dto";
 import { SelectUserDto } from "../../user/dto/select-user.dto";
-import { SelectFolderDto } from "../../folder/dto/select-folder.dto";
+import { SelectCollectionDto } from "../../collections/dto/select-collection.dto";
 
-// Get User Snippets
-export const GetUserSnippetsResponseDto = z.array(
-  SelectSnippetDto.omit({ forkedSnippets: true, sharedWith: true }).extend({
-    tags: z.array(SelectTagDto.shape.name).default([]),
-    owner: SelectUserDto.pick({
+//####################### Mutate #######################
+const CommonMutateSchema = SelectSnippetDto.omit({
+  id: true,
+}).extend({
+  collection: z.string(),
+  creator: z.string(),
+});
+
+export const CreateSnippetResDto = CommonMutateSchema.omit({
+  updatedAt: true,
+  forkedFrom: true,
+}).transform((val) => {
+  const {
+    slug,
+    createdAt,
+    collectionId,
+    creatorId,
+    collection,
+    creator,
+    ...rest
+  } = val;
+  return {
+    ...rest,
+    publicId: slug,
+    addedAt: createdAt,
+    collectionPublicId: collection,
+    creatorName: creator,
+  };
+});
+export const UpdateSnippetResDto = CommonMutateSchema.transform((val) => {
+  const {
+    slug,
+    createdAt,
+    updatedAt,
+    collectionId,
+    creatorId,
+    collection,
+    creator,
+    forkedFrom,
+    ...rest
+  } = val;
+  return {
+    ...rest,
+    publicId: slug,
+    addedAt: createdAt,
+    lastUpdatedAt: updatedAt,
+    collectionPublicId: collection,
+    creatorName: creator,
+    isForked: !!forkedFrom,
+  };
+});
+export const ForkSnippetResDto = CommonMutateSchema;
+
+//###################### Query ##########################
+const BaseSnippetsCollectionSchema = z.object({
+  snippet: SelectSnippetDto.omit({
+    note: true,
+    id: true,
+    creatorId: true,
+    oldSlugs: true,
+  }).extend({
+    tags: z.array(SelectTagDto.pick({ name: true })).catch([]),
+    creator: SelectUserDto.pick({
+      name: true,
       firstName: true,
       lastName: true,
-      name: true,
-      email: true,
-      id: true,
+      image: true,
     }),
-    folder: SelectFolderDto.pick({ title: true, slug: true, id: true }),
-    forkedCount: z.number(),
+  }),
+  collection: SelectCollectionDto.pick({
+    title: true,
+    slug: true,
+    color: true,
+  }).transform((val) => {
+    const { slug, ...rest } = val;
+    return { publicId: slug, ...rest };
+  }),
+});
+
+export const GetSnippetsByCollectionResDto = z.object({
+  snippets: z.array(
+    BaseSnippetsCollectionSchema.shape.snippet.transform((val) => {
+      const {
+        creator: { name, ...creatorRest },
+        collectionId,
+        createdAt,
+        updatedAt,
+        forkedFrom,
+        slug,
+        ...rest
+      } = val;
+      return {
+        ...rest,
+        publicId: slug,
+        addedAt: createdAt,
+        lastUpdatedAt: updatedAt,
+        isForked: !!forkedFrom,
+        creator: {
+          ...creatorRest,
+          username: name,
+          fullName: creatorRest.firstName.concat(" ", creatorRest.lastName),
+        },
+      };
+    })
+  ),
+  collection: BaseSnippetsCollectionSchema.shape.collection,
+});
+
+export const GetPublicSnippetsByCollectionResDto = z.object({
+  snippets: z.array(
+    BaseSnippetsCollectionSchema.shape.snippet
+      .omit({ forkedFrom: true, isPrivate: true, updatedAt: true })
+      .transform((val) => {
+        const {
+          creator: { name, ...creatorRest },
+          collectionId,
+          createdAt,
+          slug,
+          ...rest
+        } = val;
+        return {
+          ...rest,
+          publicId: slug,
+          addedAt: createdAt,
+          creator: {
+            ...creatorRest,
+            username: name,
+            fullName: creatorRest.firstName.concat(" ", creatorRest.lastName),
+          },
+        };
+      })
+  ),
+});
+
+// Discover Snippets
+export const DiscoverSnippetsResDto = z.array(
+  SelectSnippetDto.pick({
+    title: true,
+    slug: true,
+    code: true,
+    language: true,
+    allowForking: true,
+    description: true,
+    createdAt: true,
   })
+    .extend({
+      forkedCount: z.number(),
+      creator: SelectUserDto.pick({
+        name: true,
+        firstName: true,
+        lastName: true,
+        image: true,
+      }),
+      collection: SelectCollectionDto.pick({
+        title: true,
+        slug: true,
+        color: true,
+      }),
+      tags: z.array(SelectTagDto.pick({ name: true })),
+    })
+    .transform((val) => {
+      const {
+        creator: { name, ...restCreator },
+        collection: { slug: collectionSlug, ...restCollection },
+        createdAt,
+        slug,
+        ...rest
+      } = val;
+      return {
+        ...rest,
+        publicId: slug,
+        addedAt: createdAt,
+        creator: {
+          ...restCreator,
+          username: name,
+          fullName: restCreator.firstName.concat(" ", restCreator.lastName),
+        },
+        collection: {
+          ...restCollection,
+          publicId: collectionSlug,
+        },
+      };
+    })
 );
-export type GetUserSnippetsResponseDtoType = z.infer<
-  typeof GetUserSnippetsResponseDto
->;
 
-// Get Public User Snippets
-export const GetPublicUserSnippetsResDto = z.array(
-  GetUserSnippetsResponseDto.unwrap().omit({
-    isPrivate: true,
-  })
-);
-
-export type GetPublicUserSnippetsResDtoType = z.infer<
-  typeof GetPublicUserSnippetsResDto
->;
-
-// Get Snippet
-export const GetSnippetResDto = GetUserSnippetsResponseDto.unwrap();
-export type GetSnippetResDtoType = z.infer<typeof GetSnippetResDto>;
-
-export const GetPublicSnippetResDto = GetPublicUserSnippetsResDto.unwrap();
-export type GetPublicSnippetResDtoType = z.infer<typeof GetPublicSnippetResDto>;
-
-// Get User Friends
-export const GetCurrentUserFriendsDto = z.object({
-  items: SelectUserDto.pick({
+// Shared Snippet Item
+const CommonUserSnippetsSchema = SelectSnippetDto.omit({
+  note: true,
+  collectionId: true,
+  creatorId: true,
+  id: true,
+  oldSlugs: true,
+}).extend({
+  forkedCount: z.number(),
+  creator: SelectUserDto.pick({
     name: true,
     firstName: true,
     lastName: true,
-    id: true,
-  }).extend({
-    friends: z.array(
-      SelectUserDto.pick({
-        firstName: true,
-        lastName: true,
-        name: true,
-        bio: true,
-        id: true,
-      }).extend({
-        recentSnippets: z.array(
-          SelectSnippetDto.pick({
-            title: true,
-            slug: true,
-            language: true,
-            createdAt: true,
-          })
-        ),
-      })
-    ),
+    image: true,
   }),
-  stats: z.object({
-    snippetsCount: z.number(),
+  collection: SelectCollectionDto.pick({
+    title: true,
+    slug: true,
+    color: true,
   }),
+  tags: z.array(SelectTagDto.pick({ name: true })),
+});
+
+// Get Current User Snippets
+export const GetCurrentUserSnippetsResDto = z.array(
+  CommonUserSnippetsSchema.transform((val) => {
+    const {
+      creator: { name, ...restCreator },
+      collection: { slug: collectionSlug, ...restCollection },
+      createdAt,
+      updatedAt,
+      forkedFrom,
+      slug,
+      ...rest
+    } = val;
+    return {
+      ...rest,
+      publicId: slug,
+      addedAt: createdAt,
+      lastUpdatedAt: updatedAt,
+      isForked: !!forkedFrom,
+      creator: {
+        ...restCreator,
+        username: name,
+        fullName: restCreator.firstName.concat(" ", restCreator.lastName),
+      },
+      collection: {
+        ...restCollection,
+        publicId: collectionSlug,
+      },
+    };
+  })
+);
+
+// Get User Snippets
+export const GetUserSnippetsResDto = z.array(
+  CommonUserSnippetsSchema.omit({
+    forkedFrom: true,
+    updatedAt: true,
+  }).transform((val) => {
+    const {
+      creator: { name, ...restCreator },
+      collection: { slug: collectionSlug, ...restCollection },
+      createdAt,
+      slug,
+      ...rest
+    } = val;
+    return {
+      ...rest,
+      publicId: slug,
+      addedAt: createdAt,
+      creator: {
+        ...restCreator,
+        username: name,
+        fullName: restCreator.firstName.concat(" ", restCreator.lastName),
+      },
+      collection: {
+        ...restCollection,
+        publicId: collectionSlug,
+      },
+    };
+  })
+);
+
+// Get Current User Friends Snippets
+export const GetCurrentUserFriendsSnippetsResDto = z.array(
+  CommonUserSnippetsSchema.omit({
+    updatedAt: true,
+    forkedFrom: true,
+    isPrivate: true,
+  }).transform((val) => {
+    const {
+      creator: { name, ...restCreator },
+      collection: { slug: collectionSlug, ...restCollection },
+      createdAt,
+      slug,
+      ...rest
+    } = val;
+    return {
+      ...rest,
+      publicId: slug,
+      addedAt: createdAt,
+      creator: {
+        ...restCreator,
+        username: name,
+        fullName: restCreator.firstName.concat(" ", restCreator.lastName),
+      },
+      collection: {
+        ...restCollection,
+        publicId: collectionSlug,
+      },
+    };
+  })
+);
+
+// Get Snippet
+export const GetSnippetResDto = CommonUserSnippetsSchema.transform((val) => {
+  const {
+    creator: { name, ...restCreator },
+    collection: { slug: collectionSlug, ...restCollection },
+    createdAt,
+    updatedAt,
+    forkedFrom,
+    slug,
+    ...rest
+  } = val;
+  return {
+    ...rest,
+    publicId: slug,
+    addedAt: createdAt,
+    lastUpdatedAt: updatedAt,
+    isForked: !!forkedFrom,
+    creator: {
+      ...restCreator,
+      username: name,
+      fullName: restCreator.firstName.concat(" ", restCreator.lastName),
+    },
+    collection: {
+      ...restCollection,
+      publicId: collectionSlug,
+    },
+  };
+});
+
+export const GetPublicSnippetResDto = CommonUserSnippetsSchema.omit({
+  isPrivate: true,
+  updatedAt: true,
+  forkedFrom: true,
+}).transform((val) => {
+  const {
+    creator: { name, ...restCreator },
+    collection: { slug: collectionSlug, ...restCollection },
+    createdAt,
+    slug,
+    ...rest
+  } = val;
+  return {
+    ...rest,
+    publicId: slug,
+    addedAt: createdAt,
+    creator: {
+      ...restCreator,
+      username: name,
+      fullName: restCreator.firstName.concat(" ", restCreator.lastName),
+    },
+    collection: {
+      ...restCollection,
+      publicId: collectionSlug,
+    },
+  };
 });

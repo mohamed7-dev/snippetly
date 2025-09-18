@@ -1,10 +1,20 @@
-import { and, desc, eq, getTableColumns, lt, or, sql } from "drizzle-orm";
+import {
+  and,
+  arrayContains,
+  desc,
+  eq,
+  getTableColumns,
+  lt,
+  or,
+  sql,
+} from "drizzle-orm";
 import { Database } from "../../common/db";
 import {
   collectionsTable,
   friendshipsTable,
   snippetsTable,
   snippetsTagsTable,
+  Tags,
   tagsTable,
   usersTable,
 } from "../../common/db/schema";
@@ -20,6 +30,31 @@ export class SnippetsReadService {
           by === "id" ? eq(t.id, value as number) : undefined,
           by === "slug" ? eq(t.slug, value as string) : undefined
         ),
+    });
+  }
+
+  async findOneSlimByOldSlug(slug: string) {
+    return await Database.client.query.snippetsTable.findFirst({
+      where: (t) => arrayContains(t.oldSlugs, [slug]),
+    });
+  }
+
+  async findOneWithCollection(by: "slug" | "id", value: string | number) {
+    return await Database.client.query.snippetsTable.findFirst({
+      where: (t, { or, eq }) =>
+        or(
+          by === "id" ? eq(t.id, value as number) : undefined,
+          by === "slug" ? eq(t.slug, value as string) : undefined
+        ),
+      with: {
+        collection: {
+          columns: {
+            id: true,
+            title: true,
+            slug: true,
+          },
+        },
+      },
     });
   }
 
@@ -64,6 +99,9 @@ export class SnippetsReadService {
                 )
               : undefined
           ),
+        columns: {
+          oldSlugs: false,
+        },
         with: {
           tags: true,
           creator: {
@@ -118,9 +156,13 @@ export class SnippetsReadService {
             slug: collectionsTable.slug,
             color: collectionsTable.color,
           },
-          tags: sql<null | string>`
+          forkedCount: Database.client.$count(
+            snippetsTable,
+            eq(snippetsTable.forkedFrom, snippetsTable.id)
+          ),
+          tags: sql<Pick<Tags, "name">[] | []>`
           (
-              SELECT json_agg(row_to_json(t))
+              SELECT COALESCE(json_agg(row_to_json(t)), '[]'::json)
               FROM (
                   SELECT tg.id, tg.name
                   FROM ${snippetsTagsTable} st
@@ -173,7 +215,7 @@ export class SnippetsReadService {
       limit,
       query,
       cursor,
-    }: Omit<GetUserSnippetsDtoType, "creator"> &
+    }: Omit<GetUserSnippetsDtoType, "creatorName"> &
       Required<Pick<GetUserSnippetsDtoType, "limit">>,
     creatorId: number,
     isCurrentUserOwner: boolean
@@ -195,9 +237,13 @@ export class SnippetsReadService {
             slug: collectionsTable.slug,
             color: collectionsTable.color,
           },
-          tags: sql<null | string>`
+          forkedCount: Database.client.$count(
+            snippetsTable,
+            eq(snippetsTable.forkedFrom, snippetsTable.id)
+          ),
+          tags: sql<Pick<Tags, "name">[] | []>`
             (
-              SELECT json_agg(row_to_json(t))
+              SELECT COALESCE(json_agg(row_to_json(t)), '[]'::json)
               FROM (
                   SELECT tg.id, tg.name
                   FROM ${snippetsTagsTable} st
@@ -253,7 +299,7 @@ export class SnippetsReadService {
       limit,
       query,
       cursor,
-    }: Omit<GetUserSnippetsDtoType, "creator"> &
+    }: Omit<GetUserSnippetsDtoType, "creatorName"> &
       Required<Pick<GetUserSnippetsDtoType, "limit">>,
     userId: number
   ) {
@@ -261,7 +307,7 @@ export class SnippetsReadService {
       Database.client
         .select({
           ...getTableColumns(snippetsTable),
-          friend: {
+          creator: {
             id: usersTable.id,
             name: usersTable.name,
             image: usersTable.image,
@@ -274,9 +320,13 @@ export class SnippetsReadService {
             slug: collectionsTable.slug,
             color: collectionsTable.color,
           },
-          tags: sql<null | string>`
+          forkedCount: Database.client.$count(
+            snippetsTable,
+            eq(snippetsTable.forkedFrom, snippetsTable.id)
+          ),
+          tags: sql<Pick<Tags, "name">[] | []>`
             (
-              SELECT json_agg(row_to_json(t))
+              SELECT COALESCE(json_agg(row_to_json(t)), '[]'::json)
               FROM (
                   SELECT tg.id, tg.name
                   FROM ${snippetsTagsTable} st

@@ -18,3 +18,9 @@ export const STRONG_PASSWORD_SCHEMA = z
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/,
     { error: STRONG_PASSWORD_TITLE }
   );
+
+export const LIMIT_SCHEMA = z
+  .string()
+  .transform((val) => Number(val))
+  .refine((val) => val > 0 && val < 100)
+  .optional();

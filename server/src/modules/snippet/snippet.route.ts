@@ -56,20 +56,20 @@ export class SnippetRoute implements Route {
       `${this.path}/user/current/friends`,
       authMiddleware,
       zodValidatorMiddleware(
-        GetUserSnippetsDto.omit({ creator: true }),
+        GetUserSnippetsDto.omit({ creatorName: true }),
         "Query"
       ),
-      this.controller.getCurrentUserFriendsSnippets
+      this.controller.getCurrentUserFriendsSnippets as any
     );
 
     this.router.get(
       `${this.path}/user/current`,
       authMiddleware,
       zodValidatorMiddleware(
-        GetUserSnippetsDto.omit({ creator: true }),
+        GetUserSnippetsDto.omit({ creatorName: true }),
         "Query"
       ),
-      this.controller.getCurrentUserSnippets
+      this.controller.getCurrentUserSnippets as any
     );
 
     // User by name (friends first, then generic :name)
@@ -77,24 +77,24 @@ export class SnippetRoute implements Route {
       `${this.path}/user/:name/friends`,
       authMiddleware,
       zodValidatorMiddleware(
-        GetUserSnippetsDto.omit({ creator: true }),
+        GetUserSnippetsDto.omit({ creatorName: true }),
         "Query"
       ),
       zodValidatorMiddleware(
-        GetUserSnippetsDto.pick({ creator: true }),
+        GetUserSnippetsDto.pick({ creatorName: true }),
         "Params"
       ),
       this.controller.getUserFriendsSnippets as any
     );
 
     this.router.get(
-      `${this.path}/user/:creator`,
+      `${this.path}/user/:creatorName`,
       zodValidatorMiddleware(
-        GetUserSnippetsDto.omit({ creator: true }),
+        GetUserSnippetsDto.omit({ creatorName: true }),
         "Query"
       ),
       zodValidatorMiddleware(
-        GetUserSnippetsDto.pick({ creator: true }),
+        GetUserSnippetsDto.pick({ creatorName: true }),
         "Params"
       ),
       this.controller.getUserSnippets as any

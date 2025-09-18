@@ -20,13 +20,17 @@ export function Sidebar() {
           <div className="flex items-center gap-2">
             <CalendarIcon className="h-4 w-4 text-muted-foreground" />
             <span className="text-muted-foreground">Created:</span>
-            <span>{new Date(snippet.createdAt).toLocaleDateString()}</span>
+            <span>{new Date(snippet.addedAt).toLocaleDateString()}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-            <span className="text-muted-foreground">Updated:</span>
-            <span>{new Date(snippet.updatedAt).toLocaleDateString()}</span>
-          </div>
+          {snippet.lastUpdatedAt && (
+            <div className="flex items-center gap-2">
+              <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">Updated:</span>
+              <span>
+                {new Date(snippet.lastUpdatedAt).toLocaleDateString()}
+              </span>
+            </div>
+          )}
         </CardContent>
       </Card>
       <Card>

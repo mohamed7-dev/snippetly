@@ -1,9 +1,8 @@
 import React from 'react'
-import type { User } from '@/features/user/lib/types'
 import { jwtDecode } from 'jwt-decode'
 import { authStore } from '../lib/auth-store'
 
-export type LoggedInUser = Pick<User, 'email' | 'name' | 'id'> | null
+export type LoggedInUser = { name: string; email: string; id: number } | null
 
 export interface AuthContextValue {
   accessToken: string | null

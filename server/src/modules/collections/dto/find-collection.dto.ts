@@ -1,13 +1,10 @@
 import z from "zod";
 import { SelectUserDto } from "../../user/dto/select-user.dto";
 import { SelectCollectionDto } from "./select-collection.dto";
+import { LIMIT_SCHEMA } from "../../../common/lib/zod";
 
 export const FindCollectionsDto = z.object({
-  limit: z
-    .string()
-    .transform((val) => Number(val))
-    .refine((val) => val > 0 && val < 100)
-    .optional(),
+  limit: LIMIT_SCHEMA,
   cursor: z
     .string()
     .transform((val) => {
@@ -19,7 +16,7 @@ export const FindCollectionsDto = z.object({
     })
     .optional(),
   query: z.string().nonempty().optional(),
-  creator: SelectUserDto.shape.name,
+  creatorName: SelectUserDto.shape.name,
 });
 
 export type FindCollectionsDtoType = z.infer<typeof FindCollectionsDto>;
@@ -31,9 +28,8 @@ export const FindCollectionDto = z.object({
 export type FindCollectionDtoType = z.infer<typeof FindCollectionDto>;
 
 // Discover
-
 export const DiscoverCollectionsDto = z.object({
-  limit: z.number().min(1).max(100).optional(),
+  limit: LIMIT_SCHEMA,
   cursor: z
     .string()
     .transform((val) => {

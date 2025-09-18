@@ -1,4 +1,8 @@
-import { NODE_ENV } from "../../config";
+import {
+  JWT_REFRESH_EXPIRES,
+  JWT_REFRESH_REMEMBER_EXPIRES,
+  NODE_ENV,
+} from "../../config";
 
 export const isDevelopment = NODE_ENV === "development";
 export const isProduction = NODE_ENV === "production";
@@ -14,15 +18,10 @@ export function slugify(input: string): string {
     .replace(/-+/g, "-"); // collapse multiple hyphens
 }
 
-export function uniqueSuffix(): string {
+export function generateUniquePrefix(): string {
   const random = Math.random().toString(36).substring(2, 6);
   const timestamp = Date.now().toString(36);
   return `${timestamp}${random}`;
-}
-
-export function createUniqueSlug(name: string) {
-  const slug = slugify(name).concat("-").concat(uniqueSuffix());
-  return slug;
 }
 
 export function handleCursorPagination<T extends Array<object>>({
@@ -43,4 +42,8 @@ export function handleCursorPagination<T extends Array<object>>({
     nextCursor: T[number] | null;
     data: T;
   };
+}
+
+export function getRefreshTokenExpires(rememberMe: boolean) {
+  return rememberMe ? JWT_REFRESH_REMEMBER_EXPIRES : JWT_REFRESH_EXPIRES;
 }

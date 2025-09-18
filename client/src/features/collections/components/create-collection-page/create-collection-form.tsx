@@ -71,7 +71,7 @@ export function CreateCollectionForm() {
       navigate({
         from: '/dashboard/collections/new',
         to: '/dashboard/collections/$slug',
-        params: { slug: data.data.slug },
+        params: { slug: data.data.publicId },
       })
     },
     onError: (error) => {

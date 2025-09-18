@@ -10,13 +10,10 @@ export class FriendshipRepository {
       .returning();
   }
 
-  public async updateFriendship(
-    id: number,
-    input: Pick<NewFriendship, "status">
-  ) {
+  public async updateFriendship(id: number, input: Partial<NewFriendship>) {
     return await Database.client
       .update(friendshipsTable)
-      .set({ status: input.status })
+      .set({ ...input, updatedAt: new Date() })
       .where(eq(friendshipsTable.id, id))
       .returning();
   }

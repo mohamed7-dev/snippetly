@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { eq, isNotNull } from "drizzle-orm";
 import { Database } from "../../common/db";
-import { NewSnippet, snippetsTable } from "../../common/db/schema";
+import { NewSnippet, snippetsTable, Tags } from "../../common/db/schema";
 
 export class SnippetRepository {
   async insert(input: NewSnippet[]) {
@@ -27,17 +27,23 @@ export class SnippetRepository {
   public async findOne(
     by: "slug" | "id",
     value: number | string,
-    isOwner: boolean
+    isOwner?: boolean
   ) {
-    return await Database.client.query.snippetsTable.findFirst({
+    const defaultIsOwner = isOwner ?? true;
+    const snippet = await Database.client.query.snippetsTable.findFirst({
       where: (t, { eq, or, and }) =>
         and(
-          isOwner ? undefined : eq(t.isPrivate, false),
+          defaultIsOwner ? undefined : eq(t.isPrivate, false),
           or(
             by === "id" ? eq(t.id, value as number) : undefined,
             by === "slug" ? eq(t.slug, value as string) : undefined
           )
         ),
+      extras: {
+        forkedCount: Database.client
+          .$count(snippetsTable, eq(snippetsTable.forkedFrom, value as number))
+          .as("forked_count"),
+      },
       with: {
         creator: {
           columns: {
@@ -67,5 +73,13 @@ export class SnippetRepository {
         },
       },
     });
+
+    return {
+      ...snippet,
+      forkedCount: Number(snippet?.forkedCount),
+      tags: snippet?.tags.map((t) => ({
+        name: t.tag.name,
+      })),
+    } as unknown as typeof snippet & { tags: Pick<Tags, "name">[] };
   }
 }

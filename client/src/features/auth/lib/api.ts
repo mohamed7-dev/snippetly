@@ -1,13 +1,13 @@
-import type { User } from '@/features/user/lib/types'
 import { publicApi } from '@/lib/api'
 import { serverEndpoints } from '@/lib/routes'
 import type { SharedSuccessRes } from '@/lib/types'
 import type { AxiosResponse } from 'axios'
+import type { AuthUser } from './types'
 
 type RefreshAccessTokenSuccessRes = AxiosResponse<
   SharedSuccessRes<{
     accessToken: string
-    user: User
+    user: AuthUser
   }>
 >
 

@@ -7,10 +7,8 @@ import React from 'react'
 import { PageLoader } from '@/components/loaders/page-loader'
 
 export function TabsSection() {
-  const {
-    data: { stats },
-  } = useSuspenseQuery(getCurrentUserDashboardOptions)
-
+  const { data } = useSuspenseQuery(getCurrentUserDashboardOptions)
+  const stats = data.data.stats
   return (
     <Tabs defaultValue="incoming">
       <TabsList className="grid w-full grid-cols-2">

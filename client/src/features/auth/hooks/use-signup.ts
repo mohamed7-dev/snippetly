@@ -4,9 +4,13 @@ import { serverEndpoints } from '@/lib/routes'
 import type { AxiosError } from 'axios'
 import type { ErrorResponse, SharedSuccessRes } from '@/lib/types'
 import { api } from '@/lib/api'
-import type { User } from '@/features/user'
+import type { AuthUser } from '../lib/types'
 
-type SignupSuccessRes = SharedSuccessRes<{ accessToken: string; user: User }>
+type SignupSuccessRes = SharedSuccessRes<{
+  accessToken?: string
+  user?: Omit<AuthUser, 'lastUpdatedAt'>
+  suggestedNames?: string[]
+}>
 // data exists on error object when conflict is detected
 // to suggest names
 type SignupErrorRes = AxiosError<ErrorResponse & { data?: string[] }>

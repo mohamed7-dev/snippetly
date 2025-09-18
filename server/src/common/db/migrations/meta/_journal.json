@@ -36,6 +36,13 @@
       "when": 1757890424656,
       "tag": "0004_added-fts-and-note-field",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1758210126628,
+      "tag": "0005_added-old-slugs-fields",
+      "breakpoints": true
     }
   ]
 }

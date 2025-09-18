@@ -11,10 +11,17 @@ import { api } from '@/lib/api'
 import { serverEndpoints } from '@/lib/routes'
 
 type Input = {
-  data: EditSnippetSchema
+  data: Omit<EditSnippetSchema, 'isPublic'> & { isPrivate: boolean }
   slug: string
 }
-type UpdateSnippetSuccessRes = SharedSuccessRes<Snippet>
+
+type UpdateSnippetSuccessRes = SharedSuccessRes<
+  Omit<Snippet, 'forkedFrom'> & {
+    isForked: boolean
+    collectionPublicId: string
+    creatorName: string
+  }
+>
 type UpdateSnippetErrorRes = AxiosError<ErrorResponse>
 
 export function useUpdateSnippet(

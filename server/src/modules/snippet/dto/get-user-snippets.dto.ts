@@ -14,7 +14,7 @@ export const GetUserSnippetsDto = z.object({
     })
     .optional(),
   query: z.string().nonempty().optional(),
-  creator: SelectUserDto.shape.name,
+  creatorName: SelectUserDto.shape.name,
 });
 
 export type GetUserSnippetsDtoType = z.infer<typeof GetUserSnippetsDto>;

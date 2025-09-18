@@ -73,7 +73,7 @@ export function Sidebar() {
   )
   const collections = collectionsData.pages?.flatMap((p) => p.items) ?? []
   const filteredCollections = collections.filter(
-    (c) => c.slug !== initialCollection.slug,
+    (c) => c.publicId !== initialCollection.publicId,
   )
 
   // select/deselect tags
@@ -187,12 +187,15 @@ export function Sidebar() {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value={initialCollection.slug} disabled>
+                    <SelectItem value={initialCollection.publicId} disabled>
                       {initialCollection.title}
                       <Badge variant={'outline'}>selected</Badge>
                     </SelectItem>
                     {filteredCollections.map((collection) => (
-                      <SelectItem key={collection.id} value={collection.slug}>
+                      <SelectItem
+                        key={collection.publicId}
+                        value={collection.publicId}
+                      >
                         {collection.title}
                       </SelectItem>
                     ))}

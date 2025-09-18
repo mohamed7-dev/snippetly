@@ -8,11 +8,11 @@ import { DEFAULT_FIND_USERS_LIMIT } from "./constants";
 import { handleCursorPagination } from "../../common/lib/utils";
 import { UserReadService } from "./user-read.service";
 import { UserRepository } from "./user.repository";
-import { DeleteUserDtoType } from "./dto/delete-user.dto";
 import { DiscoverUsersDtoType } from "./dto/discover-users.dto";
 import { RequestContext } from "../../common/middlewares/request-context-middleware";
 import { NonNullableFields } from "../../common/types/utils";
 import { GetUserDtoType } from "./dto/get-user.dto";
+import { User } from "../../common/db/schema";
 
 export class UserService {
   private readonly PasswordHashService: PasswordHashService;
@@ -25,7 +25,6 @@ export class UserService {
     this.UserRepository = new UserRepository();
   }
 
-  // Done
   public async create(_ctx: RequestContext, input: CreateUserDtoType) {
     const { password, ...rest } = input;
     const foundUser = await this.UserReadService.findOneSlim("name", rest.name);
@@ -49,7 +48,6 @@ export class UserService {
     return newUser;
   }
 
-  // Done
   public async suggestUniqueNames(baseName: string) {
     const suggestions: string[] = [];
     const existingNames = new Set(
@@ -68,21 +66,27 @@ export class UserService {
     return suggestions;
   }
 
-  // Done
   public async update(
     ctx: NonNullableFields<RequestContext>,
     input: UpdateUserDtoType
   ) {
-    const { data, name } = input;
+    const { name } = input;
 
-    if ("password" in data) {
+    if ("password" in input) {
       throw new HttpException(
         StatusCodes.BAD_REQUEST,
         "Password can't be updated."
       );
     }
 
-    const foundUser = await this.UserReadService.findOneSlim("name", name);
+    if ("email" in input) {
+      throw new HttpException(
+        StatusCodes.BAD_REQUEST,
+        "Email can't be updated."
+      );
+    }
+
+    let foundUser = await this.UserReadService.findOneSlim("id", ctx.user.id);
 
     if (!foundUser || ctx.user.id !== foundUser.id) {
       throw new HttpException(
@@ -91,12 +95,16 @@ export class UserService {
       );
     }
 
-    const [updatedUser] = await this.UserRepository.update(ctx.user.id, data);
+    const [updatedUser] = await this.UserRepository.update(ctx.user.id, {
+      ...input,
+      ...(input.name
+        ? { oldNames: [...foundUser.oldNames, foundUser.name] }
+        : {}),
+    });
 
     return updatedUser;
   }
 
-  // Done
   public async updatePassword(
     ctx: RequestContext,
     input: UpdateUserPasswordDtoType
@@ -125,20 +133,10 @@ export class UserService {
     return updatedUser;
   }
 
-  // Done
-  public async delete(
-    ctx: NonNullableFields<RequestContext>,
-    input: DeleteUserDtoType
-  ) {
-    const name = input.name;
-
-    const foundUser = await this.UserReadService.findOneSlim("name", name);
-
+  public async delete(ctx: NonNullableFields<RequestContext>) {
+    const foundUser = await this.UserReadService.findOneSlim("id", ctx.user.id);
     if (!foundUser || ctx.user.id !== foundUser.id) {
-      throw new HttpException(
-        StatusCodes.NOT_FOUND,
-        `User with name ${name} is not found`
-      );
+      throw new HttpException(StatusCodes.NOT_FOUND, `User account not found.`);
     }
 
     await this.UserRepository.delete(foundUser.id);
@@ -146,7 +144,6 @@ export class UserService {
     return foundUser;
   }
 
-  // Done
   public async discoverUsers(ctx: RequestContext, input: DiscoverUsersDtoType) {
     const { limit } = input;
     const defaultLimit = limit ?? DEFAULT_FIND_USERS_LIMIT;
@@ -178,18 +175,18 @@ export class UserService {
     };
   }
 
-  // Done
   public async getCurrentUserProfile(ctx: NonNullableFields<RequestContext>) {
-    const data = await this.getUserProfile(ctx, { name: ctx.user.name });
-    if (data.profile.id !== ctx.user.id) {
+    const foundUser = await this.UserReadService.findOneSlim("id", ctx.user.id);
+    const data = await this.getUserProfile(ctx, { user: foundUser });
+
+    if (data.profile?.id !== ctx.user.id) {
       throw new HttpException(StatusCodes.NOT_FOUND, "User account not found.");
     }
     return data;
   }
 
-  // Done
   public async getCurrentUserDashboard(ctx: NonNullableFields<RequestContext>) {
-    const [foundUser] = await this.UserReadService.getUserForDashboard({
+    const foundUser = await this.UserReadService.getUserForDashboard({
       userId: ctx.user.id,
     });
 
@@ -198,7 +195,7 @@ export class UserService {
     }
 
     const [stats] = await this.UserReadService.getUserActivityStats({
-      userId: foundUser.id,
+      userId: foundUser.id!,
     });
 
     return {
@@ -207,13 +204,32 @@ export class UserService {
     };
   }
 
-  // Done
-  public async getUserProfile(ctx: RequestContext, input: GetUserDtoType) {
-    const { name } = input;
-    const foundUser = await this.UserReadService.findOneSlim("name", name);
+  public async getUserProfile(
+    ctx: RequestContext,
+    input: Partial<GetUserDtoType> & { user?: User }
+  ) {
+    const { name, user } = input;
+    const checkUserExists = user ? false : true;
+
+    let foundUser = !checkUserExists ? user : null;
+
+    if (checkUserExists && name) {
+      foundUser = await this.UserReadService.findOneSlim("name", name);
+      if (!foundUser) {
+        // search for that name in old names array
+        const foundUserWithOldName =
+          await this.UserReadService.findOneByOldNames(name);
+
+        if (!foundUserWithOldName) {
+          throw new HttpException(StatusCodes.NOT_FOUND, "User not found.");
+        }
+        return { redirect: true, name: foundUserWithOldName.name };
+      }
+    }
     if (!foundUser) {
       throw new HttpException(StatusCodes.NOT_FOUND, "User not found.");
     }
+
     const isCurrentUserOwner = ctx.user?.id === foundUser.id;
     const userProfile = await this.UserReadService.getUserProfile(
       foundUser.id,

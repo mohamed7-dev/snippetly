@@ -11,7 +11,12 @@ import { api } from '@/lib/api'
 import { serverEndpoints } from '@/lib/routes'
 
 type Input = Omit<CreateSnippetSchema, 'isPublic'> & { isPrivate: boolean }
-type CreateSnippetSuccessRes = SharedSuccessRes<Snippet>
+type CreateSnippetSuccessRes = SharedSuccessRes<
+  Omit<Snippet, 'lastUpdatedAt' | 'isForked'> & {
+    collectionPublicId: string
+    creatorName: string
+  }
+>
 type CreateSnippetErrorRes = AxiosError<ErrorResponse>
 
 export function useCreateSnippet(

@@ -4,10 +4,8 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { ClockIcon, MailIcon, UsersIcon } from 'lucide-react'
 
 export function StatsSection() {
-  const {
-    data: { stats },
-  } = useSuspenseQuery(getCurrentUserDashboardOptions)
-
+  const { data } = useSuspenseQuery(getCurrentUserDashboardOptions)
+  const stats = data.data.stats
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       <Card>

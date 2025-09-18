@@ -2,7 +2,6 @@ import { Button } from '@/components/ui/button'
 import { Link } from '@tanstack/react-router'
 import { HeaderWrapper } from '../header-wrapper'
 import { Logo } from '../logo'
-import { clientRoutes } from '@/lib/routes'
 import { useAuth } from '@/features/auth/components/auth-provider'
 
 export function LandingHeader() {
@@ -31,15 +30,15 @@ export function LandingHeader() {
           </nav>
           {user ? (
             <Button className="items-center" variant="ghost" asChild>
-              <Link to={clientRoutes.dashboard}>Go To Dashboard</Link>
+              <Link to={'/dashboard'}>Go To Dashboard</Link>
             </Button>
           ) : (
             <div className="flex items-center gap-3">
               <Button variant="ghost" asChild>
-                <Link to={clientRoutes.login}>Sign In</Link>
+                <Link to={'/login'}>Sign In</Link>
               </Button>
               <Button asChild>
-                <Link to={clientRoutes.signup}>Get Started</Link>
+                <Link to={'/signup'}>Get Started</Link>
               </Button>
             </div>
           )}

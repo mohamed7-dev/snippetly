@@ -12,6 +12,7 @@ import crypto from "crypto";
 import { Request } from "express";
 import { UserReadService } from "../user/user-read.service";
 import { UserRepository } from "../user/user.repository";
+import { getRefreshTokenExpires } from "../../common/lib/utils";
 
 export type JWTPayload = Request["context"]["user"];
 
@@ -29,9 +30,9 @@ export class TokenService {
     });
   }
 
-  public signRefreshJWT(payload: JWTPayload) {
+  public signRefreshJWT(payload: JWTPayload, rememberMe: boolean) {
     return jwt.sign(payload, REFRESH_JWTOKEN_SECRET, {
-      expiresIn: JWT_REFRESH_EXPIRES / 1000,
+      expiresIn: getRefreshTokenExpires(rememberMe) / 1000,
     });
   }
 

@@ -11,7 +11,7 @@ import {
 
 export function DashboardSidebar() {
   const query = useSuspenseQuery(getCurrentUserDashboardOptions)
-  const collections = query.data.data.collections ?? []
+  const collections = query.data.data.recentCollections ?? []
   return (
     <aside className="w-64 border-r border-border bg-muted/30 min-h-[calc(100vh-73px)]">
       <div className="p-6">
@@ -80,9 +80,9 @@ export function DashboardSidebar() {
           <div className="space-y-1">
             {collections?.map((collection) => (
               <Link
-                key={collection.id}
+                key={collection.publicId}
                 to={'/dashboard/collections/$slug'}
-                params={{ slug: collection.slug }}
+                params={{ slug: collection.publicId }}
                 className="flex items-center gap-3 px-3 py-2 text-sm rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
               >
                 <div
@@ -92,7 +92,7 @@ export function DashboardSidebar() {
                   }}
                 />
                 <span className="flex-1">{collection.title}</span>
-                <span className="text-xs">{0}</span>
+                <span className="text-xs">{collection.snippetsCount}</span>
               </Link>
             ))}
           </div>

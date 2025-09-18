@@ -7,7 +7,9 @@ import type { Collection } from '../lib/types'
 import type { AxiosError } from 'axios'
 
 type Input = Omit<CreateCollectionSchema, 'isPublic'> & { isPrivate: boolean }
-type CreateCollectionSuccessRes = SharedSuccessRes<Collection>
+type CreateCollectionSuccessRes = SharedSuccessRes<
+  Omit<Collection, 'isForked' | 'lastUpdatedAt'>
+>
 type CreateCollectionErrorRes = AxiosError<ErrorResponse>
 
 export function useCreateCollection(

@@ -3,40 +3,47 @@ import { serverEndpoints } from '@/lib/routes'
 import type { SharedSuccessRes } from '@/lib/types'
 import { queryOptions } from '@tanstack/react-query'
 import type { Snippet } from '@/features/snippets/lib/types'
-import type { User } from '@/features/user/lib/types'
+import type { User, UserActivityStats } from '@/features/user/lib/types'
 import type { Collection } from '@/features/collections/lib/types'
 import type { Tag } from '@/features/tags/lib/types'
 
-// Get Current User's Dashboard
-type TagItem = Pick<Tag, 'name' | 'id'>
+type TagItem = Pick<Tag, 'name'>
 type SnippetItem = Pick<
   Snippet,
   | 'title'
-  | 'slug'
+  | 'publicId'
   | 'code'
   | 'language'
-  | 'id'
   | 'description'
-  | 'createdAt'
+  | 'addedAt'
+  | 'lastUpdatedAt'
   | 'isPrivate'
 > & { tags: TagItem[] }
 
-type GetCurrentUserDashboardSuccessRes = SharedSuccessRes<
-  User & {
-    snippets: SnippetItem[]
-    collections: Pick<Collection, 'title' | 'slug' | 'id' | 'color'>[]
-  }
-> & {
-  stats: {
-    snippetsCount: number
-    collectionsCount: number
-    forkedSnippetsCount: number
-    forkedCollectionsCount: number
-    friendsCount: number
-    friendsInboxCount: number
-    friendsOutboxCount: number
-  }
-}
+type CollectionItem = Pick<
+  Collection,
+  'title' | 'publicId' | 'color' | 'addedAt' | 'lastUpdatedAt'
+> & { snippetsCount: number }
+type GetCurrentUserDashboardSuccessRes = SharedSuccessRes<{
+  profile: Pick<
+    User,
+    | 'username'
+    | 'fullName'
+    | 'firstName'
+    | 'lastName'
+    | 'joinedAt'
+    | 'lastUpdatedAt'
+    | 'isPrivate'
+    | 'email'
+    | 'bio'
+    | 'image'
+    | 'acceptedPolicies'
+    | 'emailVerifiedAt'
+  >
+  stats: UserActivityStats
+  recentSnippets: SnippetItem[]
+  recentCollections: CollectionItem[]
+}>
 
 export const getCurrentUserDashboardOptions = queryOptions({
   queryKey: ['users', 'current', 'dashboards'],

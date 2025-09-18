@@ -1,17 +1,18 @@
 import { StatusCodes } from "http-status-codes";
 import { HttpException } from "../../common/lib/exception";
-import { UpdateFolderDtoType } from "./dto/update-collection.dto";
+import { UpdateCollectionDtoType } from "./dto/update-collection.dto";
 import {
-  createUniqueSlug,
+  generateUniquePrefix,
   handleCursorPagination,
+  slugify,
 } from "../../common/lib/utils";
-import { DeleteFolderDtoType } from "./dto/delete-collection.dto";
+import { DeleteCollectionDtoType } from "./dto/delete-collection.dto";
 import { TagService } from "../tag/tag.service";
 import {
   DISCOVER_FOLDERS_DEFAULT_LIMIT,
   FIND_FOLDERS_DEFAULT_LIMIT,
 } from "./constants";
-import { ForkFolderDtoType } from "./dto/fork-collection.dto";
+import { ForkCollectionDtoType } from "./dto/fork-collection.dto";
 import { CollectionRepository } from "./collection.repository";
 import { CollectionsTagsRepository } from "./collections-tags-repository";
 import { CreateCollectionDtoType } from "./dto/create-collection.dto";
@@ -25,6 +26,7 @@ import {
 } from "./dto/find-collection.dto";
 import { UserReadService } from "../user/user-read.service";
 import { RequestContext } from "../../common/middlewares/request-context-middleware";
+import { User } from "../../common/db/schema";
 
 export class CollectionService {
   private readonly UserReadService: UserReadService;
@@ -45,16 +47,17 @@ export class CollectionService {
 
   public async create(
     ctx: NonNullableFields<Pick<RequestContext, "user">>,
-    input: CreateCollectionDtoType
+    input: CreateCollectionDtoType & { forkedFrom?: number }
   ) {
-    const { title, tags, ...rest } = input;
-
+    const { title, tags, forkedFrom, ...rest } = input;
+    const prefix = generateUniquePrefix();
     const [newCollection] = await this.CollectionRepository.insert([
       {
         ...rest,
         title,
-        slug: createUniqueSlug(title),
+        slug: prefix.concat("-", slugify(title)),
         creatorId: ctx.user.id,
+        ...(forkedFrom ? { forkedFrom } : {}),
       },
     ]);
 
@@ -71,31 +74,31 @@ export class CollectionService {
       );
     }
 
-    return newCollection;
+    return { ...newCollection, creator: ctx.user.name };
   }
 
   public async update(
     ctx: NonNullableFields<RequestContext>,
-    input: UpdateFolderDtoType
+    input: UpdateCollectionDtoType
   ) {
     const { data, slug } = input;
-    const [foundCollection] = await this.CollectionReadService.findOneSlim(
-      "slug",
-      slug
-    );
+    const foundCollection =
+      await this.CollectionReadService.findOneSlimWithCreator("slug", slug);
+
+    if (!foundCollection) {
+      return await this.getCollectionByOldSlugAndRedirect(slug);
+    }
 
     const userId = ctx.user.id;
-
     if (!foundCollection || foundCollection.creatorId !== userId) {
       throw new HttpException(StatusCodes.NOT_FOUND, "Collection not found.");
     }
-
-    const { addTags, removeTags, ...rest } = data;
+    const { addTags, removeTags, title, ...rest } = data;
 
     if (addTags && addTags.length) {
       const tagDocs = await this.TagService.ensureTagsExistence(
         addTags,
-        userId
+        ctx.user.id
       );
 
       await this.CollectionsTagsRepository.insert(
@@ -110,31 +113,45 @@ export class CollectionService {
       await this.removeCollectionTags(removeTags, foundCollection.id);
     }
 
+    let updatedSlug;
+    if (title) {
+      const fixedPart = foundCollection.slug.split("-")[0];
+      updatedSlug = fixedPart.concat("-", slugify(title));
+    }
+
     const [updatedCollection] = await this.CollectionRepository.update(
       foundCollection.id,
       {
         ...rest,
+        ...(updatedSlug
+          ? {
+              slug: updatedSlug,
+              oldSlugs: [...foundCollection.oldSlugs, foundCollection.slug],
+            }
+          : {}),
       }
     );
 
-    return updatedCollection;
+    return { ...updatedCollection, creator: foundCollection.creator.name };
   }
 
   public async fork(
     ctx: NonNullableFields<RequestContext>,
-    input: ForkFolderDtoType
+    input: ForkCollectionDtoType
   ) {
     const { slug } = input;
-    const foundCollection = await this.CollectionReadService.findOneWithTags(
+    const foundCollection = await this.CollectionRepository.findOne(
       "slug",
-      slug
+      slug,
+      true
     );
 
     if (!foundCollection) {
-      throw new HttpException(
-        StatusCodes.NOT_FOUND,
-        `Collection ${slug} is not found.`
-      );
+      return await this.getCollectionByOldSlugAndRedirect(slug);
+    }
+
+    if (!foundCollection) {
+      throw new HttpException(StatusCodes.NOT_FOUND, `Collection not found.`);
     }
 
     if (!foundCollection.allowForking) {
@@ -156,6 +173,8 @@ export class CollectionService {
     const { title, description, color, isPrivate, allowForking, tags } =
       foundCollection;
 
+    // TODO: assign public snippets in the original collection to
+    // the new Collection
     const newCollection = await this.create(ctx, {
       title,
       description,
@@ -163,22 +182,30 @@ export class CollectionService {
       isPrivate,
       allowForking,
       tags: tags.map((tag) => tag.tag.name),
+      forkedFrom: foundCollection.id,
     });
 
-    // track forked collection
-
-    return newCollection;
+    return {
+      ...newCollection,
+      forkedFrom: foundCollection.slug,
+      // name comes from session when fetching user info
+      creator: ctx.user.name,
+    };
   }
 
   public async delete(
     ctx: NonNullableFields<RequestContext>,
-    input: DeleteFolderDtoType
+    input: DeleteCollectionDtoType
   ) {
-    const slug = input.slug;
-    const [foundCollection] = await this.CollectionReadService.findOneSlim(
+    const foundCollection = await this.CollectionReadService.findOneSlim(
       "slug",
-      slug
+      input.slug
     );
+
+    if (!foundCollection) {
+      return await this.getCollectionByOldSlugAndRedirect(input.slug);
+    }
+
     const userId = ctx.user.id;
     if (!foundCollection || foundCollection.creatorId !== userId) {
       throw new HttpException(StatusCodes.NOT_FOUND, "Collection not found.");
@@ -196,7 +223,6 @@ export class CollectionService {
     const { limit } = input;
     const defaultLimit = limit ?? DISCOVER_FOLDERS_DEFAULT_LIMIT;
 
-    // TODO: extend discover to include forked count
     const { data, total } = await this.CollectionReadService.discover({
       ...input,
       limit: defaultLimit,
@@ -218,31 +244,46 @@ export class CollectionService {
     };
   }
 
-  public async findCurrentUserFolders(
+  public async findCurrentUserCollections(
     ctx: NonNullableFields<RequestContext>,
     input: Pick<FindCollectionsDtoType, "limit" | "query" | "cursor">
   ) {
-    const foundFolders = await this.find(ctx, {
-      creator: ctx.user.name,
+    const foundUser = await this.UserReadService.findOneSlim("id", ctx.user.id);
+    const data = await this.find(ctx, {
+      user: foundUser,
       ...input,
     });
-    return foundFolders;
+    return data;
   }
 
-  public async find(ctx: RequestContext, input: FindCollectionsDtoType) {
-    const { limit, creator } = input;
+  public async find(
+    ctx: RequestContext,
+    input: Partial<FindCollectionsDtoType> & { user?: User }
+  ) {
+    const { limit, creatorName, user } = input;
     const defaultLimit = limit ?? FIND_FOLDERS_DEFAULT_LIMIT;
 
-    const foundUser = await this.UserReadService.findOneSlim("name", creator);
+    const checkUserExists = user ? false : true;
+    let foundUser = user ? user : null;
 
-    if (!foundUser) {
-      throw new HttpException(
-        StatusCodes.NOT_FOUND,
-        `User with the name ${creator} is not found.`
-      );
+    if (checkUserExists && creatorName) {
+      foundUser =
+        (await this.UserReadService.findOneSlim("name", creatorName)) ?? null;
+      if (!foundUser) {
+        foundUser =
+          (await this.UserReadService.findOneByOldNames(creatorName)) ?? null;
+        if (!foundUser) {
+          throw new HttpException(StatusCodes.NOT_FOUND, `User not found.`);
+        }
+        return { redirect: true, name: foundUser.name };
+      }
     }
 
-    const isCurrentUserOwner = ctx?.user?.name === foundUser.name;
+    if (!foundUser) {
+      throw new HttpException(StatusCodes.NOT_FOUND, `User not found.`);
+    }
+
+    const isCurrentUserOwner = ctx?.user?.id === foundUser.id;
 
     const { data, total } =
       await this.CollectionReadService.findUserCollections(
@@ -254,7 +295,6 @@ export class CollectionService {
         isCurrentUserOwner
       );
 
-    // TODO: extend stats to include forked count
     const stats = await this.CollectionReadService.getUserCollectionsStats(
       foundUser.id
     );
@@ -277,10 +317,14 @@ export class CollectionService {
   }
 
   public async findOne(ctx: RequestContext, input: FindCollectionDtoType) {
-    let [foundCollection] = await this.CollectionReadService.findOneSlim(
+    let foundCollection = await this.CollectionReadService.findOneSlim(
       "slug",
       input.slug
     );
+
+    if (!foundCollection) {
+      return await this.getCollectionByOldSlugAndRedirect(input.slug);
+    }
 
     if (!foundCollection) {
       throw new HttpException(StatusCodes.NOT_FOUND, "Collection not found.");
@@ -297,10 +341,8 @@ export class CollectionService {
     if (!fullCollection) {
       throw new HttpException(StatusCodes.NOT_FOUND, "Collection not found.");
     }
-    return {
-      ...fullCollection.data,
-      snippetsCount: fullCollection.snippetsCount,
-    };
+
+    return fullCollection;
   }
 
   private async removeCollectionTags(names: string[], collectionId: number) {
@@ -313,5 +355,16 @@ export class CollectionService {
     if (tagIds.length === 0) return; // nothing to remove
 
     await this.CollectionsTagsRepository.delete({ collectionId, tagIds });
+  }
+
+  private async getCollectionByOldSlugAndRedirect(slug: string) {
+    const foundCollectionWithOldSlug =
+      await this.CollectionReadService.findOneSlimByOldSlug(slug);
+
+    if (!foundCollectionWithOldSlug) {
+      throw new HttpException(StatusCodes.NOT_FOUND, "Collection not found.");
+    }
+
+    return { redirect: true, slug: foundCollectionWithOldSlug.slug };
   }
 }

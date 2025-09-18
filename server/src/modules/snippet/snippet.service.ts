@@ -5,8 +5,9 @@ import { UpdateSnippetDtoType } from "./dto/update-snippet.dto";
 import { GetUserSnippetsDtoType } from "./dto/get-user-snippets.dto";
 import { UserService } from "../user/user.service";
 import {
-  createUniqueSlug,
+  generateUniquePrefix,
   handleCursorPagination,
+  slugify,
 } from "../../common/lib/utils";
 import { TagService } from "../tag/tag.service";
 import {
@@ -27,6 +28,7 @@ import { SnippetsReadService } from "./snippets-read.service";
 import { TagReadService } from "../tag/tag-read.service";
 import { UserReadService } from "../user/user-read.service";
 import { GetCollectionSnippetsDtoType } from "./dto/get-collection-snippets";
+import { User } from "../../common/db/schema";
 
 export class SnippetService {
   public readonly UserService: UserService;
@@ -53,14 +55,19 @@ export class SnippetService {
 
   public async create(
     ctx: NonNullableFields<RequestContext>,
-    input: CreateSnippetDtoType
+    input: CreateSnippetDtoType & { forkedFrom?: number }
   ) {
-    const { title, tags, collection, ...rest } = input;
+    const { title, tags, collection, forkedFrom, ...rest } = input;
 
-    const [foundCollection] = await this.CollectionReadService.findOneSlim(
+    let foundCollection = await this.CollectionReadService.findOneSlim(
       "slug",
       collection
     );
+    if (!foundCollection) {
+      foundCollection = await this.CollectionReadService.findOneSlimByOldSlug(
+        collection
+      );
+    }
 
     if (!foundCollection) {
       throw new HttpException(
@@ -69,12 +76,16 @@ export class SnippetService {
       );
     }
 
+    const titleSlug = slugify(input.title);
+    const randomPrefix = generateUniquePrefix();
+
     const [newSnippet] = await this.SnippetRepository.insert([
       {
         title,
         collectionId: foundCollection.id,
-        slug: createUniqueSlug(input.title),
+        slug: randomPrefix.concat("-", titleSlug),
         creatorId: ctx.user.id,
+        ...(forkedFrom ? { forkedFrom } : {}),
         ...rest,
       },
     ]);
@@ -84,6 +95,7 @@ export class SnippetService {
         tags,
         ctx.user.id
       );
+
       await this.SnippetsTagsRepository.insert(
         tagsDocs.map((tag) => ({
           tagId: tag.id,
@@ -92,7 +104,12 @@ export class SnippetService {
       );
     }
 
-    return newSnippet;
+    return {
+      ...newSnippet,
+      collectionSlug: foundCollection.slug,
+      // can be obtained from session
+      creatorName: ctx.user.name,
+    };
   }
 
   public async update(
@@ -101,10 +118,16 @@ export class SnippetService {
   ) {
     const { data, slug } = input;
     const userId = ctx.user.id;
-    const foundSnippet = await this.SnippetsReadService.findOneSlim(
+
+    const foundSnippet = await this.SnippetRepository.findOne(
       "slug",
-      slug
+      slug,
+      true
     );
+
+    if (!foundSnippet) {
+      return await this.checkOldSnippetSlugAndRedirect(slug);
+    }
 
     if (!foundSnippet || foundSnippet.creatorId !== userId) {
       throw new HttpException(StatusCodes.NOT_FOUND, "Snippet not found.");
@@ -132,24 +155,43 @@ export class SnippetService {
 
     let collectionId = null;
     if (collection) {
-      const [foundCollection] = await this.CollectionReadService.findOneSlim(
+      const foundCollection = await this.CollectionReadService.findOneSlim(
         "slug",
         collection
       );
       if (!foundCollection) {
-        collectionId = null;
+        const foundCollectionWithOldSlug =
+          await this.CollectionReadService.findOneSlimByOldSlug(collection);
+        collectionId = foundCollectionWithOldSlug
+          ? foundCollectionWithOldSlug.id
+          : null;
       } else {
         collectionId = foundCollection.id;
       }
     }
+
+    let updatedSlug;
+    if (data.title) {
+      const fixedPart = foundSnippet.slug.split("-")[0];
+      updatedSlug = fixedPart.concat("-", slugify(data.title));
+    }
+
     const [updatedSnippet] = await this.SnippetRepository.update(
       foundSnippet.id,
       {
         ...rest,
+        ...(updatedSlug ? { slug: updatedSlug } : {}),
         ...(collectionId ? { collectionId } : {}),
       }
     );
-    return { updatedSnippet, collectionId };
+    return {
+      updatedSnippet: {
+        ...updatedSnippet,
+        collection: foundSnippet.collection.slug,
+        creator: foundSnippet.creator.name,
+      },
+      collectionId,
+    };
   }
 
   public async delete(
@@ -163,6 +205,9 @@ export class SnippetService {
       "slug",
       slug
     );
+    if (!foundSnippet) {
+      return await this.checkOldSnippetSlugAndRedirect(slug);
+    }
 
     if (!foundSnippet || foundSnippet.creatorId !== userId) {
       throw new HttpException(StatusCodes.NOT_FOUND, "Snippet not found.");
@@ -178,28 +223,30 @@ export class SnippetService {
     input: ForkSnippetDtoType
   ) {
     const { slug, collection } = input;
-    const foundSnippet = await this.SnippetsReadService.findOneWithTags(
-      "slug",
-      slug
-    );
+    const foundSnippet = await this.SnippetRepository.findOne("slug", slug);
+
+    if (!foundSnippet) {
+      return await this.checkOldSnippetSlugAndRedirect(slug);
+    }
+
     if (!foundSnippet) {
       throw new HttpException(
         StatusCodes.NOT_FOUND,
         `Snippet ${slug} is not found.`
       );
     }
+
+    if (foundSnippet.creatorId === ctx.user.id) {
+      throw new HttpException(
+        StatusCodes.CONFLICT,
+        `Snippet ${foundSnippet.title} is already in your snippets list.`
+      );
+    }
+
     if (!foundSnippet.allowForking) {
       throw new HttpException(
         StatusCodes.FORBIDDEN,
         `Forking ${foundSnippet.title} is not allowed.`
-      );
-    }
-    const userId = ctx.user.id;
-
-    if (foundSnippet.creatorId === userId) {
-      throw new HttpException(
-        StatusCodes.CONFLICT,
-        `Snippet ${foundSnippet.title} is already in your snippets list.`
       );
     }
 
@@ -222,17 +269,20 @@ export class SnippetService {
       language,
       collection,
       tags: tags.map((tag) => tag.tag.name),
+      forkedFrom: foundSnippet.id,
     });
 
-    // track forked snippets
-    return newSnippet;
+    return {
+      ...newSnippet,
+      collection: foundSnippet.collection.slug,
+      creator: foundSnippet.creator.name,
+    };
   }
 
   public async discover(_ctx: RequestContext, input: DiscoverSnippetsDtoType) {
     const { limit } = input;
     const defaultLimit = limit ?? DISCOVER_SNIPPETS_DEFAULT_LIMIT;
 
-    // TODO: extend discover to include forked count
     const { data, total } = await this.SnippetsReadService.discover({
       ...input,
       limit: defaultLimit,
@@ -256,33 +306,44 @@ export class SnippetService {
 
   public async getCurrentUserSnippets(
     ctx: NonNullableFields<RequestContext>,
-    input: Omit<GetUserSnippetsDtoType, "creator">
+    input: Omit<GetUserSnippetsDtoType, "creatorName">
   ) {
-    const loggedInUserName = ctx.user.name;
+    const foundUser = await this.UserReadService.findOneSlim("id", ctx.user.id);
     const snippets = await this.getUserSnippets(ctx, {
       ...input,
-      creator: loggedInUserName,
+      user: foundUser,
     });
     return snippets;
   }
 
   public async getUserSnippets(
     ctx: RequestContext,
-    input: GetUserSnippetsDtoType
+    input: Partial<GetUserSnippetsDtoType> & { user?: User }
   ) {
-    const { limit, creator } = input;
+    const { limit, creatorName, user } = input;
     const defaultLimit = limit ?? FIND_SNIPPETS_DEFAULT_LIMIT;
 
-    const foundUser = await this.UserReadService.findOneSlim("name", creator);
+    const checkUserExists = user ? false : true;
+    let foundUser = user ? user : null;
 
-    if (!foundUser) {
-      throw new HttpException(
-        StatusCodes.NOT_FOUND,
-        `User with the name ${creator} is not found.`
-      );
+    if (checkUserExists && creatorName) {
+      foundUser =
+        (await this.UserReadService.findOneSlim("name", creatorName)) ?? null;
+      if (!foundUser) {
+        foundUser =
+          (await this.UserReadService.findOneByOldNames(creatorName)) ?? null;
+        if (!foundUser) {
+          throw new HttpException(StatusCodes.NOT_FOUND, `User not found.`);
+        }
+        return { redirect: true, name: foundUser.name };
+      }
     }
 
-    const isCurrentUserOwner = ctx?.user?.name === foundUser.name;
+    if (!foundUser) {
+      throw new HttpException(StatusCodes.NOT_FOUND, `User not found.`);
+    }
+
+    const isCurrentUserOwner = ctx?.user?.id === foundUser.id;
 
     const { data, total } = await this.SnippetsReadService.findUserSnippets(
       {
@@ -292,8 +353,6 @@ export class SnippetService {
       foundUser.id,
       isCurrentUserOwner
     );
-
-    // TODO: add stats that includes forked count
 
     const { nextCursor, data: paginatedData } = handleCursorPagination({
       data,
@@ -313,28 +372,41 @@ export class SnippetService {
 
   public async getCurrentUserFriendsSnippets(
     ctx: NonNullableFields<RequestContext>,
-    input: Omit<GetUserSnippetsDtoType, "creator">
+    input: Omit<GetUserSnippetsDtoType, "creatorName">
   ) {
-    const loggedInUserName = ctx.user.name;
+    const foundUser = await this.UserReadService.findOneSlim("id", ctx.user.id);
+
     const snippets = await this.getUserFriendsSnippets(ctx, {
       ...input,
-      creator: loggedInUserName,
+      user: foundUser,
     });
     return snippets;
   }
 
   public async getUserFriendsSnippets(
     _ctx: RequestContext,
-    input: GetUserSnippetsDtoType
+    input: Partial<GetUserSnippetsDtoType> & { user?: User }
   ) {
-    const { limit, creator } = input;
+    const { limit, creatorName, user } = input;
     const defaultLimit = limit ?? FIND_SNIPPETS_DEFAULT_LIMIT;
-    const foundUser = await this.UserReadService.findOneSlim("name", creator);
+    const checkUserExists = user ? false : true;
+    let foundUser = user ? user : null;
+
+    if (checkUserExists && creatorName) {
+      foundUser =
+        (await this.UserReadService.findOneSlim("name", creatorName)) ?? null;
+      if (!foundUser) {
+        foundUser =
+          (await this.UserReadService.findOneByOldNames(creatorName)) ?? null;
+        if (!foundUser) {
+          throw new HttpException(StatusCodes.NOT_FOUND, `User not found.`);
+        }
+        return { redirect: true, name: foundUser.name };
+      }
+    }
+
     if (!foundUser) {
-      throw new HttpException(
-        StatusCodes.NOT_FOUND,
-        `User with the name ${creator} is not found.`
-      );
+      throw new HttpException(StatusCodes.NOT_FOUND, `User not found.`);
     }
 
     const { data, total } =
@@ -366,6 +438,9 @@ export class SnippetService {
       "slug",
       input.slug
     );
+    if (!foundSnippet) {
+      return this.checkOldSnippetSlugAndRedirect(input.slug);
+    }
 
     if (!foundSnippet) {
       throw new HttpException(StatusCodes.NOT_FOUND, "Snippet not found.");
@@ -390,10 +465,20 @@ export class SnippetService {
     input: GetCollectionSnippetsDtoType
   ) {
     const defaultLimit = input.limit ?? FIND_SNIPPETS_DEFAULT_LIMIT;
-    const [foundCollection] = await this.CollectionReadService.findOneSlim(
+    let foundCollection = await this.CollectionReadService.findOneSlim(
       "slug",
       input.collection
     );
+
+    if (!foundCollection) {
+      const foundCollectionWithOldSlug =
+        await this.CollectionReadService.findOneSlimByOldSlug(input.collection);
+      if (!foundCollectionWithOldSlug) {
+        throw new HttpException(StatusCodes.NOT_FOUND, "Collection not found.");
+      }
+      return { redirect: true, slug: foundCollectionWithOldSlug.slug };
+    }
+
     const isCurrentUserOwner = foundCollection.creatorId === ctx.user?.id;
 
     let { data, total } =
@@ -433,5 +518,14 @@ export class SnippetService {
     if (tagIds.length === 0) return; // nothing to remove
 
     await this.SnippetsTagsRepository.delete({ snippetId, tagIds });
+  }
+
+  private async checkOldSnippetSlugAndRedirect(slug: string) {
+    const foundSnippetWithOldSlug =
+      await this.SnippetsReadService.findOneSlimByOldSlug(slug);
+    if (!foundSnippetWithOldSlug) {
+      throw new HttpException(StatusCodes.NOT_FOUND, "Snippet not found.");
+    }
+    return { redirect: true, slug: foundSnippetWithOldSlug.slug };
   }
 }
