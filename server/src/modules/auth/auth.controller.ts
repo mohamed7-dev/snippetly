@@ -128,8 +128,12 @@ export class AuthController {
       request.context,
       request.body
     );
+
     response.status(StatusCodes.OK).json({
-      message: `Reset password email has been sent to ${data.user.email}, check your inbox!.`,
+      message:
+        data.status === "reset-password-email-sent"
+          ? `Reset password email has been sent to ${data.user.email}, check your inbox!.`
+          : "An email verification token was sent to your email, you need to verify your email first.",
       data: null,
     });
   };

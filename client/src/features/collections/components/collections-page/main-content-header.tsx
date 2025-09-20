@@ -1,10 +1,15 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Link } from '@tanstack/react-router'
-import { FilterIcon, PlusIcon, SearchIcon } from 'lucide-react'
+import { Link, useNavigate, useSearch } from '@tanstack/react-router'
+import { PlusIcon, SearchIcon } from 'lucide-react'
 import React from 'react'
+import { FilterMenu } from '../../../../components/filter-menu'
 
 export function MainContentHeader() {
+  const navigate = useNavigate({ from: '/dashboard/collections' })
+  const { filter } = useSearch({
+    from: '/(protected)/dashboard/_dashboard-layout/_error-boundary/collections/',
+  })
   return (
     <React.Fragment>
       <div className="mb-8">
@@ -24,10 +29,11 @@ export function MainContentHeader() {
           />
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm">
-            <FilterIcon className="h-4 w-4 mr-2" />
-            Filter
-          </Button>
+          <FilterMenu
+            onSelect={(selected) => navigate({ search: { filter: selected } })}
+            selected={filter}
+          />
+
           <Button size="sm" asChild>
             <Link to={'/dashboard/collections/new'}>
               <PlusIcon className="h-4 w-4 mr-2" />

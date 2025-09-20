@@ -28,7 +28,13 @@ export class UserController {
     req: Request<{}, {}, UpdateUserDtoType>,
     res: Response
   ) => {
-    const updatedUser = await this.UserService.update(req.context, req.body);
+    const updatedUser = await this.UserService.update(req.context, {
+      ...req.body,
+      image: req.file
+        ? `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`
+        : undefined,
+    });
+
     const { success, data: parsedData } =
       UpdateUserResDto.safeParse(updatedUser);
     if (!success) {

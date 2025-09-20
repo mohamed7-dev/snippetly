@@ -28,7 +28,7 @@ import { SnippetsReadService } from "./snippets-read.service";
 import { TagReadService } from "../tag/tag-read.service";
 import { UserReadService } from "../user/user-read.service";
 import { GetCollectionSnippetsDtoType } from "./dto/get-collection-snippets";
-import { User } from "../../common/db/schema";
+import { Tags, User } from "../../common/db/schema";
 
 export class SnippetService {
   public readonly UserService: UserService;
@@ -106,9 +106,9 @@ export class SnippetService {
 
     return {
       ...newSnippet,
-      collectionSlug: foundCollection.slug,
+      collectionPublicId: foundCollection.slug,
       // can be obtained from session
-      creatorName: ctx.user.name,
+      creatorName: "",
     };
   }
 
@@ -133,7 +133,7 @@ export class SnippetService {
       throw new HttpException(StatusCodes.NOT_FOUND, "Snippet not found.");
     }
 
-    const { addTags, removeTags, collection, ...rest } = data;
+    const { addTags, removeTags, collection, title, ...rest } = data;
 
     if (addTags && addTags.length) {
       const tagDocs = await this.TagService.ensureTagsExistence(
@@ -171,24 +171,30 @@ export class SnippetService {
     }
 
     let updatedSlug;
-    if (data.title) {
+    const oldSlugs = foundSnippet.oldSlugs;
+    if (title) {
       const fixedPart = foundSnippet.slug.split("-")[0];
-      updatedSlug = fixedPart.concat("-", slugify(data.title));
+      updatedSlug = fixedPart.concat("-", slugify(title));
+      const foundOld = oldSlugs.find((os) => os === foundSnippet.slug);
+      if (!foundOld) {
+        oldSlugs.push(foundSnippet.slug);
+      }
     }
 
     const [updatedSnippet] = await this.SnippetRepository.update(
       foundSnippet.id,
       {
         ...rest,
-        ...(updatedSlug ? { slug: updatedSlug } : {}),
+        title,
+        // ...(updatedSlug ? { slug: updatedSlug, oldSlugs } : {}),
         ...(collectionId ? { collectionId } : {}),
       }
     );
     return {
       updatedSnippet: {
         ...updatedSnippet,
-        collection: foundSnippet.collection.slug,
-        creator: foundSnippet.creator.name,
+        collectionPublicId: foundSnippet.collection.slug,
+        creatorName: foundSnippet.creator.name,
       },
       collectionId,
     };
@@ -236,13 +242,6 @@ export class SnippetService {
       );
     }
 
-    if (foundSnippet.creatorId === ctx.user.id) {
-      throw new HttpException(
-        StatusCodes.CONFLICT,
-        `Snippet ${foundSnippet.title} is already in your snippets list.`
-      );
-    }
-
     if (!foundSnippet.allowForking) {
       throw new HttpException(
         StatusCodes.FORBIDDEN,
@@ -259,7 +258,6 @@ export class SnippetService {
       allowForking,
       tags,
     } = foundSnippet;
-
     const newSnippet = await this.create(ctx, {
       title,
       description,
@@ -268,14 +266,14 @@ export class SnippetService {
       code,
       language,
       collection,
-      tags: tags.map((tag) => tag.tag.name),
+      tags: (tags as Pick<Tags, "name">[]).map((tag) => tag.name),
       forkedFrom: foundSnippet.id,
     });
 
     return {
       ...newSnippet,
-      collection: foundSnippet.collection.slug,
-      creator: foundSnippet.creator.name,
+      collectionPublicId: foundSnippet.collection.slug,
+      creatorName: foundSnippet.creator.name,
     };
   }
 

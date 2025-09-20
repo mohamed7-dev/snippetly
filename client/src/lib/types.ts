@@ -14,3 +14,10 @@ export type SharedPaginatedSuccessRes<T, C = null> = {
   nextCursor: C
   total?: number
 }
+
+export interface AsyncActionCallback<D, E> {
+  onSuccess?: (info: D) => void
+  onError?: (info: E) => void
+  onSettled?: () => void
+  onMutate?: () => void
+}

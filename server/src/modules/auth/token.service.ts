@@ -13,6 +13,7 @@ import { Request } from "express";
 import { UserReadService } from "../user/user-read.service";
 import { UserRepository } from "../user/user.repository";
 import { getRefreshTokenExpires } from "../../common/lib/utils";
+import { User } from "../../common/db/schema";
 
 export type JWTPayload = Request["context"]["user"];
 
@@ -58,8 +59,14 @@ export class TokenService {
     });
   }
 
-  public async generateEmailVerificationToken(email: string) {
-    const foundUser = await this.findUserByEmail(email);
+  public async generateEmailVerificationToken(email: string, user?: User) {
+    let foundUser = user ?? null;
+    if (!user) {
+      foundUser = await this.findUserByEmail(email);
+    }
+    if (!foundUser) {
+      throw new HttpException(StatusCodes.NOT_FOUND, "User account not found.");
+    }
 
     const generatedToken = this.generateRandomUUID();
 
@@ -102,8 +109,15 @@ export class TokenService {
     return updatedUser;
   }
 
-  public async generateResetPasswordToken(email: string) {
-    const foundUser = await this.findUserByEmail(email);
+  public async generateResetPasswordToken(email: string, user?: User) {
+    let foundUser = user ? user : null;
+
+    if (!user) {
+      foundUser = await this.findUserByEmail(email);
+    }
+    if (!foundUser) {
+      throw new HttpException(StatusCodes.NOT_FOUND, `User not found.`);
+    }
     const generatedToken = this.generateRandomUUID();
 
     const [updatedUser] = await this.UserRepository.update(foundUser.id, {

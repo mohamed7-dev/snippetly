@@ -10,6 +10,11 @@ import { Toaster } from 'sonner'
 import type { QueryClient } from '@tanstack/react-query'
 import { DeleteConfirmationProvider } from '@/components/providers/delete-confirmation-provider'
 import { type AuthContextValue } from '@/features/auth/components/auth-provider'
+import {
+  NotFoundPageView,
+  type NotFoundMetaData,
+} from '@/components/views/not-found-page-view'
+import { ErrorPageView } from '@/components/views/error-page-view'
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient
@@ -40,4 +45,16 @@ export const Route = createRootRouteWithContext<{
       />
     </div>
   ),
+  notFoundComponent: (meta) => {
+    return (
+      <NotFoundPageView
+        title={(meta.data as NotFoundMetaData).title}
+        description={(meta.data as NotFoundMetaData).description}
+      />
+    )
+  },
+  errorComponent: (e) => {
+    console.log('error from 2', e)
+    return <ErrorPageView error={e.error} reset={e.reset} />
+  },
 })

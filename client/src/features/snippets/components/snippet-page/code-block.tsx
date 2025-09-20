@@ -14,6 +14,7 @@ export function CodeBlock() {
   React.useLayoutEffect(() => {
     hljs.highlightAll()
   })
+
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -38,9 +39,10 @@ export function CodeBlock() {
           <div className="p-4 overflow-x-auto">
             <pre className="font-mono text-sm text-foreground tracking-normal leading-5 whitespace-pre-wrap">
               <code
-                dangerouslySetInnerHTML={{ __html: snippet.code }}
                 className={`language-${snippet.language} border border-gray-500 px-4 py-3 h-96 subpixel-antialiased`}
-              />
+              >
+                {snippet.code}{' '}
+              </code>
             </pre>
           </div>
         </div>

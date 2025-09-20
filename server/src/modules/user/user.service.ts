@@ -13,6 +13,7 @@ import { RequestContext } from "../../common/middlewares/request-context-middlew
 import { NonNullableFields } from "../../common/types/utils";
 import { GetUserDtoType } from "./dto/get-user.dto";
 import { User } from "../../common/db/schema";
+import { Multer } from "multer";
 
 export class UserService {
   private readonly PasswordHashService: PasswordHashService;
@@ -70,36 +71,25 @@ export class UserService {
     ctx: NonNullableFields<RequestContext>,
     input: UpdateUserDtoType
   ) {
-    const { name } = input;
-
-    if ("password" in input) {
-      throw new HttpException(
-        StatusCodes.BAD_REQUEST,
-        "Password can't be updated."
-      );
-    }
-
-    if ("email" in input) {
-      throw new HttpException(
-        StatusCodes.BAD_REQUEST,
-        "Email can't be updated."
-      );
-    }
-
     let foundUser = await this.UserReadService.findOneSlim("id", ctx.user.id);
 
     if (!foundUser || ctx.user.id !== foundUser.id) {
-      throw new HttpException(
-        StatusCodes.NOT_FOUND,
-        `User with name ${name} is not found`
-      );
+      throw new HttpException(StatusCodes.NOT_FOUND, `User not found.`);
+    }
+    const { newPassword, currentPassword, ...rest } = input;
+    if (newPassword && currentPassword) {
+      await this.updatePassword(ctx, {
+        currentPassword,
+        newPassword,
+        email: foundUser.email,
+      });
     }
 
     const [updatedUser] = await this.UserRepository.update(ctx.user.id, {
-      ...input,
-      ...(input.name
-        ? { oldNames: [...foundUser.oldNames, foundUser.name] }
-        : {}),
+      ...rest,
+      // ...(input.name
+      //   ? { oldNames: [...foundUser.oldNames, foundUser.name] }
+      //   : {}),
     });
 
     return updatedUser;
@@ -126,8 +116,21 @@ export class UserService {
       throw new HttpException(StatusCodes.NOT_FOUND, "User account not found.");
     }
 
+    if (input.currentPassword) {
+      const isValid = await this.PasswordHashService.verify({
+        plain: input.currentPassword,
+        hashed: foundUser.password,
+      });
+      if (!isValid) {
+        throw new HttpException(
+          StatusCodes.NOT_FOUND,
+          "User account not found."
+        );
+      }
+    }
+
     const updatedUser = await this.UserRepository.update(foundUser.id, {
-      password: await this.PasswordHashService.hash(input.password),
+      password: await this.PasswordHashService.hash(input.newPassword),
     });
 
     return updatedUser;
@@ -226,6 +229,7 @@ export class UserService {
         return { redirect: true, name: foundUserWithOldName.name };
       }
     }
+
     if (!foundUser) {
       throw new HttpException(StatusCodes.NOT_FOUND, "User not found.");
     }

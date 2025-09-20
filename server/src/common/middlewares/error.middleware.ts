@@ -17,7 +17,7 @@ export default class ErrorMiddleWare extends Interceptor {
     _next: NextFunction
   ) {
     const status: number = error.status || 500;
-    const message: string = error.message || "Something went wrong";
+    const message: string = error.message;
     if (error instanceof HttpException) {
       // check if 400, return cause
       if (error.status === StatusCodes.BAD_REQUEST) {
@@ -27,7 +27,7 @@ export default class ErrorMiddleWare extends Interceptor {
       }
       res.status(status).json({ message });
     } else {
-      res.status(status).json({ message });
+      res.status(status).json({ message: "Something went wrong." });
       ErrorLogger.logUnhandledError(error, LogContextEnum.SERVER, {
         endpoint: req.path,
         method: req.method,

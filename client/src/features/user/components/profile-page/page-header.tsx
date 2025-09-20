@@ -7,11 +7,7 @@ export function PageHeader() {
   const router = useRouter()
   return (
     <HeaderWrapper className="flex items-center">
-      <Button
-        variant="ghost"
-        onClick={() => router.history.back()}
-        className="mb-4"
-      >
+      <Button variant="ghost" onClick={() => router.history.back()}>
         <ArrowLeftIcon className="h-4 w-4 mr-2" />
         Back
       </Button>

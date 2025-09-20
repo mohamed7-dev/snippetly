@@ -18,6 +18,7 @@ type ConfirmationOptions = {
 
 type ContextType = {
   confirm: (options: ConfirmationOptions) => void
+  resetAndClose?: () => void
 }
 
 const DeleteConfirmationContext = React.createContext<ContextType | null>(null)
@@ -44,13 +45,18 @@ export function DeleteConfirmationProvider({
     setOpen(true)
   }, [])
 
+  const resetAndClose = React.useCallback(() => {
+    setOptions({})
+    setOpen(false)
+  }, [])
+
   const handleConfirm = async () => {
     if (options.onConfirm) await options.onConfirm()
     setOpen(false)
   }
 
   return (
-    <DeleteConfirmationContext.Provider value={{ confirm }}>
+    <DeleteConfirmationContext.Provider value={{ confirm, resetAndClose }}>
       {children}
       <AlertDialog open={open} onOpenChange={setOpen}>
         <AlertDialogContent>

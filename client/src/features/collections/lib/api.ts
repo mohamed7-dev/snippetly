@@ -6,6 +6,8 @@ import type { Collection, CollectionStats } from './types'
 import type { User } from '@/features/user/lib/types'
 import type { Tag } from '@/features/tags/lib/types'
 import type { Snippet } from '@/features/snippets/lib/types'
+import { replaceUrl } from '@/lib/utils'
+import { AxiosError } from 'axios'
 
 //################################# Shared ############################
 type CreatorItem = Pick<
@@ -36,14 +38,33 @@ type Cursor = {
 
 // Get Collection
 type GetCollectionSuccessRes = SharedSuccessRes<UserCollection>
-export const getCollectionQueryOptions = (slug: string) =>
+
+export const getCollectionQueryOptions = (
+  slug: string,
+  getRedirectionUrl?: (newSlug: string) => string,
+) =>
   queryOptions({
     queryKey: ['collections', slug],
     queryFn: async () => {
-      const res = await api.get<GetCollectionSuccessRes>(
-        serverEndpoints.getCollection(slug),
-      )
-      return res.data
+      try {
+        const res = await api.get<GetCollectionSuccessRes>(
+          serverEndpoints.getCollection(slug),
+        )
+        return res.data
+      } catch (error) {
+        if (error instanceof AxiosError) {
+          if (error.status === 308) {
+            const axiosError = error as AxiosError<{ newSlug: string }>
+            const responseData = axiosError.response?.data
+            if (responseData && 'newSlug' in responseData) {
+              !!getRedirectionUrl &&
+                replaceUrl(getRedirectionUrl?.(responseData.newSlug))
+            }
+          }
+          throw error
+        }
+        throw error
+      }
     },
   })
 
@@ -98,18 +119,36 @@ type GetProfileCollectionsSuccessRes = SharedPaginatedSuccessRes<
   }
 }
 
-export const getProfileCollectionsOptions = (name: string) =>
+export const getProfileCollectionsOptions = (
+  name: string,
+  getRedirectionUrl?: (newUsername: string) => string,
+) =>
   infiniteQueryOptions({
     queryKey: ['collection', 'user', name],
     queryFn: async ({ pageParam }: { pageParam: Cursor | null }) => {
-      const params = new URLSearchParams()
-      if (pageParam) {
-        params.set('cursor', JSON.stringify(pageParam))
+      try {
+        const params = new URLSearchParams()
+        if (pageParam) {
+          params.set('cursor', JSON.stringify(pageParam))
+        }
+        const res = await api.get<GetProfileCollectionsSuccessRes>(
+          `${serverEndpoints.getUserCollections(name)}${params ? '?' + params : ''}`,
+        )
+        return res.data
+      } catch (error) {
+        if (error instanceof AxiosError) {
+          if (error.status === 308) {
+            const axiosError = error as AxiosError<{ newUsername: string }>
+            const responseData = axiosError.response?.data
+            if (responseData && 'newUsername' in responseData) {
+              !!getRedirectionUrl &&
+                replaceUrl(getRedirectionUrl?.(responseData.newUsername))
+            }
+          }
+          throw error
+        }
+        throw error
       }
-      const res = await api.get<GetProfileCollectionsSuccessRes>(
-        `${serverEndpoints.getUserCollections(name)}${params ? '?' + params : ''}`,
-      )
-      return res.data
     },
     initialPageParam: null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,

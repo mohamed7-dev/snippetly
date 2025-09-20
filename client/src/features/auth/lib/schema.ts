@@ -38,3 +38,39 @@ export const loginSchema = z
   .extend(commonSchema.shape)
 
 export type LoginSchema = z.infer<typeof loginSchema>
+
+// send v token
+export const sendVerificationTokenSchema = z.object({
+  email: z.string().email(),
+})
+
+export type SendVerificationTokenSchema = z.infer<
+  typeof sendVerificationTokenSchema
+>
+
+// verify email
+export const verifyEmailSchema = z.object({
+  token: z.string(),
+})
+
+export type VerifyEmailSchema = z.infer<typeof verifyEmailSchema>
+
+// send reset token
+export const sendResetTokenSchema = z.object({
+  email: z.string().email(),
+})
+
+export type SendResetTokenSchema = z.infer<typeof sendResetTokenSchema>
+
+// reset password
+export const resetPasswordSchema = z.object({
+  password: STRONG_PASSWORD_SCHEMA,
+  token: z.string(),
+})
+
+export type ResetPasswordSchema = z.infer<typeof resetPasswordSchema>
+
+// search schema
+export const searchSchema = z.object({
+  token: z.string().uuid().catch(''),
+})

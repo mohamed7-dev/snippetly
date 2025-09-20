@@ -1,21 +1,27 @@
 import React from 'react'
 import { Button } from '@/components/ui/button'
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
-import { Link } from '@tanstack/react-router'
+import { Link, useSearch } from '@tanstack/react-router'
 import { Code2Icon, PlusIcon } from 'lucide-react'
 import { SnippetCard } from '@/features/snippets/components/snippet-card'
 import { InfiniteLoader } from '@/components/loaders/infinite-loader'
 import { getCurrentSnippetsOptions } from '@/features/snippets/lib/api'
+import { useFilter } from '@/components/filter-menu'
 
 export function SnippetsSection() {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useSuspenseInfiniteQuery(getCurrentSnippetsOptions)
   const snippets = data.pages.flatMap((p) => p.items) ?? []
+  const { filter } = useSearch({
+    from: '/(protected)/dashboard/_dashboard-layout/_error-boundary/',
+  })
+
+  const filteredSnippets = useFilter({ data: snippets, filter })
   return (
     <React.Fragment>
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {snippets.map((snippet) => (
-          <SnippetCard key={snippet.publicId} snippet={snippet} />
+        {filteredSnippets.map((snippet) => (
+          <SnippetCard key={snippet.publicId} snippet={{ ...snippet }} />
         ))}
       </div>
       <InfiniteLoader
@@ -23,7 +29,7 @@ export function SnippetsSection() {
         hasNextPage={hasNextPage}
         isFetchingNextPage={isFetchingNextPage}
         Content={
-          !snippets.length ? (
+          !filteredSnippets.length ? (
             <div className="text-center py-12">
               <Code2Icon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="font-heading font-semibold text-lg mb-2">

@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Request, Router } from "express";
 import { UserController } from "./user.controller";
 import { authMiddleware } from "../../common/middlewares/auth.middleware";
 import { zodValidatorMiddleware } from "../../common/middlewares/zod-validator.middleware";
@@ -9,6 +9,10 @@ import { GetCurrentUserFriendsDto } from "./dto/get-current-user-friends.dto";
 import { DiscoverUsersDto } from "./dto/discover-users.dto";
 import { GetUserDto } from "./dto/get-user.dto";
 import { FriendshipController } from "./friendship.controller";
+import multer, { FileFilterCallback } from "multer";
+import path from "path";
+import { HttpException } from "../../common/lib/exception";
+import { StatusCodes } from "http-status-codes";
 
 export class UserRoute implements Route {
   public path: string = "/users";
@@ -88,6 +92,7 @@ export class UserRoute implements Route {
     this.router.put(
       `${this.path}`,
       authMiddleware,
+      this.configureMulter().single("image"),
       zodValidatorMiddleware(UpdateUserDto, "Body"),
       this.controller.update
     );
@@ -99,5 +104,45 @@ export class UserRoute implements Route {
       zodValidatorMiddleware(GetUserDto, "Params"),
       this.controller.getUserProfile
     );
+  }
+
+  private configureMulter() {
+    const fileFilter = (
+      _req: Request,
+      file: Express.Multer.File,
+      cb: FileFilterCallback
+    ) => {
+      const allowedMimes = [
+        "image/jpeg",
+        "image/png",
+        "image/jpg",
+        "image/svg+xml",
+      ];
+
+      if (allowedMimes.includes(file.mimetype)) {
+        cb(null, true);
+      } else {
+        cb(
+          new HttpException(
+            StatusCodes.BAD_REQUEST,
+            "Invalid file type. Only JPG, JPEG, PNG, and SVG are allowed."
+          )
+        );
+      }
+    };
+    const storage = multer.diskStorage({
+      destination: (_req, _file, cb) => {
+        cb(null, path.join(__dirname, "..", "..", "uploads")); // save locally in uploads/
+      },
+      filename: (_req, file, cb) => {
+        const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+        cb(null, uniqueSuffix + path.extname(file.originalname));
+      },
+    });
+    return multer({
+      storage,
+      limits: { fileSize: 1 * 1024 * 1024 },
+      fileFilter,
+    });
   }
 }

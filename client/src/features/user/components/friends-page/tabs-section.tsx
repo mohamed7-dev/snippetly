@@ -5,15 +5,29 @@ import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
 import { getCurrentUserFriends } from '../../lib/api'
 import React from 'react'
 import { PageLoader } from '@/components/loaders/page-loader'
+import { useNavigate, useSearch } from '@tanstack/react-router'
 
 export function TabsSection() {
+  const { tab } = useSearch({ from: '/(protected)/dashboard/friends' })
+  const navigate = useNavigate()
   const { data } = useSuspenseInfiniteQuery(getCurrentUserFriends)
   const total = data.pages?.[0].total
+
   return (
-    <Tabs defaultValue="friends" className="space-y-6">
+    <Tabs defaultValue="friends" value={tab} className="space-y-6">
       <TabsList className="grid w-full grid-cols-4">
-        <TabsTrigger value="friends">My Friends ({total})</TabsTrigger>
-        <TabsTrigger value="snippets">Friends' Snippets</TabsTrigger>
+        <TabsTrigger
+          value="friends"
+          onClick={() => navigate({ to: '.', search: { tab: 'friends' } })}
+        >
+          My Friends ({total})
+        </TabsTrigger>
+        <TabsTrigger
+          value="snippets"
+          onClick={() => navigate({ to: '.', search: { tab: 'snippets' } })}
+        >
+          Friends' Snippets
+        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="friends" className="space-y-6">

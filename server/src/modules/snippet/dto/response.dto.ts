@@ -8,8 +8,8 @@ import { SelectCollectionDto } from "../../collections/dto/select-collection.dto
 const CommonMutateSchema = SelectSnippetDto.omit({
   id: true,
 }).extend({
-  collection: z.string(),
-  creator: z.string(),
+  collectionPublicId: z.string(),
+  creatorName: z.string(),
 });
 
 export const CreateSnippetResDto = CommonMutateSchema.omit({
@@ -21,16 +21,16 @@ export const CreateSnippetResDto = CommonMutateSchema.omit({
     createdAt,
     collectionId,
     creatorId,
-    collection,
-    creator,
+    collectionPublicId,
+    creatorName,
     ...rest
   } = val;
   return {
     ...rest,
     publicId: slug,
     addedAt: createdAt,
-    collectionPublicId: collection,
-    creatorName: creator,
+    collectionPublicId: collectionPublicId,
+    creatorName: creatorName,
   };
 });
 export const UpdateSnippetResDto = CommonMutateSchema.transform((val) => {
@@ -40,8 +40,8 @@ export const UpdateSnippetResDto = CommonMutateSchema.transform((val) => {
     updatedAt,
     collectionId,
     creatorId,
-    collection,
-    creator,
+    collectionPublicId,
+    creatorName,
     forkedFrom,
     ...rest
   } = val;
@@ -50,8 +50,8 @@ export const UpdateSnippetResDto = CommonMutateSchema.transform((val) => {
     publicId: slug,
     addedAt: createdAt,
     lastUpdatedAt: updatedAt,
-    collectionPublicId: collection,
-    creatorName: creator,
+    collectionPublicId: collectionPublicId,
+    creatorName: creatorName,
     isForked: !!forkedFrom,
   };
 });

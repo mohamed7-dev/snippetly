@@ -3,13 +3,19 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { useParams } from '@tanstack/react-router'
 import { CalendarIcon, GitForkIcon } from 'lucide-react'
 import { getSnippetQueryOptions } from '../../lib/api'
-import { Button } from '@/components/ui/button'
+import { useForkSnippet } from '../../hooks/use-fork-snippet'
+import { LoadingButton } from '@/components/inputs/loading-button'
+import { CurrentUserCollectionsOverlay } from '@/features/collections/components/current-user-collections-overlay'
 
 export function Sidebar() {
   const params = useParams({ from: '/(protected)/dashboard/snippets/$slug/' })
 
   const { data } = useSuspenseQuery(getSnippetQueryOptions(params.slug))
   const snippet = data.data
+
+  // fork snippet
+  const { mutateAsync: forkSnippet, isPending: isForking } = useForkSnippet()
+
   return (
     <div className="space-y-6">
       <Card>
@@ -38,14 +44,26 @@ export function Sidebar() {
           <CardTitle className="font-heading text-base">Actions</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full justify-start bg-transparent"
-          >
-            <GitForkIcon className="h-4 w-4 mr-2" />
-            Fork Snippet
-          </Button>
+          <CurrentUserCollectionsOverlay
+            Trigger={
+              <LoadingButton
+                isLoading={isForking}
+                disabled={isForking}
+                variant="outline"
+                size="sm"
+                className="w-full justify-start bg-transparent"
+              >
+                <GitForkIcon className="h-4 w-4 mr-2" />
+                Fork Snippet
+              </LoadingButton>
+            }
+            onSelect={(publicId) =>
+              forkSnippet({
+                slug: snippet.publicId,
+                collectionSlug: publicId,
+              })
+            }
+          />
         </CardContent>
       </Card>
       <Card>

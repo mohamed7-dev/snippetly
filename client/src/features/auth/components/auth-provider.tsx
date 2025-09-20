@@ -2,7 +2,12 @@ import React from 'react'
 import { jwtDecode } from 'jwt-decode'
 import { authStore } from '../lib/auth-store'
 
-export type LoggedInUser = { name: string; email: string; id: number } | null
+export type LoggedInUser = {
+  name: string
+  email: string
+  id: number
+  image: string | null
+} | null
 
 export interface AuthContextValue {
   accessToken: string | null
@@ -10,6 +15,7 @@ export interface AuthContextValue {
   logout: () => void
   updateAccessToken: (token: string) => void
   getCurrentUser: () => LoggedInUser
+  isLoggedOut: boolean
 }
 
 export const AuthContext = React.createContext<AuthContextValue | undefined>(
@@ -18,6 +24,7 @@ export const AuthContext = React.createContext<AuthContextValue | undefined>(
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [accessToken, setAccessToken] = React.useState<string | null>(null)
+  const [isLoggedOut, setIsLoggedOut] = React.useState(false)
 
   const login = (token: string) => {
     setAccessToken(token)
@@ -25,6 +32,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const logout = () => {
     setAccessToken(null)
+    setIsLoggedOut(true)
   }
 
   const updateAccessToken = (token: string) => {
@@ -45,7 +53,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <AuthContext.Provider
-      value={{ accessToken, login, logout, updateAccessToken, getCurrentUser }}
+      value={{
+        accessToken,
+        login,
+        logout,
+        updateAccessToken,
+        getCurrentUser,
+        isLoggedOut,
+      }}
     >
       {children}
     </AuthContext.Provider>

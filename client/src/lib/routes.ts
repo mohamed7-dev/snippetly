@@ -10,7 +10,7 @@ export const serverEndpoints = {
   resetPassword: '/auth/reset-password',
   // collections
   createCollection: '/collections',
-  updatedCollection: (slug: string) => `/collections/${slug}`,
+  updateCollection: (slug: string) => `/collections/${slug}`,
   deleteCollection: (slug: string) => `/collections/${slug}`,
   forkCollection: (slug: string) => `/collections/${slug}/fork`,
   discoverCollections: '/collections/discover',
@@ -29,8 +29,8 @@ export const serverEndpoints = {
   getUserFriendsSnippets: (name: string) => `/snippets/user/${name}/friends`,
   getSnippet: (slug: string) => `/snippets/${slug}`,
   // users
-  updateUser: (name: string) => `/users/${name}`,
-  deleteUser: (name: string) => `/users/${name}`,
+  updateUser: '/users',
+  deleteUser: '/users',
   sendFriendshipRequest: (friendName: string) =>
     `/users/add-friend/${friendName}`,
   acceptFriendshipRequest: (friendName: string) =>

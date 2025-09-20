@@ -20,6 +20,7 @@ import { toast } from 'sonner'
 import { ProcessStatus } from '@/components/feedback/process-status'
 import { useAuth } from './auth-provider'
 import { authStore } from '../lib/auth-store'
+import { PasswordField } from '@/components/inputs/password-field'
 
 export function LoginCard() {
   const { login: authenticateUserOnClient } = useAuth()
@@ -88,11 +89,7 @@ export function LoginCard() {
               <FormItem>
                 <FormLabel>Password</FormLabel>
                 <FormControl>
-                  <Input
-                    type="password"
-                    placeholder="Enter your password"
-                    {...field}
-                  />
+                  <PasswordField placeholder="Enter your password" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -119,7 +116,7 @@ export function LoginCard() {
             />
 
             <Link
-              to={clientRoutes.forgotPassword}
+              to={'/forgot-password'}
               className="text-sm text-primary hover:underline"
             >
               Forgot password?
@@ -133,7 +130,7 @@ export function LoginCard() {
       <div className="text-center text-sm mt-4">
         <span className="text-muted-foreground">Don't have an account? </span>
         <Link
-          to={clientRoutes.signup}
+          to={'/signup'}
           className="text-primary hover:underline font-medium"
         >
           Sign up

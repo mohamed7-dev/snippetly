@@ -51,6 +51,7 @@ type SnippetItem = Pick<
   | 'addedAt'
   | 'description'
   | 'allowForking'
+  | 'isPrivate'
 > & {
   forkedCount: number
   creator: Pick<

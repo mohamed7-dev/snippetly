@@ -15,8 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Link } from '@tanstack/react-router'
-import { clientRoutes } from '@/lib/routes'
+import { Link, useSearch } from '@tanstack/react-router'
 import {
   BookOpenIcon,
   EditIcon,
@@ -30,6 +29,7 @@ import { getCurrentUserCollectionsOptions } from '../../lib/api'
 import { InfiniteLoader } from '@/components/loaders/infinite-loader'
 import { useDeleteConfirmation } from '@/components/providers/delete-confirmation-provider'
 import { useDeleteCollection } from '../../hooks/use-delete-collection'
+import { useFilter } from '@/components/filter-menu'
 
 export function CollectionsGridSection() {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
@@ -45,11 +45,18 @@ export function CollectionsGridSection() {
       onConfirm: async () => await deleteCollection({ slug }),
     })
   }
+
+  // filter
+  const { filter } = useSearch({
+    from: '/(protected)/dashboard/_dashboard-layout/_error-boundary/collections/',
+  })
+  const filteredCollections = useFilter({ data: collections, filter })
+
   return (
     <React.Fragment>
       {/* Collections Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {collections.map((collection) => (
+        {filteredCollections.map((collection) => (
           <Card
             key={collection.publicId}
             className="border-border hover:shadow-lg transition-shadow group"
@@ -169,7 +176,7 @@ export function CollectionsGridSection() {
         isFetchingNextPage={isFetchingNextPage}
         isManual={true}
         Content={
-          !collections.length ? (
+          !filteredCollections.length ? (
             <div className="text-center py-12">
               <BookOpenIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="font-heading font-semibold text-lg mb-2">
@@ -179,7 +186,7 @@ export function CollectionsGridSection() {
                 Create your first collection to organize your code snippets
               </p>
               <Button asChild>
-                <Link to={clientRoutes.newCollection}>
+                <Link to={'/dashboard/collections/new'}>
                   <PlusIcon className="h-4 w-4 mr-2" />
                   Create Collection
                 </Link>

@@ -3,17 +3,29 @@ import { Button } from '@/components/ui/button'
 import { SnippetCard } from '@/features/snippets/components/snippet-card'
 import { getSnippetsByCollectionOptions } from '@/features/snippets/lib/api'
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
-import { Link, useParams } from '@tanstack/react-router'
+import { Link, useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import { Code2Icon, PlusIcon } from 'lucide-react'
+import { FilterMenu, useFilter } from '../../../../components/filter-menu'
 
 export function SnippetsGridSection() {
+  // router
   const params = useParams({
     from: '/(protected)/dashboard/collections/$slug/',
   })
+  const navigate = useNavigate({ from: '/dashboard/collections/$slug' })
+
+  // filter
+  const { filter } = useSearch({
+    from: '/(protected)/dashboard/collections/$slug/',
+  })
+
+  // snippets
   const { data, hasNextPage, isFetchingNextPage, fetchNextPage } =
     useSuspenseInfiniteQuery(getSnippetsByCollectionOptions(params.slug))
   const snippets = data.pages?.flatMap((p) => p.items.snippets) ?? []
   const total = data.pages?.[0].total
+
+  const filteredSnippets = useFilter({ data: snippets, filter })
 
   return (
     <div className="space-y-6">
@@ -22,15 +34,16 @@ export function SnippetsGridSection() {
           Snippets ({total})
         </h2>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            Sort by: Recent
-          </Button>
+          <FilterMenu
+            onSelect={(selected) => navigate({ search: { filter: selected } })}
+            selected={filter}
+          />
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {snippets.map((snippet) => (
-          <SnippetCard key={snippet.publicId} snippet={snippet} />
+        {filteredSnippets.map((snippet) => (
+          <SnippetCard key={snippet.publicId} snippet={{ ...snippet }} />
         ))}
       </div>
       <InfiniteLoader
@@ -38,7 +51,7 @@ export function SnippetsGridSection() {
         isFetchingNextPage={isFetchingNextPage}
         fetchNextPage={fetchNextPage}
         Content={
-          !snippets?.length ? (
+          !filteredSnippets?.length ? (
             <div className="text-center py-12">
               <Code2Icon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="font-heading font-semibold text-lg mb-2">

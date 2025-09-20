@@ -21,6 +21,7 @@ type ProfileItem = Pick<
   | 'acceptedPolicies'
   | 'emailVerifiedAt'
   | 'isPrivate'
+  | 'email'
 >
 
 type GetUserProfileSuccessRes = SharedSuccessRes<{
@@ -47,6 +48,17 @@ export const getUserProfile = (name: string) =>
       return res.data
     },
   })
+
+// get current user profile
+export const getCurrentUserProfileOptions = queryOptions({
+  queryKey: ['users', 'profiles', 'current'],
+  queryFn: async () => {
+    const res = await api.get<GetUserProfileSuccessRes>(
+      serverEndpoints.getCurrentUserProfile,
+    )
+    return res.data
+  },
+})
 
 // ######################### Shared Types #######################
 type Cursor = {

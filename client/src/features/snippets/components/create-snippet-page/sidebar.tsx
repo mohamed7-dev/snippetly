@@ -33,10 +33,11 @@ import { useEnterTag } from '@/hooks/use-enter-tag'
 import { InfiniteLoader } from '@/components/loaders/infinite-loader'
 
 export function Sidebar() {
-  const { data } = useSuspenseQuery(getPopularTagsOptions)
-  const popularTags = data.data
+  // form
   const createSnippetForm: UseFormReturn<CreateSnippetSchema> = useFormContext()
   const tags = createSnippetForm.watch('tags')
+
+  // tags
   const inputRef = React.useRef<HTMLInputElement>(null)
   const [inputValue, setInputValue] = React.useState('')
 
@@ -44,8 +45,9 @@ export function Sidebar() {
     createSnippetForm.setValue('tags', [...(tags ?? []), tag])
     setInputValue('')
   }
-
   useEnterTag({ tags, inputElem: inputRef, onValueChange: handleTagChange })
+  const { data } = useSuspenseQuery(getPopularTagsOptions)
+  const popularTags = data.data.filter((tag) => !tags?.includes(tag.name))
 
   const [mutationState] = useGetCreateSnippetMutationState()
   const isPending = mutationState?.status === 'pending'
@@ -101,6 +103,7 @@ export function Sidebar() {
                 <Badge key={tag} variant="secondary" className="text-xs">
                   {tag}
                   <Button
+                    type="button"
                     variant="ghost"
                     size="sm"
                     className="h-4 w-4 p-0 ml-1"

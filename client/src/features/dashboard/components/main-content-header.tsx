@@ -1,8 +1,14 @@
+import { FilterMenu } from '@/components/filter-menu'
 import { Button } from '@/components/ui/button'
-import { Link } from '@tanstack/react-router'
-import { FilterIcon, PlusIcon } from 'lucide-react'
+import { Link, useNavigate, useSearch } from '@tanstack/react-router'
+import { PlusIcon } from 'lucide-react'
 
 export function MainContentHeader() {
+  const navigate = useNavigate({ from: '/dashboard/' })
+  const { filter } = useSearch({
+    from: '/(protected)/dashboard/_dashboard-layout/_error-boundary/',
+  })
+
   return (
     <div className="flex items-center justify-between mb-4">
       <div>
@@ -12,10 +18,11 @@ export function MainContentHeader() {
         </p>
       </div>
       <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm">
-          <FilterIcon className="h-4 w-4 mr-2" />
-          Filter
-        </Button>
+        <FilterMenu
+          selected={filter}
+          onSelect={(selected) => navigate({ search: { filter: selected } })}
+        />
+
         <Button size="sm" asChild>
           <Link to="/dashboard/snippets/new">
             <PlusIcon className="h-4 w-4 mr-2" />

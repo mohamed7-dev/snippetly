@@ -42,8 +42,12 @@ export class CollectionController {
       request.context,
       request.body
     );
-    const { success, data: parsedData } =
-      CreateCollectionResDto.safeParse(newCollection);
+    const {
+      success,
+      data: parsedData,
+      error,
+    } = CreateCollectionResDto.safeParse(newCollection);
+    console.log(error);
     if (!success) {
       throw new InternalServerError();
     }
@@ -67,9 +71,12 @@ export class CollectionController {
     });
     if ("redirect" in result) {
       response.redirect(
-        StatusCodes.TEMPORARY_REDIRECT,
-        `/collections/${result.slug}`
+        StatusCodes.PERMANENT_REDIRECT,
+        `/api/v1/collections/${result.slug}`
       );
+      // response.status(StatusCodes.PERMANENT_REDIRECT).json({
+      //   newSlug: result.slug,
+      // });
     } else {
       const { success, data: parsedData } =
         UpdateCollectionResDto.safeParse(result);
@@ -93,9 +100,13 @@ export class CollectionController {
     );
     if ("redirect" in result) {
       response.redirect(
-        StatusCodes.TEMPORARY_REDIRECT,
-        `/collections/${result.slug}/fork`
+        StatusCodes.PERMANENT_REDIRECT,
+        `/api/v1/collections/${result.slug}/fork`
       );
+      // response.redirect(
+      //   StatusCodes.PERMANENT_REDIRECT,
+      //   `/api/v1/collections/${result.slug}/fork`
+      // );
     } else {
       const { success, data: parsedData } =
         ForkCollectionResDto.safeParse(result);
@@ -119,9 +130,12 @@ export class CollectionController {
     );
     if ("redirect" in result) {
       response.redirect(
-        StatusCodes.TEMPORARY_REDIRECT,
-        `/collections/${result.slug}`
+        StatusCodes.PERMANENT_REDIRECT,
+        `/api/v1/collections/${result.slug}`
       );
+      // response.status(StatusCodes.PERMANENT_REDIRECT).json({
+      //   newSlug: `/api/v1/collections/${result.slug}`,
+      // });
     } else {
       response.status(StatusCodes.OK).json({
         message: "Collection has been deleted successfully",
@@ -197,13 +211,12 @@ export class CollectionController {
       >),
     });
     if ("redirect" in data) {
-      response.redirect(
-        StatusCodes.TEMPORARY_REDIRECT,
-        `/collections/user/${data.name}`
-      );
+      response.status(StatusCodes.PERMANENT_REDIRECT).json({
+        newUsername: data.name,
+      });
     } else {
       const isCurrentUserOwner =
-        request.context?.user?.id === data?.items?.[0].creator.id;
+        request.context?.user?.id === data?.items?.[0]?.creator?.id;
 
       let dataToReturn:
         | GetCurrentUserCollectionsResDtoType
@@ -252,10 +265,9 @@ export class CollectionController {
     );
 
     if ("redirect" in data) {
-      response.redirect(
-        StatusCodes.TEMPORARY_REDIRECT,
-        `/collections/${data.slug}`
-      );
+      response.status(StatusCodes.PERMANENT_REDIRECT).json({
+        newSlug: data.slug,
+      });
     } else {
       const isCurrentUserOwner =
         request.context?.user?.id === (data as Collection)?.creatorId;

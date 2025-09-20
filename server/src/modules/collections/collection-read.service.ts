@@ -283,14 +283,20 @@ export class CollectionReadService {
           eq(collectionsTable.forkedFrom, collectionsTable.id)
         ),
       })
-      .from(collectionsTable)
-      .where(eq(collectionsTable.creatorId, userId));
+      .from(collectionsTable);
 
-    return Object.fromEntries(
-      Object.entries(stats).map(([key, value]) => [
-        key,
-        typeof value === "number" ? value : Number(value),
-      ])
-    );
+    return stats
+      ? Object.fromEntries(
+          Object.entries(stats).map(([key, value]) => [
+            key,
+            typeof value === "number" ? value : Number(value),
+          ])
+        )
+      : {
+          forkedCollections: 0,
+          totalSnippets: 0,
+          publicCollections: 0,
+          totalCollections: 0,
+        };
   }
 }

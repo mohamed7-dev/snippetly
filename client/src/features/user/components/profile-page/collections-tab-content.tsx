@@ -1,8 +1,9 @@
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { CollectionActionMenu } from '@/features/collections/components/shared/collection-action-menu'
 import { getProfileCollectionsOptions } from '@/features/collections/lib/api'
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
-import { useParams } from '@tanstack/react-router'
+import { Link, useParams } from '@tanstack/react-router'
 
 export function CollectionsTabContent() {
   const { name } = useParams({ from: '/(public)/profile/$name' })
@@ -16,9 +17,31 @@ export function CollectionsTabContent() {
           className="hover:shadow-md transition-shadow"
         >
           <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className={`w-4 h-4 rounded ${collection.color}`} />
-              <CardTitle className="text-lg">{collection.title}</CardTitle>
+            <div className="flex items-center justify-between">
+              <div className="flex-1 flex items-center gap-3">
+                <div
+                  className={`w-4 h-4 rounded`}
+                  style={{
+                    backgroundColor: collection.color,
+                  }}
+                />
+                <CardTitle className="text-lg">
+                  <Link
+                    to="/dashboard/collections/$slug"
+                    params={{ slug: collection.publicId }}
+                    preload={false}
+                    className="hover:text-primary"
+                  >
+                    {collection.title}
+                  </Link>
+                </CardTitle>
+              </div>
+              <CollectionActionMenu
+                collection={{
+                  ...collection,
+                  creatorName: collection.creator.username,
+                }}
+              />
             </div>
           </CardHeader>
           <CardContent className="space-y-3">

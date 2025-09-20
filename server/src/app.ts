@@ -13,6 +13,8 @@ import cookieParser from "cookie-parser";
 import { corsOptions } from "./common/lib/cors";
 import { provideCredentialsMiddleware } from "./common/middlewares/provide-credentials.middleware";
 import { Database } from "./common/db";
+import { multerErrorMiddleware } from "./common/middlewares/multer-error-middleware";
+import path from "path";
 
 export class App {
   public app: Application;
@@ -37,6 +39,7 @@ export class App {
   private initializeMiddlewares(): void {
     this.app.use(express.json());
     this.app.use(cookieParser());
+    this.app.use("/uploads", express.static(path.join(__dirname, "uploads")));
     // must run before CORS, to set allow origin header
     this.app.use(provideCredentialsMiddleware);
     this.app.use(cors<Request>(corsOptions));
@@ -52,6 +55,7 @@ export class App {
   }
 
   private initializeErrorHandling() {
+    this.app.use(multerErrorMiddleware);
     this.app.use(ErrorMiddleWare.handleErrors);
   }
 

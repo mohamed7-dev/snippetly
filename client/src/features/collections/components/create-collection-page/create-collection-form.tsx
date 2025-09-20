@@ -11,31 +11,31 @@ import { type CreateCollectionSchema } from '../../lib/schema'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { PaletteIcon, XIcon } from 'lucide-react'
+import { XIcon } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { getPopularTagsOptions } from '@/features/tags/lib/api'
-import { COLOR_OPTIONS } from '../../lib/data'
 import React from 'react'
 import { useCreateCollection } from '../../hooks/use-create-collection'
 import { toast } from 'sonner'
 import { useNavigate } from '@tanstack/react-router'
 import { useEnterTag } from '@/hooks/use-enter-tag'
-import { cn } from '@/lib/utils'
+import { ColorField } from '../shared/color-field'
 
 export const CREATE_COLLECTION_FORM_NAME = 'create-collection-form'
 
 export function CreateCollectionForm() {
-  const { data } = useSuspenseQuery(getPopularTagsOptions)
-  const popularTags = data.data
+  // form
   const createCollectionForm: UseFormReturn<CreateCollectionSchema> =
     useFormContext()
   const tags = createCollectionForm.watch('tags')
+
   const navigate = useNavigate()
+
+  // tags
   const inputRef = React.useRef<HTMLInputElement>(null)
   const [inputValue, setInputValue] = React.useState('')
 
@@ -58,6 +58,9 @@ export function CreateCollectionForm() {
     if (foundTag) return undefined
     createCollectionForm.setValue('tags', [...(tags ?? []), tag])
   }
+
+  const { data } = useSuspenseQuery(getPopularTagsOptions)
+  const popularTags = data.data?.filter((t) => !tags?.includes(t.name))
 
   const {
     mutateAsync: createCollection,
@@ -122,6 +125,7 @@ export function CreateCollectionForm() {
                   <Textarea
                     disabled={isPending}
                     placeholder="Describe what this collection contains..."
+                    className="resize-none"
                     rows={4}
                     {...field}
                   />
@@ -130,39 +134,7 @@ export function CreateCollectionForm() {
               </FormItem>
             )}
           />
-          <FormField
-            control={createCollectionForm.control}
-            name="color"
-            render={({ field }) => (
-              <FormItem className="space-y-3">
-                <FormLabel className="flex items-center gap-2">
-                  <PaletteIcon className="h-4 w-4" />
-                  Collection Color
-                </FormLabel>
-                <ToggleGroup
-                  value={field.value}
-                  onValueChange={(val) =>
-                    createCollectionForm.setValue('color', val)
-                  }
-                  type="single"
-                  disabled={isPending}
-                  className="w-full grid grid-cols-4 gap-3"
-                >
-                  {COLOR_OPTIONS?.map((color) => (
-                    <ToggleGroupItem
-                      key={color.name}
-                      title={color.name}
-                      className={cn(
-                        `h-12 w-full rounded-lg ${color.class} hover:${color.class} hover:scale-105 transition-transform border-2 border-transparent hover:border-primary`,
-                      )}
-                      value={color.code}
-                      aria-label={`Toggle ${color.name}`}
-                    />
-                  ))}
-                </ToggleGroup>
-              </FormItem>
-            )}
-          />
+          <ColorField />
 
           <div className="space-y-2">
             <Label>Visibility</Label>

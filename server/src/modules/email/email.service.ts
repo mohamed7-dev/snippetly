@@ -1,4 +1,6 @@
+import { APP_NAME } from "../../config";
 import { transporter } from "../../config/nodemailer.config";
+import { readTemplate } from "./lib/utils";
 
 export class EmailService {
   static async sendVerificationEmail({
@@ -10,18 +12,24 @@ export class EmailService {
     username: string;
     callbackUrl: string;
   }) {
+    const template = readTemplate("verification.template.html");
     const mailOptions = {
       from: process.env.GMAIL_APP_EMAIL,
       to: email,
-      subject: "Verify you email",
-      html: `
-              <div>
-                <h1>hello, ${username}</h1>
-                <p>
-                    click this link to <a href="${callbackUrl}" target="_blank">Verify your account</a>
-                </p>
-              </div>
-          `,
+      subject: `Verify your email - ${APP_NAME}`,
+      html: template
+        .replace("{{name}}", username)
+        .replace(/{{verificationUrl}}/g, callbackUrl)
+        .replace("{{year}}", new Date().getFullYear().toString()),
+      // html: `
+      //         <div>
+      //           <h1>hello, ${username}</h1>
+      //           <p>
+      //               Click this link to <a href= >verify your email</a>!
+      //               Copy this code ${token} and paste it into the verification token field in your email verification page.
+      //           </p>
+      //         </div>
+      //     `,
     };
     return await transporter.sendMail(mailOptions);
   }
@@ -34,18 +42,24 @@ export class EmailService {
     username: string;
     callbackUrl: string;
   }) {
+    const template = readTemplate("reset.template.html");
+
     const mailOptions = {
       from: process.env.GMAIL_APP_EMAIL,
       to: email,
-      subject: "Reset your password",
-      html: `
-              <div>
-                <h1>hello, ${username}</h1>
-                <p>
-                    click this link to <a href="${callbackUrl}" target="_blank">Reset your password</a>.
-                </p>
-              </div>
-          `,
+      subject: `Reset your password - ${APP_NAME}`,
+      html: template
+        .replace("{{name}}", username)
+        .replace(/{{resetUrl}}/g, callbackUrl)
+        .replace("{{year}}", new Date().getFullYear().toString()),
+      // html: `
+      //         <div>
+      //           <h1>hello, ${username}</h1>
+      //           <p>
+      //               Copy this code ${token} and paste it into the reset password token field in your reset password form.
+      //           </p>
+      //         </div>
+      //     `,
     };
     return await transporter.sendMail(mailOptions);
   }

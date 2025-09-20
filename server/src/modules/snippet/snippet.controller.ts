@@ -35,7 +35,12 @@ export class SnippetController {
     res: Response
   ) => {
     const data = await this.SnippetService.create(req.context, req.body);
-    const { success, data: parsedData } = CreateSnippetResDto.safeParse(data);
+    const {
+      success,
+      data: parsedData,
+      error,
+    } = CreateSnippetResDto.safeParse(data);
+    console.log(error);
     if (!success) {
       throw new InternalServerError();
     }
@@ -136,10 +141,13 @@ export class SnippetController {
       }
     );
     if ("redirect" in result) {
-      res.redirect(
-        StatusCodes.TEMPORARY_REDIRECT,
-        `/snippets/collection/${result?.slug}`
-      );
+      // res.redirect(
+      //   StatusCodes.PERMANENT_REDIRECT,
+      //   `/api/v1/snippets/collection/${result?.slug}`
+      // );
+      res.status(StatusCodes.PERMANENT_REDIRECT).json({
+        newSlug: result.slug,
+      });
     } else {
       const { items, collection, nextCursor, total } = result;
 
@@ -240,7 +248,8 @@ export class SnippetController {
       );
     } else {
       const { items, total, nextCursor } = result;
-      const isCurrentUserOwner = req.context.user?.id === items?.[0].creator.id;
+      const isCurrentUserOwner =
+        req.context.user?.id === items?.[0]?.creator?.id;
       let dataToReturn: any;
       if (isCurrentUserOwner) {
         // use owner dto

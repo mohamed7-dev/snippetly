@@ -41,7 +41,7 @@ export class SnippetRepository {
         ),
       extras: {
         forkedCount: Database.client
-          .$count(snippetsTable, eq(snippetsTable.forkedFrom, value as number))
+          .$count(snippetsTable, eq(snippetsTable.forkedFrom, snippetsTable.id))
           .as("forked_count"),
       },
       with: {

@@ -26,7 +26,8 @@ import {
 } from "./dto/find-collection.dto";
 import { UserReadService } from "../user/user-read.service";
 import { RequestContext } from "../../common/middlewares/request-context-middleware";
-import { User } from "../../common/db/schema";
+import { Tags, User } from "../../common/db/schema";
+import { sl } from "zod/locales";
 
 export class CollectionService {
   private readonly UserReadService: UserReadService;
@@ -73,8 +74,8 @@ export class CollectionService {
         }))
       );
     }
-
-    return { ...newCollection, creator: ctx.user.name };
+    // get user name from the session
+    return { ...newCollection, creatorName: "" };
   }
 
   public async update(
@@ -114,25 +115,33 @@ export class CollectionService {
     }
 
     let updatedSlug;
+    let oldSlugs = foundCollection.oldSlugs;
     if (title) {
       const fixedPart = foundCollection.slug.split("-")[0];
       updatedSlug = fixedPart.concat("-", slugify(title));
+      const foundOldSlug = oldSlugs.find((os) => os === foundCollection.slug);
+      if (!foundOldSlug) {
+        oldSlugs.push(foundCollection.slug);
+      }
     }
 
+    // un-comment to enable redirection
     const [updatedCollection] = await this.CollectionRepository.update(
       foundCollection.id,
       {
         ...rest,
-        ...(updatedSlug
-          ? {
-              slug: updatedSlug,
-              oldSlugs: [...foundCollection.oldSlugs, foundCollection.slug],
-            }
-          : {}),
+        title,
+        // ...(updatedSlug
+        //   ? {
+        //       title,
+        //       slug: updatedSlug,
+        //       oldSlugs,
+        //     }
+        //   : {}),
       }
     );
 
-    return { ...updatedCollection, creator: foundCollection.creator.name };
+    return { ...updatedCollection, creatorName: foundCollection.creator.name };
   }
 
   public async fork(
@@ -140,10 +149,9 @@ export class CollectionService {
     input: ForkCollectionDtoType
   ) {
     const { slug } = input;
-    const foundCollection = await this.CollectionRepository.findOne(
+    const foundCollection = await this.CollectionReadService.findOneSlim(
       "slug",
-      slug,
-      true
+      slug
     );
 
     if (!foundCollection) {
@@ -170,8 +178,14 @@ export class CollectionService {
       );
     }
 
+    const fullCollection = await this.CollectionRepository.findOne(
+      "id",
+      foundCollection.id,
+      true
+    );
+
     const { title, description, color, isPrivate, allowForking, tags } =
-      foundCollection;
+      fullCollection;
 
     // TODO: assign public snippets in the original collection to
     // the new Collection
@@ -181,15 +195,15 @@ export class CollectionService {
       color,
       isPrivate,
       allowForking,
-      tags: tags.map((tag) => tag.tag.name),
-      forkedFrom: foundCollection.id,
+      tags: (tags as Pick<Tags, "name">[]).map((tag) => tag.name),
+      forkedFrom: fullCollection.id,
     });
 
     return {
       ...newCollection,
-      forkedFrom: foundCollection.slug,
+      forkedFrom: fullCollection.slug,
       // name comes from session when fetching user info
-      creator: ctx.user.name,
+      creatorName: "",
     };
   }
 
@@ -294,7 +308,6 @@ export class CollectionService {
         foundUser.id,
         isCurrentUserOwner
       );
-
     const stats = await this.CollectionReadService.getUserCollectionsStats(
       foundUser.id
     );

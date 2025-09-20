@@ -7,13 +7,12 @@ import type { ErrorResponse, SharedSuccessRes } from '@/lib/types'
 import type { AxiosError } from 'axios'
 import { api } from '@/lib/api'
 import { serverEndpoints } from '@/lib/routes'
-import { toast } from 'sonner'
 
 type Input = {
   slug: string
 }
-type DeleteCollectionSuccessRes = SharedSuccessRes<null>
-type DeleteCollectionErrorRes = AxiosError<ErrorResponse>
+export type DeleteCollectionSuccessRes = SharedSuccessRes<null>
+export type DeleteCollectionErrorRes = AxiosError<ErrorResponse>
 
 export function useDeleteCollection(
   options?: Omit<
@@ -35,13 +34,8 @@ export function useDeleteCollection(
       return res.data
     },
     onSuccess: (data, variables, ctx) => {
-      toast.success(data.message)
       qClient.removeQueries({ queryKey: ['collections', variables.slug] })
       options?.onSuccess?.(data, variables, ctx)
-    },
-    onError: (error, variables, ctx) => {
-      toast.error(error.message)
-      options?.onError?.(error, variables, ctx)
     },
   })
 }

@@ -35,13 +35,8 @@ import { useGetUpdateSnippetMutationState } from '../../hooks/use-update-snippet
 
 export function Sidebar() {
   const editSnippetForm: UseFormReturn<EditSnippetSchema> = useFormContext()
-  const addTags = editSnippetForm.getValues('addTags')
-  const removeTags = editSnippetForm.getValues('removeTags')
-
-  // popular tags
-  const {
-    data: { data: popularTags },
-  } = useSuspenseQuery(getPopularTagsOptions)
+  const addTags = editSnippetForm.watch('addTags')
+  const removeTags = editSnippetForm.watch('removeTags')
 
   // initial collection/tags
   const { slug } = useParams({
@@ -76,6 +71,12 @@ export function Sidebar() {
     (c) => c.publicId !== initialCollection.publicId,
   )
 
+  // popular tags
+  const {
+    data: { data },
+  } = useSuspenseQuery(getPopularTagsOptions)
+  const popularTags = data.filter((t) => !allTags.includes(t.name))
+
   // select/deselect tags
   const handleSelectingTags = (tag: string) => {
     const foundTag = allTags?.find((t) => t === tag)
@@ -102,6 +103,7 @@ export function Sidebar() {
   // mutation state
   const [state] = useGetUpdateSnippetMutationState()
   const isPending = state?.status === 'pending'
+
   return (
     <div className="space-y-6">
       <Card>

@@ -13,12 +13,18 @@ import React from 'react'
 import { getCurrentUserFriendsSnippets } from '../../lib/api'
 import { InfiniteLoader } from '@/components/loaders/infinite-loader'
 import { Code2Icon, PlusIcon } from 'lucide-react'
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate, useSearch } from '@tanstack/react-router'
+import { FilterMenu, useFilter } from '@/components/filter-menu'
+import { SnippetActionsDropdown } from '@/features/snippets/components/shared/snippet-actions-dropdown'
 
 export function FriendsSnippetsTabContent() {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useInfiniteQuery(getCurrentUserFriendsSnippets)
   const snippets = data?.pages?.flatMap((p) => p.items) ?? []
+
+  const { filter } = useSearch({ from: '/(protected)/dashboard/friends' })
+  const navigate = useNavigate({ from: '/dashboard/friends' })
+  const filteredSnippets = useFilter({ data: snippets, filter })
 
   return (
     <React.Fragment>
@@ -27,14 +33,15 @@ export function FriendsSnippetsTabContent() {
           Friends' Snippets
         </h2>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            Sort by: Recent
-          </Button>
+          <FilterMenu
+            selected={filter}
+            onSelect={(selected) => navigate({ search: { filter: selected } })}
+          />
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {snippets.map((snippet) => (
+        {filteredSnippets.map((snippet) => (
           <Card
             key={snippet.publicId}
             className="border-border hover:shadow-lg transition-shadow"
@@ -54,6 +61,12 @@ export function FriendsSnippetsTabContent() {
                     {snippet.description}
                   </CardDescription>
                 </div>
+                <SnippetActionsDropdown
+                  snippet={{
+                    ...snippet,
+                    creatorName: snippet.creator.username,
+                  }}
+                />
               </div>
               <div className="flex items-center gap-2 mt-3">
                 <Avatar className="h-6 w-6">
@@ -106,7 +119,7 @@ export function FriendsSnippetsTabContent() {
         hasNextPage={hasNextPage}
         fetchNextPage={fetchNextPage}
         Content={
-          !snippets.length ? (
+          !filteredSnippets.length ? (
             <div className="text-center py-12">
               <Code2Icon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="font-heading font-semibold text-lg mb-2">

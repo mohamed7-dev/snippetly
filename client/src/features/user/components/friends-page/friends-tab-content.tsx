@@ -114,7 +114,9 @@ export function FriendsTabContent() {
 
               <div className="flex items-center justify-between pt-2">
                 <Button size="sm" variant="outline">
-                  View Snippets
+                  <Link to="." search={{ tab: 'snippets' }}>
+                    View Snippets
+                  </Link>
                 </Button>
               </div>
             </CardContent>

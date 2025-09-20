@@ -10,6 +10,7 @@ import { PasswordHashService } from "./password-hash.service";
 import { EmailService } from "../email/email.service";
 import {
   APP_URL,
+  CLIENTS_URLS,
   JWT_REFRESH_EXPIRES,
   JWT_REFRESH_REMEMBER_EXPIRES,
 } from "../../config";
@@ -21,6 +22,7 @@ import { UserReadService } from "../user/user-read.service";
 import { UserRepository } from "../user/user.repository";
 import { RequestContext } from "../../common/middlewares/request-context-middleware";
 import { isDevelopment } from "../../common/lib/utils";
+import { User } from "../../common/db/schema";
 
 export class AuthService {
   private readonly UserService: UserService;
@@ -86,6 +88,7 @@ export class AuthService {
           id: foundUser.id,
           email: foundUser.email,
           image: foundUser.image,
+          name: foundUser.name,
         },
         rememberMe ?? false
       );
@@ -174,6 +177,7 @@ export class AuthService {
           id: foundUserWithToken.id,
           email: foundUserWithToken.email,
           image: foundUserWithToken.image,
+          name: foundUserWithToken.name,
         },
 
         foundUserWithToken.rememberMe
@@ -224,17 +228,20 @@ export class AuthService {
 
   public async sendVerificationEmail(
     _ctx: RequestContext,
-    input: SendVEmailDtoType
+    input: SendVEmailDtoType,
+    user?: User
   ) {
     const { email } = input;
-    const { token, user } =
-      await this.TokenService.generateEmailVerificationToken(email);
-    EmailService.sendVerificationEmail({
-      email: user.email,
-      username: `${user.firstName} ${user.lastName}`,
-      callbackUrl: `${APP_URL}/api/v1/auth/verify-email-token?token=${token}`,
+    const { token, user: foundUser } =
+      await this.TokenService.generateEmailVerificationToken(email, user);
+
+    await EmailService.sendVerificationEmail({
+      email: foundUser.email,
+      username: `${foundUser.firstName} ${foundUser.lastName}`,
+      callbackUrl: `${CLIENTS_URLS.reactEmailVerification}?token=${token}`,
     });
-    return { user, token };
+
+    return { user: foundUser, token };
   }
 
   public async verifyVerificationToken(
@@ -251,17 +258,31 @@ export class AuthService {
     input: SendREmailDtoType
   ) {
     const { email } = input;
+    const foundUser = await this.UserReadService.findOneSlim("email", email);
+    if (!foundUser) {
+      throw new HttpException(StatusCodes.NOT_FOUND, "User account not found.");
+    }
+    if (!foundUser.emailVerifiedAt) {
+      await this.sendVerificationEmail(_ctx, { email }, foundUser);
+      return { status: "email-verification-sent" as const };
+    }
+
     const { token, user } = await this.TokenService.generateResetPasswordToken(
-      email
+      email,
+      foundUser
     );
 
-    EmailService.sendResetEmail({
+    await EmailService.sendResetEmail({
       email: user.email,
       username: `${user.firstName} ${user.lastName}`,
-      callbackUrl: `${APP_URL}/api/v1/auth/reset-password?token=${token}`,
+      callbackUrl: `${CLIENTS_URLS.reactPasswordReset}?token=${token}`,
     });
 
-    return { user, token };
+    return {
+      user: foundUser,
+      token,
+      status: "reset-password-email-sent" as const,
+    };
   }
 
   public async resetPassword(
@@ -271,7 +292,7 @@ export class AuthService {
     const token = input.token;
     const foundUser = await this.TokenService.verifyResetPasswordToken(token);
     const updatedUser = this.UserService.updatePassword(ctx, {
-      password: input.password,
+      newPassword: input.password,
       email: foundUser.email,
     });
 

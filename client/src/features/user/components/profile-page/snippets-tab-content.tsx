@@ -1,5 +1,6 @@
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { SnippetActionsDropdown } from '@/features/snippets/components/shared/snippet-actions-dropdown'
 import { getUserSnippetsOptions } from '@/features/snippets/lib/api'
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
 import { Link, useParams } from '@tanstack/react-router'
@@ -23,6 +24,7 @@ export function SnippetsTabContent() {
                   <Link
                     to="/dashboard/snippets/$slug"
                     params={{ slug: snippet.publicId }}
+                    preload={false}
                   >
                     {snippet.title}
                   </Link>
@@ -32,9 +34,17 @@ export function SnippetsTabContent() {
                 </p>
               </div>
               <Badge variant="outline">{snippet.language}</Badge>
+              <SnippetActionsDropdown
+                snippet={{ ...snippet, creatorName: snippet.creator.username }}
+              />
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
+            <div className="h-48 bg-muted/50 rounded-lg p-3 font-mono text-sm overflow-hidden border">
+              <pre className="text-foreground whitespace-pre-wrap line-clamp-6 text-xs leading-relaxed">
+                {snippet.code}
+              </pre>
+            </div>
             <div className="flex flex-wrap gap-1">
               {snippet.tags?.map((tag) => (
                 <Badge key={tag.name} variant="secondary" className="text-xs">

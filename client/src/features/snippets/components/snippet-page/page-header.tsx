@@ -4,11 +4,14 @@ import { ArrowLeftIcon, EditIcon } from 'lucide-react'
 import { CopyButton } from '../copy-button'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { getSnippetQueryOptions } from '../../lib/api'
+import { useAuth } from '@/features/auth/components/auth-provider'
 
 export function PageHeader() {
   const params = useParams({ from: '/(protected)/dashboard/snippets/$slug/' })
   const { data } = useSuspenseQuery(getSnippetQueryOptions(params.slug))
   const snippet = data.data
+  const auth = useAuth()
+  const user = auth?.getCurrentUser()
   return (
     <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
       <div className="flex items-center justify-between px-6 py-4">
@@ -23,17 +26,18 @@ export function PageHeader() {
 
         <div className="flex items-center gap-3">
           <CopyButton code={snippet.code} />
-
-          <Button size="sm" asChild>
-            <Link
-              to={'/dashboard/snippets/$slug/edit'}
-              params={{ slug: params.slug }}
-              from="/dashboard/snippets/$slug/edit"
-            >
-              <EditIcon className="h-4 w-4 mr-2" />
-              Edit
-            </Link>
-          </Button>
+          {snippet.creator.username === user?.name && (
+            <Button size="sm" asChild>
+              <Link
+                to={'/dashboard/snippets/$slug/edit'}
+                params={{ slug: params.slug }}
+                from="/dashboard/snippets/$slug/edit"
+              >
+                <EditIcon className="h-4 w-4 mr-2" />
+                Edit
+              </Link>
+            </Button>
+          )}
         </div>
       </div>
     </header>
