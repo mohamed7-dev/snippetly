@@ -23,7 +23,7 @@ export function CreateCollectionPage() {
   return (
     <Form {...createCollectionForm}>
       <PageHeader />
-      <main className="container mx-auto px-6 py-8 max-w-2xl">
+      <main className="container mx-auto px-2 lg:px-6 py-8 max-w-2xl">
         <CreateCollectionForm />
       </main>
     </Form>

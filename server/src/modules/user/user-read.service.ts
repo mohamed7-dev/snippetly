@@ -1,7 +1,6 @@
 import {
   and,
   arrayContains,
-  count,
   desc,
   eq,
   isNotNull,
@@ -12,12 +11,9 @@ import {
 } from "drizzle-orm";
 import { Database } from "../../common/db";
 import {
-  Collection,
   collectionsTable,
   friendshipsTable,
-  Snippet,
   snippetsTable,
-  snippetsTagsTable,
   Tags,
   tagsTable,
   usersTable,
@@ -195,7 +191,6 @@ export class UserReadService {
         )
       ),
     ]);
-
     return { data, total };
   }
 

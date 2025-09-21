@@ -59,15 +59,23 @@ export function ForgotPasswordCard() {
         />
       )}
       <Form {...sendResetTokenForm}>
-        <form onSubmit={sendResetTokenForm.handleSubmit(onSubmit)}>
+        <form
+          onSubmit={sendResetTokenForm.handleSubmit(onSubmit)}
+          autoComplete="off"
+          className="space-y-6"
+        >
           <FormField
             control={sendResetTokenForm.control}
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Token</FormLabel>
+                <FormLabel>Email</FormLabel>
                 <FormControl>
-                  <Input disabled={isPending} placeholder="token" {...field} />
+                  <Input
+                    disabled={isPending}
+                    placeholder="Enter verified email"
+                    {...field}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

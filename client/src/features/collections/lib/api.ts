@@ -75,9 +75,11 @@ type GetCurrentUserCollectionsSuccessRes = SharedPaginatedSuccessRes<
       UserCollection,
       'isPrivate' | 'lastUpdatedAt' | 'isForked' | 'snippetsCount'
     > &
-      Pick<
-        UserCollection,
-        'isPrivate' | 'lastUpdatedAt' | 'isForked' | 'snippetsCount'
+      Required<
+        Pick<
+          UserCollection,
+          'isPrivate' | 'lastUpdatedAt' | 'isForked' | 'snippetsCount'
+        >
       >
   >,
   Cursor
@@ -106,7 +108,7 @@ export const getCurrentUserCollectionsOptions = infiniteQueryOptions({
 type GetProfileCollectionsSuccessRes = SharedPaginatedSuccessRes<
   Array<
     Omit<UserCollection, 'snippetsCount'> &
-      Pick<UserCollection, 'snippetsCount'>
+      Required<Pick<UserCollection, 'snippetsCount'>>
   > & {
     stats: CollectionStats
   }

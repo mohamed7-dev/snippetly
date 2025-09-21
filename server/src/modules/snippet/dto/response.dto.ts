@@ -305,7 +305,9 @@ export const GetCurrentUserFriendsSnippetsResDto = z.array(
 );
 
 // Get Snippet
-export const GetSnippetResDto = CommonUserSnippetsSchema.transform((val) => {
+export const GetSnippetResDto = CommonUserSnippetsSchema.extend(
+  SelectSnippetDto.pick({ note: true }).shape
+).transform((val) => {
   const {
     creator: { name, ...restCreator },
     collection: { slug: collectionSlug, ...restCollection },

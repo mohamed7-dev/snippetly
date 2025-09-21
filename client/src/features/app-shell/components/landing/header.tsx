@@ -34,10 +34,10 @@ export function LandingHeader() {
             </Button>
           ) : (
             <div className="flex items-center gap-3">
-              <Button variant="ghost" asChild>
+              <Button variant="ghost" size="sm" asChild>
                 <Link to={'/login'}>Sign In</Link>
               </Button>
-              <Button asChild>
+              <Button size="sm" className="hidden sm:flex" asChild>
                 <Link to={'/signup'}>Get Started</Link>
               </Button>
             </div>

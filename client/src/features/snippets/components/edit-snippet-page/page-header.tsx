@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button'
 import { HeaderWrapper } from '@/features/app-shell/components/header-wrapper'
-import { Link, useParams } from '@tanstack/react-router'
+import { Link, useNavigate, useParams } from '@tanstack/react-router'
 import { ArrowLeftIcon, EyeIcon, SaveIcon, Trash2Icon } from 'lucide-react'
 import { useFormContext, type UseFormReturn } from 'react-hook-form'
 import type { EditSnippetSchema } from '../../lib/schema'
@@ -10,6 +10,7 @@ import { useDeleteSnippet } from '../../hooks/use-delete-snippet'
 import { useDeleteConfirmation } from '@/components/providers/delete-confirmation-provider'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { getSnippetQueryOptions } from '../../lib/api'
+import { toast } from 'sonner'
 
 export function PageHeader() {
   const params = useParams({
@@ -23,8 +24,17 @@ export function PageHeader() {
   const isSubmitting = editSnippetForm.formState.isSubmitting
   const isValid = editSnippetForm.formState.isValid
 
+  const navigate = useNavigate()
   const { mutateAsync: deleteSnippet, isPending: isDeleting } =
-    useDeleteSnippet()
+    useDeleteSnippet({
+      onSuccess: (data) => {
+        toast.success(data.message)
+        navigate({ to: '/dashboard' })
+      },
+      onError: (err) => {
+        toast.error(err.response?.data.message)
+      },
+    })
 
   const { confirm } = useDeleteConfirmation()
 
@@ -34,10 +44,11 @@ export function PageHeader() {
       onConfirm: async () => {
         await deleteSnippet({ slug: params.slug })
       },
+      isPending: isDeleting,
     })
   }
   return (
-    <HeaderWrapper className="flex items-center justify-between">
+    <HeaderWrapper className="justify-between flex-wrap gap-4">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" asChild>
           <Link
@@ -52,10 +63,10 @@ export function PageHeader() {
         <h1 className="font-heading font-semibold text-lg">Edit Snippet</h1>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center justify-center sm:justify-start gap-3 flex-wrap">
         <Button variant="outline" size="sm" asChild>
           <Link to="/dashboard/snippets/$slug" params={{ slug: params.slug }}>
-            <EyeIcon className="h-4 w-4 mr-2" />
+            <EyeIcon className="h-4 w-4 sm:mr-2" />
             Preview
           </Link>
         </Button>
@@ -65,7 +76,7 @@ export function PageHeader() {
           size="sm"
           onClick={handleDelete}
         >
-          <Trash2Icon className="h-4 w-4 mr-2" />
+          <Trash2Icon className="h-4 w-4 sm:mr-2" />
           Delete
         </LoadingButton>
         <LoadingButton
@@ -75,7 +86,7 @@ export function PageHeader() {
           type="submit"
           form={EDIT_SNIPPET_FORM_NAME}
         >
-          <SaveIcon className="h-4 w-4 mr-2" />
+          <SaveIcon className="h-4 w-4 sm:mr-2" />
           Save Changes
         </LoadingButton>
       </div>

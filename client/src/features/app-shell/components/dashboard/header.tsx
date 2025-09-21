@@ -5,13 +5,15 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Link } from '@tanstack/react-router'
 import { HeaderUserMenu } from './header-user-menu'
+import { MobileSidebar } from './mobile-sidebar'
 
 export function DashBoardHeader() {
   return (
-    <HeaderWrapper className="justify-between">
+    <HeaderWrapper className="justify-between px-1 lg:px-4">
+      <MobileSidebar />
       <div className="flex items-center gap-4">
         <Logo />
-        <div className="relative w-96 max-w-sm">
+        <div className="hidden lg:block relative w-96 max-w-sm">
           <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search snippets..."
@@ -21,9 +23,9 @@ export function DashBoardHeader() {
       </div>
 
       <div className="flex items-center gap-3">
-        <Button size="sm" asChild>
+        <Button size="sm" className="" asChild>
           <Link to="/dashboard/snippets/new">
-            <PlusIcon className="h-4 w-4 mr-2" />
+            <PlusIcon className="h-4 w-4 mr-2 sm:mr-1" />
             New Snippet
           </Link>
         </Button>

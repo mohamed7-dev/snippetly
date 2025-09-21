@@ -16,6 +16,7 @@ export function useResetPassword(
   >,
 ) {
   return useMutation({
+    ...options,
     mutationFn: async ({ password, token }) => {
       const searchParams = new URLSearchParams()
       searchParams.set('token', token)
@@ -25,6 +26,5 @@ export function useResetPassword(
       )
       return res.data
     },
-    ...options,
   })
 }

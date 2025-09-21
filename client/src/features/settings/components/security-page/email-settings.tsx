@@ -18,7 +18,7 @@ import { CheckIcon, MailIcon } from 'lucide-react'
 import React from 'react'
 import { toast } from 'sonner'
 
-export function EmailField() {
+export function EmailSettings() {
   const { data } = useSuspenseQuery(getCurrentUserProfileOptions)
   const profile = data.data.profile
   const [isUpdateTriggered, setIsUpdateTriggered] = React.useState(false)
@@ -119,6 +119,7 @@ export function EmailField() {
             }
             variant="outline"
             onClick={handleSendVerificationEmail}
+            className="text-sm px-2 h-7"
           >
             {profile.emailVerifiedAt
               ? 'Resend Verification'
@@ -128,6 +129,7 @@ export function EmailField() {
             isLoading={isUpdating}
             disabled={isUpdating || isPending || !isEmailDirty}
             onClick={handleUpdateProfile}
+            className="text-sm px-2 h-7"
           >
             Update Email
           </LoadingButton>

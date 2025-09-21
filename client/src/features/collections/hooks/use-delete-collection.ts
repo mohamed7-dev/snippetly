@@ -35,6 +35,7 @@ export function useDeleteCollection(
     },
     onSuccess: (data, variables, ctx) => {
       qClient.removeQueries({ queryKey: ['collections', variables.slug] })
+      qClient.invalidateQueries({ queryKey: ['collections', 'current'] })
       options?.onSuccess?.(data, variables, ctx)
     },
   })

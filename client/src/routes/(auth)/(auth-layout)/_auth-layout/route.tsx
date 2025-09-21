@@ -6,7 +6,7 @@ export const Route = createFileRoute('/(auth)/(auth-layout)/_auth-layout')({
 
 function RouteComponent() {
   return (
-    <main>
+    <main className="min-h-screen">
       <Outlet />
     </main>
   )

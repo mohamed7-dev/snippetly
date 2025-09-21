@@ -53,6 +53,7 @@ export function SnippetActionsDropdown({
 }: SnippetActionsDropdownProps) {
   const ctx = useAuth()
   const user = ctx?.getCurrentUser()
+  const [open, setOpen] = React.useState(false)
   // copy
   const { copyCode } = useCopyCode({ code: snippet.code })
   const handleCopy = () => {
@@ -63,20 +64,26 @@ export function SnippetActionsDropdown({
   // fork
   const [isCollectionsOverlayOpen, setIsCollectionsOverlayOpen] =
     React.useState(false)
-  const { mutateAsync: fork, isPending: isForking } = useForkSnippet({
+  const { onClick: fork, isPending: isForking } = useForkSnippet({
     ...forkSnippet,
     onSuccess: (data) => {
       setIsCollectionsOverlayOpen(false)
       toast.success(data.message)
       forkSnippet?.onSuccess?.(data)
+      setOpen(false)
     },
     onError: (error) => {
       toast.error(error.response?.data.message)
       forkSnippet?.onError?.(error)
     },
   })
-  const handleForking = async (collectionSlug: string) => {
-    await fork({ slug: snippet.publicId, collectionSlug })
+  const handleForking = (collectionSlug?: string) => {
+    if (!collectionSlug) {
+      // at this point we are not authenticated so we need to redirect the user
+      fork()
+    } else {
+      fork({ slug: snippet.publicId, collectionSlug: collectionSlug })
+    }
   }
 
   // delete
@@ -88,6 +95,7 @@ export function SnippetActionsDropdown({
         toast.success(data.message)
         deleteSnippet?.onSuccess?.(data)
         resetAndClose?.()
+        setOpen(false)
       },
       onError: (error) => {
         toast.error(error.response?.data.message)
@@ -98,12 +106,13 @@ export function SnippetActionsDropdown({
   const handleDeleting = async () => {
     confirm({
       title: 'Delete snippet',
+      isPending: isDeleting,
       onConfirm: async () =>
         await deleteSnippetAction({ slug: snippet.publicId }),
     })
   }
   return (
-    <DropdownMenu>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         {Trigger ? (
           Trigger
@@ -122,7 +131,7 @@ export function SnippetActionsDropdown({
             onClick={handleCopy}
           />
         </DropdownMenuItem>
-        {snippet.creatorName !== user?.name && (
+        {!!user && (
           <CurrentUserCollectionsOverlay
             Trigger={
               <DropdownMenuItem
@@ -145,6 +154,23 @@ export function SnippetActionsDropdown({
             onOpenChange={(open) => setIsCollectionsOverlayOpen(open)}
           />
         )}
+        {!!!user && (
+          <DropdownMenuItem
+            onSelect={(e) => e.preventDefault()}
+            disabled={isForking}
+            asChild
+          >
+            <Button
+              variant={'ghost'}
+              size={'sm'}
+              className="w-full justify-start"
+              onClick={() => handleForking()}
+            >
+              <GitForkIcon className="mr-2 h-4 w-4" />
+              Fork
+            </Button>
+          </DropdownMenuItem>
+        )}
         {snippet.creatorName === user?.name && (
           <DropdownMenuItem asChild>
             <Button
@@ -164,6 +190,7 @@ export function SnippetActionsDropdown({
             </Button>
           </DropdownMenuItem>
         )}
+
         {snippet.creatorName === user?.name && (
           <DropdownMenuItem asChild>
             <Button

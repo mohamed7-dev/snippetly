@@ -6,7 +6,7 @@ import { PageLoader } from '@/components/loaders/page-loader'
 
 export function CollectionsPage() {
   return (
-    <div className="p-6">
+    <div className="p-0 lg:p-6">
       <MainContentHeader />
       <React.Suspense fallback={<PageLoader />}>
         <StatsSection />

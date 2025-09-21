@@ -7,7 +7,6 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
 import { LoadingButton } from '@/components/inputs/loading-button'
 import { ProcessStatus } from '@/components/feedback/process-status'
 import { PageLoader } from '@/components/loaders/page-loader'
@@ -16,6 +15,7 @@ import { useResetPassword } from '../hooks/use-reset-password'
 import { useForm } from 'react-hook-form'
 import { resetPasswordSchema, type ResetPasswordSchema } from '../lib/schema'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { PasswordField } from '@/components/inputs/password-field'
 
 export function PasswordResetCard() {
   const navigate = useNavigate()
@@ -62,7 +62,11 @@ export function PasswordResetCard() {
         />
       )}
       <Form {...resetPasswordForm}>
-        <form onSubmit={resetPasswordForm.handleSubmit(onSubmit)}>
+        <form
+          onSubmit={resetPasswordForm.handleSubmit(onSubmit)}
+          autoComplete="off"
+          className="space-y-6"
+        >
           <FormField
             control={resetPasswordForm.control}
             name="password"
@@ -70,9 +74,8 @@ export function PasswordResetCard() {
               <FormItem>
                 <FormLabel>Password</FormLabel>
                 <FormControl>
-                  <Input
+                  <PasswordField
                     disabled={isPending}
-                    type="password"
                     placeholder="************"
                     {...field}
                   />

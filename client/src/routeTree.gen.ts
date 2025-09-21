@@ -14,11 +14,11 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as publicIndexRouteImport } from './routes/(public)/index'
 import { Route as protectedDashboardRouteRouteImport } from './routes/(protected)/dashboard/route'
 import { Route as publicProfileNameRouteRouteImport } from './routes/(public)/profile/$name/route'
+import { Route as protectedDashboardSettingsRouteRouteImport } from './routes/(protected)/dashboard/settings/route'
 import { Route as protectedDashboardFriendsRouteRouteImport } from './routes/(protected)/dashboard/friends/route'
 import { Route as protectedDashboardDashboardLayoutRouteRouteImport } from './routes/(protected)/dashboard/_dashboard-layout/route'
 import { Route as authauthLayoutAuthLayoutRouteRouteImport } from './routes/(auth)/(auth-layout)/_auth-layout/route'
 import { Route as protectedDashboardSnippetsIndexRouteImport } from './routes/(protected)/dashboard/snippets/index'
-import { Route as protectedDashboardSettingsProfileRouteImport } from './routes/(protected)/dashboard/settings/profile'
 import { Route as authauthLayoutAuthLayoutSignupRouteImport } from './routes/(auth)/(auth-layout)/_auth-layout/signup'
 import { Route as authauthLayoutAuthLayoutPasswordResetRouteImport } from './routes/(auth)/(auth-layout)/_auth-layout/password-reset'
 import { Route as authauthLayoutAuthLayoutLoginRouteImport } from './routes/(auth)/(auth-layout)/_auth-layout/login'
@@ -26,6 +26,9 @@ import { Route as authauthLayoutAuthLayoutForgotPasswordRouteImport } from './ro
 import { Route as authauthLayoutAuthLayoutEmailVerificationRouteImport } from './routes/(auth)/(auth-layout)/_auth-layout/email-verification'
 import { Route as protectedDashboardSnippetsNewRouteRouteImport } from './routes/(protected)/dashboard/snippets/new/route'
 import { Route as protectedDashboardSnippetsSlugRouteRouteImport } from './routes/(protected)/dashboard/snippets/$slug/route'
+import { Route as protectedDashboardSettingsSecurityRouteRouteImport } from './routes/(protected)/dashboard/settings/security/route'
+import { Route as protectedDashboardSettingsProfileRouteRouteImport } from './routes/(protected)/dashboard/settings/profile/route'
+import { Route as protectedDashboardSettingsAppearanceRouteRouteImport } from './routes/(protected)/dashboard/settings/appearance/route'
 import { Route as protectedDashboardCollectionsNewRouteRouteImport } from './routes/(protected)/dashboard/collections/new/route'
 import { Route as protectedDashboardCollectionsSlugRouteRouteImport } from './routes/(protected)/dashboard/collections/$slug/route'
 import { Route as protectedDashboardDashboardLayoutErrorBoundaryRouteRouteImport } from './routes/(protected)/dashboard/_dashboard-layout/_error-boundary/route'
@@ -60,6 +63,12 @@ const publicProfileNameRouteRoute = publicProfileNameRouteRouteImport.update({
   path: '/profile/$name',
   getParentRoute: () => rootRouteImport,
 } as any)
+const protectedDashboardSettingsRouteRoute =
+  protectedDashboardSettingsRouteRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => protectedDashboardRouteRoute,
+  } as any)
 const protectedDashboardFriendsRouteRoute =
   protectedDashboardFriendsRouteRouteImport.update({
     id: '/friends',
@@ -80,12 +89,6 @@ const protectedDashboardSnippetsIndexRoute =
   protectedDashboardSnippetsIndexRouteImport.update({
     id: '/snippets/',
     path: '/snippets/',
-    getParentRoute: () => protectedDashboardRouteRoute,
-  } as any)
-const protectedDashboardSettingsProfileRoute =
-  protectedDashboardSettingsProfileRouteImport.update({
-    id: '/settings/profile',
-    path: '/settings/profile',
     getParentRoute: () => protectedDashboardRouteRoute,
   } as any)
 const authauthLayoutAuthLayoutSignupRoute =
@@ -129,6 +132,24 @@ const protectedDashboardSnippetsSlugRouteRoute =
     id: '/snippets/$slug',
     path: '/snippets/$slug',
     getParentRoute: () => protectedDashboardRouteRoute,
+  } as any)
+const protectedDashboardSettingsSecurityRouteRoute =
+  protectedDashboardSettingsSecurityRouteRouteImport.update({
+    id: '/security',
+    path: '/security',
+    getParentRoute: () => protectedDashboardSettingsRouteRoute,
+  } as any)
+const protectedDashboardSettingsProfileRouteRoute =
+  protectedDashboardSettingsProfileRouteRouteImport.update({
+    id: '/profile',
+    path: '/profile',
+    getParentRoute: () => protectedDashboardSettingsRouteRoute,
+  } as any)
+const protectedDashboardSettingsAppearanceRouteRoute =
+  protectedDashboardSettingsAppearanceRouteRouteImport.update({
+    id: '/appearance',
+    path: '/appearance',
+    getParentRoute: () => protectedDashboardSettingsRouteRoute,
   } as any)
 const protectedDashboardCollectionsNewRouteRoute =
   protectedDashboardCollectionsNewRouteRouteImport.update({
@@ -210,9 +231,13 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof protectedDashboardDashboardLayoutErrorBoundaryRouteRouteWithChildren
   '/': typeof authauthLayoutAuthLayoutRouteRouteWithChildren
   '/dashboard/friends': typeof protectedDashboardFriendsRouteRoute
+  '/dashboard/settings': typeof protectedDashboardSettingsRouteRouteWithChildren
   '/profile/$name': typeof publicProfileNameRouteRoute
   '/dashboard/collections/$slug': typeof protectedDashboardCollectionsSlugRouteRouteWithChildren
   '/dashboard/collections/new': typeof protectedDashboardCollectionsNewRouteRoute
+  '/dashboard/settings/appearance': typeof protectedDashboardSettingsAppearanceRouteRoute
+  '/dashboard/settings/profile': typeof protectedDashboardSettingsProfileRouteRoute
+  '/dashboard/settings/security': typeof protectedDashboardSettingsSecurityRouteRoute
   '/dashboard/snippets/$slug': typeof protectedDashboardSnippetsSlugRouteRouteWithChildren
   '/dashboard/snippets/new': typeof protectedDashboardSnippetsNewRouteRoute
   '/email-verification': typeof authauthLayoutAuthLayoutEmailVerificationRoute
@@ -220,7 +245,6 @@ export interface FileRoutesByFullPath {
   '/login': typeof authauthLayoutAuthLayoutLoginRoute
   '/password-reset': typeof authauthLayoutAuthLayoutPasswordResetRoute
   '/signup': typeof authauthLayoutAuthLayoutSignupRoute
-  '/dashboard/settings/profile': typeof protectedDashboardSettingsProfileRoute
   '/dashboard/snippets': typeof protectedDashboardSnippetsIndexRoute
   '/dashboard/discover': typeof protectedDashboardDashboardLayoutErrorBoundaryDiscoverRouteRoute
   '/dashboard/requests': typeof protectedDashboardDashboardLayoutErrorBoundaryRequestsRouteRoute
@@ -235,15 +259,18 @@ export interface FileRoutesByTo {
   '/dashboard': typeof protectedDashboardDashboardLayoutErrorBoundaryIndexRoute
   '/': typeof authauthLayoutAuthLayoutRouteRouteWithChildren
   '/dashboard/friends': typeof protectedDashboardFriendsRouteRoute
+  '/dashboard/settings': typeof protectedDashboardSettingsRouteRouteWithChildren
   '/profile/$name': typeof publicProfileNameRouteRoute
   '/dashboard/collections/new': typeof protectedDashboardCollectionsNewRouteRoute
+  '/dashboard/settings/appearance': typeof protectedDashboardSettingsAppearanceRouteRoute
+  '/dashboard/settings/profile': typeof protectedDashboardSettingsProfileRouteRoute
+  '/dashboard/settings/security': typeof protectedDashboardSettingsSecurityRouteRoute
   '/dashboard/snippets/new': typeof protectedDashboardSnippetsNewRouteRoute
   '/email-verification': typeof authauthLayoutAuthLayoutEmailVerificationRoute
   '/forgot-password': typeof authauthLayoutAuthLayoutForgotPasswordRoute
   '/login': typeof authauthLayoutAuthLayoutLoginRoute
   '/password-reset': typeof authauthLayoutAuthLayoutPasswordResetRoute
   '/signup': typeof authauthLayoutAuthLayoutSignupRoute
-  '/dashboard/settings/profile': typeof protectedDashboardSettingsProfileRoute
   '/dashboard/snippets': typeof protectedDashboardSnippetsIndexRoute
   '/dashboard/discover': typeof protectedDashboardDashboardLayoutErrorBoundaryDiscoverRouteRoute
   '/dashboard/requests': typeof protectedDashboardDashboardLayoutErrorBoundaryRequestsRouteRoute
@@ -261,10 +288,14 @@ export interface FileRoutesById {
   '/(auth)/(auth-layout)/_auth-layout': typeof authauthLayoutAuthLayoutRouteRouteWithChildren
   '/(protected)/dashboard/_dashboard-layout': typeof protectedDashboardDashboardLayoutRouteRouteWithChildren
   '/(protected)/dashboard/friends': typeof protectedDashboardFriendsRouteRoute
+  '/(protected)/dashboard/settings': typeof protectedDashboardSettingsRouteRouteWithChildren
   '/(public)/profile/$name': typeof publicProfileNameRouteRoute
   '/(protected)/dashboard/_dashboard-layout/_error-boundary': typeof protectedDashboardDashboardLayoutErrorBoundaryRouteRouteWithChildren
   '/(protected)/dashboard/collections/$slug': typeof protectedDashboardCollectionsSlugRouteRouteWithChildren
   '/(protected)/dashboard/collections/new': typeof protectedDashboardCollectionsNewRouteRoute
+  '/(protected)/dashboard/settings/appearance': typeof protectedDashboardSettingsAppearanceRouteRoute
+  '/(protected)/dashboard/settings/profile': typeof protectedDashboardSettingsProfileRouteRoute
+  '/(protected)/dashboard/settings/security': typeof protectedDashboardSettingsSecurityRouteRoute
   '/(protected)/dashboard/snippets/$slug': typeof protectedDashboardSnippetsSlugRouteRouteWithChildren
   '/(protected)/dashboard/snippets/new': typeof protectedDashboardSnippetsNewRouteRoute
   '/(auth)/(auth-layout)/_auth-layout/email-verification': typeof authauthLayoutAuthLayoutEmailVerificationRoute
@@ -272,7 +303,6 @@ export interface FileRoutesById {
   '/(auth)/(auth-layout)/_auth-layout/login': typeof authauthLayoutAuthLayoutLoginRoute
   '/(auth)/(auth-layout)/_auth-layout/password-reset': typeof authauthLayoutAuthLayoutPasswordResetRoute
   '/(auth)/(auth-layout)/_auth-layout/signup': typeof authauthLayoutAuthLayoutSignupRoute
-  '/(protected)/dashboard/settings/profile': typeof protectedDashboardSettingsProfileRoute
   '/(protected)/dashboard/snippets/': typeof protectedDashboardSnippetsIndexRoute
   '/(protected)/dashboard/_dashboard-layout/_error-boundary/discover': typeof protectedDashboardDashboardLayoutErrorBoundaryDiscoverRouteRoute
   '/(protected)/dashboard/_dashboard-layout/_error-boundary/requests': typeof protectedDashboardDashboardLayoutErrorBoundaryRequestsRouteRoute
@@ -289,9 +319,13 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/'
     | '/dashboard/friends'
+    | '/dashboard/settings'
     | '/profile/$name'
     | '/dashboard/collections/$slug'
     | '/dashboard/collections/new'
+    | '/dashboard/settings/appearance'
+    | '/dashboard/settings/profile'
+    | '/dashboard/settings/security'
     | '/dashboard/snippets/$slug'
     | '/dashboard/snippets/new'
     | '/email-verification'
@@ -299,7 +333,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/password-reset'
     | '/signup'
-    | '/dashboard/settings/profile'
     | '/dashboard/snippets'
     | '/dashboard/discover'
     | '/dashboard/requests'
@@ -314,15 +347,18 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/'
     | '/dashboard/friends'
+    | '/dashboard/settings'
     | '/profile/$name'
     | '/dashboard/collections/new'
+    | '/dashboard/settings/appearance'
+    | '/dashboard/settings/profile'
+    | '/dashboard/settings/security'
     | '/dashboard/snippets/new'
     | '/email-verification'
     | '/forgot-password'
     | '/login'
     | '/password-reset'
     | '/signup'
-    | '/dashboard/settings/profile'
     | '/dashboard/snippets'
     | '/dashboard/discover'
     | '/dashboard/requests'
@@ -339,10 +375,14 @@ export interface FileRouteTypes {
     | '/(auth)/(auth-layout)/_auth-layout'
     | '/(protected)/dashboard/_dashboard-layout'
     | '/(protected)/dashboard/friends'
+    | '/(protected)/dashboard/settings'
     | '/(public)/profile/$name'
     | '/(protected)/dashboard/_dashboard-layout/_error-boundary'
     | '/(protected)/dashboard/collections/$slug'
     | '/(protected)/dashboard/collections/new'
+    | '/(protected)/dashboard/settings/appearance'
+    | '/(protected)/dashboard/settings/profile'
+    | '/(protected)/dashboard/settings/security'
     | '/(protected)/dashboard/snippets/$slug'
     | '/(protected)/dashboard/snippets/new'
     | '/(auth)/(auth-layout)/_auth-layout/email-verification'
@@ -350,7 +390,6 @@ export interface FileRouteTypes {
     | '/(auth)/(auth-layout)/_auth-layout/login'
     | '/(auth)/(auth-layout)/_auth-layout/password-reset'
     | '/(auth)/(auth-layout)/_auth-layout/signup'
-    | '/(protected)/dashboard/settings/profile'
     | '/(protected)/dashboard/snippets/'
     | '/(protected)/dashboard/_dashboard-layout/_error-boundary/discover'
     | '/(protected)/dashboard/_dashboard-layout/_error-boundary/requests'
@@ -399,6 +438,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof publicProfileNameRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/(protected)/dashboard/settings': {
+      id: '/(protected)/dashboard/settings'
+      path: '/settings'
+      fullPath: '/dashboard/settings'
+      preLoaderRoute: typeof protectedDashboardSettingsRouteRouteImport
+      parentRoute: typeof protectedDashboardRouteRoute
+    }
     '/(protected)/dashboard/friends': {
       id: '/(protected)/dashboard/friends'
       path: '/friends'
@@ -425,13 +471,6 @@ declare module '@tanstack/react-router' {
       path: '/snippets'
       fullPath: '/dashboard/snippets'
       preLoaderRoute: typeof protectedDashboardSnippetsIndexRouteImport
-      parentRoute: typeof protectedDashboardRouteRoute
-    }
-    '/(protected)/dashboard/settings/profile': {
-      id: '/(protected)/dashboard/settings/profile'
-      path: '/settings/profile'
-      fullPath: '/dashboard/settings/profile'
-      preLoaderRoute: typeof protectedDashboardSettingsProfileRouteImport
       parentRoute: typeof protectedDashboardRouteRoute
     }
     '/(auth)/(auth-layout)/_auth-layout/signup': {
@@ -482,6 +521,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboard/snippets/$slug'
       preLoaderRoute: typeof protectedDashboardSnippetsSlugRouteRouteImport
       parentRoute: typeof protectedDashboardRouteRoute
+    }
+    '/(protected)/dashboard/settings/security': {
+      id: '/(protected)/dashboard/settings/security'
+      path: '/security'
+      fullPath: '/dashboard/settings/security'
+      preLoaderRoute: typeof protectedDashboardSettingsSecurityRouteRouteImport
+      parentRoute: typeof protectedDashboardSettingsRouteRoute
+    }
+    '/(protected)/dashboard/settings/profile': {
+      id: '/(protected)/dashboard/settings/profile'
+      path: '/profile'
+      fullPath: '/dashboard/settings/profile'
+      preLoaderRoute: typeof protectedDashboardSettingsProfileRouteRouteImport
+      parentRoute: typeof protectedDashboardSettingsRouteRoute
+    }
+    '/(protected)/dashboard/settings/appearance': {
+      id: '/(protected)/dashboard/settings/appearance'
+      path: '/appearance'
+      fullPath: '/dashboard/settings/appearance'
+      preLoaderRoute: typeof protectedDashboardSettingsAppearanceRouteRouteImport
+      parentRoute: typeof protectedDashboardSettingsRouteRoute
     }
     '/(protected)/dashboard/collections/new': {
       id: '/(protected)/dashboard/collections/new'
@@ -602,6 +662,27 @@ const protectedDashboardDashboardLayoutRouteRouteWithChildren =
     protectedDashboardDashboardLayoutRouteRouteChildren,
   )
 
+interface protectedDashboardSettingsRouteRouteChildren {
+  protectedDashboardSettingsAppearanceRouteRoute: typeof protectedDashboardSettingsAppearanceRouteRoute
+  protectedDashboardSettingsProfileRouteRoute: typeof protectedDashboardSettingsProfileRouteRoute
+  protectedDashboardSettingsSecurityRouteRoute: typeof protectedDashboardSettingsSecurityRouteRoute
+}
+
+const protectedDashboardSettingsRouteRouteChildren: protectedDashboardSettingsRouteRouteChildren =
+  {
+    protectedDashboardSettingsAppearanceRouteRoute:
+      protectedDashboardSettingsAppearanceRouteRoute,
+    protectedDashboardSettingsProfileRouteRoute:
+      protectedDashboardSettingsProfileRouteRoute,
+    protectedDashboardSettingsSecurityRouteRoute:
+      protectedDashboardSettingsSecurityRouteRoute,
+  }
+
+const protectedDashboardSettingsRouteRouteWithChildren =
+  protectedDashboardSettingsRouteRoute._addFileChildren(
+    protectedDashboardSettingsRouteRouteChildren,
+  )
+
 interface protectedDashboardCollectionsSlugRouteRouteChildren {
   protectedDashboardCollectionsSlugEditRouteRoute: typeof protectedDashboardCollectionsSlugEditRouteRoute
   protectedDashboardCollectionsSlugIndexRoute: typeof protectedDashboardCollectionsSlugIndexRoute
@@ -641,11 +722,11 @@ const protectedDashboardSnippetsSlugRouteRouteWithChildren =
 interface protectedDashboardRouteRouteChildren {
   protectedDashboardDashboardLayoutRouteRoute: typeof protectedDashboardDashboardLayoutRouteRouteWithChildren
   protectedDashboardFriendsRouteRoute: typeof protectedDashboardFriendsRouteRoute
+  protectedDashboardSettingsRouteRoute: typeof protectedDashboardSettingsRouteRouteWithChildren
   protectedDashboardCollectionsSlugRouteRoute: typeof protectedDashboardCollectionsSlugRouteRouteWithChildren
   protectedDashboardCollectionsNewRouteRoute: typeof protectedDashboardCollectionsNewRouteRoute
   protectedDashboardSnippetsSlugRouteRoute: typeof protectedDashboardSnippetsSlugRouteRouteWithChildren
   protectedDashboardSnippetsNewRouteRoute: typeof protectedDashboardSnippetsNewRouteRoute
-  protectedDashboardSettingsProfileRoute: typeof protectedDashboardSettingsProfileRoute
   protectedDashboardSnippetsIndexRoute: typeof protectedDashboardSnippetsIndexRoute
 }
 
@@ -654,6 +735,8 @@ const protectedDashboardRouteRouteChildren: protectedDashboardRouteRouteChildren
     protectedDashboardDashboardLayoutRouteRoute:
       protectedDashboardDashboardLayoutRouteRouteWithChildren,
     protectedDashboardFriendsRouteRoute: protectedDashboardFriendsRouteRoute,
+    protectedDashboardSettingsRouteRoute:
+      protectedDashboardSettingsRouteRouteWithChildren,
     protectedDashboardCollectionsSlugRouteRoute:
       protectedDashboardCollectionsSlugRouteRouteWithChildren,
     protectedDashboardCollectionsNewRouteRoute:
@@ -662,8 +745,6 @@ const protectedDashboardRouteRouteChildren: protectedDashboardRouteRouteChildren
       protectedDashboardSnippetsSlugRouteRouteWithChildren,
     protectedDashboardSnippetsNewRouteRoute:
       protectedDashboardSnippetsNewRouteRoute,
-    protectedDashboardSettingsProfileRoute:
-      protectedDashboardSettingsProfileRoute,
     protectedDashboardSnippetsIndexRoute: protectedDashboardSnippetsIndexRoute,
   }
 

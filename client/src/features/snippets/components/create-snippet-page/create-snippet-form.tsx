@@ -58,11 +58,11 @@ export function CreateSnippetForm() {
     <form
       autoComplete="off"
       id={CREATE_SNIPPET_FORM}
-      className="grid grid-cols-1 lg:grid-cols-3 gap-8"
+      className="grid grid-cols-1 md:grid-cols-3 gap-8"
       onSubmit={createSnippetForm.handleSubmit(onSubmit)}
     >
       {/* main form fields  */}
-      <div className="lg:col-span-2 space-y-6">
+      <div className="md:col-span-2 space-y-6">
         <Card>
           <CardHeader>
             <CardTitle className="font-heading">Snippet Details</CardTitle>
@@ -104,7 +104,7 @@ export function CreateSnippetForm() {
                 </FormItem>
               )}
             />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={createSnippetForm.control}
                 name="language"
@@ -117,11 +117,11 @@ export function CreateSnippetForm() {
                       disabled={isPending}
                     >
                       <FormControl>
-                        <SelectTrigger className="bg-input border-border">
+                        <SelectTrigger className="bg-input border-border w-full">
                           <SelectValue placeholder="Select language" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent className="w-full">
                         {LANGUAGES.map((lang) => (
                           <SelectItem key={lang.value} value={lang.value}>
                             {lang.value}

@@ -78,6 +78,12 @@ export function CurrentUserCollectionsOverlay({
             }
           />
         </div>
+        <Button size={'lg'} asChild>
+          <Link to="/dashboard/collections/new">
+            <PlusIcon />
+            <span>Add New Collection</span>
+          </Link>
+        </Button>
         <AlertDialogFooter>
           <AlertDialogCancel asChild>
             <Button variant={'ghost'}>Cancel</Button>

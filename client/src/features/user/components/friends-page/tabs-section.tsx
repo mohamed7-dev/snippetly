@@ -15,7 +15,7 @@ export function TabsSection() {
 
   return (
     <Tabs defaultValue="friends" value={tab} className="space-y-6">
-      <TabsList className="grid w-full grid-cols-4">
+      <TabsList className="grid w-full grid-cols-2">
         <TabsTrigger
           value="friends"
           onClick={() => navigate({ to: '.', search: { tab: 'friends' } })}

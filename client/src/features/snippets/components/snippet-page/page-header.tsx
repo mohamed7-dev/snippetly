@@ -5,6 +5,7 @@ import { CopyButton } from '../copy-button'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { getSnippetQueryOptions } from '../../lib/api'
 import { useAuth } from '@/features/auth/components/auth-provider'
+import { HeaderWrapper } from '@/features/app-shell/components/header-wrapper'
 
 export function PageHeader() {
   const params = useParams({ from: '/(protected)/dashboard/snippets/$slug/' })
@@ -13,33 +14,31 @@ export function PageHeader() {
   const auth = useAuth()
   const user = auth?.getCurrentUser()
   return (
-    <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
-      <div className="flex items-center justify-between px-6 py-4">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" asChild>
-            <Link to="/dashboard" className="flex items-center gap-2">
-              <ArrowLeftIcon className="h-4 w-4" />
-              Back to Dashboard
+    <HeaderWrapper className="justify-between flex-wrap gap-4">
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="sm" asChild>
+          <Link to="/dashboard" className="flex items-center gap-2">
+            <ArrowLeftIcon className="h-4 w-4" />
+            Back to Dashboard
+          </Link>
+        </Button>
+      </div>
+
+      <div className="w-full sm:w-auto flex items-center justify-center gap-3">
+        <CopyButton code={snippet.code} />
+        {snippet.creator.username === user?.name && (
+          <Button size="sm" asChild>
+            <Link
+              to={'/dashboard/snippets/$slug/edit'}
+              params={{ slug: params.slug }}
+              from="/dashboard/snippets/$slug/edit"
+            >
+              <EditIcon className="h-4 w-4 mr-2" />
+              Edit
             </Link>
           </Button>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <CopyButton code={snippet.code} />
-          {snippet.creator.username === user?.name && (
-            <Button size="sm" asChild>
-              <Link
-                to={'/dashboard/snippets/$slug/edit'}
-                params={{ slug: params.slug }}
-                from="/dashboard/snippets/$slug/edit"
-              >
-                <EditIcon className="h-4 w-4 mr-2" />
-                Edit
-              </Link>
-            </Button>
-          )}
-        </div>
+        )}
       </div>
-    </header>
+    </HeaderWrapper>
   )
 }

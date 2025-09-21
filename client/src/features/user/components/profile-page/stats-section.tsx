@@ -1,5 +1,5 @@
 import { Card, CardContent } from '@/components/ui/card'
-import { CodeIcon, GitForkIcon, UserIcon, UsersIcon } from 'lucide-react'
+import { BookOpenIcon, CodeIcon, GitForkIcon, UserIcon } from 'lucide-react'
 import { useParams } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { getUserProfile } from '../../lib/api'
@@ -22,7 +22,7 @@ export function StatsSection() {
       <Card>
         <CardContent className="pt-6">
           <div className="text-center">
-            <UsersIcon className="h-8 w-8 mx-auto mb-2 text-primary" />
+            <BookOpenIcon className="h-8 w-8 mx-auto mb-2 text-primary" />
             <div className="text-2xl font-bold">{stats.collectionsCount}</div>
             <p className="text-xs text-muted-foreground">Collections</p>
           </div>

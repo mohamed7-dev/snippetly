@@ -75,7 +75,7 @@ export class CollectionService {
       );
     }
     // get user name from the session
-    return { ...newCollection, creatorName: "" };
+    return { ...newCollection, creatorName: ctx.user.name };
   }
 
   public async update(
@@ -201,7 +201,7 @@ export class CollectionService {
 
     return {
       ...newCollection,
-      forkedFrom: fullCollection.slug,
+      forkedFrom: fullCollection.id,
       // name comes from session when fetching user info
       creatorName: "",
     };

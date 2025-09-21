@@ -17,10 +17,10 @@ export function useLogin(
   >,
 ) {
   return useMutation({
+    ...options,
     mutationFn: async (input) => {
-      const res = await api.put<LoginSuccessRes>(serverEndpoints.login, input)
+      const res = await api.put(serverEndpoints.login, input)
       return res.data
     },
-    ...options,
   })
 }

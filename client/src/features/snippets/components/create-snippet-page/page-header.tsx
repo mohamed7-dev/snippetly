@@ -13,8 +13,8 @@ export function PageHeader() {
   const isSubmitting = createSnippetForm.formState.isSubmitting
 
   return (
-    <HeaderWrapper className="flex items-center justify-between ">
-      <div className="flex items-center gap-4">
+    <HeaderWrapper className="flex items-center justify-between flex-wrap gap-4">
+      <div className="flex items-center gap-2 flex-wrap">
         <Button variant="ghost" size="sm" asChild>
           <Link to="/dashboard" className="flex items-center gap-2">
             <ArrowLeftIcon className="h-4 w-4" />
@@ -26,7 +26,7 @@ export function PageHeader() {
         </h1>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="w-full sm:w-auto flex items-center justify-center gap-3">
         <Button variant="outline" size="sm" disabled={isSubmitting || !isValid}>
           <EyeIcon className="h-4 w-4 mr-2" />
           Preview

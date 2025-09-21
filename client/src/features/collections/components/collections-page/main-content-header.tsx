@@ -20,8 +20,8 @@ export function MainContentHeader() {
         </p>
       </div>
 
-      <div className="flex items-center justify-between mb-6">
-        <div className="relative w-64">
+      <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
+        <div className="relative w-full md:w-64">
           <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search collections..."

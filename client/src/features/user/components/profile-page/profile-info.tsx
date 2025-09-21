@@ -13,6 +13,7 @@ export function ProfileInfo() {
   const { data } = useSuspenseQuery(getUserProfile(name))
   const profile = data.data.profile
   const stats = data.data.stats
+
   const {
     mutateAsync: sendRequest,
     isPending,
@@ -62,7 +63,8 @@ export function ProfileInfo() {
 
             <div className="flex gap-6 text-sm">
               <span>
-                <strong>{stats.friendsCount}</strong> friends
+                <strong>{stats.friendsCount}</strong> friend
+                {stats.friendsCount !== 1 ? 's' : ''}
               </span>
             </div>
 

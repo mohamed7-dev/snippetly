@@ -1,8 +1,9 @@
 import { CorsOptions } from "cors";
 import { HttpException } from "./exception";
 import { StatusCodes } from "http-status-codes";
+import { CLIENTS_URLS } from "../../config";
 
-export const allowedOrigins = ["http://localhost:3000"];
+export const allowedOrigins = [CLIENTS_URLS.react];
 
 export const corsOptions: CorsOptions = {
   origin: (origin, callback) => {

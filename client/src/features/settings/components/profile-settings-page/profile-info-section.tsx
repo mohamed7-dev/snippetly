@@ -31,6 +31,7 @@ import { getCurrentUserProfileOptions } from '@/features/user/lib/api'
 import { mbToBytesBinary } from '@/lib/utils'
 import { toast } from 'sonner'
 import { ProcessStatus } from '@/components/feedback/process-status'
+import { Textarea } from '@/components/ui/textarea'
 
 export function ProfileInfoSection() {
   const { data } = useSuspenseQuery(getCurrentUserProfileOptions)
@@ -40,6 +41,7 @@ export function ProfileInfoSection() {
     defaultValues: {
       firstName: profile.firstName ?? '',
       lastName: profile.lastName ?? '',
+      bio: profile.bio ?? '',
     },
     resolver: zodResolver(updateProfileSchema),
   })
@@ -88,7 +90,6 @@ export function ProfileInfoSection() {
   const { mutateAsync: updateProfile, isPending } = useUpdateProfile({
     onSuccess: (data) => {
       toast.success(data.message)
-      console.log(data)
     },
     onError: (error) => {
       toast.error(error.response?.data.message)
@@ -99,8 +100,9 @@ export function ProfileInfoSection() {
     firstName,
     lastName,
     image,
+    bio,
   }: UpdateProfileSchema) => {
-    await updateProfile({ firstName, lastName, image })
+    await updateProfile({ firstName, lastName, image, bio })
   }
   return (
     <Card>
@@ -136,7 +138,7 @@ export function ProfileInfoSection() {
           </Avatar>
           <div className="space-y-2">
             <Label htmlFor="profile-image" className="cursor-pointer">
-              <div className="flex items-center gap-2 px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/80 transition-colors">
+              <div className="flex items-center gap-2 px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/80 transition-colors text-xs sm:text-sm">
                 <CameraIcon className="h-4 w-4" />
                 Change Photo
               </div>
@@ -189,6 +191,24 @@ export function ProfileInfoSection() {
                 )}
               />
             </div>
+            <FormField
+              control={updateProfileForm.control}
+              name="bio"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Bio</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Tell us more about your self"
+                      rows={4}
+                      className="resize-none"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <LoadingButton
               isLoading={isPending}
               type="submit"

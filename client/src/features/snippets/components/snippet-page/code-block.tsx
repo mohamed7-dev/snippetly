@@ -23,7 +23,7 @@ export function CodeBlock() {
           <CopyButton code={snippet.code} />
         </div>
       </CardHeader>
-      <CardContent className="pt-0">
+      <CardContent className="p-2">
         <div className="bg-muted/50 rounded-lg border overflow-hidden">
           <div className="flex items-center justify-between px-4 py-2 bg-muted border-b">
             <span className="text-sm font-mono text-muted-foreground">

@@ -127,7 +127,7 @@ export function EditSnippetForm() {
                 </FormItem>
               )}
             />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={editSnippetForm.control}
                 name="language"
@@ -140,11 +140,11 @@ export function EditSnippetForm() {
                       disabled={isPending}
                     >
                       <FormControl>
-                        <SelectTrigger className="bg-input border-border">
+                        <SelectTrigger className="bg-input border-border w-full">
                           <SelectValue placeholder="Select language" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent className="w-full">
                         {LANGUAGES.map((lang) => (
                           <SelectItem key={lang.value} value={lang.value}>
                             {lang.value}
@@ -183,7 +183,7 @@ export function EditSnippetForm() {
           <CardHeader>
             <CardTitle className="font-heading">Code</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 p-3">
             <CodeEditorField />
             <FormField
               control={editSnippetForm.control}

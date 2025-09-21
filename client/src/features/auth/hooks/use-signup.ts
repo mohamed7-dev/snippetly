@@ -23,13 +23,10 @@ export function useSignup(
   >,
 ) {
   return useMutation({
+    ...options,
     mutationFn: async (input) => {
-      const res = await api.post<SignupSuccessRes>(
-        serverEndpoints.signup,
-        input,
-      )
+      const res = await api.post(serverEndpoints.signup, input)
       return res.data
     },
-    ...options,
   })
 }

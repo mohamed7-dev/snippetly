@@ -3,7 +3,6 @@ import { serverEndpoints } from '@/lib/routes'
 import type { ErrorResponse, SharedSuccessRes } from '@/lib/types'
 import { useMutation, type MutationOptions } from '@tanstack/react-query'
 import type { AxiosError } from 'axios'
-import { toast } from 'sonner'
 import type { Friendship } from '../lib/types'
 
 type Input = {
@@ -38,14 +37,6 @@ export function useCancelFriendshipRequest(
         serverEndpoints.cancelFriendshipRequest(friendName),
       )
       return res.data
-    },
-    onSuccess: (data, variables, ctx) => {
-      toast.success(data.message)
-      options?.onSuccess?.(data, variables, ctx)
-    },
-    onError: (error, variables, ctx) => {
-      toast.error(error.response?.data?.message)
-      options?.onError?.(error, variables, ctx)
     },
   })
 }

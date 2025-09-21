@@ -1,5 +1,5 @@
+import { DesktopSidebar } from './desktop-sidebar'
 import { DashBoardHeader } from './header'
-import { DashboardSidebar } from './sidebar'
 
 type DashboardLayoutProps = {
   children: React.ReactNode
@@ -9,8 +9,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     <div className="min-h-screen">
       <DashBoardHeader />
       <div className="flex-1 flex">
-        <DashboardSidebar />
-        <main className="flex-1 p-6">{children}</main>
+        <DesktopSidebar />
+        <main className="flex-1 py-6 px-3 md:px-6">{children}</main>
       </div>
     </div>
   )

@@ -14,6 +14,15 @@ export const Route = createFileRoute(
   '/(protected)/dashboard/_dashboard-layout/_error-boundary/discover',
 )({
   component: DiscoverPage,
+  head: () => {
+    return {
+      meta: [
+        {
+          title: 'Discover',
+        },
+      ],
+    }
+  },
   validateSearch: searchSchema,
   loader: async ({ context: { queryClient } }) => {
     queryClient.prefetchInfiniteQuery(discoverUsersQueryOptions)

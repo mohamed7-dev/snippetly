@@ -16,6 +16,7 @@ export interface AuthContextValue {
   updateAccessToken: (token: string) => void
   getCurrentUser: () => LoggedInUser
   isLoggedOut: boolean
+  isAuthenticated: boolean
 }
 
 export const AuthContext = React.createContext<AuthContextValue | undefined>(
@@ -25,9 +26,11 @@ export const AuthContext = React.createContext<AuthContextValue | undefined>(
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [accessToken, setAccessToken] = React.useState<string | null>(null)
   const [isLoggedOut, setIsLoggedOut] = React.useState(false)
+  const [isAuthenticated, setIsAuthenticated] = React.useState(false)
 
   const login = (token: string) => {
     setAccessToken(token)
+    setIsAuthenticated(true)
   }
 
   const logout = () => {
@@ -37,6 +40,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const updateAccessToken = (token: string) => {
     setAccessToken(token)
+    setIsAuthenticated(true)
   }
 
   const getCurrentUser = () => {
@@ -60,6 +64,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         updateAccessToken,
         getCurrentUser,
         isLoggedOut,
+        isAuthenticated,
       }}
     >
       {children}

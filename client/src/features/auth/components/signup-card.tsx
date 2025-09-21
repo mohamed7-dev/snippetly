@@ -1,7 +1,7 @@
 import { AuthCard } from './auth-card'
 import { Input } from '@/components/ui/input'
 import { CheckIcon } from 'lucide-react'
-import { Link, useNavigate } from '@tanstack/react-router'
+import { Link, useNavigate, useSearch } from '@tanstack/react-router'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useForm } from 'react-hook-form'
 import { signupSchema, type SignupSchema } from '../lib/schema'
@@ -17,11 +17,11 @@ import {
 } from '@/components/ui/form'
 import { STRONG_PASSWORD_REQUIREMENTS } from '@/lib/zod'
 import { LoadingButton } from '@/components/inputs/loading-button'
-import { clientRoutes } from '@/lib/routes'
 import { useSignup } from '../hooks/use-signup'
 import { ProcessStatus } from '@/components/feedback/process-status'
 import { toast } from 'sonner'
 import { useAuth } from './auth-provider'
+import { PasswordField } from '@/components/inputs/password-field'
 
 function SuggestedNames({ names }: { names: string[] }) {
   return (
@@ -40,6 +40,9 @@ function SuggestedNames({ names }: { names: string[] }) {
 export function SignupCard() {
   const { login: authenticateUserOnClient } = useAuth()
   const navigate = useNavigate()
+  const { redirect: from } = useSearch({
+    from: '/(auth)/(auth-layout)/_auth-layout/signup',
+  })
   const signupForm = useForm<SignupSchema>({
     defaultValues: {
       name: '',
@@ -62,7 +65,17 @@ export function SignupCard() {
       if ('accessToken' in data.data && data.data.accessToken) {
         const accessToken = data.data.accessToken
         authenticateUserOnClient(accessToken)
-        navigate({ to: clientRoutes.dashboard, from: clientRoutes.login })
+        if (!from) {
+          navigate({
+            to: '/dashboard',
+            replace: true,
+          })
+        } else {
+          navigate({
+            href: from,
+            replace: true,
+          })
+        }
       }
     },
   })
@@ -149,13 +162,13 @@ export function SignupCard() {
                   <Input placeholder="john-doe2025" {...field} />
                 </FormControl>
                 <FormDescription>
-                  This will be your public profile name
+                  This will be your public profile name, spaces are not allowed.
                 </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField
               control={signupForm.control}
               name="password"
@@ -163,11 +176,7 @@ export function SignupCard() {
                 <FormItem>
                   <FormLabel>Password</FormLabel>
                   <FormControl>
-                    <Input
-                      type="password"
-                      placeholder={'*'.repeat(12)}
-                      {...field}
-                    />
+                    <PasswordField placeholder={'*'.repeat(12)} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -180,11 +189,7 @@ export function SignupCard() {
                 <FormItem>
                   <FormLabel>Password Confirmation</FormLabel>
                   <FormControl>
-                    <Input
-                      type="password"
-                      placeholder={'*'.repeat(12)}
-                      {...field}
-                    />
+                    <PasswordField placeholder={'*'.repeat(12)} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -221,7 +226,7 @@ export function SignupCard() {
                     }}
                   />
                 </FormControl>
-                <FormLabel className="text-sm">
+                <FormLabel className="text-sm truncate overflow-x-auto">
                   I agree to the{' '}
                   <Link to="." className="text-primary hover:underline">
                     Terms of Service
@@ -259,7 +264,7 @@ export function SignupCard() {
       <div className="text-center text-sm mt-4">
         <span className="text-muted-foreground">Already have an account? </span>
         <Link
-          to={clientRoutes.login}
+          to={'/login'}
           className="text-primary hover:underline font-medium"
         >
           Sign in

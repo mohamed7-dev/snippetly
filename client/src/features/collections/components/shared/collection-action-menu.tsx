@@ -28,8 +28,9 @@ import {
 } from '../../hooks/use-delete-collection'
 import type { AsyncActionCallback } from '@/lib/types'
 import { toast } from 'sonner'
+import React from 'react'
 
-type CollectionActionMenuProps = {
+export type CollectionActionMenuProps = {
   collection: Pick<Collection, 'publicId' | 'creatorName' | 'title'>
   deleteCollection?: AsyncActionCallback<
     DeleteCollectionSuccessRes,
@@ -47,46 +48,50 @@ export function CollectionActionMenu({
 }: CollectionActionMenuProps) {
   const auth = useAuth()
   const user = auth.getCurrentUser()
-
+  const [open, setOpen] = React.useState(false)
   // fork
-  const { mutateAsync: fork, isPending: isForking } = useForkCollection({
+  const { onClick: fork, isPending: isForking } = useForkCollection({
     ...forkCollection,
     onSuccess: (data) => {
       toast.success(data.message)
       forkCollection?.onSuccess?.(data)
+      setOpen(false)
     },
     onError: (error) => {
       toast.error(error.response?.data.message)
       forkCollection?.onError?.(error)
     },
   })
-  const handleForking = async () => {
-    await fork({ slug: collection.publicId })
+  const handleForking = () => {
+    fork({ slug: collection.publicId })
   }
 
   // delete
   const { confirm } = useDeleteConfirmation()
-  const { mutateAsync: deleteCollectionAction } = useDeleteCollection({
-    ...deleteCollection,
-    onSuccess: (data) => {
-      toast.success(data.message)
-      deleteCollection?.onSuccess?.(data)
-    },
-    onError: (error) => {
-      toast.error(error.response?.data.message)
-      deleteCollection?.onError?.(error)
-    },
-  })
+  const { mutateAsync: deleteCollectionAction, isPending: isDeleting } =
+    useDeleteCollection({
+      ...deleteCollection,
+      onSuccess: (data) => {
+        toast.success(data.message)
+        deleteCollection?.onSuccess?.(data)
+        setOpen(false)
+      },
+      onError: (error) => {
+        toast.error(error.response?.data.message)
+        deleteCollection?.onError?.(error)
+      },
+    })
   const handleDeletingCollection = () => {
     confirm({
       title: `Delete Collection ${collection.title}`,
       onConfirm: async () => {
         await deleteCollectionAction({ slug: collection.publicId })
       },
+      isPending: isDeleting,
     })
   }
   return (
-    <DropdownMenu>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="sm">
           <MoreHorizontalIcon className="h-4 w-4" />
@@ -104,11 +109,12 @@ export function CollectionActionMenu({
             </Link>
           </DropdownMenuItem>
         )}
-
-        <DropdownMenuItem onClick={handleForking} disabled={isForking}>
-          <GitForkIcon className="mr-2 h-4 w-4" />
-          Fork Collection
-        </DropdownMenuItem>
+        {user?.name !== collection.creatorName && (
+          <DropdownMenuItem onClick={handleForking} disabled={isForking}>
+            <GitForkIcon className="mr-2 h-4 w-4" />
+            Fork Collection
+          </DropdownMenuItem>
+        )}
 
         {collection.creatorName === user?.name && (
           <DropdownMenuItem

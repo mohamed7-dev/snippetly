@@ -1,4 +1,5 @@
 import { Card, CardContent } from '@/components/ui/card'
+import { APP_NAME } from '@/config/app'
 
 export function DemoSection() {
   return (
@@ -6,7 +7,7 @@ export function DemoSection() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="font-heading font-bold text-3xl lg:text-4xl mb-4">
-            See CodeVault in action
+            See {APP_NAME} in action
           </h2>
           <p className="text-xl text-muted-foreground">
             A clean, intuitive interface designed for developers

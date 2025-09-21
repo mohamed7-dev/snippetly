@@ -46,7 +46,7 @@ type GetCurrentUserDashboardSuccessRes = SharedSuccessRes<{
 }>
 
 export const getCurrentUserDashboardOptions = queryOptions({
-  queryKey: ['users', 'current', 'dashboards'],
+  queryKey: ['users', 'current', 'dashboard'],
   queryFn: async () => {
     const res = await api.get<GetCurrentUserDashboardSuccessRes>(
       serverEndpoints.getCurrentUserDashboard,

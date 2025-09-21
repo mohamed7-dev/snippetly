@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button'
 import { HeaderWrapper } from '@/features/app-shell/components/header-wrapper'
-import { Link, useParams } from '@tanstack/react-router'
+import { Link, useNavigate, useParams } from '@tanstack/react-router'
 import { ArrowLeftIcon, EyeIcon, SaveIcon, Trash2Icon } from 'lucide-react'
 import { useFormContext, type UseFormReturn } from 'react-hook-form'
 import type { UpdateCollectionSchema } from '../../lib/schema'
@@ -10,6 +10,7 @@ import { useDeleteCollection } from '../../hooks/use-delete-collection'
 import { useDeleteConfirmation } from '@/components/providers/delete-confirmation-provider'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { getCollectionQueryOptions } from '../../lib/api'
+import { toast } from 'sonner'
 
 export function PageHeader() {
   const { slug } = useParams({
@@ -23,10 +24,19 @@ export function PageHeader() {
     useFormContext()
   const isValid = updateCollectionForm.formState.isValid
   const isSubmitting = updateCollectionForm.formState.isSubmitting
+  const navigate = useNavigate()
 
   // delete
   const { mutateAsync: deleteCollection, isPending: isDeleting } =
-    useDeleteCollection()
+    useDeleteCollection({
+      onSuccess: (data) => {
+        toast.success(data.message)
+        navigate({ to: '/dashboard/collections' })
+      },
+      onError: (err) => {
+        toast.error(err.response?.data.message)
+      },
+    })
 
   const { confirm } = useDeleteConfirmation()
 
@@ -36,10 +46,11 @@ export function PageHeader() {
       onConfirm: async () => {
         await deleteCollection({ slug })
       },
+      isPending: isDeleting,
     })
   }
   return (
-    <HeaderWrapper className="px-4 flex items-center justify-between">
+    <HeaderWrapper className="justify-between flex-wrap gap-4">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" asChild>
           <Link
@@ -51,12 +62,12 @@ export function PageHeader() {
             Back To Collection
           </Link>
         </Button>
-        <h1 className="font-heading font-semibold text-lg">
+        <h1 className="font-heading font-semibold text-sm sm:text-lg">
           Update Collection
         </h1>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center justify-center gap-3 flex-wrap w-full sm:w-auto">
         <Button
           variant={'outline'}
           size="sm"

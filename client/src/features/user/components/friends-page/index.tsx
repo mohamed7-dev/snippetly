@@ -7,7 +7,7 @@ export function FriendsPage() {
   return (
     <React.Fragment>
       <PageHeader />
-      <main className="container mx-auto px-6 py-8">
+      <main className="container mx-auto px-3 md:px-6 py-8">
         <MainContentHeader />
         <TabsSection />
       </main>

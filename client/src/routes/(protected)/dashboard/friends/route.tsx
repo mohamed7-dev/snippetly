@@ -6,6 +6,15 @@ import z from 'zod'
 
 export const Route = createFileRoute('/(protected)/dashboard/friends')({
   component: FriendsPage,
+  head: () => {
+    return {
+      meta: [
+        {
+          title: 'Friends',
+        },
+      ],
+    }
+  },
   validateSearch: searchFilterSchema.extend({
     tab: z.enum(['friends', 'snippets']).default('friends').catch('friends'),
   }),

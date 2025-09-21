@@ -56,7 +56,8 @@ export function UsersTabContent() {
 
               <div className="flex gap-4 text-sm">
                 <span>
-                  <strong>{user.snippetsCount}</strong> snippets
+                  <strong>{user.snippetsCount}</strong> snippet
+                  {user.snippetsCount !== 1 ? 's' : ''}
                 </span>
               </div>
 

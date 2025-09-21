@@ -31,7 +31,7 @@ export function ColorField() {
                 key={color.name}
                 title={color.name}
                 className={cn(
-                  `h-12 w-full rounded-lg data-[state=on]:${color.class} ${color.class} hover:${color.class} hover:scale-105 transition-transform border-2 border-transparent hover:border-primary`,
+                  `text-xs sm:text-sm h-12 w-full rounded-lg data-[state=on]:${color.class} ${color.class} hover:${color.class} hover:scale-105 transition-transform border-2 border-transparent hover:border-primary`,
                 )}
                 value={color.code}
                 aria-label={`Toggle ${color.name}`}

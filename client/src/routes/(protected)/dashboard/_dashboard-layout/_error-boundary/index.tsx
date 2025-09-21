@@ -7,6 +7,15 @@ export const Route = createFileRoute(
   '/(protected)/dashboard/_dashboard-layout/_error-boundary/',
 )({
   component: DashboardPage,
+  head: () => {
+    return {
+      meta: [
+        {
+          title: 'All Snippets',
+        },
+      ],
+    }
+  },
   validateSearch: searchFilterSchema,
   loader: async ({ context: { queryClient } }) => {
     queryClient.prefetchInfiniteQuery(getCurrentSnippetsOptions)

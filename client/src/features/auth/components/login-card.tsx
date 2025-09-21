@@ -1,6 +1,6 @@
 import { AuthCard } from './auth-card'
 import { Input } from '@/components/ui/input'
-import { Link, useNavigate } from '@tanstack/react-router'
+import { Link, useNavigate, useSearch } from '@tanstack/react-router'
 import {
   Form,
   FormControl,
@@ -13,7 +13,6 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { loginSchema, type LoginSchema } from '../lib/schema'
 import { Checkbox } from '@/components/ui/checkbox'
-import { clientRoutes } from '@/lib/routes'
 import { useLogin } from '../hooks/use-login'
 import { LoadingButton } from '@/components/inputs/loading-button'
 import { toast } from 'sonner'
@@ -25,6 +24,10 @@ import { PasswordField } from '@/components/inputs/password-field'
 export function LoginCard() {
   const { login: authenticateUserOnClient } = useAuth()
   const navigate = useNavigate()
+  const { redirect: from } = useSearch({
+    from: '/(auth)/(auth-layout)/_auth-layout/login',
+  })
+
   const loginForm = useForm<LoginSchema>({
     defaultValues: {
       name: '',
@@ -44,7 +47,17 @@ export function LoginCard() {
       const accessToken = data.data.accessToken
       authenticateUserOnClient(accessToken)
       authStore.setAccessToken(accessToken)
-      navigate({ to: clientRoutes.dashboard, from: clientRoutes.login })
+      if (!from) {
+        navigate({
+          to: '/dashboard',
+          replace: true,
+        })
+      } else {
+        navigate({
+          href: from,
+          replace: true,
+        })
+      }
     },
   })
   const onSubmit = async (values: LoginSchema) => {

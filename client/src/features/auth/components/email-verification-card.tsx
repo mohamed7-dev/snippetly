@@ -34,14 +34,14 @@ export function EmailVerificationCard() {
     if (token && token.length) {
       submit()
     }
-  }, [])
+  }, [token])
 
   return (
     <AuthCard
       cardTitle="Email Verification"
       cardDescription="Verify your email."
     >
-      {isPending && <PageLoader iconProps={{ className: 'size-12' }} />}
+      {isPending && <PageLoader iconProps={{ className: 'size-10' }} />}
       {!!data?.message && (
         <ProcessStatus title="Success" description={data.message} />
       )}

@@ -1,6 +1,5 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { GitForkIcon, GlobeIcon, LockIcon } from 'lucide-react'
 import { getSnippetQueryOptions } from '../../lib/api'
@@ -46,15 +45,11 @@ export function MainContentHeader() {
           </div>
         </div>
 
-        <Separator orientation="vertical" className="h-8" />
-
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-1">
             <GitForkIcon className="h-4 w-4" /> 0
           </div>
         </div>
-
-        <Separator orientation="vertical" className="h-8" />
 
         <div className="flex items-center gap-2">
           <Badge variant="secondary" className="font-mono">

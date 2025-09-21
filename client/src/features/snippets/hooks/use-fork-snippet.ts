@@ -9,6 +9,8 @@ import type { Snippet } from '../lib/types'
 import type { AxiosError } from 'axios'
 import { api } from '@/lib/api'
 import { serverEndpoints } from '@/lib/routes'
+import { useAuth } from '@/features/auth/components/auth-provider'
+import { useNavigate } from '@tanstack/react-router'
 
 type Input = {
   slug: string
@@ -31,7 +33,9 @@ export function useForkSnippet(
   >,
 ) {
   const qClient = useQueryClient()
-  return useMutation({
+  const ctx = useAuth()
+  const navigate = useNavigate()
+  const fork = useMutation({
     ...options,
     mutationKey: ['fork-snippet'],
     mutationFn: async ({ slug, collectionSlug }) => {
@@ -44,7 +48,35 @@ export function useForkSnippet(
       qClient.invalidateQueries({ queryKey: ['snippets', 'current'] })
       options?.onSuccess?.(data, variables, ctx)
     },
+    onError: (e, variables, ctx) => {
+      if (e.status === 401)
+        navigate({
+          to: '/login',
+          search: {
+            redirect: location.href,
+          },
+        })
+      options?.onError?.(e, variables, ctx)
+    },
   })
+
+  const onClick = (input?: Input) => {
+    if (!ctx.isAuthenticated) {
+      navigate({
+        to: '/login',
+        search: {
+          redirect: location.href,
+        },
+      })
+      return
+    }
+    if (input) {
+      fork.mutate(input)
+    }
+  }
+  const isPending = fork.isPending
+
+  return { onClick, isPending }
 }
 
 export function useGetUpdateSnippetMutationState() {

@@ -7,6 +7,15 @@ export const Route = createFileRoute(
   '/(protected)/dashboard/_dashboard-layout/_error-boundary/collections/',
 )({
   component: CollectionsPage,
+  head: () => {
+    return {
+      meta: [
+        {
+          title: 'All Collections',
+        },
+      ],
+    }
+  },
   validateSearch: searchFilterSchema,
   loader: async ({ context: { queryClient } }) => {
     queryClient.prefetchInfiniteQuery(getCurrentUserCollectionsOptions)

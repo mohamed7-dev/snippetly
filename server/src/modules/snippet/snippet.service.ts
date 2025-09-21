@@ -108,7 +108,7 @@ export class SnippetService {
       ...newSnippet,
       collectionPublicId: foundCollection.slug,
       // can be obtained from session
-      creatorName: "",
+      creatorName: ctx.user.name,
     };
   }
 

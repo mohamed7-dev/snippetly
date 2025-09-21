@@ -17,18 +17,21 @@ export function DiscoverTabs() {
         <TabsTrigger
           value="developers"
           onClick={() => navigate({ to: '.', search: { tab: 'developers' } })}
+          className="text-xs sm:text-sm font-bold sm:font-semibold"
         >
           Developers
         </TabsTrigger>
         <TabsTrigger
           value="snippets"
           onClick={() => navigate({ to: '.', search: { tab: 'snippets' } })}
+          className="text-xs sm:text-sm font-bold sm:font-semibold"
         >
           Trending Snippets
         </TabsTrigger>
         <TabsTrigger
           value="collections"
           onClick={() => navigate({ to: '.', search: { tab: 'collections' } })}
+          className="text-xs sm:text-sm font-bold sm:font-semibold"
         >
           Collections
         </TabsTrigger>

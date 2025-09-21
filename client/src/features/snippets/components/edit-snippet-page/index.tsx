@@ -32,7 +32,7 @@ export function EditSnippetPage() {
   return (
     <Form {...editSnippetForm}>
       <PageHeader />
-      <main className="container mx-auto px-6 py-8 max-w-4xl">
+      <main className="container mx-auto px-3 md:px-6 py-8 max-w-4xl">
         <EditSnippetForm />
       </main>
     </Form>

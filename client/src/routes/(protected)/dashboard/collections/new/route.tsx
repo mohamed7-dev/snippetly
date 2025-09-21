@@ -4,6 +4,15 @@ import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/(protected)/dashboard/collections/new')({
   component: RouteComponent,
+  head: () => {
+    return {
+      meta: [
+        {
+          title: 'Create New Collection',
+        },
+      ],
+    }
+  },
   loader: async ({ context: { queryClient } }) => {
     await queryClient.ensureQueryData(getPopularTagsOptions)
   },

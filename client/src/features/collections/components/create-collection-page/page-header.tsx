@@ -14,8 +14,8 @@ export function PageHeader() {
   const isSubmitting = createCollectionForm.formState.isSubmitting
 
   return (
-    <HeaderWrapper className="px-4 flex items-center justify-between">
-      <div className="flex items-center gap-4">
+    <HeaderWrapper className="px-4 flex items-center justify-between flex-wrap gap-4">
+      <div className="flex items-center gap-2 flex-wrap">
         <Button variant="ghost" size="sm" asChild>
           <Link
             to={'/dashboard/collections'}
@@ -30,7 +30,7 @@ export function PageHeader() {
         </h1>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="w-full sm:w-auto flex items-center justify-center gap-3">
         <Button
           variant={'outline'}
           size="sm"

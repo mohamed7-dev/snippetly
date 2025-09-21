@@ -16,6 +16,7 @@ export function useVerifyEmail(
   >,
 ) {
   return useMutation({
+    ...options,
     mutationFn: async (input) => {
       const searchParams = new URLSearchParams()
       searchParams.set('token', input.token)
@@ -25,6 +26,5 @@ export function useVerifyEmail(
       )
       return res.data
     },
-    ...options,
   })
 }

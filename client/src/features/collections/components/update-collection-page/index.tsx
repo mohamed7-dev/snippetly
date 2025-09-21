@@ -32,7 +32,7 @@ export function UpdateCollectionPage() {
   return (
     <Form {...updateCollectionForm}>
       <PageHeader />
-      <main className="container mx-auto px-6 py-8 max-w-4xl">
+      <main className="container mx-auto px-3 md:px-6 py-8 max-w-4xl">
         <UpdateCollectionForm />
       </main>
     </Form>

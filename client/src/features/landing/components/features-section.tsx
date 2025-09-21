@@ -1,4 +1,5 @@
 import { Card, CardContent } from '@/components/ui/card'
+import { APP_NAME } from '@/config/app'
 import { BookOpenIcon, Code2Icon, UsersIcon } from 'lucide-react'
 
 export function FeaturesSection() {
@@ -10,7 +11,7 @@ export function FeaturesSection() {
             Everything you need to manage code snippets
           </h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            From personal organization to team collaboration, CodeVault has all
+            From personal organization to team collaboration, {APP_NAME} has all
             the features you need.
           </p>
         </div>

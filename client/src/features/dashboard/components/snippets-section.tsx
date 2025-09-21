@@ -1,6 +1,6 @@
 import React from 'react'
 import { Button } from '@/components/ui/button'
-import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
+import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query'
 import { Link, useSearch } from '@tanstack/react-router'
 import { Code2Icon, PlusIcon } from 'lucide-react'
 import { SnippetCard } from '@/features/snippets/components/snippet-card'
@@ -17,11 +17,25 @@ export function SnippetsSection() {
   })
 
   const filteredSnippets = useFilter({ data: snippets, filter })
+
+  const qClient = useQueryClient()
+  const onMutateSnippetSuccess = () => {
+    qClient.invalidateQueries({ queryKey: ['users', 'current', 'dashboard'] })
+  }
   return (
     <React.Fragment>
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {filteredSnippets.map((snippet) => (
-          <SnippetCard key={snippet.publicId} snippet={{ ...snippet }} />
+          <SnippetCard
+            key={snippet.publicId}
+            snippet={{ ...snippet }}
+            deleteSnippet={{
+              onSuccess: onMutateSnippetSuccess,
+            }}
+            forkSnippet={{
+              onSuccess: onMutateSnippetSuccess,
+            }}
+          />
         ))}
       </div>
       <InfiniteLoader

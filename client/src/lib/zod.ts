@@ -18,3 +18,7 @@ export const STRONG_PASSWORD_SCHEMA = z
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/,
     STRONG_PASSWORD_TITLE,
   )
+
+export const redirectSchema = z.object({
+  redirect: z.string().url().catch(''),
+})

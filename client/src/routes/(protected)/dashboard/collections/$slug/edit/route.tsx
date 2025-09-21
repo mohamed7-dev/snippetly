@@ -1,3 +1,4 @@
+import { queryClient } from '@/components/providers/tanstack-query-provider'
 import { UpdateCollectionPageView } from '@/components/views/update-collection-page-view'
 import { getCollectionQueryOptions } from '@/features/collections/lib/api'
 import { getPopularTagsOptions } from '@/features/tags/lib/api'
@@ -7,6 +8,24 @@ export const Route = createFileRoute(
   '/(protected)/dashboard/collections/$slug/edit',
 )({
   component: UpdateCollectionPage,
+  head: async ({ params }) => {
+    const data = await queryClient.ensureQueryData(
+      getCollectionQueryOptions(params.slug),
+    )
+    return {
+      meta: [
+        {
+          name: 'description',
+          content:
+            data.data.description ??
+            `Update Collection with title ${data.data.title}`,
+        },
+        {
+          title: `Update ${data.data.title} Info`,
+        },
+      ],
+    }
+  },
   beforeLoad: async ({
     params: { slug },
     context: { queryClient, authContext },

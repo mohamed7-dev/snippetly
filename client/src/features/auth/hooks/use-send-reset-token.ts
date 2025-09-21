@@ -16,13 +16,10 @@ export function useSendResetToken(
   >,
 ) {
   return useMutation({
+    ...options,
     mutationFn: async (input) => {
-      const res = await api.put<SendResetTokenSuccessRes>(
-        serverEndpoints.sendResetEmail,
-        input,
-      )
+      const res = await api.put(serverEndpoints.sendResetEmail, input)
       return res.data
     },
-    ...options,
   })
 }

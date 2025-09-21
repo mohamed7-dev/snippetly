@@ -93,6 +93,7 @@ export function UpdateCollectionForm() {
                   <Textarea
                     disabled={isPending}
                     placeholder="Describe what this collection contains..."
+                    className="resize-none"
                     rows={4}
                     {...field}
                   />

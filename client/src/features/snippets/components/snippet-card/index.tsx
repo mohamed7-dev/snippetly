@@ -38,7 +38,7 @@ type SnippetItem = Pick<
 }
 
 interface SnippetCardProps
-  extends Omit<SnippetActionsDropdownProps, 'creatorName' | 'snippet'> {
+  extends Omit<SnippetActionsDropdownProps, 'snippet'> {
   snippet: SnippetItem
 }
 
@@ -70,7 +70,7 @@ export function SnippetCard({ snippet, onCopy, ...props }: SnippetCardProps) {
             {...props}
           />
         </div>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-3">
             <Avatar className="h-12 w-12">
               <AvatarImage

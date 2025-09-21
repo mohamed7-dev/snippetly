@@ -14,7 +14,6 @@ if (!API_SERVER_URL) {
  */
 export const publicApi = axios.create({
   baseURL: API_SERVER_URL,
-  // withCredentials: true, // 👈 send cookies (refresh token lives here)
 })
 
 /**

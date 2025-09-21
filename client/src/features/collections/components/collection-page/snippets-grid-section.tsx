@@ -2,7 +2,7 @@ import { InfiniteLoader } from '@/components/loaders/infinite-loader'
 import { Button } from '@/components/ui/button'
 import { SnippetCard } from '@/features/snippets/components/snippet-card'
 import { getSnippetsByCollectionOptions } from '@/features/snippets/lib/api'
-import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
+import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query'
 import { Link, useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import { Code2Icon, PlusIcon } from 'lucide-react'
 import { FilterMenu, useFilter } from '../../../../components/filter-menu'
@@ -27,6 +27,12 @@ export function SnippetsGridSection() {
 
   const filteredSnippets = useFilter({ data: snippets, filter })
 
+  const qClient = useQueryClient()
+  const onSnippetMutationSuccess = () => {
+    qClient.invalidateQueries({
+      queryKey: ['snippets', 'collection', params.slug],
+    })
+  }
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -43,7 +49,16 @@ export function SnippetsGridSection() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         {filteredSnippets.map((snippet) => (
-          <SnippetCard key={snippet.publicId} snippet={{ ...snippet }} />
+          <SnippetCard
+            key={snippet.publicId}
+            snippet={{ ...snippet }}
+            deleteSnippet={{
+              onSuccess: onSnippetMutationSuccess,
+            }}
+            forkSnippet={{
+              onSuccess: onSnippetMutationSuccess,
+            }}
+          />
         ))}
       </div>
       <InfiniteLoader

@@ -5,6 +5,7 @@ export const updateProfileSchema = z
   .object({
     firstName: z.string(),
     lastName: z.string(),
+    bio: z.string(),
     image: z.instanceof(File),
     imagePreview: z.string(),
     imageError: z.object({

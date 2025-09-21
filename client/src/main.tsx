@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import ReactDOM from 'react-dom/client'
 import { createRouter } from '@tanstack/react-router'
 import { queryClient } from './components/providers/tanstack-query-provider.tsx'
+import { disableReactDevTools } from '@fvilers/disable-react-devtools'
 
 // Import the generated route tree
 import { routeTree } from './routeTree.gen'
@@ -31,6 +32,9 @@ declare module '@tanstack/react-router' {
     router: typeof router
   }
 }
+
+// disable react dev tools
+if (process.env.NODE_ENV === 'production') disableReactDevTools()
 
 // Render the app
 const rootElement = document.getElementById('app')

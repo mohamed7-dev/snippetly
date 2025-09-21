@@ -1,4 +1,5 @@
 import { Card, CardContent } from '@/components/ui/card'
+import { APP_NAME } from '@/config/app'
 import { StarIcon } from 'lucide-react'
 
 export function TestimonialsSection() {
@@ -23,8 +24,8 @@ export function TestimonialsSection() {
                 ))}
               </div>
               <p className="text-muted-foreground mb-4">
-                "CodeVault has completely changed how I organize my code. I can
-                find any snippet in seconds!"
+                {`${APP_NAME} has completely changed how I organize my code. I can
+                find any snippet in seconds!`}
               </p>
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 bg-primary/10 rounded-full flex items-center justify-center">

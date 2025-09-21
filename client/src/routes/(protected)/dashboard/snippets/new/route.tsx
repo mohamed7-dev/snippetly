@@ -6,6 +6,15 @@ import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/(protected)/dashboard/snippets/new')({
   component: CreateSnippetPage,
+  head: () => {
+    return {
+      meta: [
+        {
+          title: 'Create New Snippet',
+        },
+      ],
+    }
+  },
   loader: async ({ context: { queryClient } }) => {
     await queryClient.ensureQueryData(getPopularTagsOptions)
     await queryClient.ensureInfiniteQueryData(getCurrentUserCollectionsOptions)

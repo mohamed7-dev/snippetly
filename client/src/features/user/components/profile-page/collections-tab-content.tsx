@@ -1,9 +1,7 @@
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { CollectionActionMenu } from '@/features/collections/components/shared/collection-action-menu'
+import { CollectionCard } from '@/features/collections/components/collection-card'
 import { getProfileCollectionsOptions } from '@/features/collections/lib/api'
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
-import { Link, useParams } from '@tanstack/react-router'
+import { useParams } from '@tanstack/react-router'
 
 export function CollectionsTabContent() {
   const { name } = useParams({ from: '/(public)/profile/$name' })
@@ -12,53 +10,13 @@ export function CollectionsTabContent() {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {collections.map((collection) => (
-        <Card
+        <CollectionCard
           key={collection.publicId}
-          className="hover:shadow-md transition-shadow"
-        >
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex-1 flex items-center gap-3">
-                <div
-                  className={`w-4 h-4 rounded`}
-                  style={{
-                    backgroundColor: collection.color,
-                  }}
-                />
-                <CardTitle className="text-lg">
-                  <Link
-                    to="/dashboard/collections/$slug"
-                    params={{ slug: collection.publicId }}
-                    preload={false}
-                    className="hover:text-primary"
-                  >
-                    {collection.title}
-                  </Link>
-                </CardTitle>
-              </div>
-              <CollectionActionMenu
-                collection={{
-                  ...collection,
-                  creatorName: collection.creator.username,
-                }}
-              />
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              {collection.description}
-            </p>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">
-                {collection.snippetsCount} snippet
-                {collection.snippetsCount !== 1 ? 's' : ''}
-              </span>
-              <Badge variant={collection.isPrivate ? 'secondary' : 'default'}>
-                {collection.isPrivate ? 'Private' : 'Public'}
-              </Badge>
-            </div>
-          </CardContent>
-        </Card>
+          collection={{
+            ...collection,
+            creatorName: collection.creator.username,
+          }}
+        />
       ))}
     </div>
   )

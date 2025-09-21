@@ -6,19 +6,25 @@ import { InfiniteLoader } from '@/components/loaders/infinite-loader'
 import { Button } from '@/components/ui/button'
 import React from 'react'
 import { SnippetCard } from '@/features/snippets/components/snippet-card'
+import { useAuth } from '@/features/auth/components/auth-provider'
 
 export function SnippetsTabContent() {
+  const { getCurrentUser } = useAuth()
+  const user = getCurrentUser()
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useSuspenseInfiniteQuery(discoverSnippetsQueryOptions)
   const snippets = data.pages?.flatMap((p) => p.items) ?? []
-
+  // TODO: This will be implemented server side
+  const filteredSnippets = snippets.filter(
+    (snippet) => snippet.creator.username !== user?.name,
+  )
   return (
     <React.Fragment>
       <p>
         TODO: Implement views/interaction based listing of trending snippets
       </p>
       <div className="grid gap-4 lg:grid-cols-2">
-        {snippets.map((snippet) => (
+        {filteredSnippets.map((snippet) => (
           <SnippetCard key={snippet.publicId} snippet={{ ...snippet }} />
         ))}
       </div>
@@ -27,7 +33,7 @@ export function SnippetsTabContent() {
         hasNextPage={hasNextPage}
         isFetchingNextPage={isFetchingNextPage}
         Content={
-          !snippets.length ? (
+          !filteredSnippets.length ? (
             <div className="text-center py-12">
               <Code2Icon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="font-heading font-semibold text-lg mb-2">

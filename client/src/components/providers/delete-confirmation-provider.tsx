@@ -9,11 +9,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '../ui/alert-dialog'
+import { LoadingButton } from '../inputs/loading-button'
 
 type ConfirmationOptions = {
   title?: string
   description?: string
   onConfirm?: () => void | Promise<any>
+  isPending?: boolean
 }
 
 type ContextType = {
@@ -71,8 +73,14 @@ export function DeleteConfirmationProvider({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirm}>
-              Delete
+            <AlertDialogAction asChild>
+              <LoadingButton
+                isLoading={!!options.isPending}
+                disabled={options.isPending}
+                onClick={handleConfirm}
+              >
+                Delete
+              </LoadingButton>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

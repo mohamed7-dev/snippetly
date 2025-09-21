@@ -14,7 +14,7 @@ import { ShieldIcon } from 'lucide-react'
 import React from 'react'
 import { toast } from 'sonner'
 
-export function PasswordResetField() {
+export function PasswordSettings() {
   const [form, setForm] = React.useState({
     currentPassword: '',
     newPassword: '',

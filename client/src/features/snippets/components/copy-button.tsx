@@ -5,7 +5,7 @@ import { useCopyCode } from '../hooks/use-copy-code'
 type CopyButtonProps = React.ComponentProps<typeof Button> & {
   code: string
 }
-export function CopyButton({ code, ...props }: CopyButtonProps) {
+export function CopyButton({ code, children, ...props }: CopyButtonProps) {
   const { copyCode, isCopied } = useCopyCode({ code })
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     copyCode()
@@ -13,12 +13,18 @@ export function CopyButton({ code, ...props }: CopyButtonProps) {
   }
   return (
     <Button variant="outline" size="sm" {...props} onClick={handleClick}>
-      {isCopied ? (
-        <CopyCheckIcon className="h-4 w-4 mr-2" />
+      {children ? (
+        children
       ) : (
-        <CopyIcon className="h-4 w-4 mr-2" />
+        <>
+          {isCopied ? (
+            <CopyCheckIcon className="h-4 w-4 mr-2" />
+          ) : (
+            <CopyIcon className="h-4 w-4 mr-2" />
+          )}
+          {isCopied ? 'Copied' : 'Copy Code'}
+        </>
       )}
-      {isCopied ? 'Copied' : 'Copy Code'}
     </Button>
   )
 }

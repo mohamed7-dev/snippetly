@@ -23,7 +23,8 @@ export const UpdateSnippetDto = z.object({
       addTags: CreateSnippetDto.shape.tags,
       removeTags: CreateSnippetDto.shape.tags,
       collection: SelectCollectionDto.shape.slug,
-    }),
+    })
+    .partial(),
 });
 
 export type UpdateSnippetDtoType = z.infer<typeof UpdateSnippetDto>;

@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button'
+import { APP_NAME } from '@/config/app'
 import { Link } from '@tanstack/react-router'
 import { Code2Icon, GithubIcon, TwitterIcon } from 'lucide-react'
 
@@ -10,7 +11,7 @@ export function FooterSection() {
           <div>
             <div className="flex items-center gap-2 mb-4">
               <Code2Icon className="h-6 w-6 text-primary" />
-              <span className="font-heading font-bold text-lg">CodeVault</span>
+              <span className="font-heading font-bold text-lg">{APP_NAME}</span>
             </div>
             <p className="text-muted-foreground text-sm">
               Your personal code library for organizing and sharing snippets.
@@ -94,7 +95,9 @@ export function FooterSection() {
         </div>
 
         <div className="border-t border-border mt-8 pt-8 text-center text-sm text-muted-foreground">
-          <p>&copy; 2025 snippetly. All rights reserved.</p>
+          <p>
+            &copy; {new Date().getFullYear()} {APP_NAME}. All rights reserved.
+          </p>
         </div>
       </div>
     </footer>

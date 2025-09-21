@@ -20,7 +20,7 @@ export function CreateSnippetPage() {
   return (
     <Form {...createSnippetForm}>
       <PageHeader />
-      <main className="container mx-auto px-6 py-8 max-w-4xl">
+      <main className="container mx-auto px-3 md:px-6 py-8 max-w-4xl">
         <CreateSnippetForm />
       </main>
     </Form>
