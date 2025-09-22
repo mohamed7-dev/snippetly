@@ -1,6 +1,10 @@
-import { eq, isNotNull } from "drizzle-orm";
-import { Database } from "../../common/db";
-import { NewSnippet, snippetsTable, Tags } from "../../common/db/schema";
+import { eq } from "drizzle-orm";
+import { Database } from "../../common/db/index.ts";
+import {
+  type NewSnippet,
+  snippetsTable,
+  type Tags,
+} from "../../common/db/schema.ts";
 
 export class SnippetRepository {
   async insert(input: NewSnippet[]) {

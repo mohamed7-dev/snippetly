@@ -1,5 +1,5 @@
 import {
-  AnyPgColumn,
+  type AnyPgColumn,
   boolean,
   check,
   index,
@@ -11,7 +11,7 @@ import {
   unique,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
-import { baseTable } from "./utils";
+import { baseTable } from "./utils.ts";
 import { relations, sql } from "drizzle-orm";
 
 // ------------------- User -------------------

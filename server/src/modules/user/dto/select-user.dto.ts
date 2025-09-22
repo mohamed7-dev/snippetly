@@ -1,6 +1,6 @@
 import z from "zod";
 import { createSelectSchema } from "drizzle-zod";
-import { usersTable } from "../../../common/db/schema";
+import { usersTable } from "../../../common/db/schema.ts";
 
 export const nameSchema = z
   .string()

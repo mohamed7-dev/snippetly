@@ -1,14 +1,14 @@
-import { Request, Response } from "express";
-import { CreateSnippetDtoType } from "./dto/create-snippet.dto";
-import { SnippetService } from "./snippet.service";
-import { UpdateSnippetDtoType } from "./dto/update-snippet.dto";
-import { DeleteSnippetDtoType } from "./dto/delete-snippet.dto";
-import { GetUserSnippetsDtoType } from "./dto/get-user-snippets.dto";
+import type { Request, Response } from "express";
+import type { CreateSnippetDtoType } from "./dto/create-snippet.dto.ts";
+import { SnippetService } from "./snippet.service.ts";
+import type { UpdateSnippetDtoType } from "./dto/update-snippet.dto.ts";
+import type { DeleteSnippetDtoType } from "./dto/delete-snippet.dto.ts";
+import type { GetUserSnippetsDtoType } from "./dto/get-user-snippets.dto.ts";
 import { StatusCodes } from "http-status-codes";
-import { ForkSnippetDtoType } from "./dto/fork-snippet.dto";
-import { GetSnippetDtoType } from "./dto/get-snippet.dto";
-import { DiscoverSnippetsDtoType } from "./dto/discover-snippets.dto";
-import { GetCollectionSnippetsDtoType } from "./dto/get-collection-snippets";
+import type { ForkSnippetDtoType } from "./dto/fork-snippet.dto.ts";
+import type { GetSnippetDtoType } from "./dto/get-snippet.dto.ts";
+import type { DiscoverSnippetsDtoType } from "./dto/discover-snippets.dto.ts";
+import type { GetCollectionSnippetsDtoType } from "./dto/get-collection-snippets.ts";
 import {
   CreateSnippetResDto,
   DiscoverSnippetsResDto,
@@ -20,8 +20,8 @@ import {
   GetSnippetsByCollectionResDto,
   GetUserSnippetsResDto,
   UpdateSnippetResDto,
-} from "./dto/response.dto";
-import { InternalServerError } from "../../common/lib/exception";
+} from "./dto/response.dto.ts";
+import { InternalServerError } from "../../common/lib/exception.ts";
 
 export class SnippetController {
   private readonly SnippetService: SnippetService;

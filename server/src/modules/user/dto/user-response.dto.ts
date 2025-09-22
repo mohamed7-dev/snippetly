@@ -1,8 +1,7 @@
 import z from "zod";
-import { SelectUserDto } from "./select-user.dto";
-import { SelectSnippetDto } from "../../snippet/dto/select-snippet.dto";
-import { SelectCollectionDto } from "../../collections/dto/select-collection.dto";
-import { SelectTagDto } from "../../tag/dto/select-tag.dto";
+import { SelectUserDto } from "./select-user.dto.ts";
+import { SelectCollectionDto } from "../../collections/dto/select-collection.dto.ts";
+import { SelectTagDto } from "../../tag/dto/select-tag.dto.ts";
 
 const CommonUserDto = SelectUserDto.omit({
   id: true,

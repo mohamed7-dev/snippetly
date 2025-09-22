@@ -1,6 +1,6 @@
-import morgan, { StreamOptions } from "morgan";
-import { LOG_FORMAT, NODE_ENV } from "../../config";
-import { ServerLogger } from "../logger";
+import morgan, { type StreamOptions } from "morgan";
+import { LOG_FORMAT } from "../../config/index.ts";
+import { ServerLogger } from "../logger/index.ts";
 
 const stream: StreamOptions = {
   write: (message: string) =>
@@ -10,7 +10,7 @@ const stream: StreamOptions = {
 };
 
 const skip = () => {
-  const env = NODE_ENV;
+  const env = process.env.NODE_ENV;
   return env !== "development";
 };
 

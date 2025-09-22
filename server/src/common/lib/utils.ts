@@ -1,11 +1,15 @@
 import {
   JWT_REFRESH_EXPIRES,
   JWT_REFRESH_REMEMBER_EXPIRES,
-  NODE_ENV,
-} from "../../config";
+} from "../../config/index.ts";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
 
-export const isDevelopment = NODE_ENV === "development";
-export const isProduction = NODE_ENV === "production";
+export const isDevelopment = process.env.NODE_ENV === "development";
+export const isProduction = process.env.NODE_ENV === "production";
+
+export const __filename = fileURLToPath(import.meta.url);
+export const __dirname = dirname(__filename);
 
 export function slugify(input: string): string {
   return input

@@ -1,5 +1,5 @@
-import { NextFunction, Request, Response } from "express";
-import { allowedOrigins } from "../lib/cors";
+import type { NextFunction, Request, Response } from "express";
+import { allowedOrigins } from "../lib/cors.ts";
 
 export function provideCredentialsMiddleware(
   req: Request,

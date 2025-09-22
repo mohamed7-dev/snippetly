@@ -1,9 +1,9 @@
-import { NextFunction, Request, Response } from "express";
-import { Interceptor } from "./interceptor.middleware";
-import { HttpException } from "../lib/exception";
+import type { NextFunction, Request, Response } from "express";
+import { Interceptor } from "./interceptor.middleware.ts";
+import { HttpException } from "../lib/exception.ts";
 import { StatusCodes } from "http-status-codes";
-import { ErrorLogger } from "../logger/utils";
-import { LogContextEnum } from "../logger/constants";
+import { ErrorLogger } from "../logger/utils.ts";
+import { LogContextEnum } from "../logger/constants.ts";
 
 export default class ErrorMiddleWare extends Interceptor {
   constructor(req: Request, res: Response, next: NextFunction) {

@@ -1,5 +1,5 @@
 import z from "zod";
-import { SignupDto } from "./signup.dto";
+import { SignupDto } from "./signup.dto.ts";
 
 export const LoginDto = SignupDto.pick({
   password: true,

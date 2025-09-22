@@ -8,20 +8,19 @@ import {
   or,
   sql,
 } from "drizzle-orm";
-import { Database } from "../../common/db";
+import { Database } from "../../common/db/index.ts";
 import {
   collectionsTable,
   collectionsTagsTable,
-  Snippet,
   snippetsTable,
-  Tags,
+  type Tags,
   tagsTable,
   usersTable,
-} from "../../common/db/schema";
-import {
+} from "../../common/db/schema.ts";
+import type {
   DiscoverCollectionsDtoType,
   FindCollectionsDtoType,
-} from "./dto/find-collection.dto";
+} from "./dto/find-collection.dto.ts";
 
 export class CollectionReadService {
   /**

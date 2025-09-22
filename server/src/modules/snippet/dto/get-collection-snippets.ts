@@ -1,5 +1,5 @@
 import z from "zod";
-import { SelectCollectionDto } from "../../collections/dto/select-collection.dto";
+import { SelectCollectionDto } from "../../collections/dto/select-collection.dto.ts";
 
 export const GetCollectionSnippetsDto = z.object({
   limit: z.number().min(1).max(100).optional(),

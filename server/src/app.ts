@@ -1,22 +1,27 @@
 import "dotenv/config";
-import express, { Application, Request } from "express";
-import { NODE_ENV, PORT } from "./config";
+import express, {
+  type Application,
+  type Request,
+  type Response,
+} from "express";
+import { PORT } from "./config/index.ts";
 import cors from "cors";
-import { morganMiddleware } from "./common/middlewares/morgan.middleware";
-import ErrorMiddleWare from "./common/middlewares/error.middleware";
-import { Route } from "./common/types/express";
-import { DefaultLogger } from "./common/logger/default-logger";
-import { Logger, ServerLogger } from "./common/logger";
-import { requestContextMiddleware } from "./common/middlewares/request-context-middleware";
+import { morganMiddleware } from "./common/middlewares/morgan.middleware.ts";
+import ErrorMiddleWare from "./common/middlewares/error.middleware.ts";
+import { type Route } from "./common/types/express.ts";
+import { DefaultLogger } from "./common/logger/default-logger.ts";
+import { Logger, ServerLogger } from "./common/logger/index.ts";
+import { requestContextMiddleware } from "./common/middlewares/request-context-middleware.ts";
 import cookieParser from "cookie-parser";
-import { corsOptions } from "./common/lib/cors";
-import { provideCredentialsMiddleware } from "./common/middlewares/provide-credentials.middleware";
-import { Database } from "./common/db";
-import { multerErrorMiddleware } from "./common/middlewares/multer-error-middleware";
+import { corsOptions } from "./common/lib/cors.ts";
+import { provideCredentialsMiddleware } from "./common/middlewares/provide-credentials.middleware.ts";
+import { Database } from "./common/db/index.ts";
+import { multerErrorMiddleware } from "./common/middlewares/multer-error-middleware.ts";
 import path from "path";
-import { notFoundErrorMiddleware } from "./common/middlewares/not-found-error-middleware";
+import { notFoundErrorMiddleware } from "./common/middlewares/not-found-error-middleware.ts";
 import { Server } from "http";
-
+import { StatusCodes } from "http-status-codes";
+import { __dirname } from "./common/lib/utils.ts";
 export class App {
   public app: Application;
   private server: null | Server;
@@ -35,7 +40,7 @@ export class App {
 
   public listen(): void {
     this.server = this.app.listen(this.port, () => {
-      ServerLogger.logStartup(Number(this.port), NODE_ENV);
+      ServerLogger.logStartup(Number(this.port), process.env.NODE_ENV!);
     });
     this.handleShutdown();
   }
@@ -56,6 +61,12 @@ export class App {
   }
 
   private initializeRoutes(routes: Route[]): void {
+    this.app.get("/", (_req: Request, res: Response) =>
+      res.status(StatusCodes.OK).json({
+        message:
+          "API is running, we are happy that you are exploring our application.",
+      })
+    );
     routes.forEach((route) => {
       this.app.use("/api/v1", route.router);
     });

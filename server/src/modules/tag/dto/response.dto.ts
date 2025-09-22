@@ -1,5 +1,5 @@
 import z from "zod";
-import { SelectTagDto } from "./select-tag.dto";
+import { SelectTagDto } from "./select-tag.dto.ts";
 
 export const GetPopularTagsResDto = z.array(
   SelectTagDto.pick({

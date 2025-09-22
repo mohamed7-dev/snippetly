@@ -1,7 +1,7 @@
 import z from "zod";
-import { SelectUserDto } from "../../user/dto/select-user.dto";
-import { SelectCollectionDto } from "./select-collection.dto";
-import { LIMIT_SCHEMA } from "../../../common/lib/zod";
+import { SelectUserDto } from "../../user/dto/select-user.dto.ts";
+import { SelectCollectionDto } from "./select-collection.dto.ts";
+import { LIMIT_SCHEMA } from "../../../common/lib/zod.ts";
 
 export const FindCollectionsDto = z.object({
   limit: LIMIT_SCHEMA,

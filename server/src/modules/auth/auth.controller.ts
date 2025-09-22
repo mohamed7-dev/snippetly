@@ -1,18 +1,18 @@
-import { Request, Response } from "express";
-import { AuthService } from "./auth.service";
+import type { Request, Response } from "express";
+import { AuthService } from "./auth.service.ts";
 import { StatusCodes } from "http-status-codes";
-import { LoginDtoType } from "./dto/login.dto";
-import { SignupDtoType } from "./dto/signup.dto";
+import type { LoginDtoType } from "./dto/login.dto.ts";
+import type { SignupDtoType } from "./dto/signup.dto.ts";
 import {
   LoginResponseDto,
   RefreshTokenResDto,
   SignupResponseDto,
-} from "./dto/response.dto";
-import { InternalServerError } from "../../common/lib/exception";
-import { ResetPasswordDtoType } from "./dto/reset-password.dto";
-import { SendVEmailDtoType } from "./dto/send-v-email.dto";
-import { SendREmailDtoType } from "./dto/send-r-email.dto";
-import { VerifyTokenDtoType } from "./dto/verify-token.dto";
+} from "./dto/response.dto.ts";
+import { InternalServerError } from "../../common/lib/exception.ts";
+import type { ResetPasswordDtoType } from "./dto/reset-password.dto.ts";
+import type { SendVEmailDtoType } from "./dto/send-v-email.dto.ts";
+import type { SendREmailDtoType } from "./dto/send-r-email.dto.ts";
+import type { VerifyTokenDtoType } from "./dto/verify-token.dto.ts";
 
 export class AuthController {
   private readonly AuthService: AuthService;

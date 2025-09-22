@@ -1,15 +1,11 @@
-import { and, desc, eq, getTableColumns, or, sql } from "drizzle-orm";
-import { Database } from "../../common/db";
+import { eq } from "drizzle-orm";
+import { Database } from "../../common/db/index.ts";
 import {
   collectionsTable,
-  collectionsTagsTable,
-  NewCollection,
+  type NewCollection,
   snippetsTable,
-  Tags,
-  tagsTable,
-  usersTable,
-} from "../../common/db/schema";
-import { alias } from "drizzle-orm/pg-core";
+  type Tags,
+} from "../../common/db/schema.ts";
 
 export class CollectionRepository {
   public async insert(input: NewCollection[]) {

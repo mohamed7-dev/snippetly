@@ -1,0 +1,30 @@
+{
+  "exclude": "node_modules/",
+  "jsc": {
+    "parser": {
+      "syntax": "typescript",
+      "topLevelAwait": true
+    },
+    "target": "esnext",
+    "experimental": {
+      "plugins": [
+        [
+          "@swc/plugin-transform-imports",
+          {
+            "^(.*?)(\\.ts)$": {
+              "skipDefaultConversion": true,
+              "transform": "{{matches.[1]}}.js"
+            },
+            "^(.*?)(index.ts)$": {
+              "skipDefaultConversion": true,
+              "transform": "{{matches.[1]}}/index.js"
+            }
+          }
+        ]
+      ]
+    }
+  },
+  "module": {
+    "type": "nodenext"
+  }
+}

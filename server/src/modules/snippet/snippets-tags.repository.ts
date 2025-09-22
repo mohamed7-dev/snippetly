@@ -1,11 +1,11 @@
 import { and, eq, inArray } from "drizzle-orm";
-import { Database } from "../../common/db";
-import {
+import { Database } from "../../common/db/index.ts";
+import { snippetsTagsTable } from "../../common/db/schema.ts";
+import type {
   CollectionTag,
   NewSnippetsTags,
   SnippetsTags,
-  snippetsTagsTable,
-} from "../../common/db/schema";
+} from "../../common/db/schema.ts";
 
 export class SnippetsTagsRepository {
   async insert(input: NewSnippetsTags[]) {

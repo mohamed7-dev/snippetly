@@ -1,6 +1,6 @@
 import z from "zod";
-import { SelectTagDto } from "../../tag/dto/select-tag.dto";
-import { SelectCollectionDto } from "./select-collection.dto";
+import { SelectTagDto } from "../../tag/dto/select-tag.dto.ts";
+import { SelectCollectionDto } from "./select-collection.dto.ts";
 
 export const CreateCollectionDto = SelectCollectionDto.pick({
   title: true,

@@ -9,16 +9,16 @@ import {
   or,
   sql,
 } from "drizzle-orm";
-import { Database } from "../../common/db";
+import { Database } from "../../common/db/index.ts";
 import {
   collectionsTable,
   friendshipsTable,
   snippetsTable,
-  Tags,
+  type Tags,
   tagsTable,
   usersTable,
-} from "../../common/db/schema";
-import { DiscoverUsersDtoType } from "./dto/discover-users.dto";
+} from "../../common/db/schema.ts";
+import { type DiscoverUsersDtoType } from "./dto/discover-users.dto.ts";
 
 export class UserReadService {
   /**

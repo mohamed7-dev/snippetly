@@ -1,19 +1,18 @@
 import { StatusCodes } from "http-status-codes";
-import { HttpException } from "../../common/lib/exception";
-import { CreateUserDtoType } from "./dto/create-user.dto";
-import { UpdateUserDtoType } from "./dto/update-user.dto";
-import { PasswordHashService } from "../auth/password-hash.service";
-import { UpdateUserPasswordDtoType } from "./dto/update-password.dto";
-import { DEFAULT_FIND_USERS_LIMIT } from "./constants";
-import { handleCursorPagination } from "../../common/lib/utils";
-import { UserReadService } from "./user-read.service";
-import { UserRepository } from "./user.repository";
-import { DiscoverUsersDtoType } from "./dto/discover-users.dto";
-import { RequestContext } from "../../common/middlewares/request-context-middleware";
-import { NonNullableFields } from "../../common/types/utils";
-import { GetUserDtoType } from "./dto/get-user.dto";
-import { User } from "../../common/db/schema";
-import { Multer } from "multer";
+import { HttpException } from "../../common/lib/exception.ts";
+import type { CreateUserDtoType } from "./dto/create-user.dto.ts";
+import type { UpdateUserDtoType } from "./dto/update-user.dto.ts";
+import { PasswordHashService } from "../auth/password-hash.service.ts";
+import type { UpdateUserPasswordDtoType } from "./dto/update-password.dto.ts";
+import { DEFAULT_FIND_USERS_LIMIT } from "./constants.ts";
+import { handleCursorPagination } from "../../common/lib/utils.ts";
+import { UserReadService } from "./user-read.service.ts";
+import { UserRepository } from "./user.repository.ts";
+import type { DiscoverUsersDtoType } from "./dto/discover-users.dto.ts";
+import type { RequestContext } from "../../common/middlewares/request-context-middleware.ts";
+import type { NonNullableFields } from "../../common/types/utils.ts";
+import type { GetUserDtoType } from "./dto/get-user.dto.ts";
+import type { User } from "../../common/db/schema.ts";
 
 export class UserService {
   private readonly PasswordHashService: PasswordHashService;

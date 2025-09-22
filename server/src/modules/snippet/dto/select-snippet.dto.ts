@@ -1,6 +1,6 @@
 import z from "zod";
 import { createSelectSchema } from "drizzle-zod";
-import { snippetsTable } from "../../../common/db/schema";
+import { snippetsTable } from "../../../common/db/schema.ts";
 
 export const SelectSnippetDto = createSelectSchema(snippetsTable);
 

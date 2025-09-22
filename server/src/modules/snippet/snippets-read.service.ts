@@ -8,19 +8,19 @@ import {
   or,
   sql,
 } from "drizzle-orm";
-import { Database } from "../../common/db";
+import { Database } from "../../common/db/index.ts";
 import {
   collectionsTable,
   friendshipsTable,
   snippetsTable,
   snippetsTagsTable,
-  Tags,
+  type Tags,
   tagsTable,
   usersTable,
-} from "../../common/db/schema";
-import { DiscoverSnippetsDtoType } from "./dto/discover-snippets.dto";
-import { GetUserSnippetsDtoType } from "./dto/get-user-snippets.dto";
-import { GetCollectionSnippetsDtoType } from "./dto/get-collection-snippets";
+} from "../../common/db/schema.ts";
+import type { DiscoverSnippetsDtoType } from "./dto/discover-snippets.dto.ts";
+import type { GetUserSnippetsDtoType } from "./dto/get-user-snippets.dto.ts";
+import type { GetCollectionSnippetsDtoType } from "./dto/get-collection-snippets.ts";
 
 export class SnippetsReadService {
   async findOneSlim(by: "slug" | "id", value: string | number) {

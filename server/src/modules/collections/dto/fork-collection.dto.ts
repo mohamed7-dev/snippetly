@@ -1,5 +1,5 @@
 import z from "zod";
-import { SelectCollectionDto } from "./select-collection.dto";
+import { SelectCollectionDto } from "./select-collection.dto.ts";
 
 export const ForkCollectionDto = z.object({
   slug: SelectCollectionDto.shape.slug,

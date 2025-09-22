@@ -1,6 +1,6 @@
 import { desc, inArray } from "drizzle-orm";
-import { Database } from "../../common/db";
-import { tagsTable } from "../../common/db/schema";
+import { Database } from "../../common/db/index.ts";
+import { tagsTable } from "../../common/db/schema.ts";
 
 export class TagReadService {
   async findTagsByNames(names: string[]) {

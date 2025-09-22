@@ -1,11 +1,11 @@
-import { Request, Response } from "express";
-import { UserService } from "./user.service";
-import { UpdateUserDtoType } from "./dto/update-user.dto";
-import { InternalServerError } from "../../common/lib/exception";
-import { AuthService } from "../auth/auth.service";
+import type { Request, Response } from "express";
+import { UserService } from "./user.service.ts";
+import type { UpdateUserDtoType } from "./dto/update-user.dto.ts";
+import { InternalServerError } from "../../common/lib/exception.ts";
+import { AuthService } from "../auth/auth.service.ts";
 import { StatusCodes } from "http-status-codes";
-import { GetUserDtoType } from "./dto/get-user.dto";
-import { DiscoverUsersDtoType } from "./dto/discover-users.dto";
+import type { GetUserDtoType } from "./dto/get-user.dto.ts";
+import type { DiscoverUsersDtoType } from "./dto/discover-users.dto.ts";
 import {
   GetCurrentUserProfileResDto,
   GetPublicUserProfileResDto,
@@ -13,8 +13,8 @@ import {
   UpdateUserResDto,
   GetCurrentUserDashboardDto,
   DiscoverUsersDto,
-} from "./dto/user-response.dto";
-import { APP_URL } from "../../config";
+} from "./dto/user-response.dto.ts";
+import { APP_URL } from "../../config/index.ts";
 
 export class UserController {
   private readonly UserService: UserService;

@@ -1,7 +1,7 @@
 import z from "zod";
-import { SelectFriendshipDto } from "./select-friendship.dto";
-import { SelectUserDto } from "./select-user.dto";
-import { SelectSnippetDto } from "../../snippet/dto/select-snippet.dto";
+import { SelectFriendshipDto } from "./select-friendship.dto.ts";
+import { SelectUserDto } from "./select-user.dto.ts";
+import { SelectSnippetDto } from "../../snippet/dto/select-snippet.dto.ts";
 
 export const CommonDto = SelectFriendshipDto.omit({
   updatedAt: true,

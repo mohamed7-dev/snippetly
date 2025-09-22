@@ -2,18 +2,17 @@ import jwt from "jsonwebtoken";
 import {
   ACCESS_JWTOKEN_SECRET,
   JWT_ACCESS_EXPIRES,
-  JWT_REFRESH_EXPIRES,
   REFRESH_JWTOKEN_SECRET,
-} from "../../config";
-import { HttpException } from "../../common/lib/exception";
+} from "../../config/index.ts";
+import { HttpException } from "../../common/lib/exception.ts";
 import { StatusCodes } from "http-status-codes";
-import { TOKEN_EXPIRES } from "./constants";
+import { TOKEN_EXPIRES } from "./constants.ts";
 import crypto from "crypto";
-import { Request } from "express";
-import { UserReadService } from "../user/user-read.service";
-import { UserRepository } from "../user/user.repository";
-import { getRefreshTokenExpires } from "../../common/lib/utils";
-import { User } from "../../common/db/schema";
+import type { Request } from "express";
+import { UserReadService } from "../user/user-read.service.ts";
+import { UserRepository } from "../user/user.repository.ts";
+import { getRefreshTokenExpires } from "../../common/lib/utils.ts";
+import type { User } from "../../common/db/schema.ts";
 
 export type JWTPayload = Request["context"]["user"];
 

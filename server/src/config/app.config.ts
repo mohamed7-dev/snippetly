@@ -1,11 +1,11 @@
 import { StatusCodes } from "http-status-codes";
-import { HttpException } from "../common/lib/exception";
-import { isDevelopment } from "../common/lib/utils";
+import { HttpException } from "../common/lib/exception.ts";
+import { isDevelopment } from "../common/lib/utils.ts";
 
 export const APP_NAME = "Snippetly";
 export const APP_URL = process.env.BASE_URL || "http://localhost:3000";
 export const PORT = process.env.PORT || 3010;
-export const NODE_ENV = process.env.NODE_ENV || "development";
+
 export const CLIENTS_URLS = {
   react: process.env.REACT_CLIENT_APP_URL,
   reactEmailVerification: process.env.REACT_EMAIL_VERIFICATION_URL,

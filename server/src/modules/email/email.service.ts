@@ -1,6 +1,6 @@
-import { APP_NAME } from "../../config";
-import { transporter } from "../../config/nodemailer.config";
-import { readTemplate } from "./lib/utils";
+import { APP_NAME } from "../../config/index.ts";
+import { transporter } from "../../config/nodemailer.config.ts";
+import { readTemplate } from "./lib/utils.ts";
 
 export class EmailService {
   static async sendVerificationEmail({

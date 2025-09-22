@@ -1,6 +1,9 @@
 import { eq } from "drizzle-orm";
-import { Database } from "../../common/db";
-import { friendshipsTable, NewFriendship } from "../../common/db/schema";
+import { Database } from "../../common/db/index.ts";
+import {
+  friendshipsTable,
+  type NewFriendship,
+} from "../../common/db/schema.ts";
 
 export class FriendshipRepository {
   public async insertFriendship(input: NewFriendship[]) {

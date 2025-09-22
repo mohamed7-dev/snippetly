@@ -1,33 +1,32 @@
 import { StatusCodes } from "http-status-codes";
-import { HttpException } from "../../common/lib/exception";
-import { UpdateCollectionDtoType } from "./dto/update-collection.dto";
+import { HttpException } from "../../common/lib/exception.ts";
+import type { UpdateCollectionDtoType } from "./dto/update-collection.dto.ts";
 import {
   generateUniquePrefix,
   handleCursorPagination,
   slugify,
-} from "../../common/lib/utils";
-import { DeleteCollectionDtoType } from "./dto/delete-collection.dto";
-import { TagService } from "../tag/tag.service";
+} from "../../common/lib/utils.ts";
+import type { DeleteCollectionDtoType } from "./dto/delete-collection.dto.ts";
+import { TagService } from "../tag/tag.service.ts";
 import {
   DISCOVER_FOLDERS_DEFAULT_LIMIT,
   FIND_FOLDERS_DEFAULT_LIMIT,
-} from "./constants";
-import { ForkCollectionDtoType } from "./dto/fork-collection.dto";
-import { CollectionRepository } from "./collection.repository";
-import { CollectionsTagsRepository } from "./collections-tags-repository";
-import { CreateCollectionDtoType } from "./dto/create-collection.dto";
-import { NonNullableFields } from "../../common/types/utils";
-import { TagReadService } from "../tag/tag-read.service";
-import { CollectionReadService } from "./collection-read.service";
-import {
+} from "./constants.ts";
+import type { ForkCollectionDtoType } from "./dto/fork-collection.dto.ts";
+import { CollectionRepository } from "./collection.repository.ts";
+import { CollectionsTagsRepository } from "./collections-tags-repository.ts";
+import type { CreateCollectionDtoType } from "./dto/create-collection.dto.ts";
+import type { NonNullableFields } from "../../common/types/utils.ts";
+import { TagReadService } from "../tag/tag-read.service.ts";
+import { CollectionReadService } from "./collection-read.service.ts";
+import type {
   DiscoverCollectionsDtoType,
   FindCollectionDtoType,
   FindCollectionsDtoType,
-} from "./dto/find-collection.dto";
-import { UserReadService } from "../user/user-read.service";
-import { RequestContext } from "../../common/middlewares/request-context-middleware";
-import { Tags, User } from "../../common/db/schema";
-import { sl } from "zod/locales";
+} from "./dto/find-collection.dto.ts";
+import { UserReadService } from "../user/user-read.service.ts";
+import type { RequestContext } from "../../common/middlewares/request-context-middleware.ts";
+import type { Tags, User } from "../../common/db/schema.ts";
 
 export class CollectionService {
   private readonly UserReadService: UserReadService;
