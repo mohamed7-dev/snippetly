@@ -14,6 +14,7 @@ import {
   GetCurrentUserDashboardDto,
   DiscoverUsersDto,
 } from "./dto/user-response.dto";
+import { APP_URL } from "../../config";
 
 export class UserController {
   private readonly UserService: UserService;
@@ -30,9 +31,7 @@ export class UserController {
   ) => {
     const updatedUser = await this.UserService.update(req.context, {
       ...req.body,
-      image: req.file
-        ? `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`
-        : undefined,
+      image: req.file ? `${APP_URL}/uploads/${req.file.filename}` : undefined,
     });
 
     const { success, data: parsedData } =

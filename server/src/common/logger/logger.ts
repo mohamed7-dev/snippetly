@@ -6,15 +6,10 @@ import { LogContext } from "./constants";
  * This class is responsible for handling all the logging throughout the application.
  **/
 export class Logger {
-  private static _instance: typeof Logger = Logger;
   private static _logger: AppLogger;
 
   static get logger(): AppLogger {
     return this._logger;
-  }
-
-  private get instance(): typeof Logger {
-    return Logger._instance;
   }
 
   /** @internal */

@@ -132,7 +132,8 @@ export class UserRoute implements Route {
     };
     const storage = multer.diskStorage({
       destination: (_req, _file, cb) => {
-        cb(null, path.join(__dirname, "..", "..", "uploads")); // save locally in uploads/
+        // public is used here to server static assets from vercel
+        cb(null, path.join(process.cwd(), "public", "uploads")); // save locally in uploads/
       },
       filename: (_req, file, cb) => {
         const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);

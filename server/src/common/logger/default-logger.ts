@@ -20,7 +20,9 @@ export class DefaultLogger implements AppLogger {
     month: "numeric",
   } as const;
   private static fileStream: fs.WriteStream | null = null;
-  private static isProduction = process.env.NODE_ENV === "production";
+  // log files functionality is not useful on vercel so i decided to leave
+  // it here, but not using it
+  private static isProduction = false;
   private static currentLogDate: string | null = null;
 
   constructor() {

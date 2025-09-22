@@ -146,7 +146,7 @@ export class ServerLogger {
    * Log route registration
    */
   static logRouteRegistration(method: string, path: string, handler: string) {
-    Logger.debug(
+    Logger.info(
       `Route registered: ${method.toUpperCase()} ${path} -> ${handler}`
     );
   }
