@@ -1,0 +1,247 @@
+import { StatusCodes } from "http-status-codes";
+import { HttpException } from "../../common/lib/exception.js";
+import { generateUniquePrefix } from "../../common/lib/utils.js";
+import { handleCursorPagination } from "../../common/lib/utils.js";
+import { slugify } from "../../common/lib/utils.js";
+import { TagService } from "../tag/tag.service.js";
+import { DISCOVER_FOLDERS_DEFAULT_LIMIT } from "./constants.js";
+import { FIND_FOLDERS_DEFAULT_LIMIT } from "./constants.js";
+import { CollectionRepository } from "./collection.repository.js";
+import { CollectionsTagsRepository } from "./collections-tags-repository.js";
+import { TagReadService } from "../tag/tag-read.service.js";
+import { CollectionReadService } from "./collection-read.service.js";
+import { UserReadService } from "../user/user-read.service.js";
+export class CollectionService {
+    UserReadService;
+    TagService;
+    TagReadService;
+    CollectionRepository;
+    CollectionReadService;
+    CollectionsTagsRepository;
+    constructor(){
+        this.UserReadService = new UserReadService();
+        this.TagService = new TagService();
+        this.TagReadService = new TagReadService();
+        this.CollectionRepository = new CollectionRepository();
+        this.CollectionReadService = new CollectionReadService();
+        this.CollectionsTagsRepository = new CollectionsTagsRepository();
+    }
+    async create(ctx, input) {
+        const { title, tags, forkedFrom, ...rest } = input;
+        const prefix = generateUniquePrefix();
+        const [newCollection] = await this.CollectionRepository.insert([
+            {
+                ...rest,
+                title,
+                slug: prefix.concat("-", slugify(title)),
+                creatorId: ctx.user.id,
+                ...forkedFrom ? {
+                    forkedFrom
+                } : {}
+            }
+        ]);
+        if (tags && tags.length) {
+            const tagDocs = await this.TagService.ensureTagsExistence(tags, ctx.user.id);
+            await this.CollectionsTagsRepository.insert(tagDocs.map((tag)=>({
+                    tagId: tag.id,
+                    collectionId: newCollection.id
+                })));
+        }
+        // get user name from the session
+        return {
+            ...newCollection,
+            creatorName: ctx.user.name
+        };
+    }
+    async update(ctx, input) {
+        const { data, slug } = input;
+        const foundCollection = await this.CollectionReadService.findOneSlimWithCreator("slug", slug);
+        if (!foundCollection) {
+            return await this.getCollectionByOldSlugAndRedirect(slug);
+        }
+        const userId = ctx.user.id;
+        if (!foundCollection || foundCollection.creatorId !== userId) {
+            throw new HttpException(StatusCodes.NOT_FOUND, "Collection not found.");
+        }
+        const { addTags, removeTags, title, ...rest } = data;
+        if (addTags && addTags.length) {
+            const tagDocs = await this.TagService.ensureTagsExistence(addTags, ctx.user.id);
+            await this.CollectionsTagsRepository.insert(tagDocs.map((tag)=>({
+                    tagId: tag.id,
+                    collectionId: foundCollection.id
+                })));
+        }
+        if (removeTags && removeTags.length) {
+            await this.removeCollectionTags(removeTags, foundCollection.id);
+        }
+        let updatedSlug;
+        let oldSlugs = foundCollection.oldSlugs;
+        if (title) {
+            const fixedPart = foundCollection.slug.split("-")[0];
+            updatedSlug = fixedPart.concat("-", slugify(title));
+            const foundOldSlug = oldSlugs.find((os)=>os === foundCollection.slug);
+            if (!foundOldSlug) {
+                oldSlugs.push(foundCollection.slug);
+            }
+        }
+        // un-comment to enable redirection
+        const [updatedCollection] = await this.CollectionRepository.update(foundCollection.id, {
+            ...rest,
+            title
+        });
+        return {
+            ...updatedCollection,
+            creatorName: foundCollection.creator.name
+        };
+    }
+    async fork(ctx, input) {
+        const { slug } = input;
+        const foundCollection = await this.CollectionReadService.findOneSlim("slug", slug);
+        if (!foundCollection) {
+            return await this.getCollectionByOldSlugAndRedirect(slug);
+        }
+        if (!foundCollection) {
+            throw new HttpException(StatusCodes.NOT_FOUND, `Collection not found.`);
+        }
+        if (!foundCollection.allowForking) {
+            throw new HttpException(StatusCodes.FORBIDDEN, `Forking ${foundCollection.title} is not allowed.`);
+        }
+        const userId = ctx.user.id;
+        if (foundCollection.creatorId === userId) {
+            throw new HttpException(StatusCodes.CONFLICT, `Collection ${foundCollection.title} is already in your collections list.`);
+        }
+        const fullCollection = await this.CollectionRepository.findOne("id", foundCollection.id, true);
+        const { title, description, color, isPrivate, allowForking, tags } = fullCollection;
+        // TODO: assign public snippets in the original collection to
+        // the new Collection
+        const newCollection = await this.create(ctx, {
+            title,
+            description,
+            color,
+            isPrivate,
+            allowForking,
+            tags: tags.map((tag)=>tag.name),
+            forkedFrom: fullCollection.id
+        });
+        return {
+            ...newCollection,
+            forkedFrom: fullCollection.id,
+            // name comes from session when fetching user info
+            creatorName: ""
+        };
+    }
+    async delete(ctx, input) {
+        const foundCollection = await this.CollectionReadService.findOneSlim("slug", input.slug);
+        if (!foundCollection) {
+            return await this.getCollectionByOldSlugAndRedirect(input.slug);
+        }
+        const userId = ctx.user.id;
+        if (!foundCollection || foundCollection.creatorId !== userId) {
+            throw new HttpException(StatusCodes.NOT_FOUND, "Collection not found.");
+        }
+        await this.CollectionRepository.delete(foundCollection.id);
+        return foundCollection;
+    }
+    async discover(_ctx, input) {
+        const { limit } = input;
+        const defaultLimit = limit ?? DISCOVER_FOLDERS_DEFAULT_LIMIT;
+        const { data, total } = await this.CollectionReadService.discover({
+            ...input,
+            limit: defaultLimit
+        });
+        const { nextCursor, data: paginatedData } = handleCursorPagination({
+            data: data,
+            limit: defaultLimit
+        });
+        return {
+            items: paginatedData,
+            nextCursor: nextCursor ? {
+                updatedAt: nextCursor.updatedAt
+            } : null,
+            total
+        };
+    }
+    async findCurrentUserCollections(ctx, input) {
+        const foundUser = await this.UserReadService.findOneSlim("id", ctx.user.id);
+        const data = await this.find(ctx, {
+            user: foundUser,
+            ...input
+        });
+        return data;
+    }
+    async find(ctx, input) {
+        const { limit, creatorName, user } = input;
+        const defaultLimit = limit ?? FIND_FOLDERS_DEFAULT_LIMIT;
+        const checkUserExists = user ? false : true;
+        let foundUser = user ? user : null;
+        if (checkUserExists && creatorName) {
+            foundUser = await this.UserReadService.findOneSlim("name", creatorName) ?? null;
+            if (!foundUser) {
+                foundUser = await this.UserReadService.findOneByOldNames(creatorName) ?? null;
+                if (!foundUser) {
+                    throw new HttpException(StatusCodes.NOT_FOUND, `User not found.`);
+                }
+                return {
+                    redirect: true,
+                    name: foundUser.name
+                };
+            }
+        }
+        if (!foundUser) {
+            throw new HttpException(StatusCodes.NOT_FOUND, `User not found.`);
+        }
+        const isCurrentUserOwner = ctx?.user?.id === foundUser.id;
+        const { data, total } = await this.CollectionReadService.findUserCollections({
+            ...input,
+            limit: defaultLimit
+        }, foundUser.id, isCurrentUserOwner);
+        const stats = await this.CollectionReadService.getUserCollectionsStats(foundUser.id);
+        const { nextCursor, data: paginatedData } = handleCursorPagination({
+            data,
+            limit: defaultLimit
+        });
+        return {
+            items: paginatedData,
+            nextCursor: nextCursor ? {
+                updatedAt: nextCursor.updatedAt
+            } : null,
+            stats,
+            total
+        };
+    }
+    async findOne(ctx, input) {
+        let foundCollection = await this.CollectionReadService.findOneSlim("slug", input.slug);
+        if (!foundCollection) {
+            return await this.getCollectionByOldSlugAndRedirect(input.slug);
+        }
+        if (!foundCollection) {
+            throw new HttpException(StatusCodes.NOT_FOUND, "Collection not found.");
+        }
+        const isOwner = ctx.user?.id === foundCollection.creatorId;
+        const fullCollection = await this.CollectionRepository.findOne("id", foundCollection.id, isOwner);
+        if (!fullCollection) {
+            throw new HttpException(StatusCodes.NOT_FOUND, "Collection not found.");
+        }
+        return fullCollection;
+    }
+    async removeCollectionTags(names, collectionId) {
+        const normalized = names.map((n)=>n.trim().toLowerCase());
+        const tagsToRemove = await this.TagReadService.findTagsByNames(normalized);
+        const tagIds = tagsToRemove.map((t)=>t.id);
+        if (tagIds.length === 0) return; // nothing to remove
+        await this.CollectionsTagsRepository.delete({
+            collectionId,
+            tagIds
+        });
+    }
+    async getCollectionByOldSlugAndRedirect(slug) {
+        const foundCollectionWithOldSlug = await this.CollectionReadService.findOneSlimByOldSlug(slug);
+        if (!foundCollectionWithOldSlug) {
+            throw new HttpException(StatusCodes.NOT_FOUND, "Collection not found.");
+        }
+        return {
+            redirect: true,
+            slug: foundCollectionWithOldSlug.slug
+        };
+    }
+}
