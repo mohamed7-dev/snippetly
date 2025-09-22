@@ -13,6 +13,7 @@ import multer, { type FileFilterCallback } from "multer";
 import path from "path";
 import { HttpException } from "../../common/lib/exception.ts";
 import { StatusCodes } from "http-status-codes";
+import { __dirname } from "../../common/lib/utils.ts";
 
 export class UserRoute implements Route {
   public path: string = "/users";
@@ -134,7 +135,7 @@ export class UserRoute implements Route {
       destination: (_req, _file, cb) => {
         console.log(path.join(process.cwd(), "public", "uploads"));
         // public is used here to server static assets from vercel
-        cb(null, path.join(process.cwd(), "public", "uploads")); // save locally in uploads/
+        cb(null, path.join(__dirname, "..", "..", "..", "public", "uploads")); // save locally in uploads/
       },
       filename: (_req, file, cb) => {
         const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
