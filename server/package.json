@@ -4,8 +4,8 @@
   "description": "",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc --noEmit",
-    "start": "node --env-file=.env.production dist/index.js",
+    "build": "tsc ",
+    "start": "node --env-file=.env dist/index.js",
     "dev": "NODE_ENV=development tsx watch --tsconfig ./tsconfig.json --env-file=.env src/index.ts",
     "db:generate": "npx drizzle-kit generate --config=./src/config/drizzle.config.ts",
     "db:push": "npx drizzle-kit push --config=./src/config/drizzle.config.ts",

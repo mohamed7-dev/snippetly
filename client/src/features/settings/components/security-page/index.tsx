@@ -1,3 +1,4 @@
+import { DeleteAccountSettings } from './delete-account-settings'
 import { EmailSettings } from './email-settings'
 import { MainContentHeader } from './main-content-header'
 import { PasswordSettings } from './password-settings'
@@ -8,6 +9,7 @@ export function SecurityPage() {
       <MainContentHeader />
       <EmailSettings />
       <PasswordSettings />
+      <DeleteAccountSettings />
     </div>
   )
 }

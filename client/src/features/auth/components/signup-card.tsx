@@ -50,10 +50,10 @@ export function SignupCard() {
       firstName: '',
       email: '',
       password: '',
-      acceptedPolicies: false,
       isPrivate: false,
     },
     resolver: zodResolver(signupSchema),
+    reValidateMode: 'onBlur',
   })
   const {
     mutateAsync: signup,

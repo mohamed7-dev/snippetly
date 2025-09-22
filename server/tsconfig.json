@@ -23,7 +23,11 @@
     "emitDecoratorMetadata": true,
 
     "types": ["node", "express"],
-    "typeRoots": ["./src/common/types", "./node_modules/@types"]
+    "typeRoots": ["./src/common/types", "./node_modules/@types"],
+
+    "skipLibCheck": true,
+
+    "outDir": "./dist"
   },
   "include": ["src", "./src/common/types"]
 }

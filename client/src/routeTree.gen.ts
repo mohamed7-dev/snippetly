@@ -12,6 +12,7 @@ import { createFileRoute } from '@tanstack/react-router'
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as publicIndexRouteImport } from './routes/(public)/index'
+import { Route as publicGoodbyeRouteImport } from './routes/(public)/goodbye'
 import { Route as protectedDashboardRouteRouteImport } from './routes/(protected)/dashboard/route'
 import { Route as publicProfileNameRouteRouteImport } from './routes/(public)/profile/$name/route'
 import { Route as protectedDashboardSettingsRouteRouteImport } from './routes/(protected)/dashboard/settings/route'
@@ -51,6 +52,11 @@ const authauthLayoutRoute = authauthLayoutRouteImport.update({
 const publicIndexRoute = publicIndexRouteImport.update({
   id: '/(public)/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const publicGoodbyeRoute = publicGoodbyeRouteImport.update({
+  id: '/(public)/goodbye',
+  path: '/goodbye',
   getParentRoute: () => rootRouteImport,
 } as any)
 const protectedDashboardRouteRoute = protectedDashboardRouteRouteImport.update({
@@ -229,6 +235,7 @@ const protectedDashboardDashboardLayoutErrorBoundaryCollectionsIndexRoute =
 
 export interface FileRoutesByFullPath {
   '/dashboard': typeof protectedDashboardDashboardLayoutErrorBoundaryRouteRouteWithChildren
+  '/goodbye': typeof publicGoodbyeRoute
   '/': typeof authauthLayoutAuthLayoutRouteRouteWithChildren
   '/dashboard/friends': typeof protectedDashboardFriendsRouteRoute
   '/dashboard/settings': typeof protectedDashboardSettingsRouteRouteWithChildren
@@ -257,6 +264,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/dashboard': typeof protectedDashboardDashboardLayoutErrorBoundaryIndexRoute
+  '/goodbye': typeof publicGoodbyeRoute
   '/': typeof authauthLayoutAuthLayoutRouteRouteWithChildren
   '/dashboard/friends': typeof protectedDashboardFriendsRouteRoute
   '/dashboard/settings': typeof protectedDashboardSettingsRouteRouteWithChildren
@@ -283,6 +291,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/(protected)/dashboard': typeof protectedDashboardRouteRouteWithChildren
+  '/(public)/goodbye': typeof publicGoodbyeRoute
   '/(public)/': typeof publicIndexRoute
   '/(auth)/(auth-layout)': typeof authauthLayoutRouteWithChildren
   '/(auth)/(auth-layout)/_auth-layout': typeof authauthLayoutAuthLayoutRouteRouteWithChildren
@@ -317,6 +326,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/dashboard'
+    | '/goodbye'
     | '/'
     | '/dashboard/friends'
     | '/dashboard/settings'
@@ -345,6 +355,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/dashboard'
+    | '/goodbye'
     | '/'
     | '/dashboard/friends'
     | '/dashboard/settings'
@@ -370,6 +381,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/(protected)/dashboard'
+    | '/(public)/goodbye'
     | '/(public)/'
     | '/(auth)/(auth-layout)'
     | '/(auth)/(auth-layout)/_auth-layout'
@@ -403,6 +415,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   protectedDashboardRouteRoute: typeof protectedDashboardRouteRouteWithChildren
+  publicGoodbyeRoute: typeof publicGoodbyeRoute
   publicIndexRoute: typeof publicIndexRoute
   authauthLayoutRoute: typeof authauthLayoutRouteWithChildren
   publicProfileNameRouteRoute: typeof publicProfileNameRouteRoute
@@ -422,6 +435,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof publicIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(public)/goodbye': {
+      id: '/(public)/goodbye'
+      path: '/goodbye'
+      fullPath: '/goodbye'
+      preLoaderRoute: typeof publicGoodbyeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/(protected)/dashboard': {
@@ -793,6 +813,7 @@ const authauthLayoutRouteWithChildren = authauthLayoutRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   protectedDashboardRouteRoute: protectedDashboardRouteRouteWithChildren,
+  publicGoodbyeRoute: publicGoodbyeRoute,
   publicIndexRoute: publicIndexRoute,
   authauthLayoutRoute: authauthLayoutRouteWithChildren,
   publicProfileNameRouteRoute: publicProfileNameRouteRoute,

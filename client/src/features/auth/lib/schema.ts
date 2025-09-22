@@ -1,8 +1,17 @@
 import { STRONG_PASSWORD_SCHEMA } from '@/lib/zod'
 import { z } from 'zod'
 
+export const nameSchema = z
+  .string()
+  .trim()
+  .min(1, { message: 'Name is required' })
+  .regex(/^[A-Za-z0-9]+(?:[-_][A-Za-z0-9]+)*$/, {
+    message:
+      "Name can only contain letters, numbers, and use '-' or '_' as separators",
+  })
+
 const commonSchema = z.object({
-  name: z.string().nonempty().trim().min(1, 'User name is required.'),
+  name: nameSchema,
   password: STRONG_PASSWORD_SCHEMA,
 })
 
@@ -13,7 +22,9 @@ export const signupSchema = z
     firstName: z.string().nonempty().min(1, 'First name is required.'),
     lastName: z.string().nonempty().min(1, 'Last name is required.'),
     email: z.string().email(),
-    acceptedPolicies: z.boolean(),
+    acceptedPolicies: z.boolean().refine((val) => val === true, {
+      message: 'You must accept the terms of service',
+    }),
     isPrivate: z.boolean(),
   })
   .extend(commonSchema.shape)

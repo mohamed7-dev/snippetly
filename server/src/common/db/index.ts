@@ -21,7 +21,7 @@ export class Database {
   }
 
   static async connect() {
-    const sql = neon(DATABASE_URL);
+    const sql = neon(DATABASE_URL!);
     const db = drizzle({ client: sql, schema });
     this.db = db;
     DatabaseLogger.logConnection("connect");

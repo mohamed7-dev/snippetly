@@ -6,6 +6,8 @@ import { getSnippetQueryOptions } from '../../lib/api'
 import { useForkSnippet } from '../../hooks/use-fork-snippet'
 import { LoadingButton } from '@/components/inputs/loading-button'
 import { CurrentUserCollectionsOverlay } from '@/features/collections/components/current-user-collections-overlay'
+import React from 'react'
+import { toast } from 'sonner'
 
 export function Sidebar() {
   const params = useParams({ from: '/(protected)/dashboard/snippets/$slug/' })
@@ -14,7 +16,27 @@ export function Sidebar() {
   const snippet = data.data
 
   // fork snippet
-  const { mutateAsync: forkSnippet, isPending: isForking } = useForkSnippet()
+  const [isCollectionsOverlayOpen, setIsCollectionsOverlayOpen] =
+    React.useState(false)
+
+  const { onClick: fork, isPending: isForking } = useForkSnippet({
+    onSuccess: (data) => {
+      setIsCollectionsOverlayOpen(false)
+      toast.success(data.message)
+    },
+    onError: (error) => {
+      toast.error(error.response?.data.message)
+    },
+  })
+
+  const handleForking = (collectionSlug?: string) => {
+    if (!collectionSlug) {
+      // at this point we are not authenticated so we need to redirect the user
+      fork()
+    } else {
+      fork({ slug: snippet.publicId, collectionSlug: collectionSlug })
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -57,12 +79,8 @@ export function Sidebar() {
                 Fork Snippet
               </LoadingButton>
             }
-            onSelect={(publicId) =>
-              forkSnippet({
-                slug: snippet.publicId,
-                collectionSlug: publicId,
-              })
-            }
+            onSelect={(publicId) => handleForking(publicId)}
+            isOpen={isCollectionsOverlayOpen}
           />
         </CardContent>
       </Card>

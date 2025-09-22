@@ -49,9 +49,9 @@ export function ErrorPageView({
             className="w-full bg-transparent"
             size="lg"
           >
-            <Link to="/dashboard">
+            <Link to="/">
               <HomeIcon className="w-4 h-4 mr-2" />
-              Go to Dashboard
+              Go to Home
             </Link>
           </Button>
         </div>
