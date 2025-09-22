@@ -5,7 +5,6 @@ export const allowedOrigins = [
     CLIENTS_URLS.react
 ];
 export const corsOptions = {
-    // NOTE: commented to test in production
     origin: (origin, callback)=>{
         if (origin && allowedOrigins.indexOf(origin) !== -1 || !origin) {
             callback(null, true);

@@ -28,6 +28,8 @@ export const usersTable = pgTable(
     password: text("password").notNull(),
     bio: text("bio"),
     image: text("image"),
+    imageCustomId: text("image_custom_id"),
+    imageKey: text("image_Key"),
     rememberMe: boolean("remember_me").default(false).notNull(),
     isPrivate: boolean("is_private").default(false).notNull(),
     acceptedPolicies: boolean("accepted_policies").default(true).notNull(),

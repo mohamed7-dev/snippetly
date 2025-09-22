@@ -3,7 +3,7 @@ import { HttpException } from "../common/lib/exception.ts";
 import { isDevelopment } from "../common/lib/utils.ts";
 
 export const APP_NAME = "Snippetly";
-export const APP_URL = process.env.BASE_URL || "http://localhost:3000";
+export const APP_URL = process.env.BASE_URL || "http://localhost:3010";
 export const PORT = process.env.PORT || 3010;
 
 export const CLIENTS_URLS = {

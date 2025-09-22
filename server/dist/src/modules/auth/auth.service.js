@@ -10,7 +10,6 @@ import { JWT_REFRESH_EXPIRES } from "../../config/index.js";
 import { JWT_REFRESH_REMEMBER_EXPIRES } from "../../config/index.js";
 import { UserReadService } from "../user/user-read.service.js";
 import { UserRepository } from "../user/user.repository.js";
-import { isDevelopment } from "../../common/lib/utils.js";
 export class AuthService {
     UserService;
     UserRepository;
@@ -224,14 +223,16 @@ export class AuthService {
         res.clearCookie(REFRESH_TOKEN_COOKIE_KEY, {
             httpOnly: true,
             sameSite: "none",
-            secure: isDevelopment ? false : true
+            // secure: isDevelopment ? false : true,
+            secure: true
         });
     }
     setRefreshTokenCookie(res, refreshToken, rememberMe) {
         res.cookie(REFRESH_TOKEN_COOKIE_KEY, refreshToken, {
             httpOnly: true,
             sameSite: "none",
-            secure: isDevelopment ? false : true,
+            // secure: isDevelopment ? false : true,
+            secure: true,
             maxAge: rememberMe ? JWT_REFRESH_REMEMBER_EXPIRES : JWT_REFRESH_EXPIRES
         });
     }

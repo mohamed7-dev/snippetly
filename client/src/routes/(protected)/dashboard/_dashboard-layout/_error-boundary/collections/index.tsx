@@ -18,7 +18,7 @@ export const Route = createFileRoute(
   },
   validateSearch: searchFilterSchema,
   loader: async ({ context: { queryClient } }) => {
-    queryClient.prefetchInfiniteQuery(getCurrentUserCollectionsOptions)
+    await queryClient.prefetchInfiniteQuery(getCurrentUserCollectionsOptions)
   },
 })
 

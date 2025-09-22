@@ -1,7 +1,11 @@
 import { api } from '@/lib/api'
 import { serverEndpoints } from '@/lib/routes'
 import type { ErrorResponse, SharedSuccessRes } from '@/lib/types'
-import { useMutation, type MutateOptions } from '@tanstack/react-query'
+import {
+  useMutation,
+  useQueryClient,
+  type MutateOptions,
+} from '@tanstack/react-query'
 import type { AxiosError } from 'axios'
 import { useAuth } from '../components/auth-provider'
 import { toast } from 'sonner'
@@ -15,6 +19,7 @@ export function useLogout(
 ) {
   const { logout: logoutOnClient } = useAuth()
   const navigate = useNavigate()
+  const qClient = useQueryClient()
   return useMutation({
     ...options,
     mutationFn: async () => {
@@ -25,6 +30,7 @@ export function useLogout(
       toast.success(data.message)
       navigate({ to: '/' })
       logoutOnClient()
+      qClient.removeQueries()
       options?.onSuccess?.(data, variables, ctx)
     },
     onError: (error, variables, ctx) => {

@@ -1,4 +1,4 @@
-import * as pc from "picocolors";
+import pc from "picocolors";
 import fs from "fs";
 import path from "path";
 import { type AppLogger, LogLevel } from "./app-logger.ts";

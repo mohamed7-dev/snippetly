@@ -8,7 +8,6 @@ import { GetUserProfileResDto } from "./dto/user-response.dto.js";
 import { UpdateUserResDto } from "./dto/user-response.dto.js";
 import { GetCurrentUserDashboardDto } from "./dto/user-response.dto.js";
 import { DiscoverUsersDto } from "./dto/user-response.dto.js";
-import { APP_URL } from "../../config/index.js";
 export class UserController {
     UserService;
     AuthService;
@@ -18,8 +17,7 @@ export class UserController {
     }
     update = async (req, res)=>{
         const updatedUser = await this.UserService.update(req.context, {
-            ...req.body,
-            image: req.file ? `${APP_URL}/uploads/${req.file.filename}` : undefined
+            ...req.body
         });
         const { success, data: parsedData } = UpdateUserResDto.safeParse(updatedUser);
         if (!success) {

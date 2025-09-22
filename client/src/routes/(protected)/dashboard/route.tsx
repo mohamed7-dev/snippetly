@@ -11,7 +11,7 @@ export const Route = createFileRoute('/(protected)/dashboard')({
   beforeLoad: async ({ context: { authContext } }) => {
     // refresh access token before reaching the component
     const accessToken = authContext?.accessToken
-    if (!accessToken) {
+    if (!accessToken && !authStore.getAccessToken()) {
       await refreshAccessToken().then((data) => {
         authContext?.updateAccessToken(data.data.data.accessToken)
         authStore.setAccessToken(data.data.data.accessToken)
@@ -33,7 +33,7 @@ export const Route = createFileRoute('/(protected)/dashboard')({
           },
         })
       } else if (error.status === 404) {
-        return notFoundWithMetadata({
+        throw notFoundWithMetadata({
           data: {
             title: error.message,
             description: error.response?.data?.message,

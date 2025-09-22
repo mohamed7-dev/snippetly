@@ -2,7 +2,7 @@ import { StatusCodes } from "http-status-codes";
 import { HttpException } from "../common/lib/exception.js";
 import { isDevelopment } from "../common/lib/utils.js";
 export const APP_NAME = "Snippetly";
-export const APP_URL = process.env.BASE_URL || "http://localhost:3000";
+export const APP_URL = process.env.BASE_URL || "http://localhost:3010";
 export const PORT = process.env.PORT || 3010;
 export const CLIENTS_URLS = {
     react: process.env.REACT_CLIENT_APP_URL,

@@ -13,6 +13,7 @@ import type { RequestContext } from "../../common/middlewares/request-context-mi
 import type { NonNullableFields } from "../../common/types/utils.ts";
 import type { GetUserDtoType } from "./dto/get-user.dto.ts";
 import type { User } from "../../common/db/schema.ts";
+import { utapi } from "../../config/uploadthing.ts";
 
 export class UserService {
   private readonly PasswordHashService: PasswordHashService;
@@ -141,7 +142,10 @@ export class UserService {
       throw new HttpException(StatusCodes.NOT_FOUND, `User account not found.`);
     }
 
-    await this.UserRepository.delete(foundUser.id);
+    await Promise.all([
+      await this.UserRepository.delete(foundUser.id),
+      !!foundUser.imageKey && (await utapi.deleteFiles(foundUser.imageKey)),
+    ]);
 
     return foundUser;
   }

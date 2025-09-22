@@ -49,6 +49,8 @@ export const serverEndpoints = {
   getSnippetsByCollection: (slug: string) => `/snippets/collection/${slug}`,
   // tags
   getPopularTags: '/tags/popular',
+  // upload
+  uploadAvatar: 'upload-avatar',
 }
 
 export const clientRoutes = {

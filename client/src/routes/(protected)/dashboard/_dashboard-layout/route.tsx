@@ -1,8 +1,13 @@
 import { PageLoader } from '@/components/loaders/page-loader'
 import { ErrorPageView } from '@/components/views/error-page-view'
+import {
+  NotFoundPageView,
+  type NotFoundMetaData,
+} from '@/components/views/not-found-page-view'
 import { DashboardLayout } from '@/features/app-shell/components/dashboard/dashboard-layout'
 import { getCurrentUserDashboardOptions } from '@/features/dashboard/lib/api'
-import { createFileRoute, notFound, Outlet } from '@tanstack/react-router'
+import { notFoundWithMetadata } from '@/lib/utils'
+import { createFileRoute, Outlet } from '@tanstack/react-router'
 import { AxiosError } from 'axios'
 
 export const Route = createFileRoute(
@@ -14,7 +19,9 @@ export const Route = createFileRoute(
   },
   onError: (e) => {
     if (e instanceof AxiosError && e.status === 404)
-      return notFound({ data: { message: e.response?.data?.message } })
+      throw notFoundWithMetadata({
+        data: { title: e.message, description: e.response?.data?.message },
+      })
     else throw e
   },
   pendingComponent: () => (
@@ -25,6 +32,12 @@ export const Route = createFileRoute(
       error={error.error}
       reset={error.reset}
       containerProps={{ className: 'min-h-auto' }}
+    />
+  ),
+  notFoundComponent: (metadata) => (
+    <NotFoundPageView
+      title={(metadata.data as NotFoundMetaData)?.title}
+      description={(metadata.data as NotFoundMetaData)?.description}
     />
   ),
 })

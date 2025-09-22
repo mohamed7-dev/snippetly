@@ -317,7 +317,8 @@ export class AuthService {
     res.clearCookie(REFRESH_TOKEN_COOKIE_KEY, {
       httpOnly: true,
       sameSite: "none",
-      secure: isDevelopment ? false : true,
+      // secure: isDevelopment ? false : true,
+      secure: true,
     });
   }
 
@@ -329,7 +330,8 @@ export class AuthService {
     res.cookie(REFRESH_TOKEN_COOKIE_KEY, refreshToken, {
       httpOnly: true,
       sameSite: "none",
-      secure: isDevelopment ? false : true,
+      // secure: isDevelopment ? false : true,
+      secure: true,
       maxAge: rememberMe ? JWT_REFRESH_REMEMBER_EXPIRES : JWT_REFRESH_EXPIRES,
     });
   }

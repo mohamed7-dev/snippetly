@@ -1,4 +1,3 @@
-import { PageLoader } from '@/components/loaders/page-loader'
 import { queryClient } from '@/components/providers/tanstack-query-provider'
 import { ProfilePageView } from '@/components/views/profile-page-view'
 import { getUserSnippetsOptions } from '@/features/snippets/lib/api'
@@ -35,10 +34,6 @@ export const Route = createFileRoute('/(public)/profile/$name')({
     queryClient.prefetchInfiniteQuery(getUserSnippetsOptions(name))
     await queryClient.ensureQueryData(getUserProfile(name))
   },
-  pendingComponent: () => (
-    <PageLoader containerProps={{ className: 'min-h-screen' }} />
-  ),
-  errorComponent: (err) => <>{JSON.stringify(err.error)}</>,
 })
 
 function ProfilePage() {

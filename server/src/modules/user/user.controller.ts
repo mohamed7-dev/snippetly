@@ -14,7 +14,6 @@ import {
   GetCurrentUserDashboardDto,
   DiscoverUsersDto,
 } from "./dto/user-response.dto.ts";
-import { APP_URL } from "../../config/index.ts";
 
 export class UserController {
   private readonly UserService: UserService;
@@ -26,12 +25,16 @@ export class UserController {
   }
 
   public update = async (
-    req: Request<{}, {}, UpdateUserDtoType>,
+    req: Request<
+      {},
+      {},
+      Omit<UpdateUserDtoType, "image" | "imageCustomId" | "imageKey">
+    >,
     res: Response
   ) => {
     const updatedUser = await this.UserService.update(req.context, {
       ...req.body,
-      image: req.file ? `${APP_URL}/uploads/${req.file.filename}` : undefined,
+      // image: req.file ? `${APP_URL}/uploads/${req.file.filename}` : undefined, // deploying on vercel, uploadthing is used
     });
 
     const { success, data: parsedData } =

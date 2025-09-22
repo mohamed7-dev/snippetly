@@ -14,6 +14,8 @@ import path from "path";
 import { HttpException } from "../../common/lib/exception.ts";
 import { StatusCodes } from "http-status-codes";
 import { __dirname } from "../../common/lib/utils.ts";
+import { createRouteHandler } from "uploadthing/express";
+import { uploadRouter } from "../upload/upload.service.ts";
 
 export class UserRoute implements Route {
   public path: string = "/users";
@@ -62,6 +64,22 @@ export class UserRoute implements Route {
       authMiddleware,
       this.controller.getCurrentUserDashboard
     );
+    // --- user PUT/DELETE ---
+    this.router.put(
+      `${this.path}`,
+      authMiddleware,
+      // this.configureMulter().single("image"), // deploying on vercel
+      zodValidatorMiddleware(
+        UpdateUserDto.omit({
+          image: true,
+          imageCustomId: true,
+          imageKey: true,
+        }),
+        "Body"
+      ),
+      this.controller.update
+    );
+    this.router.delete(`${this.path}`, authMiddleware, this.controller.delete);
 
     // --- friendship PUT routes (longer param paths first) ---
     this.router.put(
@@ -89,16 +107,6 @@ export class UserRoute implements Route {
       this.FriendshipController.cancelFriendshipRequest
     );
 
-    // --- user PUT/DELETE (single param) ---
-    this.router.put(
-      `${this.path}`,
-      authMiddleware,
-      this.configureMulter().single("image"),
-      zodValidatorMiddleware(UpdateUserDto, "Body"),
-      this.controller.update
-    );
-    this.router.delete(`${this.path}`, authMiddleware, this.controller.delete);
-
     // --- user GET (single param, last catch-all) ---
     this.router.get(
       `${this.path}/:name`,
@@ -107,6 +115,9 @@ export class UserRoute implements Route {
     );
   }
 
+  // This would be used if we are not deploying
+  // to vercel since vercel serverless functions doesn't support writing
+  // to the file system
   private configureMulter() {
     const fileFilter = (
       _req: Request,
@@ -133,7 +144,6 @@ export class UserRoute implements Route {
     };
     const storage = multer.diskStorage({
       destination: (_req, _file, cb) => {
-        console.log(path.join(process.cwd(), "public", "uploads"));
         // public is used here to server static assets from vercel
         cb(null, path.join(__dirname, "..", "..", "..", "public", "uploads")); // save locally in uploads/
       },

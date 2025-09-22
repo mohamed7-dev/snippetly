@@ -10,6 +10,7 @@ import {
   type NotFoundMetaData,
 } from '@/components/views/not-found-page-view'
 import { ErrorPageView } from '@/components/views/error-page-view'
+import { PageLoader } from '@/components/loaders/page-loader'
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient
@@ -21,6 +22,9 @@ export const Route = createRootRouteWithContext<{
       <Outlet />
     </div>
   ),
+  loader: () => {
+    return <PageLoader containerProps={{ className: 'min-h-screen' }} />
+  },
   notFoundComponent: (meta) => {
     return (
       <NotFoundPageView

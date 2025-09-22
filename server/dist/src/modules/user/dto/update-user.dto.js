@@ -6,6 +6,8 @@ export const UpdateUserDto = SelectUserDto.pick({
     lastName: true,
     bio: true,
     image: true,
+    imageCustomId: true,
+    imageKey: true,
     isPrivate: true,
     email: true
 }).extend(UpdateUserPasswordDto.omit({

@@ -5,6 +5,7 @@ import { DEFAULT_FIND_USERS_LIMIT } from "./constants.js";
 import { handleCursorPagination } from "../../common/lib/utils.js";
 import { UserReadService } from "./user-read.service.js";
 import { UserRepository } from "./user.repository.js";
+import { utapi } from "../../config/uploadthing.js";
 export class UserService {
     PasswordHashService;
     UserReadService;
@@ -89,7 +90,10 @@ export class UserService {
         if (!foundUser || ctx.user.id !== foundUser.id) {
             throw new HttpException(StatusCodes.NOT_FOUND, `User account not found.`);
         }
-        await this.UserRepository.delete(foundUser.id);
+        await Promise.all([
+            await this.UserRepository.delete(foundUser.id),
+            !!foundUser.imageKey && await utapi.deleteFiles(foundUser.imageKey)
+        ]);
         return foundUser;
     }
     async discoverUsers(ctx, input) {

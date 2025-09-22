@@ -17,6 +17,8 @@ import path from "path";
 import { notFoundErrorMiddleware } from "./common/middlewares/not-found-error-middleware.js";
 import { StatusCodes } from "http-status-codes";
 import { __dirname } from "./common/lib/utils.js";
+import { createRouteHandler } from "uploadthing/express";
+import { uploadRouter } from "./modules/upload/upload.service.js";
 export class App {
   app;
   server;
@@ -60,6 +62,12 @@ export class App {
       res.status(StatusCodes.OK).json({
         message:
           "API is running, we are happy that you are exploring our application.",
+      })
+    );
+    this.app.use(
+      "/api/v1/upload",
+      createRouteHandler({
+        router: uploadRouter,
       })
     );
     routes.forEach((route) => {

@@ -67,7 +67,6 @@ api.interceptors.response.use(
       try {
         const res = await refreshAccessToken()
         const newToken = res.data.data.accessToken
-
         // ⚡ sync both store + context (context picks up from store)
         authStore.setAccessToken?.(newToken)
         processQueue(newToken)

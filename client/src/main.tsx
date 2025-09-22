@@ -10,6 +10,12 @@ import { routeTree } from './routeTree.gen'
 import './styles.css'
 import reportWebVitals from './reportWebVitals.ts'
 import { App } from './app.tsx'
+import {
+  NotFoundPageView,
+  type NotFoundMetaData,
+} from './components/views/not-found-page-view.tsx'
+import { PageLoader } from './components/loaders/page-loader.tsx'
+import { ErrorPageView } from './components/views/error-page-view.tsx'
 
 // Create a new router instance
 export const router = createRouter({
@@ -24,6 +30,20 @@ export const router = createRouter({
   scrollRestoration: true,
   defaultStructuralSharing: true,
   defaultPreloadStaleTime: 0,
+  defaultNotFoundComponent: (meta) => {
+    return (
+      <NotFoundPageView
+        title={(meta.data as NotFoundMetaData).title}
+        description={(meta.data as NotFoundMetaData).description}
+      />
+    )
+  },
+  defaultPendingComponent: () => {
+    return <PageLoader containerProps={{ className: 'min-h-screen' }} />
+  },
+  defaultErrorComponent: (e) => {
+    return <ErrorPageView error={e.error} reset={e.reset} />
+  },
 })
 
 // Register the router instance for type safety
