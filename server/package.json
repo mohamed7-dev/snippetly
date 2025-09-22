@@ -5,7 +5,6 @@
   "main": "dist/src/index.js",
   "type": "module",
   "scripts": {
-    "build": "swc ./src/* --out-dir dist",
     "start": "NODE_ENV=production node --env-file=.env --experimental-strip-types --experimental-transform-types ./dist/src/index.js",
     "dev": "NODE_ENV=development tsx watch --tsconfig ./tsconfig.json --env-file=.env src/index.ts",
     "db:generate": "npx drizzle-kit generate --config=./src/config/drizzle.config.ts",
