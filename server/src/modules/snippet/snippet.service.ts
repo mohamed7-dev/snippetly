@@ -1,34 +1,34 @@
 import { StatusCodes } from "http-status-codes";
-import { HttpException } from "../../common/lib/exception.ts";
-import type { CreateSnippetDtoType } from "./dto/create-snippet.dto.ts";
-import type { UpdateSnippetDtoType } from "./dto/update-snippet.dto.ts";
-import type { GetUserSnippetsDtoType } from "./dto/get-user-snippets.dto.ts";
-import { UserService } from "../user/user.service.ts";
+import { HttpException } from "../../common/lib/exception";
+import type { CreateSnippetDtoType } from "./dto/create-snippet.dto";
+import type { UpdateSnippetDtoType } from "./dto/update-snippet.dto";
+import type { GetUserSnippetsDtoType } from "./dto/get-user-snippets.dto";
+import { UserService } from "../user/user.service";
 import {
   generateUniquePrefix,
   handleCursorPagination,
   slugify,
-} from "../../common/lib/utils.ts";
-import { TagService } from "../tag/tag.service.ts";
+} from "../../common/lib/utils";
+import { TagService } from "../tag/tag.service";
 import {
   DISCOVER_SNIPPETS_DEFAULT_LIMIT,
   FIND_SNIPPETS_DEFAULT_LIMIT,
-} from "./constants.ts";
-import type { ForkSnippetDtoType } from "./dto/fork-snippet.dto.ts";
-import type { DeleteSnippetDtoType } from "./dto/delete-snippet.dto.ts";
-import type { GetSnippetDtoType } from "./dto/get-snippet.dto.ts";
-import type { DiscoverSnippetsDtoType } from "./dto/discover-snippets.dto.ts";
-import type { RequestContext } from "../../common/middlewares/request-context-middleware.ts";
-import { CollectionService } from "../collections/collection.service.ts";
-import { CollectionReadService } from "../collections/collection-read.service.ts";
-import { SnippetRepository } from "./snippet.repository.ts";
-import type { NonNullableFields } from "../../common/types/utils.ts";
-import { SnippetsTagsRepository } from "./snippets-tags.repository.ts";
-import { SnippetsReadService } from "./snippets-read.service.ts";
-import { TagReadService } from "../tag/tag-read.service.ts";
-import { UserReadService } from "../user/user-read.service.ts";
-import type { GetCollectionSnippetsDtoType } from "./dto/get-collection-snippets.ts";
-import type { Tags, User } from "../../common/db/schema.ts";
+} from "./constants";
+import type { ForkSnippetDtoType } from "./dto/fork-snippet.dto";
+import type { DeleteSnippetDtoType } from "./dto/delete-snippet.dto";
+import type { GetSnippetDtoType } from "./dto/get-snippet.dto";
+import type { DiscoverSnippetsDtoType } from "./dto/discover-snippets.dto";
+import type { RequestContext } from "../../common/middlewares/request-context-middleware";
+import { CollectionService } from "../collections/collection.service";
+import { CollectionReadService } from "../collections/collection-read.service";
+import { SnippetRepository } from "./snippet.repository";
+import type { NonNullableFields } from "../../common/types/utils";
+import { SnippetsTagsRepository } from "./snippets-tags.repository";
+import { SnippetsReadService } from "./snippets-read.service";
+import { TagReadService } from "../tag/tag-read.service";
+import { UserReadService } from "../user/user-read.service";
+import type { GetCollectionSnippetsDtoType } from "./dto/get-collection-snippets";
+import type { Tags, User } from "../../common/db/schema";
 
 export class SnippetService {
   public readonly UserService: UserService;

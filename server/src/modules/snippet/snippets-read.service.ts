@@ -9,7 +9,7 @@ import {
   or,
   sql,
 } from "drizzle-orm";
-import { Database } from "../../common/db/index.ts";
+import { Database } from "../../common/db/index";
 import {
   collectionsTable,
   friendshipsTable,
@@ -18,10 +18,10 @@ import {
   type Tags,
   tagsTable,
   usersTable,
-} from "../../common/db/schema.ts";
-import type { DiscoverSnippetsDtoType } from "./dto/discover-snippets.dto.ts";
-import type { GetUserSnippetsDtoType } from "./dto/get-user-snippets.dto.ts";
-import type { GetCollectionSnippetsDtoType } from "./dto/get-collection-snippets.ts";
+} from "../../common/db/schema";
+import type { DiscoverSnippetsDtoType } from "./dto/discover-snippets.dto";
+import type { GetUserSnippetsDtoType } from "./dto/get-user-snippets.dto";
+import type { GetCollectionSnippetsDtoType } from "./dto/get-collection-snippets";
 
 export class SnippetsReadService {
   async findOneSlim(by: "slug" | "id", value: string | number) {

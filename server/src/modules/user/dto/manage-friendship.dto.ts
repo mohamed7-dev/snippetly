@@ -1,5 +1,5 @@
 import z from "zod";
-import { SelectUserDto } from "./select-user.dto.ts";
+import { SelectUserDto } from "./select-user.dto";
 
 export const ManageFriendshipDto = z.object({
   friend_name: SelectUserDto.shape.name,

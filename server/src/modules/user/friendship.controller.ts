@@ -1,8 +1,8 @@
 import type { Request, Response } from "express";
-import type { GetCurrentUserFriendsDtoType } from "./dto/get-current-user-friends.dto.ts";
-import { FriendshipService } from "./friendship.service.ts";
+import type { GetCurrentUserFriendsDtoType } from "./dto/get-current-user-friends.dto";
+import { FriendshipService } from "./friendship.service";
 import { StatusCodes } from "http-status-codes";
-import type { ManageFriendshipDtoType } from "./dto/manage-friendship.dto.ts";
+import type { ManageFriendshipDtoType } from "./dto/manage-friendship.dto";
 import {
   AcceptRequestResDto,
   CancelRequestResDto,
@@ -11,8 +11,8 @@ import {
   GetUserOutboxResDto,
   RejectRequestResDto,
   SendRequestResDto,
-} from "./dto/friendship-response.dto.ts";
-import { InternalServerError } from "../../common/lib/exception.ts";
+} from "./dto/friendship-response.dto";
+import { InternalServerError } from "../../common/lib/exception";
 
 export class FriendshipController {
   private readonly FriendshipService: FriendshipService;

@@ -1,16 +1,16 @@
 import { Router } from "express";
-import { zodValidatorMiddleware } from "../../common/middlewares/zod-validator.middleware.ts";
-import { authMiddleware } from "../../common/middlewares/auth.middleware.ts";
-import { SnippetController } from "./snippet.controller.ts";
-import { CreateSnippetDto } from "./dto/create-snippet.dto.ts";
-import { UpdateSnippetDto } from "./dto/update-snippet.dto.ts";
-import { type Route } from "../../common/types/express.ts";
-import { DeleteSnippetDto } from "./dto/delete-snippet.dto.ts";
-import { GetUserSnippetsDto } from "./dto/get-user-snippets.dto.ts";
-import { ForkSnippetDto } from "./dto/fork-snippet.dto.ts";
-import { GetSnippetDto } from "./dto/get-snippet.dto.ts";
-import { DiscoverSnippetsDto } from "./dto/discover-snippets.dto.ts";
-import { GetCollectionSnippetsDto } from "./dto/get-collection-snippets.ts";
+import { zodValidatorMiddleware } from "../../common/middlewares/zod-validator.middleware";
+import { authMiddleware } from "../../common/middlewares/auth.middleware";
+import { SnippetController } from "./snippet.controller";
+import { CreateSnippetDto } from "./dto/create-snippet.dto";
+import { UpdateSnippetDto } from "./dto/update-snippet.dto";
+import { type Route } from "../../common/types/express";
+import { DeleteSnippetDto } from "./dto/delete-snippet.dto";
+import { GetUserSnippetsDto } from "./dto/get-user-snippets.dto";
+import { ForkSnippetDto } from "./dto/fork-snippet.dto";
+import { GetSnippetDto } from "./dto/get-snippet.dto";
+import { DiscoverSnippetsDto } from "./dto/discover-snippets.dto";
+import { GetCollectionSnippetsDto } from "./dto/get-collection-snippets";
 
 export class SnippetRoute implements Route {
   public path: string = "/snippets";

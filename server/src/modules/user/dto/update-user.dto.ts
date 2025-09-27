@@ -1,6 +1,6 @@
 import z from "zod";
-import { SelectUserDto } from "./select-user.dto.ts";
-import { UpdateUserPasswordDto } from "./update-password.dto.ts";
+import { SelectUserDto } from "./select-user.dto";
+import { UpdateUserPasswordDto } from "./update-password.dto";
 
 export const UpdateUserDto = SelectUserDto.pick({
   // name: true,

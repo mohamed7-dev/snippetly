@@ -1,4 +1,4 @@
-import { type LogContext } from "./constants.ts";
+import { type LogContext } from "./constants";
 
 /**
  * @description

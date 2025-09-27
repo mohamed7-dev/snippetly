@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { SelectUserDto } from "./select-user.dto.ts";
-import { STRONG_PASSWORD_SCHEMA } from "../../../common/lib/zod.ts";
+import { SelectUserDto } from "./select-user.dto";
+import { STRONG_PASSWORD_SCHEMA } from "../../../common/lib/zod";
 
 export const CreateUserDto = SelectUserDto.pick({
   firstName: true,

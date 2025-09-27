@@ -1,6 +1,6 @@
 import z from "zod";
-import { SelectSnippetDto } from "./select-snippet.dto.ts";
-import { SelectCollectionDto } from "../../collections/dto/select-collection.dto.ts";
+import { SelectSnippetDto } from "./select-snippet.dto";
+import { SelectCollectionDto } from "../../collections/dto/select-collection.dto";
 
 export const ForkSnippetDto = SelectSnippetDto.pick({
   slug: true,

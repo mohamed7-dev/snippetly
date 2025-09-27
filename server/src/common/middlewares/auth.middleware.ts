@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
-import { REFRESH_TOKEN_COOKIE_KEY } from "../../modules/auth/constants.ts";
+import { REFRESH_TOKEN_COOKIE_KEY } from "../../modules/auth/constants";
 
 export function authMiddleware(
   req: Request,

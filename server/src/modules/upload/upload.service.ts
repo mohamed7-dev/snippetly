@@ -1,7 +1,7 @@
 import { createUploadthing, type FileRouter } from "uploadthing/express";
-import { HttpException } from "../../common/lib/exception.ts";
+import { HttpException } from "../../common/lib/exception";
 import { StatusCodes } from "http-status-codes";
-import { UserRepository } from "../user/user.repository.ts";
+import { UserRepository } from "../user/user.repository";
 
 export class UploadRouter {
   private f = createUploadthing();

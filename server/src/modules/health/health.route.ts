@@ -1,6 +1,6 @@
 import { Router } from "express";
-import type { Route } from "../../common/types/express.ts";
-import { HealthController } from "./health.controller.ts";
+import type { Route } from "../../common/types/express";
+import { HealthController } from "./health.controller";
 
 export class HealthRoute implements Route {
   public path: string = "/health";

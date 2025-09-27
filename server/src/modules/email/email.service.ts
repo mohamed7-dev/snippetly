@@ -1,6 +1,6 @@
-import { APP_NAME } from "../../config/index.ts";
-import { transporter } from "../../config/nodemailer.config.ts";
-import { readTemplate } from "./lib/utils.ts";
+import { APP_NAME } from "../../config/index";
+import { transporter } from "../../config/nodemailer.config";
+import { readTemplate } from "./lib/utils";
 
 export class EmailService {
   static async sendVerificationEmail({
@@ -21,15 +21,6 @@ export class EmailService {
         .replace("{{name}}", username)
         .replace(/{{verificationUrl}}/g, callbackUrl)
         .replace("{{year}}", new Date().getFullYear().toString()),
-      // html: `
-      //         <div>
-      //           <h1>hello, ${username}</h1>
-      //           <p>
-      //               Click this link to <a href= >verify your email</a>!
-      //               Copy this code ${token} and paste it into the verification token field in your email verification page.
-      //           </p>
-      //         </div>
-      //     `,
     };
     return await transporter.sendMail(mailOptions);
   }
@@ -52,14 +43,6 @@ export class EmailService {
         .replace("{{name}}", username)
         .replace(/{{resetUrl}}/g, callbackUrl)
         .replace("{{year}}", new Date().getFullYear().toString()),
-      // html: `
-      //         <div>
-      //           <h1>hello, ${username}</h1>
-      //           <p>
-      //               Copy this code ${token} and paste it into the reset password token field in your reset password form.
-      //           </p>
-      //         </div>
-      //     `,
     };
     return await transporter.sendMail(mailOptions);
   }

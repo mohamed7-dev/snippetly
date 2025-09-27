@@ -1,8 +1,8 @@
 import z from "zod";
-import { SelectCollectionDto } from "./select-collection.dto.ts";
-import { SelectUserDto } from "../../user/dto/select-user.dto.ts";
-import { SelectTagDto } from "../../tag/dto/select-tag.dto.ts";
-import { SelectSnippetDto } from "../../snippet/dto/select-snippet.dto.ts";
+import { SelectCollectionDto } from "./select-collection.dto";
+import { SelectUserDto } from "../../user/dto/select-user.dto";
+import { SelectTagDto } from "../../tag/dto/select-tag.dto";
+import { SelectSnippetDto } from "../../snippet/dto/select-snippet.dto";
 
 //######################## Mutation #####################
 const CommonMutationSchema = SelectCollectionDto.omit({

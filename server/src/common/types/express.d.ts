@@ -1,5 +1,5 @@
-import { RequestContext } from "../middlewares/request-context-middleware.ts";
-import { NonNullableFields } from "./utils.ts";
+import { RequestContext } from "../middlewares/request-context-middleware";
+import { NonNullableFields } from "./utils";
 
 declare global {
   namespace Express {

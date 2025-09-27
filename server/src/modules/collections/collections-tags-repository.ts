@@ -1,10 +1,10 @@
 import { and, eq, inArray } from "drizzle-orm";
-import { Database } from "../../common/db/index.ts";
+import { Database } from "../../common/db/index";
 import {
   collectionsTagsTable,
   type CollectionTag,
   type NewCollectionTag,
-} from "../../common/db/schema.ts";
+} from "../../common/db/schema";
 
 export class CollectionsTagsRepository {
   async insert(input: NewCollectionTag[]) {

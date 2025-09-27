@@ -11,7 +11,7 @@ import {
   unique,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
-import { baseTable } from "./utils.ts";
+import { baseTable } from "./utils";
 import { relations, sql } from "drizzle-orm";
 
 // ------------------- User -------------------

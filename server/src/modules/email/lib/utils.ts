@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { __dirname } from "../../../common/lib/utils.ts";
+import { __dirname } from "../../../common/lib/utils";
 
 export function readTemplate(templateName: string) {
   const templatePath = path.join(__dirname, "..", "templates", templateName);

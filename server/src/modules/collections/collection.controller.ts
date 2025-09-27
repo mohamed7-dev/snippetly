@@ -1,12 +1,12 @@
 import type { Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
-import { CollectionService } from "./collection.service.ts";
-import type { CreateCollectionDtoType } from "./dto/create-collection.dto.ts";
+import { CollectionService } from "./collection.service";
+import type { CreateCollectionDtoType } from "./dto/create-collection.dto";
 import type {
   DiscoverCollectionsDtoType,
   FindCollectionDtoType,
   FindCollectionsDtoType,
-} from "./dto/find-collection.dto.ts";
+} from "./dto/find-collection.dto";
 import {
   CreateCollectionResDto,
   DiscoverCollectionsResDto,
@@ -20,12 +20,12 @@ import {
   GetPublicUserCollectionsResDto,
   type GetPublicUserCollectionsResDtoType,
   UpdateCollectionResDto,
-} from "./dto/response.dto.ts";
-import { InternalServerError } from "../../common/lib/exception.ts";
-import type { UpdateCollectionDtoType } from "./dto/update-collection.dto.ts";
-import type { ForkCollectionDtoType } from "./dto/fork-collection.dto.ts";
-import type { DeleteCollectionDtoType } from "./dto/delete-collection.dto.ts";
-import type { Collection } from "../../common/db/schema.ts";
+} from "./dto/response.dto";
+import { InternalServerError } from "../../common/lib/exception";
+import type { UpdateCollectionDtoType } from "./dto/update-collection.dto";
+import type { ForkCollectionDtoType } from "./dto/fork-collection.dto";
+import type { DeleteCollectionDtoType } from "./dto/delete-collection.dto";
+import type { Collection } from "../../common/db/schema";
 
 export class CollectionController {
   private readonly CollectionService: CollectionService;

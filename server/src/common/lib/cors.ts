@@ -1,7 +1,7 @@
 import { type CorsOptions } from "cors";
-import { HttpException } from "./exception.ts";
+import { HttpException } from "./exception";
 import { StatusCodes } from "http-status-codes";
-import { CLIENTS_URLS } from "../../config/index.ts";
+import { CLIENTS_URLS } from "../../config/index";
 
 export const allowedOrigins = [CLIENTS_URLS.react, CLIENTS_URLS.react2];
 export const corsOptions: CorsOptions = {

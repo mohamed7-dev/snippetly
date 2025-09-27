@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": false,
+    "sourceMap": true,
+
+    "outDir": "./dist",
+    "rootDir": "./src",
+
+    // Ensure CommonJS output for Node runtime
+    "module": "commonjs",
+    "moduleResolution": "node",
+    // Reasonable target for Node 20+
+    "target": "ES2022"
+  },
+  "include": ["src/**/*"],
+  "exclude": ["src/**/*.d.ts"]
+}

@@ -1,8 +1,8 @@
 import type { NextFunction, Request, Response } from "express";
-import { ServerLogger } from "../logger/index.ts";
+import { ServerLogger } from "../logger/index";
 import jwt, { type JwtPayload } from "jsonwebtoken";
-import { ACCESS_JWTOKEN_SECRET } from "../../config/index.ts";
-import { type User } from "../db/schema.ts";
+import { ACCESS_JWTOKEN_SECRET } from "../../config/index";
+import { type User } from "../db/schema";
 
 export type RequestUser = Pick<User, "email" | "id" | "image" | "name"> &
   JwtPayload;

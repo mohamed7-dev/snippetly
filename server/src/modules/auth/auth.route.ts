@@ -1,14 +1,14 @@
 import { Router } from "express";
-import { AuthController } from "./auth.controller.ts";
-import { zodValidatorMiddleware } from "../../common/middlewares/zod-validator.middleware.ts";
-import { LoginDto } from "./dto/login.dto.ts";
-import { SignupDto } from "./dto/signup.dto.ts";
-import { type Route } from "../../common/types/express.ts";
-import { authMiddleware } from "../../common/middlewares/auth.middleware.ts";
-import { SendVEmailDto } from "./dto/send-v-email.dto.ts";
-import { SendREmailDto } from "./dto/send-r-email.dto.ts";
-import { VerifyTokenDto } from "./dto/verify-token.dto.ts";
-import { ResetPasswordDto } from "./dto/reset-password.dto.ts";
+import { AuthController } from "./auth.controller";
+import { zodValidatorMiddleware } from "../../common/middlewares/zod-validator.middleware";
+import { LoginDto } from "./dto/login.dto";
+import { SignupDto } from "./dto/signup.dto";
+import { type Route } from "../../common/types/express";
+import { authMiddleware } from "../../common/middlewares/auth.middleware";
+import { SendVEmailDto } from "./dto/send-v-email.dto";
+import { SendREmailDto } from "./dto/send-r-email.dto";
+import { VerifyTokenDto } from "./dto/verify-token.dto";
+import { ResetPasswordDto } from "./dto/reset-password.dto";
 
 export class AuthRoute implements Route {
   public path: string = "/auth";

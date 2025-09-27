@@ -1,1 +1,1 @@
-export * from "./app.config.ts";
+export * from "./app.config";

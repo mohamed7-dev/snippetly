@@ -1,5 +1,5 @@
-import { type AppLogger } from "./app-logger.ts";
-import { type LogContext } from "./constants.ts";
+import { type AppLogger } from "./app-logger";
+import { type LogContext } from "./constants";
 
 /**
  * @description

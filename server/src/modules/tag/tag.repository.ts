@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
-import { Database } from "../../common/db/index.ts";
-import { type NewTags, tagsTable } from "../../common/db/schema.ts";
+import { Database } from "../../common/db/index";
+import { type NewTags, tagsTable } from "../../common/db/schema";
 
 export class TagRepository {
   public async insert(input: NewTags[]) {

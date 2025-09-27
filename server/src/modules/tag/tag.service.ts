@@ -1,5 +1,5 @@
-import { TagRepository } from "./tag.repository.ts";
-import { TagReadService } from "./tag-read.service.ts";
+import { TagRepository } from "./tag.repository";
+import { TagReadService } from "./tag-read.service";
 
 export class TagService {
   private readonly TagRepository: TagRepository;

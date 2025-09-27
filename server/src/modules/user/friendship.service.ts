@@ -1,15 +1,15 @@
 import { StatusCodes } from "http-status-codes";
-import { HttpException } from "../../common/lib/exception.ts";
-import { handleCursorPagination } from "../../common/lib/utils.ts";
-import type { RequestContext } from "../../common/middlewares/request-context-middleware.ts";
-import type { NonNullableFields } from "../../common/types/utils.ts";
-import { DEFAULT_USERS_PENDING_FRIENDS_LIMIT } from "./constants.ts";
-import type { GetCurrentUserFriendsDtoType } from "./dto/get-current-user-friends.dto.ts";
-import type { ManageFriendshipDtoType } from "./dto/manage-friendship.dto.ts";
-import { FriendshipReadService } from "./friendship-read.service.ts";
-import { UserReadService } from "./user-read.service.ts";
-import { FriendshipRepository } from "./friendship.repository.ts";
-import type { Friendship } from "../../common/db/schema.ts";
+import { HttpException } from "../../common/lib/exception";
+import { handleCursorPagination } from "../../common/lib/utils";
+import type { RequestContext } from "../../common/middlewares/request-context-middleware";
+import type { NonNullableFields } from "../../common/types/utils";
+import { DEFAULT_USERS_PENDING_FRIENDS_LIMIT } from "./constants";
+import type { GetCurrentUserFriendsDtoType } from "./dto/get-current-user-friends.dto";
+import type { ManageFriendshipDtoType } from "./dto/manage-friendship.dto";
+import { FriendshipReadService } from "./friendship-read.service";
+import { UserReadService } from "./user-read.service";
+import { FriendshipRepository } from "./friendship.repository";
+import type { Friendship } from "../../common/db/schema";
 
 export class FriendshipService {
   private UserReadService: UserReadService;

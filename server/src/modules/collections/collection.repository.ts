@@ -1,11 +1,11 @@
 import { eq } from "drizzle-orm";
-import { Database } from "../../common/db/index.ts";
+import { Database } from "../../common/db/index";
 import {
   collectionsTable,
   type NewCollection,
   snippetsTable,
   type Tags,
-} from "../../common/db/schema.ts";
+} from "../../common/db/schema";
 
 export class CollectionRepository {
   public async insert(input: NewCollection[]) {

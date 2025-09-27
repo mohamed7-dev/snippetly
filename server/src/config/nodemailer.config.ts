@@ -1,5 +1,5 @@
 import nodemailer from "nodemailer";
-import { ServerLogger } from "../common/logger/index.ts";
+import { ServerLogger } from "../common/logger/index";
 
 const credentials = {
   email: process.env.GMAIL_APP_EMAIL,

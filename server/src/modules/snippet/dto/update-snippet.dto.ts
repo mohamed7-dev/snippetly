@@ -1,9 +1,9 @@
 import z from "zod";
-import { CreateSnippetDto } from "./create-snippet.dto.ts";
-import { SelectSnippetDto } from "./select-snippet.dto.ts";
+import { CreateSnippetDto } from "./create-snippet.dto";
+import { SelectSnippetDto } from "./select-snippet.dto";
 import { createUpdateSchema } from "drizzle-zod";
-import { snippetsTable } from "../../../common/db/schema.ts";
-import { SelectCollectionDto } from "../../collections/dto/select-collection.dto.ts";
+import { snippetsTable } from "../../../common/db/schema";
+import { SelectCollectionDto } from "../../collections/dto/select-collection.dto";
 
 const updateSchema = createUpdateSchema(snippetsTable);
 

@@ -1,6 +1,6 @@
 import z from "zod";
 import { createSelectSchema } from "drizzle-zod";
-import { usersTable } from "../../../common/db/schema.ts";
+import { usersTable } from "../../../common/db/schema";
 
 export const nameSchema = z
   .string()
@@ -9,8 +9,9 @@ export const nameSchema = z
     message:
       "Name can only contain letters, numbers, and use '-' or '_' as separators",
   });
+const BaseSelectUserDto = createSelectSchema(usersTable);
 
-export const SelectUserDto = createSelectSchema(usersTable, {
+export const SelectUserDto = BaseSelectUserDto.extend({
   name: nameSchema,
   email: z.email(),
   emailVerificationToken: z.uuidv4().nullable(),

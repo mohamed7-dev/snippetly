@@ -1,5 +1,5 @@
 import z from "zod";
-import { baseModelSchema } from "../../../common/lib/zod.ts";
+import { baseModelSchema } from "../../../common/lib/zod";
 
 // Get User's Inbox/Outbox/Friends
 export const GetCurrentUserFriendsDto = z.object({

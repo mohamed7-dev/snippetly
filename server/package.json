@@ -3,9 +3,8 @@
   "version": "1.0.0",
   "description": "the server side api of the snippetly application.",
   "main": "dist/index.js",
-  "type": "module",
   "scripts": {
-    "build": "node ./scripts/build.mjs",
+    "build": "tsc --project ./tsconfig.build.json",
     "start": "NODE_ENV=production node --env-file=.env ./dist/index.js",
     "dev": "NODE_ENV=development tsx watch --tsconfig ./tsconfig.json --env-file=.env src/index.ts",
     "db:generate": "npx drizzle-kit generate --config=./src/config/drizzle.config.ts",
@@ -29,6 +28,7 @@
     "dotenv": "^17.2.1",
     "drizzle-orm": "^0.44.5",
     "drizzle-zod": "^0.8.3",
+    "esbuild": "^0.25.10",
     "express": "^5.1.0",
     "http-status-codes": "^2.3.0",
     "jsonwebtoken": "^9.0.2",
@@ -49,7 +49,6 @@
     "@types/node": "^24.1.0",
     "@types/nodemailer": "^7.0.1",
     "drizzle-kit": "^0.31.4",
-    "esbuild": "^0.23.1",
     "tsx": "^4.20.3",
     "typescript": "^5.9.2"
   }

@@ -1,21 +1,19 @@
 import { type Request, Router } from "express";
-import { UserController } from "./user.controller.ts";
-import { authMiddleware } from "../../common/middlewares/auth.middleware.ts";
-import { zodValidatorMiddleware } from "../../common/middlewares/zod-validator.middleware.ts";
-import { UpdateUserDto } from "./dto/update-user.dto.ts";
-import { type Route } from "../../common/types/express.ts";
-import { ManageFriendshipDto } from "./dto/manage-friendship.dto.ts";
-import { GetCurrentUserFriendsDto } from "./dto/get-current-user-friends.dto.ts";
-import { DiscoverUsersDto } from "./dto/discover-users.dto.ts";
-import { GetUserDto } from "./dto/get-user.dto.ts";
-import { FriendshipController } from "./friendship.controller.ts";
+import { UserController } from "./user.controller";
+import { authMiddleware } from "../../common/middlewares/auth.middleware";
+import { zodValidatorMiddleware } from "../../common/middlewares/zod-validator.middleware";
+import { UpdateUserDto } from "./dto/update-user.dto";
+import { type Route } from "../../common/types/express";
+import { ManageFriendshipDto } from "./dto/manage-friendship.dto";
+import { GetCurrentUserFriendsDto } from "./dto/get-current-user-friends.dto";
+import { DiscoverUsersDto } from "./dto/discover-users.dto";
+import { GetUserDto } from "./dto/get-user.dto";
+import { FriendshipController } from "./friendship.controller";
 import multer, { type FileFilterCallback } from "multer";
 import path from "path";
-import { HttpException } from "../../common/lib/exception.ts";
+import { HttpException } from "../../common/lib/exception";
 import { StatusCodes } from "http-status-codes";
-import { __dirname } from "../../common/lib/utils.ts";
-import { createRouteHandler } from "uploadthing/express";
-import { uploadRouter } from "../upload/upload.service.ts";
+import { __dirname } from "../../common/lib/utils";
 
 export class UserRoute implements Route {
   public path: string = "/users";

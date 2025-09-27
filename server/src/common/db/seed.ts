@@ -1,9 +1,9 @@
 import "dotenv/config";
-import { Database } from "./index.ts";
+import { Database } from "./index";
 import { eq, and, inArray } from "drizzle-orm";
-import { Logger } from "../logger/logger.ts";
-import { DefaultLogger } from "../logger/default-logger.ts";
-import { PasswordHashService } from "../../modules/auth/password-hash.service.ts";
+import { Logger } from "../logger/logger";
+import { DefaultLogger } from "../logger/default-logger";
+import { PasswordHashService } from "../../modules/auth/password-hash.service";
 
 async function main() {
   // Ensure logger is initialized for standalone seed execution

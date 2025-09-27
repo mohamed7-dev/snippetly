@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
-import { Database } from "../../common/db/index.ts";
-import { type NewUser, type User, usersTable } from "../../common/db/schema.ts";
+import { Database } from "../../common/db/index";
+import { type NewUser, type User, usersTable } from "../../common/db/schema";
 
 export class UserRepository {
   public async insert(input: NewUser[]) {

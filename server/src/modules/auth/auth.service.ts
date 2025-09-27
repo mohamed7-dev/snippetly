@@ -1,28 +1,26 @@
 import { StatusCodes } from "http-status-codes";
-import { HttpException } from "../../common/lib/exception.ts";
-import type { SignupDtoType } from "./dto/signup.dto.ts";
-import type { LoginDtoType } from "./dto/login.dto.ts";
-import { UserService } from "../user/user.service.ts";
+import { HttpException } from "../../common/lib/exception";
+import type { SignupDtoType } from "./dto/signup.dto";
+import type { LoginDtoType } from "./dto/login.dto";
+import { UserService } from "../user/user.service";
 import type { Response } from "express";
-import { type JWTPayload, TokenService } from "./token.service.ts";
-import { REFRESH_TOKEN_COOKIE_KEY } from "./constants.ts";
-import { PasswordHashService } from "./password-hash.service.ts";
-import { EmailService } from "../email/email.service.ts";
+import { type JWTPayload, TokenService } from "./token.service";
+import { REFRESH_TOKEN_COOKIE_KEY } from "./constants";
+import { PasswordHashService } from "./password-hash.service";
+import { EmailService } from "../email/email.service";
 import {
-  APP_URL,
   CLIENTS_URLS,
   JWT_REFRESH_EXPIRES,
   JWT_REFRESH_REMEMBER_EXPIRES,
-} from "../../config/index.ts";
-import type { ResetPasswordDtoType } from "./dto/reset-password.dto.ts";
-import type { SendVEmailDtoType } from "./dto/send-v-email.dto.ts";
-import type { VerifyTokenDtoType } from "./dto/verify-token.dto.ts";
-import type { SendREmailDtoType } from "./dto/send-r-email.dto.ts";
-import { UserReadService } from "../user/user-read.service.ts";
-import { UserRepository } from "../user/user.repository.ts";
-import type { RequestContext } from "../../common/middlewares/request-context-middleware.ts";
-import { isDevelopment } from "../../common/lib/utils.ts";
-import type { User } from "../../common/db/schema.ts";
+} from "../../config/index";
+import type { ResetPasswordDtoType } from "./dto/reset-password.dto";
+import type { SendVEmailDtoType } from "./dto/send-v-email.dto";
+import type { VerifyTokenDtoType } from "./dto/verify-token.dto";
+import type { SendREmailDtoType } from "./dto/send-r-email.dto";
+import { UserReadService } from "../user/user-read.service";
+import { UserRepository } from "../user/user.repository";
+import type { RequestContext } from "../../common/middlewares/request-context-middleware";
+import type { User } from "../../common/db/schema";
 
 export class AuthService {
   private readonly UserService: UserService;

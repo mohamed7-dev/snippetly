@@ -1,6 +1,6 @@
 import z from "zod";
-import { SelectCollectionDto } from "./select-collection.dto.ts";
-import { CreateCollectionDto } from "./create-collection.dto.ts";
+import { SelectCollectionDto } from "./select-collection.dto";
+import { CreateCollectionDto } from "./create-collection.dto";
 
 export const UpdateCollectionDto = z.object({
   slug: SelectCollectionDto.shape.slug,

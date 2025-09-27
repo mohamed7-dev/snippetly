@@ -1,6 +1,6 @@
 import { StatusCodes } from "http-status-codes";
-import { HttpException } from "../common/lib/exception.ts";
-import { isDevelopment } from "../common/lib/utils.ts";
+import { HttpException } from "../common/lib/exception";
+import { isDevelopment } from "../common/lib/utils";
 
 export const APP_NAME = "Snippetly";
 export const APP_URL = process.env.BASE_URL || "http://localhost:3010";

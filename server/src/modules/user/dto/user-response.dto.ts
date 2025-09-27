@@ -1,8 +1,8 @@
 import z from "zod";
-import { SelectUserDto } from "./select-user.dto.ts";
-import { SelectCollectionDto } from "../../collections/dto/select-collection.dto.ts";
-import { SelectTagDto } from "../../tag/dto/select-tag.dto.ts";
-import { SelectFriendshipDto } from "./select-friendship.dto.ts";
+import { SelectUserDto } from "./select-user.dto";
+import { SelectCollectionDto } from "../../collections/dto/select-collection.dto";
+import { SelectTagDto } from "../../tag/dto/select-tag.dto";
+import { SelectFriendshipDto } from "./select-friendship.dto";
 
 const CommonUserDto = SelectUserDto.pick({
   name: true,

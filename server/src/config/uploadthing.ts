@@ -1,5 +1,5 @@
 import { UTApi } from "uploadthing/server";
-import { HttpException } from "../common/lib/exception.ts";
+import { HttpException } from "../common/lib/exception";
 import { StatusCodes } from "http-status-codes";
 
 const token = process.env.UPLOADTHING_TOKEN;

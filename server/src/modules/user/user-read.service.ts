@@ -10,7 +10,7 @@ import {
   or,
   sql,
 } from "drizzle-orm";
-import { Database } from "../../common/db/index.ts";
+import { Database } from "../../common/db/index";
 import {
   collectionsTable,
   friendshipsTable,
@@ -18,8 +18,8 @@ import {
   type Tags,
   tagsTable,
   usersTable,
-} from "../../common/db/schema.ts";
-import { type DiscoverUsersDtoType } from "./dto/discover-users.dto.ts";
+} from "../../common/db/schema";
+import { type DiscoverUsersDtoType } from "./dto/discover-users.dto";
 
 export class UserReadService {
   /**

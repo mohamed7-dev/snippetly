@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CreateUserDto } from "../../user/dto/create-user.dto.ts";
+import { CreateUserDto } from "../../user/dto/create-user.dto";
 
 export const SignupDto = CreateUserDto;
 

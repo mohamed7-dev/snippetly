@@ -9,14 +9,14 @@ import {
   or,
   sql,
 } from "drizzle-orm";
-import { Database } from "../../common/db/index.ts";
+import { Database } from "../../common/db/index";
 import {
   type Friendship,
   friendshipsTable,
   snippetsTable,
   usersTable,
-} from "../../common/db/schema.ts";
-import { type GetCurrentUserFriendsDtoType } from "./dto/get-current-user-friends.dto.ts";
+} from "../../common/db/schema";
+import { type GetCurrentUserFriendsDtoType } from "./dto/get-current-user-friends.dto";
 import { alias } from "drizzle-orm/pg-core";
 
 export class FriendshipReadService {

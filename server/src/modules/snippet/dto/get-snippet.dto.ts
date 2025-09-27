@@ -1,5 +1,5 @@
 import z from "zod";
-import { SelectSnippetDto } from "./select-snippet.dto.ts";
+import { SelectSnippetDto } from "./select-snippet.dto";
 
 export const GetSnippetDto = z.object({
   slug: SelectSnippetDto.shape.slug,

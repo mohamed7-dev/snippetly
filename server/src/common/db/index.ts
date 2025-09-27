@@ -1,7 +1,7 @@
 import { neon, type NeonQueryFunction } from "@neondatabase/serverless";
 import { drizzle, NeonHttpDatabase } from "drizzle-orm/neon-http";
-import * as schema from "./schema.ts";
-import { DatabaseLogger } from "../logger/utils.ts";
+import * as schema from "./schema";
+import { DatabaseLogger } from "../logger/utils";
 
 const DATABASE_URL = process.env.DATABASE_URL;
 

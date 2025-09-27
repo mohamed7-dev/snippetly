@@ -1,6 +1,6 @@
-import { LogContextEnum } from "./constants.ts";
-import { Logger } from "./logger.ts";
-import { type LogMeta } from "./type.ts";
+import { LogContextEnum } from "./constants";
+import { Logger } from "./logger";
+import { type LogMeta } from "./type";
 
 export interface ServerLogMeta extends LogMeta {
   endpoint?: string;

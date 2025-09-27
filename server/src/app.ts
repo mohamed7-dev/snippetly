@@ -4,26 +4,26 @@ import express, {
   type Request,
   type Response,
 } from "express";
-import { PORT } from "./config/index.ts";
+import { PORT } from "./config/index";
 import cors from "cors";
-import { morganMiddleware } from "./common/middlewares/morgan.middleware.ts";
-import ErrorMiddleWare from "./common/middlewares/error.middleware.ts";
-import { type Route } from "./common/types/express.ts";
-import { DefaultLogger } from "./common/logger/default-logger.ts";
-import { Logger, ServerLogger } from "./common/logger/index.ts";
-import { requestContextMiddleware } from "./common/middlewares/request-context-middleware.ts";
+import { morganMiddleware } from "./common/middlewares/morgan.middleware";
+import ErrorMiddleWare from "./common/middlewares/error.middleware";
+import { type Route } from "./common/types/express";
+import { DefaultLogger } from "./common/logger/default-logger";
+import { Logger, ServerLogger } from "./common/logger/index";
+import { requestContextMiddleware } from "./common/middlewares/request-context-middleware";
 import cookieParser from "cookie-parser";
-import { corsOptions } from "./common/lib/cors.ts";
-import { provideCredentialsMiddleware } from "./common/middlewares/provide-credentials.middleware.ts";
-import { Database } from "./common/db/index.ts";
-import { multerErrorMiddleware } from "./common/middlewares/multer-error-middleware.ts";
+import { corsOptions } from "./common/lib/cors";
+import { provideCredentialsMiddleware } from "./common/middlewares/provide-credentials.middleware";
+import { Database } from "./common/db/index";
+import { multerErrorMiddleware } from "./common/middlewares/multer-error-middleware";
 import path from "path";
-import { notFoundErrorMiddleware } from "./common/middlewares/not-found-error-middleware.ts";
+import { notFoundErrorMiddleware } from "./common/middlewares/not-found-error-middleware";
 import { Server } from "http";
 import { StatusCodes } from "http-status-codes";
-import { __dirname } from "./common/lib/utils.ts";
+import { __dirname } from "./common/lib/utils";
 import { createRouteHandler } from "uploadthing/express";
-import { uploadRouter } from "./modules/upload/upload.service.ts";
+import { uploadRouter } from "./modules/upload/upload.service";
 
 export class App {
   public app: Application;

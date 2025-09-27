@@ -1,10 +1,10 @@
-import { App } from "../src/app.ts";
-import { AuthRoute } from "../src/modules/auth/auth.route.ts";
-import { CollectionRoute } from "../src/modules/collections/collection.route.ts";
-import { HealthRoute } from "../src/modules/health/health.route.ts";
-import { SnippetRoute } from "../src/modules/snippet/snippet.route.ts";
-import { TagRoute } from "../src/modules/tag/tag.route.ts";
-import { UserRoute } from "../src/modules/user/user.route.ts";
+import { App } from "../src/app";
+import { AuthRoute } from "../src/modules/auth/auth.route";
+import { CollectionRoute } from "../src/modules/collections/collection.route";
+import { HealthRoute } from "../src/modules/health/health.route";
+import { SnippetRoute } from "../src/modules/snippet/snippet.route";
+import { TagRoute } from "../src/modules/tag/tag.route";
+import { UserRoute } from "../src/modules/user/user.route";
 
 // Create the app without calling listen().
 const application = new App([

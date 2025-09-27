@@ -1,8 +1,8 @@
 import pc from "picocolors";
 import fs from "fs";
 import path from "path";
-import { type AppLogger, LogLevel } from "./app-logger.ts";
-import { DEFAULT_CONTEXT, type LogContext } from "./constants.ts";
+import { type AppLogger, LogLevel } from "./app-logger";
+import { DEFAULT_CONTEXT, type LogContext } from "./constants";
 
 /**
  * @description

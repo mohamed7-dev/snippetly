@@ -3,16 +3,16 @@ import {
   ACCESS_JWTOKEN_SECRET,
   JWT_ACCESS_EXPIRES,
   REFRESH_JWTOKEN_SECRET,
-} from "../../config/index.ts";
-import { HttpException } from "../../common/lib/exception.ts";
+} from "../../config/index";
+import { HttpException } from "../../common/lib/exception";
 import { StatusCodes } from "http-status-codes";
-import { TOKEN_EXPIRES } from "./constants.ts";
+import { TOKEN_EXPIRES } from "./constants";
 import crypto from "crypto";
 import type { Request } from "express";
-import { UserReadService } from "../user/user-read.service.ts";
-import { UserRepository } from "../user/user.repository.ts";
-import { getRefreshTokenExpires } from "../../common/lib/utils.ts";
-import type { User } from "../../common/db/schema.ts";
+import { UserReadService } from "../user/user-read.service";
+import { UserRepository } from "../user/user.repository";
+import { getRefreshTokenExpires } from "../../common/lib/utils";
+import type { User } from "../../common/db/schema";
 
 export type JWTPayload = Request["context"]["user"];
 

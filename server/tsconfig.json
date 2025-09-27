@@ -22,16 +22,17 @@
     "outDir": "./dist",
 
     "target": "esnext", // Or a specific ES version like "es2022"
-    "module": "esnext", // Or "esnext" for broader compatibility
+    "module": "commonjs",
     "rootDir": "./src", // Source directory for TypeScript files
     "esModuleInterop": true, // Enables default imports for CommonJS modules
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "skipLibCheck": true,
-    "moduleResolution": "bundler", // Or "node" if "module": "esnext"
-    "verbatimModuleSyntax": true, // Recommended for strict module syntax,
+    "moduleResolution": "node",
+    "verbatimModuleSyntax": false,
     "noEmit": true,
-    "allowImportingTsExtensions": true
+    // We removed explicit .ts extensions from imports, so this can be false (default)
+    "allowImportingTsExtensions": false
   },
   "include": ["src", "./src/common/types"]
 }

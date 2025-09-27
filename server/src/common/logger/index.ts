@@ -1,2 +1,2 @@
-export * from "./utils.ts";
-export { Logger } from "./logger.ts";
+export * from "./utils";
+export { Logger } from "./logger";

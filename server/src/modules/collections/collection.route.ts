@@ -1,17 +1,17 @@
 import { Router } from "express";
-import { zodValidatorMiddleware } from "../../common/middlewares/zod-validator.middleware.ts";
-import { authMiddleware } from "../../common/middlewares/auth.middleware.ts";
-import type { Route } from "../../common/types/express.ts";
-import { CollectionController } from "./collection.controller.ts";
-import { CreateCollectionDto } from "./dto/create-collection.dto.ts";
+import { zodValidatorMiddleware } from "../../common/middlewares/zod-validator.middleware";
+import { authMiddleware } from "../../common/middlewares/auth.middleware";
+import type { Route } from "../../common/types/express";
+import { CollectionController } from "./collection.controller";
+import { CreateCollectionDto } from "./dto/create-collection.dto";
 import {
   DiscoverCollectionsDto,
   FindCollectionDto,
   FindCollectionsDto,
-} from "./dto/find-collection.dto.ts";
-import { DeleteCollectionDto } from "./dto/delete-collection.dto.ts";
-import { UpdateCollectionDto } from "./dto/update-collection.dto.ts";
-import { ForkCollectionDto } from "./dto/fork-collection.dto.ts";
+} from "./dto/find-collection.dto";
+import { DeleteCollectionDto } from "./dto/delete-collection.dto";
+import { UpdateCollectionDto } from "./dto/update-collection.dto";
+import { ForkCollectionDto } from "./dto/fork-collection.dto";
 
 export class CollectionRoute implements Route {
   public path: string = "/collections";

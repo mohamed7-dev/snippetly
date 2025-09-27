@@ -1,8 +1,8 @@
 import type { Request, Response } from "express";
-import { TagService } from "./tag.service.ts";
+import { TagService } from "./tag.service";
 import { StatusCodes } from "http-status-codes";
-import { GetPopularTagsResDto } from "./dto/response.dto.ts";
-import { InternalServerError } from "../../common/lib/exception.ts";
+import { GetPopularTagsResDto } from "./dto/response.dto";
+import { InternalServerError } from "../../common/lib/exception";
 
 export class TagController {
   private readonly TagService: TagService;

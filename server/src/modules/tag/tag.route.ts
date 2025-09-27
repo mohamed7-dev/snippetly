@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { TagController } from "./tag.controller.ts";
+import { TagController } from "./tag.controller";
 
 export class TagRoute {
   private readonly basePath = "/tags";

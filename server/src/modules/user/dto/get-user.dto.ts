@@ -1,5 +1,5 @@
 import z from "zod";
-import { CreateUserDto } from "./create-user.dto.ts";
+import { CreateUserDto } from "./create-user.dto";
 
 export const GetUserDto = z.object({
   name: CreateUserDto.shape.name,

@@ -9,7 +9,7 @@ import {
   or,
   sql,
 } from "drizzle-orm";
-import { Database } from "../../common/db/index.ts";
+import { Database } from "../../common/db/index";
 import {
   collectionsTable,
   collectionsTagsTable,
@@ -17,11 +17,11 @@ import {
   type Tags,
   tagsTable,
   usersTable,
-} from "../../common/db/schema.ts";
+} from "../../common/db/schema";
 import type {
   DiscoverCollectionsDtoType,
   FindCollectionsDtoType,
-} from "./dto/find-collection.dto.ts";
+} from "./dto/find-collection.dto";
 
 export class CollectionReadService {
   /**

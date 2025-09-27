@@ -1,6 +1,6 @@
 import z from "zod";
 import { createSelectSchema } from "drizzle-zod";
-import { tagsTable } from "../../../common/db/schema.ts";
+import { tagsTable } from "../../../common/db/schema";
 
 export const SelectTagDto = createSelectSchema(tagsTable);
 
