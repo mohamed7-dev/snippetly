@@ -1,12 +1,17 @@
 {
   "version": 2,
+  "buildCommand": "pnpm install && pnpm run build",
   "builds": [
-    { "src": "dist/index.js", "use": "@vercel/node" },
+    { "src": "dist/vercel.js", "use": "@vercel/node" },
     { "src": "public/**", "use": "@vercel/static" }
   ],
+  "functions": {
+    "api/*.js": { "runtime": "nodejs20.x" },
+    "vercel.js": { "runtime": "nodejs20.x" }
+  },
   "routes": [
     { "src": "/static/(.*)", "dest": "/public/$1" },
     { "src": "/uploads/(.*)", "dest": "/public/uploads/$1" },
-    { "src": "/(.*)", "dest": "dist/index.js" }
+    { "src": "/(.*)", "dest": "dist/vercel.js" }
   ]
 }
