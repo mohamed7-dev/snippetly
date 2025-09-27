@@ -1,13 +1,17 @@
 import { Button } from '@/components/ui/button'
-import { Link, useParams } from '@tanstack/react-router'
-import { ArrowLeftIcon, EditIcon } from 'lucide-react'
+import { Link, useLoaderData, useParams } from '@tanstack/react-router'
+import { ArrowLeftIcon, EditIcon, LibraryIcon } from 'lucide-react'
 import { CopyButton } from '../copy-button'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { getSnippetQueryOptions } from '../../lib/api'
 import { useAuth } from '@/features/auth/components/auth-provider'
 import { HeaderWrapper } from '@/features/app-shell/components/header-wrapper'
+import { addSavedSnippet } from '@/lib/offline-store'
 
 export function PageHeader() {
+  const offlineSnippet = useLoaderData({
+    from: '/(protected)/dashboard/snippets/$slug/',
+  })
   const params = useParams({ from: '/(protected)/dashboard/snippets/$slug/' })
   const { data } = useSuspenseQuery(getSnippetQueryOptions(params.slug))
   const snippet = data.data
@@ -26,6 +30,21 @@ export function PageHeader() {
 
       <div className="w-full sm:w-auto flex items-center justify-center gap-3">
         <CopyButton code={snippet.code} />
+        {!offlineSnippet && (
+          <Button
+            size="sm"
+            onClick={() =>
+              addSavedSnippet({
+                ...snippet,
+                creatorName: snippet.creator.username,
+                tags: snippet.tags.map((tag) => tag.name),
+              })
+            }
+          >
+            <LibraryIcon className="h-4 w-4 mr-2" />
+            Save For Offline
+          </Button>
+        )}
         {snippet.creator.username === user?.name && (
           <Button size="sm" asChild>
             <Link

@@ -5,6 +5,7 @@ import {
   eq,
   getTableColumns,
   lt,
+  not,
   or,
   sql,
 } from "drizzle-orm";
@@ -137,8 +138,11 @@ export class SnippetsReadService {
     limit,
     cursor,
     query,
+    loggedInUserId,
   }: DiscoverSnippetsDtoType &
-    Required<Pick<DiscoverSnippetsDtoType, "limit">>) {
+    Required<Pick<DiscoverSnippetsDtoType, "limit">> & {
+      loggedInUserId?: number;
+    }) {
     const [data, total] = await Promise.all([
       Database.client
         .select({
@@ -188,6 +192,9 @@ export class SnippetsReadService {
                   sql`to_tsvector('english', ${snippetsTable.title}) @@ plainto_tsquery('english', ${query})`,
                   sql`to_tsvector('english', ${snippetsTable.description}) @@ plainto_tsquery('english', ${query})`
                 )
+              : undefined,
+            loggedInUserId
+              ? not(eq(snippetsTable.creatorId, loggedInUserId))
               : undefined
           )
         )
@@ -202,6 +209,9 @@ export class SnippetsReadService {
                 sql`to_tsvector('english', ${snippetsTable.title}) @@ plainto_tsquery('english', ${query})`,
                 sql`to_tsvector('english', ${snippetsTable.description}) @@ plainto_tsquery('english', ${query})`
               )
+            : undefined,
+          loggedInUserId
+            ? not(eq(snippetsTable.creatorId, loggedInUserId))
             : undefined
         )
       ),

@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router'
 import { HeaderWrapper } from '../header-wrapper'
 import { Logo } from '../logo'
 import { useAuth } from '@/features/auth/components/auth-provider'
+import { InstallAppButton } from '@/components/inputs/install-app-button'
 
 export function LandingHeader() {
   const { getCurrentUser } = useAuth()
@@ -34,6 +35,7 @@ export function LandingHeader() {
             </Button>
           ) : (
             <div className="flex items-center gap-3">
+              <InstallAppButton className="hidden sm:inline-flex" />
               <Button variant="ghost" size="sm" asChild>
                 <Link to={'/login'}>Sign In</Link>
               </Button>

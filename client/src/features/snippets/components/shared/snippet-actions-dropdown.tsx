@@ -33,9 +33,14 @@ import {
 } from 'lucide-react'
 import React from 'react'
 import { toast } from 'sonner'
+import { addSavedSnippet } from '@/features/snippets/lib/snippets-store'
 
 export interface SnippetActionsDropdownProps {
-  snippet: Pick<Snippet, 'publicId' | 'code' | 'creatorName'>
+  snippet: Pick<
+    Snippet,
+    'publicId' | 'code' | 'creatorName' | 'language' | 'description' | 'title'
+  > &
+    Partial<Pick<Snippet, 'note'>>
   onCopy?: (code: string) => void
   deleteSnippet?: AsyncActionCallback<
     DeleteSnippetSuccessRes,
@@ -111,6 +116,26 @@ export function SnippetActionsDropdown({
         await deleteSnippetAction({ slug: snippet.publicId }),
     })
   }
+
+  // offline save
+  const handleSaveOffline = async () => {
+    try {
+      await addSavedSnippet({
+        publicId: snippet.publicId,
+        title: snippet.title,
+        code: snippet.code,
+        language: snippet.language,
+        creatorName: snippet.creatorName,
+        description: snippet.description ?? '',
+        note: snippet.note ?? '',
+      })
+      toast.success('Saved for offline use')
+      setOpen(false)
+    } catch (e) {
+      console.log(e)
+      toast.error('Failed to save offline')
+    }
+  }
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
@@ -154,6 +179,17 @@ export function SnippetActionsDropdown({
             onOpenChange={(open) => setIsCollectionsOverlayOpen(open)}
           />
         )}
+        <DropdownMenuItem onSelect={(e) => e.preventDefault()} asChild>
+          <Button
+            variant={'ghost'}
+            size={'sm'}
+            className="w-full justify-start"
+            onClick={handleSaveOffline}
+          >
+            <EyeIcon className="mr-2 h-4 w-4 rotate-180" />
+            Save offline
+          </Button>
+        </DropdownMenuItem>
         {!!!user && (
           <DropdownMenuItem
             onSelect={(e) => e.preventDefault()}

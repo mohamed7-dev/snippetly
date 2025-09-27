@@ -16,6 +16,7 @@ import {
 } from './components/views/not-found-page-view.tsx'
 import { PageLoader } from './components/loaders/page-loader.tsx'
 import { ErrorPageView } from './components/views/error-page-view.tsx'
+import { registerSW } from './lib/sw-utils.ts'
 
 // Create a new router instance
 export const router = createRouter({
@@ -66,8 +67,10 @@ if (rootElement && !rootElement.innerHTML) {
     </StrictMode>,
   )
 }
-
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))
 // or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
 reportWebVitals()
+
+// register sw
+registerSW()

@@ -10,7 +10,7 @@ export const Route = createFileRoute(
   component: RouteComponent,
   onError: (e) => {
     if (e instanceof AxiosError && e.status === 404)
-      return notFoundWithMetadata({
+      throw notFoundWithMetadata({
         data: { title: e.message, description: e.response?.data?.message },
       })
     else throw e

@@ -27,6 +27,10 @@ import { toast } from 'sonner'
 import { Sidebar } from './sidebar'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { getSnippetQueryOptions } from '../../lib/api'
+import { ErrorBoundary } from 'react-error-boundary'
+import { ErrorBoundaryFallback } from '@/components/feedback/error-boundary-fallback'
+import React from 'react'
+import { PageLoader } from '@/components/loaders/page-loader'
 
 export const EDIT_SNIPPET_FORM_NAME = 'edit-snippet-form'
 
@@ -209,7 +213,11 @@ export function EditSnippetForm() {
       </div>
 
       {/* sidebar  */}
-      <Sidebar />
+      <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
+        <React.Suspense fallback={<PageLoader />}>
+          <Sidebar />
+        </React.Suspense>
+      </ErrorBoundary>
     </form>
   )
 }

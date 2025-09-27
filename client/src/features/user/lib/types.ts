@@ -9,6 +9,8 @@ export interface User {
   password: string
   bio: string | null
   image: string | null
+  imageKey: string | null
+  imageCustomId: string | null
   acceptedPolicies: boolean
   emailVerifiedAt: Date | null
   emailVerificationToken: string | null

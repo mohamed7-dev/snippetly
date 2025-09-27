@@ -6,6 +6,8 @@ import { getCurrentUserFriends } from '../../lib/api'
 import React from 'react'
 import { PageLoader } from '@/components/loaders/page-loader'
 import { useNavigate, useSearch } from '@tanstack/react-router'
+import { ErrorBoundary } from 'react-error-boundary'
+import { ErrorBoundaryFallback } from '@/components/feedback/error-boundary-fallback'
 
 export function TabsSection() {
   const { tab } = useSearch({ from: '/(protected)/dashboard/friends' })
@@ -31,13 +33,19 @@ export function TabsSection() {
       </TabsList>
 
       <TabsContent value="friends" className="space-y-6">
-        <React.Suspense fallback={<PageLoader />}>
-          <FriendsTabContent />
-        </React.Suspense>
+        <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
+          <React.Suspense fallback={<PageLoader />}>
+            <FriendsTabContent />
+          </React.Suspense>
+        </ErrorBoundary>
       </TabsContent>
 
       <TabsContent value="snippets" className="space-y-6">
-        <FriendsSnippetsTabContent />
+        <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
+          <React.Suspense fallback={<PageLoader />}>
+            <FriendsSnippetsTabContent />
+          </React.Suspense>
+        </ErrorBoundary>
       </TabsContent>
     </Tabs>
   )

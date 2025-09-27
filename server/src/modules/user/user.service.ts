@@ -12,7 +12,7 @@ import type { DiscoverUsersDtoType } from "./dto/discover-users.dto.ts";
 import type { RequestContext } from "../../common/middlewares/request-context-middleware.ts";
 import type { NonNullableFields } from "../../common/types/utils.ts";
 import type { GetUserDtoType } from "./dto/get-user.dto.ts";
-import type { User } from "../../common/db/schema.ts";
+import type { Friendship, User } from "../../common/db/schema.ts";
 import { utapi } from "../../config/uploadthing.ts";
 
 export class UserService {
@@ -157,6 +157,7 @@ export class UserService {
     const { data, total } = await this.UserReadService.discoverUsers({
       ...input,
       limit: defaultLimit,
+      loggedInUserId: ctx.user?.id,
     });
 
     // filter out current user from results if logged in
@@ -248,6 +249,16 @@ export class UserService {
       (userProfile?.friendshipsReceived?.length ?? 0) > 0 ||
       (userProfile?.friendshipsRequested?.length ?? 0) > 0;
 
+    let requestStatus = null;
+    if (
+      (userProfile?.friendshipsRequested?.length ?? 0 > 0) ||
+      (userProfile?.friendshipsReceived?.length ?? 0 > 0)
+    ) {
+      requestStatus =
+        userProfile?.friendshipsRequested?.[0]?.status ??
+        userProfile?.friendshipsReceived?.[0]?.status;
+    }
+
     if (!userProfile) {
       throw new HttpException(StatusCodes.NOT_FOUND, "User account not found.");
     }
@@ -256,6 +267,13 @@ export class UserService {
       userId: foundUser.id,
     });
 
-    return { profile: userProfile, isCurrentUserAFriend, stats };
+    return {
+      profile: userProfile,
+      friendshipInfo: {
+        isCurrentUserAFriend,
+        ...(requestStatus && { requestStatus }),
+      },
+      stats,
+    };
   }
 }

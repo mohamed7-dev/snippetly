@@ -5,6 +5,7 @@ import {
   eq,
   getTableColumns,
   lt,
+  not,
   or,
   sql,
 } from "drizzle-orm";
@@ -83,8 +84,11 @@ export class CollectionReadService {
     limit,
     cursor,
     query,
+    loggedInUserId,
   }: DiscoverCollectionsDtoType &
-    Required<Pick<DiscoverCollectionsDtoType, "limit">>) {
+    Required<Pick<DiscoverCollectionsDtoType, "limit">> & {
+      loggedInUserId?: number;
+    }) {
     const [data, total] = await Promise.all([
       Database.client
         .select({
@@ -112,6 +116,41 @@ export class CollectionReadService {
               ) t
           )
           `.as("tags"),
+          snippets: sql<
+            | {
+                id: number;
+                title: string;
+                slug: string;
+                language: string;
+                created_at: Date;
+                updated_at: Date;
+              }[]
+            | []
+          >`
+          (
+              SELECT COALESCE(json_agg(row_to_json(s)), '[]'::json)
+              FROM (
+                  SELECT 
+                    ${snippetsTable.id},
+                    ${snippetsTable.title},
+                    ${snippetsTable.slug},
+                    ${snippetsTable.language},
+                    ${snippetsTable.createdAt},
+                    ${snippetsTable.updatedAt}
+                  FROM ${snippetsTable}
+                  WHERE ${snippetsTable.collectionId} = ${collectionsTable.id}
+                  ORDER BY ${snippetsTable.updatedAt} DESC
+                  LIMIT 3
+              ) s
+          )
+          `.as("snippets"),
+          snippetsCount: sql<number>`
+            (
+              SELECT count(*)::int
+              FROM ${snippetsTable}
+              WHERE ${snippetsTable.collectionId} = ${collectionsTable.id}
+            )
+          `.as("snippetsCount"),
         })
         .from(collectionsTable)
         .innerJoin(usersTable, eq(collectionsTable.creatorId, usersTable.id))
@@ -126,6 +165,9 @@ export class CollectionReadService {
                   sql`to_tsvector('english', ${collectionsTable.title}) @@ plainto_tsquery('english', ${query})`,
                   sql`to_tsvector('english', ${collectionsTable.description}) @@ plainto_tsquery('english', ${query})`
                 )
+              : undefined,
+            loggedInUserId
+              ? not(eq(collectionsTable.creatorId, loggedInUserId))
               : undefined
           )
         )
@@ -140,6 +182,9 @@ export class CollectionReadService {
                 sql`to_tsvector('english', ${collectionsTable.title}) @@ plainto_tsquery('english', ${query})`,
                 sql`to_tsvector('english', ${collectionsTable.description}) @@ plainto_tsquery('english', ${query})`
               )
+            : undefined,
+          loggedInUserId
+            ? not(eq(collectionsTable.creatorId, loggedInUserId))
             : undefined
         )
       ),

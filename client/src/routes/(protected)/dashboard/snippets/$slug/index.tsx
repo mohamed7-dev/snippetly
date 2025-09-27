@@ -1,6 +1,7 @@
 import { queryClient } from '@/components/providers/tanstack-query-provider'
 import { SnippetPageView } from '@/components/views/snippet-page-view'
 import { getSnippetQueryOptions } from '@/features/snippets/lib/api'
+import { getSavedSnippet } from '@/lib/offline-store'
 import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/(protected)/dashboard/snippets/$slug/')({
@@ -21,6 +22,10 @@ export const Route = createFileRoute('/(protected)/dashboard/snippets/$slug/')({
         },
       ],
     }
+  },
+  loader: async ({ params }) => {
+    const data = await getSavedSnippet(params.slug)
+    return data
   },
 })
 

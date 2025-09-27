@@ -2,26 +2,27 @@
   "name": "snippetly-server",
   "version": "1.0.0",
   "description": "the server side api of the snippetly application.",
-  "main": "dist/src/index.js",
+  "main": "dist/index.js",
   "type": "module",
   "scripts": {
-    "build": "swc src --out-dir dist",
-    "start": "NODE_ENV=production node --env-file=.env --experimental-strip-types --experimental-transform-types ./dist/src/index.js",
+    "build": "node ./scripts/build.mjs",
+    "start": "NODE_ENV=production node --env-file=.env ./dist/index.js",
     "dev": "NODE_ENV=development tsx watch --tsconfig ./tsconfig.json --env-file=.env src/index.ts",
     "db:generate": "npx drizzle-kit generate --config=./src/config/drizzle.config.ts",
     "db:push": "npx drizzle-kit push --config=./src/config/drizzle.config.ts",
     "db:studio": "npx drizzle-kit studio --config=./src/config/drizzle.config.ts",
-    "db:drop": "npx drizzle-kit drop --config=./src/config/drizzle.config.ts"
+    "db:drop": "npx drizzle-kit drop --config=./src/config/drizzle.config.ts",
+    "db:seed": "node --env-file=.env ./dist/seed.js"
   },
   "keywords": [],
   "author": "mohamed shaban",
   "license": "ISC",
   "packageManager": "pnpm@10.13.1",
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.1",
-    "@swc/cli": "^0.7.8",
-    "@swc/core": "^1.13.5",
-    "@swc/plugin-transform-imports": "^9.1.0",
     "bcryptjs": "^3.0.2",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
@@ -48,6 +49,7 @@
     "@types/node": "^24.1.0",
     "@types/nodemailer": "^7.0.1",
     "drizzle-kit": "^0.31.4",
+    "esbuild": "^0.23.1",
     "tsx": "^4.20.3",
     "typescript": "^5.9.2"
   }

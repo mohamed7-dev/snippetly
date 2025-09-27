@@ -11,6 +11,7 @@ import { InfiniteLoader } from '@/components/loaders/infinite-loader'
 import { LoadingButton } from '@/components/inputs/loading-button'
 import { useCancelFriendshipRequest } from '../../hooks/use-cancel-friendship-request'
 import { toast } from 'sonner'
+import { getCurrentUserDashboardOptions } from '@/features/dashboard/lib/api'
 
 export function OutboxTabContent() {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
@@ -22,10 +23,8 @@ export function OutboxTabContent() {
     useCancelFriendshipRequest({
       onSuccess: (data) => {
         toast.success(data.message)
-        // update user dashboard info to reflect stats
-        qClient.invalidateQueries({
-          queryKey: ['users', 'current', 'dashboard'],
-        })
+        qClient.invalidateQueries(getCurrentUserDashboardOptions)
+        qClient.invalidateQueries(getCurrentUserOutbox)
       },
       onError: (err) => {
         toast.error(err.response?.data.message)

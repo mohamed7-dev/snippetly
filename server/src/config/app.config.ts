@@ -8,6 +8,7 @@ export const PORT = process.env.PORT || 3010;
 
 export const CLIENTS_URLS = {
   react: process.env.REACT_CLIENT_APP_URL,
+  react2: process.env.REACT_CLIENT_APP_URL_2,
   reactEmailVerification: process.env.REACT_EMAIL_VERIFICATION_URL,
   reactPasswordReset: process.env.REACT_PASSWORD_RESET_URL,
 };

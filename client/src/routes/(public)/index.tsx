@@ -1,7 +1,6 @@
 import { LandingPageView } from '@/components/views/landing-page-view'
 import { APP_NAME } from '@/config/app'
-import { refreshAccessToken } from '@/features/auth/lib/api'
-import { authStore } from '@/features/auth/lib/auth-store'
+import { getAllSavedSnippets } from '@/lib/offline-store'
 import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/(public)/')({
@@ -15,20 +14,8 @@ export const Route = createFileRoute('/(public)/')({
       ],
     }
   },
-  beforeLoad: async ({ context: { authContext } }) => {
-    // try to refresh access token before reaching the component
-    // so when the page reloads we know if the user has a refresh token or not.
-    const accessToken = authContext?.accessToken
-    if (!accessToken) {
-      await refreshAccessToken()
-        .then((data) => {
-          authContext?.updateAccessToken(data.data.data.accessToken)
-          authStore.setAccessToken(data.data.data.accessToken)
-        })
-        .catch((e) => {
-          console.log('error in public layout', e.message)
-        })
-    }
+  loader: async () => {
+    return getAllSavedSnippets()
   },
 })
 

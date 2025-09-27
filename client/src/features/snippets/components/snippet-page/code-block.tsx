@@ -2,18 +2,38 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useParams } from '@tanstack/react-router'
 import { getSnippetQueryOptions } from '../../lib/api'
-import hljs from 'highlight.js'
 import React from 'react'
 import { CopyButton } from '../copy-button'
+import { registerLanguage } from '@/lib/highlightjs'
 
 export function CodeBlock() {
   const params = useParams({ from: '/(protected)/dashboard/snippets/$slug/' })
   const { data } = useSuspenseQuery(getSnippetQueryOptions(params.slug))
   const snippet = data.data
+  const codeRef = React.useRef<HTMLElement | null>(null)
 
-  React.useLayoutEffect(() => {
-    hljs.highlightAll()
-  })
+  // Dynamically import highlight.js core and register only the needed language
+  React.useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const lang = (snippet.language ?? 'plaintext').toLowerCase()
+        const hljs = (await import('highlight.js/lib/core')).default
+
+        // Dynamically register only the language we need
+        await registerLanguage(hljs, lang)
+
+        if (!cancelled && codeRef.current) {
+          hljs.highlightElement(codeRef.current)
+        }
+      } catch {
+        // no-op; render plain code if highlighting fails
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [snippet.language, snippet.code])
 
   return (
     <Card>
@@ -39,6 +59,7 @@ export function CodeBlock() {
           <div className="p-4 overflow-x-auto">
             <pre className="font-mono text-sm text-foreground tracking-normal leading-5 whitespace-pre-wrap">
               <code
+                ref={codeRef}
                 className={`language-${snippet.language} border border-gray-500 px-4 py-3 h-96 subpixel-antialiased`}
               >
                 {snippet.code}{' '}

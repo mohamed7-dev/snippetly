@@ -12,6 +12,7 @@ import { useAcceptFriendshipRequest } from '../../hooks/use-accept-friendship-re
 import { useRejectFriendshipRequest } from '../../hooks/use-reject-friendship-request'
 import { LoadingButton } from '@/components/inputs/loading-button'
 import { toast } from 'sonner'
+import { getCurrentUserDashboardOptions } from '@/features/dashboard/lib/api'
 
 export function InboxTabContent() {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
@@ -23,10 +24,8 @@ export function InboxTabContent() {
     useAcceptFriendshipRequest({
       onSuccess: (data) => {
         toast.success(data.message)
-        // update user dashboard info to reflect stats
-        qClient.invalidateQueries({
-          queryKey: ['users', 'current', 'dashboard'],
-        })
+        qClient.invalidateQueries(getCurrentUserInbox)
+        qClient.invalidateQueries(getCurrentUserDashboardOptions)
       },
       onError: (err) => {
         toast.error(err.response?.data.message)
@@ -36,10 +35,8 @@ export function InboxTabContent() {
     useRejectFriendshipRequest({
       onSuccess: (data) => {
         toast.success(data.message)
-        // update user dashboard info to reflect stats
-        qClient.invalidateQueries({
-          queryKey: ['users', 'current', 'dashboard'],
-        })
+        qClient.invalidateQueries(getCurrentUserInbox)
+        qClient.invalidateQueries(getCurrentUserDashboardOptions)
       },
       onError: (err) => {
         toast.error(err.response?.data.message)

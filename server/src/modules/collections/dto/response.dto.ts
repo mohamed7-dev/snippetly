@@ -8,6 +8,7 @@ import { SelectSnippetDto } from "../../snippet/dto/select-snippet.dto.ts";
 const CommonMutationSchema = SelectCollectionDto.omit({
   id: true,
   creatorId: true,
+  oldSlugs: true,
 }).extend({
   creatorName: z.string(),
 });
@@ -57,6 +58,7 @@ export const DiscoverCollectionsResDto = z.array(
     creatorId: true,
     forkedFrom: true,
     updatedAt: true,
+    oldSlugs: true,
   })
     .extend({
       creator: SelectUserDto.pick({
@@ -66,12 +68,23 @@ export const DiscoverCollectionsResDto = z.array(
         image: true,
       }),
       tags: z.array(SelectTagDto.pick({ name: true })),
+      forkedCount: z.number(),
+      snippetsCount: z.number(),
+      snippets: z.array(
+        SelectSnippetDto.pick({
+          title: true,
+          slug: true,
+          language: true,
+          createdAt: true,
+        })
+      ),
     })
     .transform((val) => {
       const {
         slug,
         creator: { name, ...creatorRes },
         createdAt,
+        snippets,
         ...rest
       } = val;
       return {
@@ -83,6 +96,14 @@ export const DiscoverCollectionsResDto = z.array(
           username: name,
           fullName: creatorRes.firstName.concat(" ", creatorRes.lastName),
         },
+        snippets: snippets.map((snippet) => {
+          const { slug, createdAt, ...rest } = snippet;
+          return {
+            ...rest,
+            publicId: slug,
+            addedAt: createdAt,
+          };
+        }),
       };
     })
 );

@@ -20,5 +20,5 @@ export const STRONG_PASSWORD_SCHEMA = z
   )
 
 export const redirectSchema = z.object({
-  redirect: z.string().url().catch(''),
+  redirect: z.string().optional(),
 })

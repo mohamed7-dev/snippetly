@@ -13,7 +13,16 @@ type Cursor = {
 } | null
 type UserItem = Pick<
   User,
-  'username' | 'bio' | 'firstName' | 'lastName' | 'fullName' | 'email' | 'image'
+  | 'username'
+  | 'bio'
+  | 'firstName'
+  | 'lastName'
+  | 'fullName'
+  | 'email'
+  | 'image'
+  | 'imageKey'
+  | 'imageCustomId'
+  | 'joinedAt'
 > & {
   snippetsCount: number
   friendsCount: number
@@ -66,7 +75,7 @@ type DiscoverSnippetsSuccessRes = SharedPaginatedSuccessRes<
   SnippetsCursor
 >
 
-export const discoverSnippetsQueryOptions = infiniteQueryOptions({
+export const discoverSnippetsInfiniteQueryOptions = infiniteQueryOptions({
   queryKey: ['discover', 'snippets'],
   queryFn: async ({ pageParam }: { pageParam: SnippetsCursor | null }) => {
     const searchParams = new URLSearchParams()
@@ -75,6 +84,50 @@ export const discoverSnippetsQueryOptions = infiniteQueryOptions({
     }
     const res = await api.get<DiscoverSnippetsSuccessRes>(
       `${serverEndpoints.discoverSnippets}?${searchParams}`,
+    )
+    return res.data
+  },
+  initialPageParam: null,
+  getNextPageParam: (lastPage) => lastPage.nextCursor,
+})
+
+// Discover collections
+type CollectionsCursor = {
+  updatedAt: Date
+}
+type CollectionItem = Pick<
+  Collection,
+  | 'publicId'
+  | 'title'
+  | 'color'
+  | 'addedAt'
+  | 'description'
+  | 'allowForking'
+  | 'isPrivate'
+> & {
+  creator: Pick<
+    User,
+    'username' | 'firstName' | 'lastName' | 'fullName' | 'image'
+  >
+  tags: Pick<Tag, 'name'>[]
+  snippets: Pick<Snippet, 'publicId' | 'title' | 'language' | 'addedAt'>[]
+  forkedCount: number
+  snippetsCount: number
+}
+type DiscoverCollectionsSuccessRes = SharedPaginatedSuccessRes<
+  CollectionItem[],
+  CollectionsCursor
+>
+
+export const discoverCollectionsQueryOptions = infiniteQueryOptions({
+  queryKey: ['discover', 'collections'],
+  queryFn: async ({ pageParam }: { pageParam: CollectionsCursor | null }) => {
+    const searchParams = new URLSearchParams()
+    if (pageParam) {
+      searchParams.set('cursor', JSON.stringify(pageParam))
+    }
+    const res = await api.get<DiscoverCollectionsSuccessRes>(
+      `${serverEndpoints.discoverCollections}?${searchParams}`,
     )
     return res.data
   },

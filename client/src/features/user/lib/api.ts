@@ -36,7 +36,10 @@ type GetUserProfileSuccessRes = SharedSuccessRes<{
       >
     >
   stats: UserActivityStats
-  isCurrentUserAFriend?: boolean
+  friendshipInfo?: {
+    isCurrentUserAFriend: boolean
+    requestStatus?: Friendship['requestStatus']
+  }
 }>
 export const getUserProfile = (name: string) =>
   queryOptions({

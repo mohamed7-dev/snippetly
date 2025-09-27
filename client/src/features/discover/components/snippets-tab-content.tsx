@@ -1,5 +1,5 @@
 import { Code2Icon, PlusIcon } from 'lucide-react'
-import { discoverSnippetsQueryOptions } from '../lib/api'
+import { discoverSnippetsInfiniteQueryOptions } from '../lib/api'
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { InfiniteLoader } from '@/components/loaders/infinite-loader'
@@ -12,17 +12,13 @@ export function SnippetsTabContent() {
   const { getCurrentUser } = useAuth()
   const user = getCurrentUser()
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    useSuspenseInfiniteQuery(discoverSnippetsQueryOptions)
+    useSuspenseInfiniteQuery(discoverSnippetsInfiniteQueryOptions)
   const snippets = data.pages?.flatMap((p) => p.items) ?? []
-  // TODO: This will be implemented server side
   const filteredSnippets = snippets.filter(
     (snippet) => snippet.creator.username !== user?.name,
   )
   return (
     <React.Fragment>
-      <p>
-        TODO: Implement views/interaction based listing of trending snippets
-      </p>
       <div className="grid gap-4 lg:grid-cols-2">
         {filteredSnippets.map((snippet) => (
           <SnippetCard key={snippet.publicId} snippet={{ ...snippet }} />

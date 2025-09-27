@@ -6,6 +6,7 @@ import {
   isNotNull,
   like,
   lt,
+  not,
   or,
   sql,
 } from "drizzle-orm";
@@ -114,7 +115,11 @@ export class UserReadService {
     cursor,
     limit,
     query: searchString,
-  }: DiscoverUsersDtoType & Required<Pick<DiscoverUsersDtoType, "limit">>) {
+    loggedInUserId,
+  }: DiscoverUsersDtoType &
+    Required<Pick<DiscoverUsersDtoType, "limit">> & {
+      loggedInUserId?: number;
+    }) {
     const snippetsCount = Database.client.$count(
       snippetsTable,
       eq(snippetsTable.creatorId, usersTable.id)
@@ -129,6 +134,8 @@ export class UserReadService {
         email: usersTable.email,
         bio: usersTable.bio,
         image: usersTable.image,
+        imageKey: usersTable.imageKey,
+        imageCustomId: usersTable.imageCustomId,
         createdAt: usersTable.createdAt,
         friendsCount: Database.client.$count(
           friendshipsTable,
@@ -170,7 +177,8 @@ export class UserReadService {
                   lt(usersTable.id, cursor.id)
                 )
               )
-            : undefined
+            : undefined,
+          loggedInUserId ? not(eq(usersTable.id, loggedInUserId)) : undefined
         )
       )
       .limit(limit + 1)
@@ -187,7 +195,8 @@ export class UserReadService {
                 like(usersTable.name, `%${searchString}%`),
                 like(usersTable.email, `%${searchString}%`)
               )
-            : undefined
+            : undefined,
+          loggedInUserId ? not(eq(usersTable.id, loggedInUserId)) : undefined
         )
       ),
     ]);
@@ -325,7 +334,6 @@ export class UserReadService {
           where: (t, { and, eq }) =>
             loggedInUserId
               ? and(
-                  eq(t.status, "accepted"),
                   eq(t.requesterId, loggedInUserId) // logged-in is requester
                 )
               : undefined,
@@ -334,7 +342,6 @@ export class UserReadService {
           where: (t, { and, eq }) =>
             loggedInUserId
               ? and(
-                  eq(t.status, "accepted"),
                   eq(t.addresseeId, loggedInUserId) // logged-in is addressee
                 )
               : undefined,

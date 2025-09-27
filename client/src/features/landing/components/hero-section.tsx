@@ -1,10 +1,11 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Link } from '@tanstack/react-router'
-import { ArrowRightIcon, StarIcon } from 'lucide-react'
+import { ArrowRightIcon, LibraryIcon, StarIcon } from 'lucide-react'
+import { useLoaderData } from '@tanstack/react-router'
 
 export function HeroSection() {
-  // fetch users count and display the trusted by badge if number exceeds 1 thousand
+  const data = useLoaderData({ from: '/(public)/' })
   return (
     <section className="py-20 lg:py-32">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -29,16 +30,26 @@ export function HeroSection() {
                 <ArrowRightIcon className="ml-2 h-5 w-5" />
               </Link>
             </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="text-lg px-8 bg-transparent"
-              asChild
-            >
-              <Link to="." hash="demo">
-                View Demo
-              </Link>
-            </Button>
+            {!!data.length && (
+              <Button size="lg" className="text-lg px-8" asChild>
+                <Link to="/offline">
+                  Access Your Offline Library
+                  <LibraryIcon className="ml-2 h-5 w-5" />
+                </Link>
+              </Button>
+            )}
+            {!!!data.length && (
+              <Button
+                size="lg"
+                variant="outline"
+                className="text-lg px-8 bg-transparent"
+                asChild
+              >
+                <Link to="." hash="demo">
+                  View Demo
+                </Link>
+              </Button>
+            )}
           </div>
         </div>
       </div>

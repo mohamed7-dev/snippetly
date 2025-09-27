@@ -22,7 +22,11 @@ export const Route = createRootRouteWithContext<{
       <Outlet />
     </div>
   ),
-  loader: () => {
+  beforeLoad: async ({ context: { authContext } }) => {
+    if (!authContext) return
+    await authContext.ensureReady()
+  },
+  pendingComponent: () => {
     return <PageLoader containerProps={{ className: 'min-h-screen' }} />
   },
   notFoundComponent: (meta) => {

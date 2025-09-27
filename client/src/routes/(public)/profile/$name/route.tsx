@@ -1,4 +1,3 @@
-import { queryClient } from '@/components/providers/tanstack-query-provider'
 import { ProfilePageView } from '@/components/views/profile-page-view'
 import { getUserSnippetsOptions } from '@/features/snippets/lib/api'
 import { getUserProfile } from '@/features/user/lib/api'
@@ -14,7 +13,8 @@ const tabsSchema = z.object({
 
 export const Route = createFileRoute('/(public)/profile/$name')({
   component: ProfilePage,
-  head: async ({ params }) => {
+  head: async ({ params, match }) => {
+    const queryClient = match.context.queryClient
     const data = await queryClient.ensureQueryData(getUserProfile(params.name))
     return {
       meta: [

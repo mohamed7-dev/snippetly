@@ -10,6 +10,7 @@ import { api } from '@/lib/api'
 import { serverEndpoints } from '@/lib/routes'
 import { useAuth } from '@/features/auth/components/auth-provider'
 import { useNavigate } from '@tanstack/react-router'
+import { authStore } from '@/features/auth/lib/auth-store'
 
 type Input = {
   slug: string
@@ -51,7 +52,10 @@ export function useForkCollection(
   })
 
   const onClick = (input?: Input) => {
-    if (!ctx.isAuthenticated) {
+    if (
+      (!ctx.isAuthenticated || ctx.isLoggedOut) &&
+      !authStore.getAccessToken()
+    ) {
       navigate({
         to: '/login',
         search: {

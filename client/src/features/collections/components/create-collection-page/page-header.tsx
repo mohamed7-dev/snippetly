@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button'
 import { HeaderWrapper } from '@/features/app-shell/components/header-wrapper'
-import { Link } from '@tanstack/react-router'
+import { Link, useSearch } from '@tanstack/react-router'
 import { ArrowLeftIcon, EyeIcon, SaveIcon } from 'lucide-react'
 import { useFormContext, type UseFormReturn } from 'react-hook-form'
 import type { CreateCollectionSchema } from '../../lib/schema'
@@ -12,17 +12,20 @@ export function PageHeader() {
     useFormContext()
   const isValid = createCollectionForm.formState.isValid
   const isSubmitting = createCollectionForm.formState.isSubmitting
+  const { redirect } = useSearch({
+    from: '/(protected)/dashboard/collections/new',
+  })
 
   return (
     <HeaderWrapper className="px-4 flex items-center justify-between flex-wrap gap-4">
       <div className="flex items-center gap-2 flex-wrap">
         <Button variant="ghost" size="sm" asChild>
           <Link
-            to={'/dashboard/collections'}
+            to={redirect ?? '/dashboard/collections'}
             className="flex items-center gap-2"
           >
             <ArrowLeftIcon className="h-4 w-4" />
-            Back to Collections
+            {!redirect ? 'Back to Collections' : 'Go Back'}
           </Link>
         </Button>
         <h1 className="font-heading font-semibold text-lg">

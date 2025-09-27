@@ -230,7 +230,7 @@ export class CollectionService {
   }
 
   public async discover(
-    _ctx: RequestContext,
+    ctx: RequestContext,
     input: DiscoverCollectionsDtoType
   ) {
     const { limit } = input;
@@ -239,15 +239,23 @@ export class CollectionService {
     const { data, total } = await this.CollectionReadService.discover({
       ...input,
       limit: defaultLimit,
+      loggedInUserId: ctx.user?.id,
     });
 
     const { nextCursor, data: paginatedData } = handleCursorPagination({
       data: data,
       limit: defaultLimit,
     });
-
+    const parsedData = paginatedData.map((c) => ({
+      ...c,
+      snippets: c.snippets.map((s) => ({
+        ...s,
+        createdAt: new Date(s.created_at),
+        updatedAt: new Date(s.updated_at),
+      })),
+    }));
     return {
-      items: paginatedData,
+      items: parsedData,
       nextCursor: nextCursor
         ? ({
             updatedAt: nextCursor.updatedAt,

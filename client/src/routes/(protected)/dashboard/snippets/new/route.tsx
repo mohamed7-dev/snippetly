@@ -19,7 +19,6 @@ export const Route = createFileRoute('/(protected)/dashboard/snippets/new')({
     await queryClient.ensureQueryData(getPopularTagsOptions)
     await queryClient.ensureInfiniteQueryData(getCurrentUserCollectionsOptions)
   },
-  errorComponent: ({ error }) => console.log(JSON.stringify(error)),
   pendingComponent: () => (
     <PageLoader containerProps={{ className: 'min-h-screen' }} />
   ),

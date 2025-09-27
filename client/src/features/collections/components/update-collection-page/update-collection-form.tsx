@@ -20,6 +20,8 @@ import { TagsField } from './tags-field'
 import React from 'react'
 import { PageLoader } from '@/components/loaders/page-loader'
 import { ColorField } from '../shared/color-field'
+import { ErrorBoundary } from 'react-error-boundary'
+import { ErrorBoundaryFallback } from '@/components/feedback/error-boundary-fallback'
 
 export const UPDATE_COLLECTION_FORM_NAME = 'update-collection-form'
 
@@ -125,9 +127,11 @@ export function UpdateCollectionForm() {
         </CardContent>
       </Card>
 
-      <React.Suspense fallback={<PageLoader />}>
-        <TagsField />
-      </React.Suspense>
+      <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
+        <React.Suspense fallback={<PageLoader />}>
+          <TagsField />
+        </React.Suspense>
+      </ErrorBoundary>
 
       <Card>
         <CardHeader>

@@ -9,7 +9,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { LogOutIcon, UsersIcon } from 'lucide-react'
+import { LibraryIcon, LogOutIcon, UsersIcon } from 'lucide-react'
 import { useAuth } from '@/features/auth/components/auth-provider'
 import { useLogout } from '@/features/auth/hooks/use-logout'
 
@@ -80,7 +80,12 @@ export function HeaderUserMenu() {
           </DropdownMenuLabel>
         )}
         <DropdownMenuSeparator />
-
+        <DropdownMenuItem>
+          <Link to={'/offline'} className="flex items-center">
+            <LibraryIcon className="mr-2 h-4 w-4" />
+            <span>Offline Library</span>
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuItem>
           <Link
             to={user ? '/dashboard/friends' : '/login'}

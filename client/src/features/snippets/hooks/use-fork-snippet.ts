@@ -11,6 +11,8 @@ import { api } from '@/lib/api'
 import { serverEndpoints } from '@/lib/routes'
 import { useAuth } from '@/features/auth/components/auth-provider'
 import { useNavigate } from '@tanstack/react-router'
+import { authStore } from '@/features/auth/lib/auth-store'
+import { getCurrentSnippetsOptions } from '../lib/api'
 
 type Input = {
   slug: string
@@ -45,7 +47,7 @@ export function useForkSnippet(
       return res.data
     },
     onSuccess: (data, variables, ctx) => {
-      qClient.invalidateQueries({ queryKey: ['snippets', 'current'] })
+      qClient.invalidateQueries(getCurrentSnippetsOptions)
       options?.onSuccess?.(data, variables, ctx)
     },
     onError: (e, variables, ctx) => {
@@ -61,7 +63,10 @@ export function useForkSnippet(
   })
 
   const onClick = (input?: Input) => {
-    if (!ctx.isAuthenticated) {
+    if (
+      (!ctx.isAuthenticated || ctx.isLoggedOut) &&
+      !authStore.getAccessToken()
+    ) {
       navigate({
         to: '/login',
         search: {

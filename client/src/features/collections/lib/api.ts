@@ -97,6 +97,7 @@ export const getCurrentUserCollectionsOptions = infiniteQueryOptions({
     const res = await api.get<GetCurrentUserCollectionsSuccessRes>(
       `${serverEndpoints.getCurrentUserCollections}?${searchParams}`,
     )
+
     return res.data
   },
   initialPageParam: null,

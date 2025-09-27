@@ -2,6 +2,7 @@ import type { NotFoundMetaData } from '@/components/views/not-found-page-view'
 import { notFound, type NotFoundError } from '@tanstack/react-router'
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
+import { jwtDecode } from 'jwt-decode'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -49,4 +50,8 @@ export function notFoundWithMetadata(
   options: Omit<NotFoundError, 'data'> & { data: NotFoundMetaData },
 ) {
   return notFound(options)
+}
+
+export function parseJwt(token: string) {
+  return jwtDecode(token)
 }

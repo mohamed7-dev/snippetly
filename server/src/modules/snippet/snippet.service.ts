@@ -277,13 +277,14 @@ export class SnippetService {
     };
   }
 
-  public async discover(_ctx: RequestContext, input: DiscoverSnippetsDtoType) {
+  public async discover(ctx: RequestContext, input: DiscoverSnippetsDtoType) {
     const { limit } = input;
     const defaultLimit = limit ?? DISCOVER_SNIPPETS_DEFAULT_LIMIT;
 
     const { data, total } = await this.SnippetsReadService.discover({
       ...input,
       limit: defaultLimit,
+      loggedInUserId: ctx.user?.id,
     });
 
     const { nextCursor, data: paginatedData } = handleCursorPagination({

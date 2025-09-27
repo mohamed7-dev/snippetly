@@ -7,6 +7,7 @@ import { SelectCollectionDto } from "../../collections/dto/select-collection.dto
 //####################### Mutate #######################
 const CommonMutateSchema = SelectSnippetDto.omit({
   id: true,
+  oldSlugs: true,
 }).extend({
   collectionPublicId: z.string(),
   creatorName: z.string(),

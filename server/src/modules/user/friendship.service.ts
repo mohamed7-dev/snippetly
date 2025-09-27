@@ -9,6 +9,7 @@ import type { ManageFriendshipDtoType } from "./dto/manage-friendship.dto.ts";
 import { FriendshipReadService } from "./friendship-read.service.ts";
 import { UserReadService } from "./user-read.service.ts";
 import { FriendshipRepository } from "./friendship.repository.ts";
+import type { Friendship } from "../../common/db/schema.ts";
 
 export class FriendshipService {
   private UserReadService: UserReadService;
@@ -136,20 +137,30 @@ export class FriendshipService {
       });
 
     // if the user already sent a request to the friend
-    if (foundRequest) {
+    if (foundRequest && foundRequest.status === "pending") {
       throw new HttpException(
         StatusCodes.CONFLICT,
         `Friendship request has already been sent to the user ${friendName}`
       );
     }
 
-    const [newFriendship] = await this.FriendshipRepository.insertFriendship([
-      {
-        requesterId: requester.id,
-        addresseeId: addressee.id,
-        status: "pending",
-      },
-    ]);
+    let newFriendship: Friendship;
+    if (foundRequest && foundRequest.status !== "pending") {
+      [newFriendship] = await this.FriendshipRepository.updateFriendship(
+        foundRequest.id,
+        {
+          status: "pending",
+        }
+      );
+    } else {
+      [newFriendship] = await this.FriendshipRepository.insertFriendship([
+        {
+          requesterId: requester.id,
+          addresseeId: addressee.id,
+          status: "pending",
+        },
+      ]);
+    }
 
     return newFriendship;
   }

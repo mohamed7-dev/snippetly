@@ -29,13 +29,14 @@ type SnippetItem = Pick<
   | 'isPrivate'
   | 'addedAt'
   | 'description'
-> & {
-  tags: Pick<Tag, 'name'>[]
-  creator: Pick<
-    User,
-    'image' | 'username' | 'firstName' | 'lastName' | 'fullName'
-  >
-}
+> &
+  Partial<Pick<Snippet, 'note'>> & {
+    tags: Pick<Tag, 'name'>[]
+    creator: Pick<
+      User,
+      'image' | 'username' | 'firstName' | 'lastName' | 'fullName'
+    >
+  }
 
 interface SnippetCardProps
   extends Omit<SnippetActionsDropdownProps, 'snippet'> {

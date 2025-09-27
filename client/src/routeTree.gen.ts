@@ -13,7 +13,10 @@ import { createFileRoute } from '@tanstack/react-router'
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as publicIndexRouteImport } from './routes/(public)/index'
 import { Route as publicGoodbyeRouteImport } from './routes/(public)/goodbye'
+import { Route as publicProtocolHandlerRouteRouteImport } from './routes/(public)/protocol-handler/route'
 import { Route as protectedDashboardRouteRouteImport } from './routes/(protected)/dashboard/route'
+import { Route as publicOfflineIndexRouteImport } from './routes/(public)/offline/index'
+import { Route as publicOfflineIdRouteImport } from './routes/(public)/offline/$id'
 import { Route as publicProfileNameRouteRouteImport } from './routes/(public)/profile/$name/route'
 import { Route as protectedDashboardSettingsRouteRouteImport } from './routes/(protected)/dashboard/settings/route'
 import { Route as protectedDashboardFriendsRouteRouteImport } from './routes/(protected)/dashboard/friends/route'
@@ -59,9 +62,25 @@ const publicGoodbyeRoute = publicGoodbyeRouteImport.update({
   path: '/goodbye',
   getParentRoute: () => rootRouteImport,
 } as any)
+const publicProtocolHandlerRouteRoute =
+  publicProtocolHandlerRouteRouteImport.update({
+    id: '/(public)/protocol-handler',
+    path: '/protocol-handler',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const protectedDashboardRouteRoute = protectedDashboardRouteRouteImport.update({
   id: '/(protected)/dashboard',
   path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const publicOfflineIndexRoute = publicOfflineIndexRouteImport.update({
+  id: '/(public)/offline/',
+  path: '/offline/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const publicOfflineIdRoute = publicOfflineIdRouteImport.update({
+  id: '/(public)/offline/$id',
+  path: '/offline/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const publicProfileNameRouteRoute = publicProfileNameRouteRouteImport.update({
@@ -235,11 +254,14 @@ const protectedDashboardDashboardLayoutErrorBoundaryCollectionsIndexRoute =
 
 export interface FileRoutesByFullPath {
   '/dashboard': typeof protectedDashboardDashboardLayoutErrorBoundaryRouteRouteWithChildren
+  '/protocol-handler': typeof publicProtocolHandlerRouteRoute
   '/goodbye': typeof publicGoodbyeRoute
   '/': typeof authauthLayoutAuthLayoutRouteRouteWithChildren
   '/dashboard/friends': typeof protectedDashboardFriendsRouteRoute
   '/dashboard/settings': typeof protectedDashboardSettingsRouteRouteWithChildren
   '/profile/$name': typeof publicProfileNameRouteRoute
+  '/offline/$id': typeof publicOfflineIdRoute
+  '/offline': typeof publicOfflineIndexRoute
   '/dashboard/collections/$slug': typeof protectedDashboardCollectionsSlugRouteRouteWithChildren
   '/dashboard/collections/new': typeof protectedDashboardCollectionsNewRouteRoute
   '/dashboard/settings/appearance': typeof protectedDashboardSettingsAppearanceRouteRoute
@@ -264,11 +286,14 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/dashboard': typeof protectedDashboardDashboardLayoutErrorBoundaryIndexRoute
+  '/protocol-handler': typeof publicProtocolHandlerRouteRoute
   '/goodbye': typeof publicGoodbyeRoute
   '/': typeof authauthLayoutAuthLayoutRouteRouteWithChildren
   '/dashboard/friends': typeof protectedDashboardFriendsRouteRoute
   '/dashboard/settings': typeof protectedDashboardSettingsRouteRouteWithChildren
   '/profile/$name': typeof publicProfileNameRouteRoute
+  '/offline/$id': typeof publicOfflineIdRoute
+  '/offline': typeof publicOfflineIndexRoute
   '/dashboard/collections/new': typeof protectedDashboardCollectionsNewRouteRoute
   '/dashboard/settings/appearance': typeof protectedDashboardSettingsAppearanceRouteRoute
   '/dashboard/settings/profile': typeof protectedDashboardSettingsProfileRouteRoute
@@ -291,6 +316,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/(protected)/dashboard': typeof protectedDashboardRouteRouteWithChildren
+  '/(public)/protocol-handler': typeof publicProtocolHandlerRouteRoute
   '/(public)/goodbye': typeof publicGoodbyeRoute
   '/(public)/': typeof publicIndexRoute
   '/(auth)/(auth-layout)': typeof authauthLayoutRouteWithChildren
@@ -299,6 +325,8 @@ export interface FileRoutesById {
   '/(protected)/dashboard/friends': typeof protectedDashboardFriendsRouteRoute
   '/(protected)/dashboard/settings': typeof protectedDashboardSettingsRouteRouteWithChildren
   '/(public)/profile/$name': typeof publicProfileNameRouteRoute
+  '/(public)/offline/$id': typeof publicOfflineIdRoute
+  '/(public)/offline/': typeof publicOfflineIndexRoute
   '/(protected)/dashboard/_dashboard-layout/_error-boundary': typeof protectedDashboardDashboardLayoutErrorBoundaryRouteRouteWithChildren
   '/(protected)/dashboard/collections/$slug': typeof protectedDashboardCollectionsSlugRouteRouteWithChildren
   '/(protected)/dashboard/collections/new': typeof protectedDashboardCollectionsNewRouteRoute
@@ -326,11 +354,14 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/dashboard'
+    | '/protocol-handler'
     | '/goodbye'
     | '/'
     | '/dashboard/friends'
     | '/dashboard/settings'
     | '/profile/$name'
+    | '/offline/$id'
+    | '/offline'
     | '/dashboard/collections/$slug'
     | '/dashboard/collections/new'
     | '/dashboard/settings/appearance'
@@ -355,11 +386,14 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/dashboard'
+    | '/protocol-handler'
     | '/goodbye'
     | '/'
     | '/dashboard/friends'
     | '/dashboard/settings'
     | '/profile/$name'
+    | '/offline/$id'
+    | '/offline'
     | '/dashboard/collections/new'
     | '/dashboard/settings/appearance'
     | '/dashboard/settings/profile'
@@ -381,6 +415,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/(protected)/dashboard'
+    | '/(public)/protocol-handler'
     | '/(public)/goodbye'
     | '/(public)/'
     | '/(auth)/(auth-layout)'
@@ -389,6 +424,8 @@ export interface FileRouteTypes {
     | '/(protected)/dashboard/friends'
     | '/(protected)/dashboard/settings'
     | '/(public)/profile/$name'
+    | '/(public)/offline/$id'
+    | '/(public)/offline/'
     | '/(protected)/dashboard/_dashboard-layout/_error-boundary'
     | '/(protected)/dashboard/collections/$slug'
     | '/(protected)/dashboard/collections/new'
@@ -415,10 +452,13 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   protectedDashboardRouteRoute: typeof protectedDashboardRouteRouteWithChildren
+  publicProtocolHandlerRouteRoute: typeof publicProtocolHandlerRouteRoute
   publicGoodbyeRoute: typeof publicGoodbyeRoute
   publicIndexRoute: typeof publicIndexRoute
   authauthLayoutRoute: typeof authauthLayoutRouteWithChildren
   publicProfileNameRouteRoute: typeof publicProfileNameRouteRoute
+  publicOfflineIdRoute: typeof publicOfflineIdRoute
+  publicOfflineIndexRoute: typeof publicOfflineIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -444,11 +484,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof publicGoodbyeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/(public)/protocol-handler': {
+      id: '/(public)/protocol-handler'
+      path: '/protocol-handler'
+      fullPath: '/protocol-handler'
+      preLoaderRoute: typeof publicProtocolHandlerRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/(protected)/dashboard': {
       id: '/(protected)/dashboard'
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof protectedDashboardRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(public)/offline/': {
+      id: '/(public)/offline/'
+      path: '/offline'
+      fullPath: '/offline'
+      preLoaderRoute: typeof publicOfflineIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(public)/offline/$id': {
+      id: '/(public)/offline/$id'
+      path: '/offline/$id'
+      fullPath: '/offline/$id'
+      preLoaderRoute: typeof publicOfflineIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/(public)/profile/$name': {
@@ -813,10 +874,13 @@ const authauthLayoutRouteWithChildren = authauthLayoutRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   protectedDashboardRouteRoute: protectedDashboardRouteRouteWithChildren,
+  publicProtocolHandlerRouteRoute: publicProtocolHandlerRouteRoute,
   publicGoodbyeRoute: publicGoodbyeRoute,
   publicIndexRoute: publicIndexRoute,
   authauthLayoutRoute: authauthLayoutRouteWithChildren,
   publicProfileNameRouteRoute: publicProfileNameRouteRoute,
+  publicOfflineIdRoute: publicOfflineIdRoute,
+  publicOfflineIndexRoute: publicOfflineIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -49,6 +49,9 @@ export function UsersTabContent() {
                     </p>
                   </div>
                 </div>
+                <Badge variant="secondary">
+                  joined {new Date(user.joinedAt).toLocaleDateString()}
+                </Badge>
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -58,6 +61,10 @@ export function UsersTabContent() {
                 <span>
                   <strong>{user.snippetsCount}</strong> snippet
                   {user.snippetsCount !== 1 ? 's' : ''}
+                </span>
+                <span>
+                  <strong>{user.friendsCount}</strong> friend
+                  {user.friendsCount !== 1 ? 's' : ''}
                 </span>
               </div>
 

@@ -2,17 +2,20 @@ import z from "zod";
 import { SelectUserDto } from "./select-user.dto.ts";
 import { SelectCollectionDto } from "../../collections/dto/select-collection.dto.ts";
 import { SelectTagDto } from "../../tag/dto/select-tag.dto.ts";
+import { SelectFriendshipDto } from "./select-friendship.dto.ts";
 
-const CommonUserDto = SelectUserDto.omit({
-  id: true,
-  emailVerificationToken: true,
-  resetPasswordToken: true,
-  resetPasswordTokenExpiresAt: true,
-  emailVerificationTokenExpiresAt: true,
-  refreshTokens: true,
-  password: true,
-  oldNames: true,
-  rememberMe: true,
+const CommonUserDto = SelectUserDto.pick({
+  name: true,
+  firstName: true,
+  lastName: true,
+  image: true,
+  imageKey: true,
+  bio: true,
+  email: true,
+  emailVerifiedAt: true,
+  createdAt: true,
+  updatedAt: true,
+  isPrivate: true,
 });
 
 export const UpdateUserResDto = CommonUserDto.transform((val) => {
@@ -55,16 +58,13 @@ export const GetUserProfileResDto = z.object({
 
 // Get User Profile (Public)
 export const GetPublicUserProfileResDto = GetUserProfileResDto.extend({
-  isCurrentUserAFriend: z.boolean(),
+  friendshipInfo: z.object({
+    isCurrentUserAFriend: z.boolean(),
+    requestStatus: SelectFriendshipDto.shape.status.nullish(),
+  }),
 }).transform((val) => {
   const {
-    profile: {
-      lastUpdatedAt,
-      isPrivate,
-      acceptedPolicies,
-      emailVerifiedAt,
-      ...restProfile
-    },
+    profile: { lastUpdatedAt, isPrivate, emailVerifiedAt, ...restProfile },
     ...rest
   } = val;
   return { ...rest, profile: restProfile };
@@ -103,7 +103,6 @@ export const DiscoverUsersDto = z.array(
   CommonUserDto.omit({
     emailVerifiedAt: true,
     isPrivate: true,
-    acceptedPolicies: true,
     updatedAt: true,
   })
     .extend({

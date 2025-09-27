@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Offline • Snippetly</title>
+    <meta name="color-scheme" content="light dark" />
+    <style>
+      :root {
+        --background: #ffffff;
+        --foreground: #4b5563;
+        --card: #f9fafb;
+        --card-foreground: #4b5563;
+        --primary: #0891b2;
+        --primary-foreground: #ffffff;
+        --secondary: #f59e0b;
+        --secondary-foreground: #4b5563;
+        --muted: #f9fafb;
+        --muted-foreground: #4b5563;
+        --accent: #f59e0b;
+        --accent-foreground: #ffffff;
+        --destructive: #dc2626;
+        --destructive-foreground: #ffffff;
+        --border: #e5e7eb;
+        --ring: rgba(8, 145, 178, 0.5);
+        --radius: 0.5rem;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --background: #0f172a;
+          --foreground: #f1f5f9;
+          --card: #1e293b;
+          --card-foreground: #f1f5f9;
+          --primary: #0891b2;
+          --primary-foreground: #ffffff;
+          --secondary: #f59e0b;
+          --secondary-foreground: #0f172a;
+          --muted: #334155;
+          --muted-foreground: #94a3b8;
+          --accent: #f59e0b;
+          --accent-foreground: #0f172a;
+          --destructive: #dc2626;
+          --destructive-foreground: #ffffff;
+          --border: #334155;
+          --ring: rgba(8, 145, 178, 0.5);
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+          'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+          sans-serif;
+        background: var(--background);
+        color: var(--foreground);
+        display: grid;
+        place-items: center;
+      }
+      .card {
+        width: min(720px, 92vw);
+        background: var(--card);
+        color: var(--card-foreground);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 2rem;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+      }
+      h1 {
+        margin: 0 0 0.5rem;
+        font-size: 1.5rem;
+      }
+      p {
+        margin: 0.5rem 0 1.25rem;
+        line-height: 1.6;
+      }
+      .actions {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+      }
+      .btn {
+        appearance: none;
+        border: 1px solid var(--border);
+        border-radius: calc(var(--radius) - 2px);
+        background: var(--primary);
+        color: var(--primary-foreground);
+        padding: 0.6rem 0.9rem;
+        text-decoration: none;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .btn.secondary {
+        background: var(--muted);
+        color: var(--foreground);
+      }
+      .hint {
+        font-size: 0.85rem;
+        color: var(--muted-foreground);
+      }
+      .list {
+        margin: 0.5rem 0 0;
+        padding-left: 1.25rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card" role="main" aria-labelledby="offline-title">
+      <h1 id="offline-title">You're offline</h1>
+      <p>
+        It looks like your device is not connected to the internet. Some
+        features may be unavailable. You can continue browsing pages that were
+        previously cached.
+      </p>
+      <div class="actions">
+        <a class="btn" href="/">Go to Home</a>
+        <button class="btn secondary" onclick="location.reload()">Retry</button>
+      </div>
+      <p class="hint">Tips:</p>
+      <ul class="list hint">
+        <li>Check your connection and try again.</li>
+        <li>Use the app navigation to access cached pages.</li>
+      </ul>
+    </main>
+  </body>
+</html>

@@ -18,7 +18,6 @@ import { LoadingButton } from '@/components/inputs/loading-button'
 import { toast } from 'sonner'
 import { ProcessStatus } from '@/components/feedback/process-status'
 import { useAuth } from './auth-provider'
-import { authStore } from '../lib/auth-store'
 import { PasswordField } from '@/components/inputs/password-field'
 
 export function LoginCard() {
@@ -46,7 +45,6 @@ export function LoginCard() {
       toast.success(data.message)
       const accessToken = data.data.accessToken
       authenticateUserOnClient(accessToken)
-      authStore.setAccessToken(accessToken)
       if (!from) {
         navigate({
           to: '/dashboard',

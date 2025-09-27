@@ -79,7 +79,10 @@ export function CurrentUserCollectionsOverlay({
           />
         </div>
         <Button size={'lg'} asChild>
-          <Link to="/dashboard/collections/new">
+          <Link
+            to="/dashboard/collections/new"
+            search={{ redirect: location.href }}
+          >
             <PlusIcon />
             <span>Add New Collection</span>
           </Link>

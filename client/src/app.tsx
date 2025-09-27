@@ -1,3 +1,4 @@
+import React from 'react'
 import { RouterProvider } from '@tanstack/react-router'
 import { AuthProvider, useAuth } from './features/auth/components/auth-provider'
 import { router } from './main'
@@ -6,12 +7,46 @@ import {
   queryClient,
   TanstackQueryProvider,
 } from './components/providers/tanstack-query-provider'
-import React from 'react'
-import { TanstackDevtools } from '@tanstack/react-devtools'
-import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
-import { ReactQueryDevtoolsPanel } from '@tanstack/react-query-devtools'
 import { DeleteConfirmationProvider } from './components/providers/delete-confirmation-provider'
 import { Toaster } from 'sonner'
+
+// Development: Lazy load DevTools components
+const LazyDevTools = React.lazy(async () => {
+  if (import.meta.env.DEV) {
+    const [
+      { TanstackDevtools },
+      { TanStackRouterDevtoolsPanel },
+      { ReactQueryDevtoolsPanel },
+    ] = await Promise.all([
+      import('@tanstack/react-devtools'),
+      import('@tanstack/react-router-devtools'),
+      import('@tanstack/react-query-devtools'),
+    ])
+
+    return {
+      default: () => (
+        <TanstackDevtools
+          config={{
+            position: 'bottom-right',
+          }}
+          plugins={[
+            {
+              name: 'Tanstack Router',
+              render: <TanStackRouterDevtoolsPanel router={router} />,
+            },
+            {
+              name: 'Tanstack Query',
+              render: <ReactQueryDevtoolsPanel client={queryClient} />,
+            },
+          ]}
+        />
+      ),
+    }
+  }
+
+  // Production: Return empty component
+  return { default: () => <></> }
+})
 
 function InnerApp() {
   const auth = useAuth()
@@ -30,21 +65,10 @@ export function App() {
           </ThemeProvider>
         </TanstackQueryProvider>
       </AuthProvider>
-      <TanstackDevtools
-        config={{
-          position: 'bottom-right',
-        }}
-        plugins={[
-          {
-            name: 'Tanstack Router',
-            render: <TanStackRouterDevtoolsPanel router={router} />,
-          },
-          {
-            name: 'Tanstack Query',
-            render: <ReactQueryDevtoolsPanel client={queryClient} />,
-          },
-        ]}
-      />
+
+      <React.Suspense fallback={null}>
+        <LazyDevTools />
+      </React.Suspense>
     </React.Fragment>
   )
 }

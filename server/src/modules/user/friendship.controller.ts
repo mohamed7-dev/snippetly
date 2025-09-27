@@ -103,7 +103,6 @@ export class FriendshipController {
       );
     }
     const { success, data: parsedData } = SendRequestResDto.safeParse(data);
-
     if (!success) {
       throw new InternalServerError();
     }
