@@ -24,7 +24,7 @@ import { StatusCodes } from "http-status-codes";
 import { createRouteHandler } from "uploadthing/express";
 import { uploadRouter } from "./modules/upload/upload.service";
 
-export class App {
+class App {
   public app: Application;
   private server: null | Server;
   public port: string | number;
@@ -152,3 +152,5 @@ export class App {
     process.on("SIGTERM", () => shutdown("SIGTERM"));
   }
 }
+
+export default App;

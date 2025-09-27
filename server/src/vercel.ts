@@ -1,4 +1,4 @@
-import { App } from "../src/app";
+import App from "../src/app";
 import { AuthRoute } from "../src/modules/auth/auth.route";
 import { CollectionRoute } from "../src/modules/collections/collection.route";
 import { HealthRoute } from "../src/modules/health/health.route";
