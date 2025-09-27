@@ -3,7 +3,7 @@ import { build } from 'esbuild';
 // Bundle server entry points into Node-compatible ESM output.
 // This avoids Node errors with extensionless imports or .ts extensions.
 // Adjust entryPoints as needed for any additional directly-executed scripts.
-const entryPoints = ['src/index.ts', 'src/vercel.ts'];
+const entryPoints = ['src/index.ts'];
 
 // Optionally include seed script if it exists
 import { access } from 'node:fs/promises';
