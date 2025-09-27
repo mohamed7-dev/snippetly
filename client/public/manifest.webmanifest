@@ -8,24 +8,52 @@
   "background_color": "#0b1220",
   "theme_color": "#0f172a",
   "icons": [
-    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml" },
     {
-      "src": "/web-app-manifest-192x192.png",
+      "src": "web-app-manifest-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/web-app-manifest-512x512.png",
+      "src": "web-app-manifest-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/masked-icon.svg",
+      "src": "masked-icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "maskable any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "screenshots/screenshot-1.webp",
+      "type": "image/webp",
+      "label": "landing page view",
+      "form_factor": "narrow",
+      "sizes": "1919x3232"
+    },
+    {
+      "src": "screenshots/screenshot-2.webp",
+      "type": "image/webp",
+      "label": "dashboard page view",
+      "form_factor": "wide",
+      "sizes": "1919x986"
+    },
+    {
+      "src": "screenshots/screenshot-3.webp",
+      "type": "image/webp",
+      "label": "collection page view",
+      "sizes": "1919x1048"
+    },
+    {
+      "src": "screenshots/screenshot-4.webp",
+      "type": "image/webp",
+      "label": "snippet page view",
+      "sizes": "1919x1161"
     }
   ],
   "protocol_handlers": [
