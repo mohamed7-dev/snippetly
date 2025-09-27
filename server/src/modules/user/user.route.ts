@@ -13,7 +13,6 @@ import multer, { type FileFilterCallback } from "multer";
 import path from "path";
 import { HttpException } from "../../common/lib/exception";
 import { StatusCodes } from "http-status-codes";
-import { __dirname } from "../../common/lib/utils";
 
 export class UserRoute implements Route {
   public path: string = "/users";

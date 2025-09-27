@@ -2,32 +2,9 @@ import {
   JWT_REFRESH_EXPIRES,
   JWT_REFRESH_REMEMBER_EXPIRES,
 } from "../../config/index";
-import { fileURLToPath } from "url";
-import { dirname } from "path";
 
 export const isDevelopment = process.env.NODE_ENV === "development";
 export const isProduction = process.env.NODE_ENV === "production";
-
-const currentFilename: string = (() => {
-  try {
-    // @ts-ignore - import.meta may not exist in CJS
-    return fileURLToPath((import.meta as any).url);
-  } catch {
-    // eslint-disable-next-line no-undef
-    return (globalThis as any).__filename ?? "";
-  }
-})();
-
-const currentDirname: string = (() => {
-  try {
-    return dirname(currentFilename);
-  } catch {
-    // eslint-disable-next-line no-undef
-    return (globalThis as any).__dirname ?? "";
-  }
-})();
-
-export { currentFilename as __filename, currentDirname as __dirname };
 
 export function slugify(input: string): string {
   return input

@@ -4,7 +4,7 @@
   "description": "the server side api of the snippetly application.",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc --project ./tsconfig.build.json",
+    "build": "rm -rf dist && tsc --project ./tsconfig.build.json",
     "start": "NODE_ENV=production node --env-file=.env ./dist/index.js",
     "dev": "NODE_ENV=development tsx watch --tsconfig ./tsconfig.json --env-file=.env src/index.ts",
     "db:generate": "npx drizzle-kit generate --config=./src/config/drizzle.config.ts",

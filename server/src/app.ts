@@ -21,7 +21,6 @@ import path from "path";
 import { notFoundErrorMiddleware } from "./common/middlewares/not-found-error-middleware";
 import { Server } from "http";
 import { StatusCodes } from "http-status-codes";
-import { __dirname } from "./common/lib/utils";
 import { createRouteHandler } from "uploadthing/express";
 import { uploadRouter } from "./modules/upload/upload.service";
 
