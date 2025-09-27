@@ -18,7 +18,10 @@ const application = new App([
 
 // Initialize DB connection once per lambda cold start
 application.connectToDatabase().catch((err) => {
-  console.error("[Vercel] Failed to connect to database during cold start:", err);
+  console.error(
+    "[Vercel] Failed to connect to database during cold start:",
+    err
+  );
 });
 
 export default application.app;

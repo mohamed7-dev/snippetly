@@ -4,6 +4,6 @@
   "routes": [
     { "src": "/static/(.*)", "dest": "/public/$1" },
     { "src": "/uploads/(.*)", "dest": "/public/uploads/$1" },
-    { "src": "/(.*)", "dest": "/dist/index.js" }
+    { "src": "/(.*)", "dest": "/dist/vercel.js" }
   ]
 }
