@@ -1,0 +1,26 @@
+{
+  "extends": "@snippetly/tsconfig/base",
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "eslint.config.ts",
+    "prettier.config.js",
+    "vite.config.js"
+  ],
+
+  "compilerOptions": {
+    "target": "ES2022",
+    "jsx": "react-jsx",
+    "module": "ESNext",
+    "lib": ["ES2022", "DOM", "DOM.Iterable", "WebWorker"],
+    "types": ["vite/client"],
+
+    "moduleResolution": "bundler",
+    "verbatimModuleSyntax": true,
+
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "extends": "@snippetly/tsconfig/base",
+  "compilerOptions": {
+    "moduleDetection": "force",
+
+    "resolveJsonModule": true,
+
+    "isolatedModules": true,
+
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+
+    "types": ["node", "express"],
+    "typeRoots": ["./src/common/types", "./node_modules/@types"],
+
+    "outDir": "./dist",
+    "target": "esnext",
+    "module": "commonjs",
+    "rootDir": "./src",
+    "moduleResolution": "node",
+    "verbatimModuleSyntax": false
+  },
+  "include": ["src", "./src/common/types"]
+}

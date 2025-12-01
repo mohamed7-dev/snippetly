@@ -1,0 +1,10 @@
+{
+  "name": "@snippetly/tsconfig",
+  "version": "1.0.0",
+  "private": true,
+  "license": "ISC",
+  "main": "base.json",
+  "exports": {
+    "./base": "./base.json"
+  }
+}

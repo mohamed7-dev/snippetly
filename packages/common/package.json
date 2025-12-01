@@ -1,0 +1,47 @@
+{
+  "name": "@snippetly/common",
+  "version": "1.0.0",
+  "description": "",
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
+  "files": [
+    "lib/**/*"
+  ],
+"exports": {
+    ".": {
+      "import": "./lib/index.js",
+      "types": "./lib/index.d.ts"
+    },
+    "./dto": {
+      "import": "./lib/dto/index.js",
+      "types": "./lib/dto/index.d.ts"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "dto": ["./lib/dto/index.d.ts"],
+      "*": []
+    }
+  },
+  "scripts": {
+    "dev": "tsc -p ./build/tsconfig.build.json -w",
+    "build": "rimraf lib & tsc -p ./build/tsconfig.build.json",
+    "lint": "eslint --fix ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.13.1",
+  "devDependencies": {
+    "@snippetly/eslint-config": "workspace:*",
+    "@snippetly/tsconfig": "workspace:*",
+    "eslint": "^9.39.1",
+    "globals": "^16.5.0",
+    "rimraf": "^5.0.5",
+    "typescript": "5.8.2"
+  },
+  "dependencies": {
+    "@asteasolutions/zod-to-openapi": "^8.1.0",
+    "zod": "^4.1.13"
+  }
+}

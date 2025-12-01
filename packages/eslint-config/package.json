@@ -1,0 +1,18 @@
+{
+  "name": "@snippetly/eslint-config",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./base": "./base.js"
+  },
+  "types": "./base.d.ts",
+  "dependencies": {
+    "@eslint/js": "^9.39.1",
+    "eslint": "^9.39.1",
+    "eslint-config-prettier": "^10.1.1",
+    "eslint-plugin-only-warn": "^1.1.0",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.46.3"
+  }
+}

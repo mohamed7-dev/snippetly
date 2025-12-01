@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en" style="margin: 0; padding: 0">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Password Reset - Snippetly</title>
+    <style>
+      body,
+      table,
+      td,
+      a {
+        font-family: Arial, sans-serif;
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+      }
+      .email-container {
+        width: 600px;
+        max-width: 100%;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+      .header {
+        background-color: #dc2626;
+        color: #ffffff;
+        text-align: center;
+        padding: 30px;
+        font-size: 28px;
+        font-weight: bold;
+      }
+      .body {
+        padding: 40px 30px;
+        color: #333333;
+        font-size: 16px;
+        line-height: 1.6;
+        background-color: #ffffff;
+      }
+      .button {
+        background-color: #dc2626;
+        color: #ffffff !important;
+        text-decoration: none;
+        padding: 12px 24px;
+        border-radius: 6px;
+        font-weight: bold;
+        display: inline-block;
+      }
+      .link {
+        color: #dc2626;
+        text-decoration: none;
+        word-break: break-all;
+      }
+      .footer {
+        background-color: #f9fafb;
+        text-align: center;
+        padding: 20px;
+        font-size: 12px;
+        color: #888888;
+      }
+
+      /* Dark mode overrides */
+      @media (prefers-color-scheme: dark) {
+        body {
+          background-color: #121212 !important;
+        }
+        .email-container {
+          box-shadow: none;
+        }
+        .header {
+          background-color: #ef4444 !important;
+        }
+        .body {
+          background-color: #1e1e1e !important;
+          color: #e5e5e5 !important;
+        }
+        .button {
+          background-color: #f87171 !important;
+          color: #000000 !important;
+        }
+        .link {
+          color: #f87171 !important;
+        }
+        .footer {
+          background-color: #1a1a1a !important;
+          color: #aaaaaa !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <table width="100%" border="0" cellspacing="0" cellpadding="0">
+      <tr>
+        <td align="center" style="padding: 40px 20px">
+          <table
+            class="email-container"
+            border="0"
+            cellspacing="0"
+            cellpadding="0"
+          >
+            <!-- Header -->
+            <tr>
+              <td class="header">Snippetly</td>
+            </tr>
+
+            <!-- Body -->
+            <tr>
+              <td class="body">
+                <p style="margin: 0 0 20px">Hi <strong>{{name}}</strong>,</p>
+
+                <p style="margin: 0 0 20px">
+                  We received a request to reset your Snippetly account
+                  password. If you made this request, click the button below to
+                  set a new password:
+                </p>
+
+                <p style="text-align: center; margin: 30px 0">
+                  <a href="{{resetUrl}}" class="button">Reset Password</a>
+                </p>
+
+                <p style="margin: 0 0 20px">
+                  If the button doesn’t work, copy and paste this link into your
+                  browser:
+                </p>
+
+                <p style="margin: 0 0 20px">
+                  <a href="{{resetUrl}}" class="link">{{resetUrl}}</a>
+                </p>
+
+                <p style="margin: 0 0 20px; color: #666">
+                  If you didn’t request a password reset, please ignore this
+                  email. Your password will remain unchanged.
+                </p>
+
+                <p style="margin: 0">
+                  Thanks,<br />
+                  The <strong>Snippetly</strong> Team
+                </p>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td class="footer">© {{year}} Snippetly. All rights reserved.</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

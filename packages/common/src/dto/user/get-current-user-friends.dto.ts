@@ -1,0 +1,12 @@
+import { baseModelSchema, z } from "../zod";
+
+// Get User's Inbox/Outbox/Friends
+export const GetCurrentUserFriendsDto = z.object({
+  limit: z.number().min(1).max(100).optional(),
+  cursor: baseModelSchema.pick({ id: true }).optional(),
+  query: z.string().nonempty().optional(),
+});
+
+export type GetCurrentUserFriendsDtoType = z.infer<
+  typeof GetCurrentUserFriendsDto
+>;
