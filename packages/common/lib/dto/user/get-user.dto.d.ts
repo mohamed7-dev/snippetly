@@ -9,9 +9,9 @@ export declare const GetUserSuccessResponseDto: z.ZodObject<{
     type: z.ZodLiteral<"success">;
     data: z.ZodObject<{
         profile: z.ZodObject<{
-            name: z.ZodString;
             createdAt: z.ZodDate;
             updatedAt: z.ZodDate;
+            name: z.ZodString;
             firstName: z.ZodOptional<z.ZodNullable<z.ZodString>>;
             lastName: z.ZodOptional<z.ZodNullable<z.ZodString>>;
             email: z.ZodEmail;
@@ -52,8 +52,8 @@ export declare const GetPublicUserSuccessResponseDto: z.ZodObject<{
             requestStatus: any;
         }, z.core.$strip>;
         profile: z.ZodObject<{
-            name: z.ZodString;
             createdAt: z.ZodDate;
+            name: z.ZodString;
             firstName: z.ZodOptional<z.ZodNullable<z.ZodString>>;
             lastName: z.ZodOptional<z.ZodNullable<z.ZodString>>;
             email: z.ZodEmail;
@@ -70,9 +70,9 @@ export declare const GetUserResponseDto: z.ZodDiscriminatedUnion<[z.ZodObject<{
     type: z.ZodLiteral<"success">;
     data: z.ZodObject<{
         profile: z.ZodObject<{
-            name: z.ZodString;
             createdAt: z.ZodDate;
             updatedAt: z.ZodDate;
+            name: z.ZodString;
             firstName: z.ZodOptional<z.ZodNullable<z.ZodString>>;
             lastName: z.ZodOptional<z.ZodNullable<z.ZodString>>;
             email: z.ZodEmail;
@@ -112,8 +112,8 @@ export declare const GetUserResponseDto: z.ZodDiscriminatedUnion<[z.ZodObject<{
             requestStatus: any;
         }, z.core.$strip>;
         profile: z.ZodObject<{
-            name: z.ZodString;
             createdAt: z.ZodDate;
+            name: z.ZodString;
             firstName: z.ZodOptional<z.ZodNullable<z.ZodString>>;
             lastName: z.ZodOptional<z.ZodNullable<z.ZodString>>;
             email: z.ZodEmail;
@@ -136,9 +136,9 @@ export declare const GetCurrentUserResponseDto: z.ZodDiscriminatedUnion<[z.ZodOb
     type: z.ZodLiteral<"success">;
     data: z.ZodObject<{
         profile: z.ZodObject<{
-            name: z.ZodString;
             createdAt: z.ZodDate;
             updatedAt: z.ZodDate;
+            name: z.ZodString;
             firstName: z.ZodOptional<z.ZodNullable<z.ZodString>>;
             lastName: z.ZodOptional<z.ZodNullable<z.ZodString>>;
             email: z.ZodEmail;
