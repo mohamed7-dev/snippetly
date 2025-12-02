@@ -11,6 +11,7 @@ import type { User } from "../../common/db/schema";
 import { utapi } from "../../config/uploadthing";
 import {
   CreateUserDtoType,
+  DiscoverUsersRequestQueryDtoType,
   ForgetPasswordDtoType,
   GetUserRequestDtoType,
   UpdateUserPasswordDtoType,
@@ -152,7 +153,10 @@ export class UserService {
     return foundUser;
   }
 
-  public async discoverUsers(ctx: RequestContext, input: DiscoverUsersDtoType) {
+  public async discoverUsers(
+    ctx: RequestContext,
+    input: DiscoverUsersRequestQueryDtoType
+  ) {
     const { limit } = input;
     const defaultLimit = limit ?? DEFAULT_FIND_USERS_LIMIT;
 
@@ -178,7 +182,7 @@ export class UserService {
         ? ({
             snippetsCount: nextCursor.snippetsCount,
             id: nextCursor.id,
-          } satisfies DiscoverUsersDtoType["cursor"])
+          } satisfies DiscoverUsersRequestQueryDtoType["cursor"])
         : null,
       total: data.length < filteredItems.length ? total - 1 : total,
     };

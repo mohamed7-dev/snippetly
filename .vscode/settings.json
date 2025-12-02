@@ -8,6 +8,6 @@
   "files.readonlyInclude": {
     "**/routeTree.gen.ts": true
   },
-  "conventionalCommits.scopes": ["server", "client"],
+  "conventionalCommits.scopes": ["server", "client", "common"],
   "cSpell.words": ["JWTOKEN", "snippetly", "Unstar", "virtuals"]
 }

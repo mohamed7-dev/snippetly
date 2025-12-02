@@ -11,6 +11,9 @@ import {
   GetUserRequestDtoType,
   GetUserResponseDto,
   GetCurrentUserResponseDto,
+  DiscoverUsersResponseDto,
+  DiscoverUsersRequestQueryDtoType,
+  GetCurrentUserDashboardResDto,
 } from "@snippetly/common/dto";
 
 export class UserController {
@@ -75,46 +78,49 @@ export class UserController {
   };
 
   public discoverUsers = async (
-    req: Request<{}, {}, {}, DiscoverUsersDtoType>,
+    req: Request<object, object, object, DiscoverUsersRequestQueryDtoType>,
     res: Response
   ) => {
-    const data = await this.UserService.discoverUsers(
+    const result = await this.UserService.discoverUsers(
       req.context,
-      req.validatedQuery as DiscoverUsersDtoType
+      req.validatedQuery
     );
-    const { success, data: parsedData } = DiscoverUsersDto.safeParse(
-      data.items
-    );
+
+    const rawResponse = {
+      status: StatusCodes.OK,
+      message: "Fetched successfully.",
+      data: result,
+      type: "success",
+    };
+    const { success, data: parsedData } =
+      DiscoverUsersResponseDto.safeParse(rawResponse);
+
     if (!success) {
       throw new InternalServerError();
     }
-    res.status(StatusCodes.OK).json({
-      message: "Fetched successfully.",
-      ...data,
-      items: parsedData,
-    });
+
+    res.status(parsedData.status).json(parsedData);
   };
 
   public getCurrentUserDashboard = async (req: Request, res: Response) => {
-    const dashboardInfo = await this.UserService.getCurrentUserDashboard(
-      req.context
-    );
-    const { success, data: parsedData } = GetCurrentUserDashboardDto.safeParse({
-      user: dashboardInfo.user,
-      collections: dashboardInfo.user.collections,
-      stats: dashboardInfo.stats,
-    });
+    const result = await this.UserService.getCurrentUserDashboard(req.context);
+    const rawResponse = {
+      status: StatusCodes.OK,
+      message: "Fetched successfully.",
+      data: {
+        user: result.user,
+        collections: result.user.collections,
+        stats: result.stats,
+      },
+      type: "success",
+    };
+    const { success, data: parsedData } =
+      GetCurrentUserDashboardResDto.safeParse(rawResponse);
+
     if (!success) {
       throw new InternalServerError();
     }
-    res.status(StatusCodes.OK).json({
-      message: "Fetched successfully.",
-      data: {
-        profile: parsedData.user,
-        recentCollections: parsedData.collections,
-        stats: parsedData.stats,
-      },
-    });
+    res.status(parsedData.status).json(parsedData);
   };
 
   public getCurrentUserProfile = async (req: Request, res: Response) => {

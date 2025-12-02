@@ -8,7 +8,11 @@ import multer, { type FileFilterCallback } from "multer";
 import path from "path";
 import { HttpException } from "../../common/lib/exception";
 import { StatusCodes } from "http-status-codes";
-import { GetUserRequestDto, UpdateUserRequestDto } from "@snippetly/common/dto";
+import {
+  GetUserRequestDto,
+  UpdateUserRequestDto,
+  DiscoverUsersRequestQueryDto,
+} from "@snippetly/common/dto";
 
 export class UserRoute implements Route {
   public path: string = "/users";
@@ -26,8 +30,8 @@ export class UserRoute implements Route {
     this.router.get(
       `${this.path}/discover`,
       authMiddleware,
-      zodValidatorMiddleware(DiscoverUsersDto, "Query"),
-      this.controller.discoverUsers as any
+      zodValidatorMiddleware(DiscoverUsersRequestQueryDto, "Query"),
+      this.controller.discoverUsers
     );
     this.router.get(
       `${this.path}/current`,

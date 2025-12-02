@@ -1,6 +1,9 @@
 import { RouteConfig } from "@asteasolutions/zod-to-openapi";
 import {
   BadRequestErrorResponseDto,
+  DiscoverUsersRequestQueryDto,
+  DiscoverUsersSuccessResponseDto,
+  GetCurrentUserDashboardSuccessResDto,
   GetPublicUserSuccessResponseDto,
   GetUserSuccessResponseDto,
   InternalServerErrorResponseDto,
@@ -156,6 +159,89 @@ export const getCurrentUserProfileRouteConfig: RouteConfig = {
       content: {
         "application/json": {
           schema: GetUserSuccessResponseDto,
+        },
+      },
+    },
+    401: {
+      description:
+        "Account is not found, or access token is missing or invalid",
+      content: {
+        "application/json": {
+          schema: UnauthorizedErrorResponseDto,
+        },
+      },
+    },
+    500: {
+      description: "Internal server error",
+      content: {
+        "application/json": {
+          schema: InternalServerErrorResponseDto,
+        },
+      },
+    },
+  },
+};
+
+export const discoverUsersRouteConfig: RouteConfig = {
+  method: "get",
+  path: "/users/discover",
+  summary: "Discover potential friends, and navigate through their snippets",
+  tags: ["Users"],
+  request: {
+    headers: protectedRouteHeadersSchema,
+    query: DiscoverUsersRequestQueryDto,
+  },
+  responses: {
+    200: {
+      description: "Request has been successfully fulfilled",
+      content: {
+        "application/json": {
+          schema: DiscoverUsersSuccessResponseDto,
+        },
+      },
+    },
+    400: {
+      description: "Invalid query params",
+      content: {
+        "application/json": {
+          schema: BadRequestErrorResponseDto,
+        },
+      },
+    },
+    401: {
+      description:
+        "Account is not found, or access token is missing or invalid",
+      content: {
+        "application/json": {
+          schema: UnauthorizedErrorResponseDto,
+        },
+      },
+    },
+    500: {
+      description: "Internal server error",
+      content: {
+        "application/json": {
+          schema: InternalServerErrorResponseDto,
+        },
+      },
+    },
+  },
+};
+
+export const getCurrentUserDashboardRouteConfig: RouteConfig = {
+  method: "get",
+  path: "/users/current/dashboard",
+  summary: "Get current user info with dashboard specific info",
+  tags: ["Users"],
+  request: {
+    headers: protectedRouteHeadersSchema,
+  },
+  responses: {
+    200: {
+      description: "Request has been successfully fulfilled",
+      content: {
+        "application/json": {
+          schema: GetCurrentUserDashboardSuccessResDto,
         },
       },
     },

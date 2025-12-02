@@ -14,6 +14,8 @@ import {
 } from "../../modules/auth/auth.openapi";
 import {
   deleteUserRouteConfig,
+  discoverUsersRouteConfig,
+  getCurrentUserDashboardRouteConfig,
   getCurrentUserProfileRouteConfig,
   getUserProfileRouteConfig,
   updateUserRouteConfig,
@@ -44,6 +46,10 @@ registry.registerPath(deleteUserRouteConfig);
 registry.registerPath(getUserProfileRouteConfig);
 
 registry.registerPath(getCurrentUserProfileRouteConfig);
+
+registry.registerPath(discoverUsersRouteConfig);
+
+registry.registerPath(getCurrentUserDashboardRouteConfig);
 
 // Base document
 const generator = new OpenApiGeneratorV31(registry.definitions);
