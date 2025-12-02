@@ -39,3 +39,13 @@ export const UserActivityStatsDto = z.object({
   friendsInboxCount: z.number(),
   friendsOutboxCount: z.number(),
 });
+
+export const UserActivityExample = {
+  snippetsCount: 100,
+  collectionsCount: 10,
+  forkedSnippetsCount: 5,
+  forkedCollectionsCount: 8,
+  friendsCount: 200,
+  friendsInboxCount: 6,
+  friendsOutboxCount: 1,
+} satisfies z.infer<typeof UserActivityStatsDto>;
