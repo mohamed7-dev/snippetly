@@ -1,7 +1,7 @@
 import z from "zod";
 import { SelectSnippetDto } from "./select-snippet.dto";
 import { SelectTagDto } from "../../tag/dto/select-tag.dto";
-import { SelectUserDto } from "../../user/dto/select-user.dto";
+import { SelectUserDto } from "@snippetly/common/dto";
 import { SelectCollectionDto } from "../../collections/dto/select-collection.dto";
 
 //####################### Mutate #######################

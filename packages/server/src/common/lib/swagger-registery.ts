@@ -21,6 +21,16 @@ import {
   updateUserRouteConfig,
 } from "../../modules/user/user.openapi";
 
+import {
+  sendFriendshipRequestRouteConfig,
+  acceptFriendshipRequestRouteConfig,
+  rejectFriendshipRequestRouteConfig,
+  cancelFriendshipRequestRouteConfig,
+  getCurrentUserFriendsRouteConfig,
+  getCurrentUserInboxRouteConfig,
+  getCurrentUserOutboxRouteConfig,
+} from "../../modules/user/friendship.openapi";
+
 const registry = new OpenAPIRegistry();
 
 registry.registerPath(loginRouteConfig);
@@ -50,6 +60,14 @@ registry.registerPath(getCurrentUserProfileRouteConfig);
 registry.registerPath(discoverUsersRouteConfig);
 
 registry.registerPath(getCurrentUserDashboardRouteConfig);
+
+registry.registerPath(sendFriendshipRequestRouteConfig);
+registry.registerPath(acceptFriendshipRequestRouteConfig);
+registry.registerPath(rejectFriendshipRequestRouteConfig);
+registry.registerPath(cancelFriendshipRequestRouteConfig);
+registry.registerPath(getCurrentUserFriendsRouteConfig);
+registry.registerPath(getCurrentUserInboxRouteConfig);
+registry.registerPath(getCurrentUserOutboxRouteConfig);
 
 // Base document
 const generator = new OpenApiGeneratorV31(registry.definitions);

@@ -1,6 +1,6 @@
 import z from "zod";
 import { SelectCollectionDto } from "./select-collection.dto";
-import { SelectUserDto } from "../../user/dto/select-user.dto";
+import { SelectUserDto } from "@snippetly/common/dto";
 import { SelectTagDto } from "../../tag/dto/select-tag.dto";
 import { SelectSnippetDto } from "../../snippet/dto/select-snippet.dto";
 

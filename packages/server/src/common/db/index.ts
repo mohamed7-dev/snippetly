@@ -49,8 +49,17 @@ export class Database {
     }
 
     const pool = new Pool({ connectionString: url });
-    const db = drizzlePg(pool, { schema }) as AnyDb;
-    this.db = db;
-    DatabaseLogger.logConnection("connect");
+
+    try {
+      await pool.query("SELECT 1"); // forces connection
+      this.db = drizzlePg(pool, { schema }) as AnyDb;
+      DatabaseLogger.logConnection("connect");
+    } catch (e) {
+      DatabaseLogger.logConnection(
+        "error",
+        { message: (e as Error).message },
+        (e as Error).stack
+      );
+    }
   }
 }

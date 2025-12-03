@@ -16,8 +16,8 @@ import {
   snippetsTable,
   usersTable,
 } from "../../common/db/schema";
-import { type GetCurrentUserFriendsDtoType } from "./dto/get-current-user-friends.dto";
 import { alias } from "drizzle-orm/pg-core";
+import { GetCurrentUserFriendsRequestQueryDtoType } from "@snippetly/common/dto";
 
 export class FriendshipReadService {
   /**
@@ -47,8 +47,8 @@ export class FriendshipReadService {
     userId,
     limit,
     cursor,
-  }: GetCurrentUserFriendsDtoType &
-    Required<Pick<GetCurrentUserFriendsDtoType, "limit">> & {
+  }: GetCurrentUserFriendsRequestQueryDtoType &
+    Required<Pick<GetCurrentUserFriendsRequestQueryDtoType, "limit">> & {
       userId: number;
     }) {
     const friendsQuery = await Database.client.query.friendshipsTable.findMany({
@@ -169,8 +169,8 @@ export class FriendshipReadService {
     limit,
     cursor,
     query: searchString,
-  }: GetCurrentUserFriendsDtoType &
-    Required<Pick<GetCurrentUserFriendsDtoType, "limit">> & {
+  }: GetCurrentUserFriendsRequestQueryDtoType &
+    Required<Pick<GetCurrentUserFriendsRequestQueryDtoType, "limit">> & {
       userId: number;
     }) {
     const fi = alias(friendshipsTable, "fi");
@@ -193,7 +193,7 @@ export class FriendshipReadService {
             )
           : undefined
       );
-    let findFriendsInboxQuery = Database.client
+    const findFriendsInboxQuery = Database.client
       .select({
         id: usersTable.id,
         name: usersTable.name,
@@ -243,8 +243,8 @@ export class FriendshipReadService {
     limit,
     cursor,
     query: searchString,
-  }: GetCurrentUserFriendsDtoType &
-    Required<Pick<GetCurrentUserFriendsDtoType, "limit">> & {
+  }: GetCurrentUserFriendsRequestQueryDtoType &
+    Required<Pick<GetCurrentUserFriendsRequestQueryDtoType, "limit">> & {
       userId: number;
     }) {
     const fi = alias(friendshipsTable, "fi");
@@ -268,7 +268,7 @@ export class FriendshipReadService {
           : undefined
       );
 
-    let findFriendsOutboxQuery = Database.client
+    const findFriendsOutboxQuery = Database.client
       .select({
         id: usersTable.id,
         name: usersTable.name,

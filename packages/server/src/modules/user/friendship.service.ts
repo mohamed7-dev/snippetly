@@ -4,12 +4,14 @@ import { handleCursorPagination } from "../../common/lib/utils";
 import type { RequestContext } from "../../common/middlewares/request-context-middleware";
 import type { NonNullableFields } from "../../common/types/utils";
 import { DEFAULT_USERS_PENDING_FRIENDS_LIMIT } from "./constants";
-import type { GetCurrentUserFriendsDtoType } from "./dto/get-current-user-friends.dto";
-import type { ManageFriendshipDtoType } from "./dto/manage-friendship.dto";
 import { FriendshipReadService } from "./friendship-read.service";
 import { UserReadService } from "./user-read.service";
 import { FriendshipRepository } from "./friendship.repository";
 import type { Friendship } from "../../common/db/schema";
+import {
+  GetCurrentUserFriendsRequestQueryDtoType,
+  ManageFriendshipRequestParamDtoType,
+} from "@snippetly/common/dto";
 
 export class FriendshipService {
   private UserReadService: UserReadService;
@@ -24,7 +26,7 @@ export class FriendshipService {
 
   public async getCurrentUserFriends(
     ctx: NonNullableFields<RequestContext>,
-    input: GetCurrentUserFriendsDtoType
+    input: GetCurrentUserFriendsRequestQueryDtoType
   ) {
     const { limit } = input;
     const defaultLimit = limit ?? DEFAULT_USERS_PENDING_FRIENDS_LIMIT;
@@ -44,7 +46,7 @@ export class FriendshipService {
       nextCursor: nextCursor
         ? ({
             id: nextCursor.id,
-          } satisfies GetCurrentUserFriendsDtoType["cursor"])
+          } satisfies GetCurrentUserFriendsRequestQueryDtoType["cursor"])
         : null,
       total,
     };
@@ -52,7 +54,7 @@ export class FriendshipService {
 
   public async getCurrentUserInbox(
     ctx: NonNullableFields<RequestContext>,
-    input: GetCurrentUserFriendsDtoType
+    input: GetCurrentUserFriendsRequestQueryDtoType
   ) {
     const { limit } = input;
     const defaultLimit = limit ?? DEFAULT_USERS_PENDING_FRIENDS_LIMIT;
@@ -73,7 +75,7 @@ export class FriendshipService {
       nextCursor: nextCursor
         ? ({
             id: nextCursor.id,
-          } satisfies GetCurrentUserFriendsDtoType["cursor"])
+          } satisfies GetCurrentUserFriendsRequestQueryDtoType["cursor"])
         : null,
       total,
     };
@@ -81,7 +83,7 @@ export class FriendshipService {
 
   public async getCurrentUserOutbox(
     ctx: NonNullableFields<RequestContext>,
-    input: GetCurrentUserFriendsDtoType
+    input: GetCurrentUserFriendsRequestQueryDtoType
   ) {
     const { limit } = input;
     const defaultLimit = limit ?? DEFAULT_USERS_PENDING_FRIENDS_LIMIT;
@@ -102,7 +104,7 @@ export class FriendshipService {
       nextCursor: nextCursor
         ? ({
             id: nextCursor.id,
-          } satisfies GetCurrentUserFriendsDtoType["cursor"])
+          } satisfies GetCurrentUserFriendsRequestQueryDtoType["cursor"])
         : null,
       total,
     };
@@ -110,7 +112,7 @@ export class FriendshipService {
 
   public async sendFriendshipRequest(
     ctx: NonNullableFields<RequestContext>,
-    input: ManageFriendshipDtoType
+    input: ManageFriendshipRequestParamDtoType
   ) {
     const { friend_name: friendName } = input;
 
@@ -167,7 +169,7 @@ export class FriendshipService {
 
   public async acceptFriendshipRequest(
     ctx: NonNullableFields<RequestContext>,
-    input: ManageFriendshipDtoType
+    input: ManageFriendshipRequestParamDtoType
   ) {
     const { friend_name: friendName } = input;
     const { friend: requester, user: addressee } = await this.getFriendAndUser({
@@ -210,7 +212,7 @@ export class FriendshipService {
 
   public async rejectFriendshipRequest(
     ctx: NonNullableFields<RequestContext>,
-    input: ManageFriendshipDtoType
+    input: ManageFriendshipRequestParamDtoType
   ) {
     const { friend_name: friendName } = input;
 
@@ -256,7 +258,7 @@ export class FriendshipService {
 
   public async cancelFriendshipRequest(
     ctx: NonNullableFields<RequestContext>,
-    input: ManageFriendshipDtoType
+    input: ManageFriendshipRequestParamDtoType
   ) {
     const { friend_name: friendName } = input;
 
@@ -313,9 +315,8 @@ export class FriendshipService {
     }
     const friend = await this.UserReadService.findOneSlim("name", friendName);
     if (!friend) {
-      const foundUserWithOldName = await this.UserReadService.findOneByOldNames(
-        friendName
-      );
+      const foundUserWithOldName =
+        await this.UserReadService.findOneByOldNames(friendName);
       if (!foundUserWithOldName) {
         throw new HttpException(StatusCodes.NOT_FOUND, "Friend not found.");
       }

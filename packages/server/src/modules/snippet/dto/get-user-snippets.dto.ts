@@ -1,5 +1,5 @@
 import z from "zod";
-import { SelectUserDto } from "../../user/dto/select-user.dto";
+import { SelectUserDto } from "@snippetly/common/dto";
 
 export const GetUserSnippetsDto = z.object({
   limit: z.number().min(1).max(100).optional(),

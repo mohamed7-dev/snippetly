@@ -25,7 +25,6 @@ import { createRouteHandler } from "uploadthing/express";
 import { uploadRouter } from "./modules/upload/upload.service";
 import swaggerUi from "swagger-ui-express";
 import { openApiDocument } from "./common/lib/swagger-registery";
-// import { swaggerSpec } from "./config/swagger.config";
 
 class App {
   public app: Application;

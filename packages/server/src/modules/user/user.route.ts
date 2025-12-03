@@ -12,6 +12,8 @@ import {
   GetUserRequestDto,
   UpdateUserRequestDto,
   DiscoverUsersRequestQueryDto,
+  ManageFriendshipRequestParamDto,
+  GetCurrentUserFriendsRequestQueryDto,
 } from "@snippetly/common/dto";
 
 export class UserRoute implements Route {
@@ -41,20 +43,20 @@ export class UserRoute implements Route {
     this.router.get(
       `${this.path}/current/friends`,
       authMiddleware,
-      zodValidatorMiddleware(GetCurrentUserFriendsDto, "Query"),
-      this.FriendshipController.getCurrentUserFriends as any
+      zodValidatorMiddleware(GetCurrentUserFriendsRequestQueryDto, "Query"),
+      this.FriendshipController.getCurrentUserFriends
     );
     this.router.get(
       `${this.path}/current/inbox`,
       authMiddleware,
-      zodValidatorMiddleware(GetCurrentUserFriendsDto, "Query"),
-      this.FriendshipController.getCurrentUserInbox as any
+      zodValidatorMiddleware(GetCurrentUserFriendsRequestQueryDto, "Query"),
+      this.FriendshipController.getCurrentUserInbox
     );
     this.router.get(
       `${this.path}/current/outbox`,
       authMiddleware,
-      zodValidatorMiddleware(GetCurrentUserFriendsDto, "Query"),
-      this.FriendshipController.getCurrentUserOutbox as any
+      zodValidatorMiddleware(GetCurrentUserFriendsRequestQueryDto, "Query"),
+      this.FriendshipController.getCurrentUserOutbox
     );
     this.router.get(
       `${this.path}/current/dashboard`,
@@ -82,25 +84,25 @@ export class UserRoute implements Route {
     this.router.put(
       `${this.path}/add-friend/:friend_name`,
       authMiddleware,
-      zodValidatorMiddleware(ManageFriendshipDto, "Params"),
+      zodValidatorMiddleware(ManageFriendshipRequestParamDto, "Params"),
       this.FriendshipController.sendFriendshipRequest
     );
     this.router.put(
       `${this.path}/accept-friend/:friend_name`,
       authMiddleware,
-      zodValidatorMiddleware(ManageFriendshipDto, "Params"),
+      zodValidatorMiddleware(ManageFriendshipRequestParamDto, "Params"),
       this.FriendshipController.acceptFriendshipRequest
     );
     this.router.put(
       `${this.path}/reject-friend/:friend_name`,
       authMiddleware,
-      zodValidatorMiddleware(ManageFriendshipDto, "Params"),
+      zodValidatorMiddleware(ManageFriendshipRequestParamDto, "Params"),
       this.FriendshipController.rejectFriendshipRequest
     );
     this.router.put(
       `${this.path}/cancel-friend/:friend_name`,
       authMiddleware,
-      zodValidatorMiddleware(ManageFriendshipDto, "Params"),
+      zodValidatorMiddleware(ManageFriendshipRequestParamDto, "Params"),
       this.FriendshipController.cancelFriendshipRequest
     );
 
