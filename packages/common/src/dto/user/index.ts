@@ -5,3 +5,5 @@ export * from "./update-user.dto";
 export * from "./delete-user.dto";
 export * from "./get-user.dto";
 export * from "./discover-users.dto";
+export * from "./manage-friendship.dto";
+export * from "./get-current-user-friends.dto";

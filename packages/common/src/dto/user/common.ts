@@ -1,4 +1,5 @@
 import { z } from "../zod";
+import { SelectFriendshipDto } from "./select-friendship.dto";
 import { SelectUserDto } from "./select-user.dto";
 
 export const CommonUserResDto = SelectUserDto.pick({
@@ -49,3 +50,8 @@ export const UserActivityExample = {
   friendsInboxCount: 6,
   friendsOutboxCount: 1,
 } satisfies z.infer<typeof UserActivityStatsDto>;
+
+export const CommonFriendshipResDto = SelectFriendshipDto.omit({
+  updatedAt: true,
+  id: true,
+});

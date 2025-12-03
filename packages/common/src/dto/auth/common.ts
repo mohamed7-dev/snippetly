@@ -44,10 +44,26 @@ export const VerifyTokenRequestDto = z.object({
   token: z.uuidv4(),
 });
 
-export const protectedRouteCookiesSchema = z.object({
-  "refresh-token": z.string(),
-});
+export const protectedRouteCookiesSchema = z
+  .object({
+    "refresh-token": z.string(),
+  })
+  .meta({
+    id: "RefreshTokenCookie",
+    description: "refresh token http cookie",
+    example: {
+      authorization: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9 ...",
+    },
+  });
 
-export const protectedRouteHeadersSchema = z.object({
-  authorization: z.string(),
-});
+export const protectedRouteHeadersSchema = z
+  .object({
+    authorization: z.string().nonoptional(),
+  })
+  .meta({
+    id: "AuthorizationHeader",
+    description: "authorization header",
+    example: {
+      authorization: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9 ...",
+    },
+  });

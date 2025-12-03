@@ -2,18 +2,21 @@
   "name": "@snippetly/common",
   "version": "1.0.0",
   "description": "",
+  "type": "commonjs",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "files": [
     "lib/**/*"
   ],
-"exports": {
-    ".": {
-      "import": "./lib/index.js",
+  "exports": {
+        ".": {
+      "require": "./lib/index.js",
+      "default": "./lib/index.js",
       "types": "./lib/index.d.ts"
     },
     "./dto": {
-      "import": "./lib/dto/index.js",
+      "require": "./lib/dto/index.js",
+      "default": "./lib/dto/index.js",
       "types": "./lib/dto/index.d.ts"
     }
   },
