@@ -18,10 +18,11 @@ import {
   tagsTable,
   usersTable,
 } from "../../common/db/schema";
-import type {
-  DiscoverCollectionsDtoType,
-  FindCollectionsDtoType,
-} from "./dto/find-collection.dto";
+import {
+  DiscoverCollectionsRequestQueryDtoType,
+  GetUserCollectionsRequestParamDtoType,
+  GetUserCollectionsRequestQueryDtoType,
+} from "@snippetly/common/dto";
 
 export class CollectionReadService {
   /**
@@ -85,8 +86,8 @@ export class CollectionReadService {
     cursor,
     query,
     loggedInUserId,
-  }: DiscoverCollectionsDtoType &
-    Required<Pick<DiscoverCollectionsDtoType, "limit">> & {
+  }: DiscoverCollectionsRequestQueryDtoType &
+    Required<Pick<DiscoverCollectionsRequestQueryDtoType, "limit">> & {
       loggedInUserId?: number;
     }) {
     const [data, total] = await Promise.all([
@@ -198,8 +199,8 @@ export class CollectionReadService {
       limit,
       query,
       cursor,
-    }: Omit<FindCollectionsDtoType, "creatorName"> &
-      Required<Pick<FindCollectionsDtoType, "limit">>,
+    }: GetUserCollectionsRequestQueryDtoType &
+      Required<Pick<GetUserCollectionsRequestQueryDtoType, "limit">>,
     creatorId: number,
     isCurrentUserOwner: boolean
   ) {

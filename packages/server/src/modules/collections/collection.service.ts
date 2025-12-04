@@ -1,32 +1,34 @@
 import { StatusCodes } from "http-status-codes";
 import { HttpException } from "../../common/lib/exception";
-import type { UpdateCollectionDtoType } from "./dto/update-collection.dto";
 import {
   generateUniquePrefix,
   handleCursorPagination,
   slugify,
 } from "../../common/lib/utils";
-import type { DeleteCollectionDtoType } from "./dto/delete-collection.dto";
 import { TagService } from "../tag/tag.service";
 import {
   DISCOVER_FOLDERS_DEFAULT_LIMIT,
   FIND_FOLDERS_DEFAULT_LIMIT,
 } from "./constants";
-import type { ForkCollectionDtoType } from "./dto/fork-collection.dto";
 import { CollectionRepository } from "./collection.repository";
 import { CollectionsTagsRepository } from "./collections-tags-repository";
-import type { CreateCollectionDtoType } from "./dto/create-collection.dto";
 import type { NonNullableFields } from "../../common/types/utils";
 import { TagReadService } from "../tag/tag-read.service";
 import { CollectionReadService } from "./collection-read.service";
-import type {
-  DiscoverCollectionsDtoType,
-  FindCollectionDtoType,
-  FindCollectionsDtoType,
-} from "./dto/find-collection.dto";
 import { UserReadService } from "../user/user-read.service";
 import type { RequestContext } from "../../common/middlewares/request-context-middleware";
 import type { Tags, User } from "../../common/db/schema";
+import {
+  CreateCollectionRequestDtoType,
+  DiscoverCollectionsRequestQueryDtoType,
+  ForkCollectionRequestParamDtoType,
+  UpdateCollectionRequestBodyDtoType,
+  UpdateCollectionRequestParamDtoType,
+  GetCollectionRequestParamDtoType,
+  GetUserCollectionsRequestParamDtoType,
+  GetUserCollectionsRequestQueryDtoType,
+  DeleteCollectionRequestParamDtoType,
+} from "@snippetly/common/dto";
 
 export class CollectionService {
   private readonly UserReadService: UserReadService;
@@ -47,7 +49,7 @@ export class CollectionService {
 
   public async create(
     ctx: NonNullableFields<Pick<RequestContext, "user">>,
-    input: CreateCollectionDtoType & { forkedFrom?: number }
+    input: CreateCollectionRequestDtoType & { forkedFrom?: number }
   ) {
     const { title, tags, forkedFrom, ...rest } = input;
     const prefix = generateUniquePrefix();
@@ -79,14 +81,20 @@ export class CollectionService {
 
   public async update(
     ctx: NonNullableFields<RequestContext>,
-    input: UpdateCollectionDtoType
+    input: {
+      data: UpdateCollectionRequestBodyDtoType;
+      params: UpdateCollectionRequestParamDtoType;
+    }
   ) {
-    const { data, slug } = input;
+    const { data, params } = input;
     const foundCollection =
-      await this.CollectionReadService.findOneSlimWithCreator("slug", slug);
+      await this.CollectionReadService.findOneSlimWithCreator(
+        "slug",
+        params.slug
+      );
 
     if (!foundCollection) {
-      return await this.getCollectionByOldSlugAndRedirect(slug);
+      return await this.getCollectionByOldSlugAndRedirect(params.slug);
     }
 
     const userId = ctx.user.id;
@@ -145,7 +153,7 @@ export class CollectionService {
 
   public async fork(
     ctx: NonNullableFields<RequestContext>,
-    input: ForkCollectionDtoType
+    input: ForkCollectionRequestParamDtoType
   ) {
     const { slug } = input;
     const foundCollection = await this.CollectionReadService.findOneSlim(
@@ -208,7 +216,7 @@ export class CollectionService {
 
   public async delete(
     ctx: NonNullableFields<RequestContext>,
-    input: DeleteCollectionDtoType
+    input: DeleteCollectionRequestParamDtoType
   ) {
     const foundCollection = await this.CollectionReadService.findOneSlim(
       "slug",
@@ -231,7 +239,7 @@ export class CollectionService {
 
   public async discover(
     ctx: RequestContext,
-    input: DiscoverCollectionsDtoType
+    input: DiscoverCollectionsRequestQueryDtoType
   ) {
     const { limit } = input;
     const defaultLimit = limit ?? DISCOVER_FOLDERS_DEFAULT_LIMIT;
@@ -259,7 +267,7 @@ export class CollectionService {
       nextCursor: nextCursor
         ? ({
             updatedAt: nextCursor.updatedAt,
-          } satisfies DiscoverCollectionsDtoType["cursor"])
+          } satisfies DiscoverCollectionsRequestQueryDtoType["cursor"])
         : null,
       total,
     };
@@ -267,7 +275,10 @@ export class CollectionService {
 
   public async findCurrentUserCollections(
     ctx: NonNullableFields<RequestContext>,
-    input: Pick<FindCollectionsDtoType, "limit" | "query" | "cursor">
+    input: Pick<
+      GetUserCollectionsRequestQueryDtoType,
+      "limit" | "query" | "cursor"
+    >
   ) {
     const foundUser = await this.UserReadService.findOneSlim("id", ctx.user.id);
     const data = await this.find(ctx, {
@@ -279,7 +290,10 @@ export class CollectionService {
 
   public async find(
     ctx: RequestContext,
-    input: Partial<FindCollectionsDtoType> & { user?: User }
+    input: Partial<
+      GetUserCollectionsRequestParamDtoType &
+        GetUserCollectionsRequestQueryDtoType
+    > & { user?: User }
   ) {
     const { limit, creatorName, user } = input;
     const defaultLimit = limit ?? FIND_FOLDERS_DEFAULT_LIMIT;
@@ -329,15 +343,18 @@ export class CollectionService {
       nextCursor: nextCursor
         ? ({
             updatedAt: nextCursor.updatedAt,
-          } satisfies FindCollectionsDtoType["cursor"])
+          } satisfies GetUserCollectionsRequestQueryDtoType["cursor"])
         : null,
       stats,
       total,
     };
   }
 
-  public async findOne(ctx: RequestContext, input: FindCollectionDtoType) {
-    let foundCollection = await this.CollectionReadService.findOneSlim(
+  public async findOne(
+    ctx: RequestContext,
+    input: GetCollectionRequestParamDtoType
+  ) {
+    const foundCollection = await this.CollectionReadService.findOneSlim(
       "slug",
       input.slug
     );

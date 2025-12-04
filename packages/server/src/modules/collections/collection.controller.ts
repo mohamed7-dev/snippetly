@@ -1,31 +1,26 @@
-import type { Request, Response } from "express";
+import { type Request, type Response } from "express";
 import { StatusCodes } from "http-status-codes";
 import { CollectionService } from "./collection.service";
-import type { CreateCollectionDtoType } from "./dto/create-collection.dto";
-import type {
-  DiscoverCollectionsDtoType,
-  FindCollectionDtoType,
-  FindCollectionsDtoType,
-} from "./dto/find-collection.dto";
-import {
-  CreateCollectionResDto,
-  DiscoverCollectionsResDto,
-  ForkCollectionResDto,
-  GetCollectionResDto,
-  type GetCollectionResDtoType,
-  GetCurrentUserCollectionsResDto,
-  type GetCurrentUserCollectionsResDtoType,
-  GetPublicCollectionResDto,
-  type GetPublicCollectionResDtoType,
-  GetPublicUserCollectionsResDto,
-  type GetPublicUserCollectionsResDtoType,
-  UpdateCollectionResDto,
-} from "./dto/response.dto";
 import { InternalServerError } from "../../common/lib/exception";
-import type { UpdateCollectionDtoType } from "./dto/update-collection.dto";
-import type { ForkCollectionDtoType } from "./dto/fork-collection.dto";
-import type { DeleteCollectionDtoType } from "./dto/delete-collection.dto";
 import type { Collection } from "../../common/db/schema";
+import {
+  CreateCollectionRequestDtoType,
+  CreateCollectionResponseDto,
+  DeleteCollectionRequestParamDtoType,
+  DeleteCollectionResDto,
+  DiscoverCollectionsRequestQueryDtoType,
+  DiscoverCollectionsResDto,
+  ForkCollectionRequestParamDtoType,
+  ForkCollectionResDto,
+  GetCollectionRequestParamDtoType,
+  GetCollectionResDto,
+  GetUserCollectionsRequestParamDtoType,
+  GetUserCollectionsRequestQueryDtoType,
+  GetUserCollectionsResDto,
+  UpdateCollectionRequestBodyDtoType,
+  UpdateCollectionRequestParamDtoType,
+  UpdateCollectionResDto,
+} from "@snippetly/common/dto";
 
 export class CollectionController {
   private readonly CollectionService: CollectionService;
@@ -35,63 +30,63 @@ export class CollectionController {
   }
 
   public create = async (
-    request: Request<{}, {}, CreateCollectionDtoType>,
+    request: Request<object, object, CreateCollectionRequestDtoType>,
     response: Response
   ) => {
-    const newCollection = await this.CollectionService.create(
+    const result = await this.CollectionService.create(
       request.context,
       request.body
     );
-    const {
-      success,
-      data: parsedData,
-      error,
-    } = CreateCollectionResDto.safeParse(newCollection);
-    console.log(error);
+    const rawResponse = {
+      type: "success",
+      status: StatusCodes.CREATED,
+      data: result,
+      message: "Collection has been created successfully.",
+    };
+    const { success, data: parsedData } =
+      CreateCollectionResponseDto.safeParse(rawResponse);
+
     if (!success) {
       throw new InternalServerError();
     }
-    response.status(StatusCodes.CREATED).json({
-      message: "Collection has been created successfully.",
-      data: parsedData,
-    });
+    response.status(parsedData.status).json(parsedData);
   };
 
   public update = async (
     request: Request<
-      Pick<UpdateCollectionDtoType, "slug">,
-      {},
-      UpdateCollectionDtoType["data"]
+      UpdateCollectionRequestParamDtoType,
+      object,
+      UpdateCollectionRequestBodyDtoType
     >,
     response: Response
   ) => {
     const result = await this.CollectionService.update(request.context, {
       data: request.body,
-      slug: request.params.slug,
+      params: request.params,
     });
     if ("redirect" in result) {
       response.redirect(
         StatusCodes.PERMANENT_REDIRECT,
         `/api/v1/collections/${result.slug}`
       );
-      // response.status(StatusCodes.PERMANENT_REDIRECT).json({
-      //   newSlug: result.slug,
-      // });
     } else {
+      const rawResponse = {
+        type: "success",
+        message: "Collection has been updated successfully.",
+        data: result,
+        status: StatusCodes.OK,
+      };
       const { success, data: parsedData } =
-        UpdateCollectionResDto.safeParse(result);
+        UpdateCollectionResDto.safeParse(rawResponse);
       if (!success) {
         throw new InternalServerError();
       }
-      response.status(StatusCodes.OK).json({
-        message: "Collection has been updated successfully.",
-        data: parsedData,
-      });
+      response.status(parsedData.status).json(parsedData);
     }
   };
 
   public fork = async (
-    request: Request<ForkCollectionDtoType>,
+    request: Request<ForkCollectionRequestParamDtoType>,
     response: Response
   ) => {
     const result = await this.CollectionService.fork(
@@ -103,25 +98,24 @@ export class CollectionController {
         StatusCodes.PERMANENT_REDIRECT,
         `/api/v1/collections/${result.slug}/fork`
       );
-      // response.redirect(
-      //   StatusCodes.PERMANENT_REDIRECT,
-      //   `/api/v1/collections/${result.slug}/fork`
-      // );
     } else {
+      const rawResponse = {
+        type: "success",
+        message: "Collection has been forked successfully.",
+        data: result,
+        status: StatusCodes.OK,
+      };
       const { success, data: parsedData } =
-        ForkCollectionResDto.safeParse(result);
+        ForkCollectionResDto.safeParse(rawResponse);
       if (!success) {
         throw new InternalServerError();
       }
-      response.status(StatusCodes.CREATED).json({
-        message: "Collection has been forked successfully.",
-        data: parsedData,
-      });
+      response.status(parsedData.status).json(parsedData);
     }
   };
 
   public delete = async (
-    request: Request<DeleteCollectionDtoType>,
+    request: Request<DeleteCollectionRequestParamDtoType>,
     response: Response
   ) => {
     const result = await this.CollectionService.delete(
@@ -133,168 +127,152 @@ export class CollectionController {
         StatusCodes.PERMANENT_REDIRECT,
         `/api/v1/collections/${result.slug}`
       );
-      // response.status(StatusCodes.PERMANENT_REDIRECT).json({
-      //   newSlug: `/api/v1/collections/${result.slug}`,
-      // });
     } else {
-      response.status(StatusCodes.OK).json({
-        message: "Collection has been deleted successfully",
+      const rawResponse = {
+        type: "success",
+        message: "Collection has been deleted successfully.",
         data: null,
-      });
+        status: StatusCodes.OK,
+      };
+      const { success, data: parsedData } =
+        DeleteCollectionResDto.safeParse(rawResponse);
+
+      if (!success) {
+        throw new InternalServerError();
+      }
+      response.status(parsedData.status).json(parsedData);
     }
   };
 
   public discover = async (
-    req: Request<{}, {}, {}, DiscoverCollectionsDtoType>,
+    req: Request<
+      object,
+      object,
+      object,
+      DiscoverCollectionsRequestQueryDtoType
+    >,
     res: Response
   ) => {
-    const data = await this.CollectionService.discover(
+    const result = await this.CollectionService.discover(
       req.context,
       req.validatedQuery
     );
-    const { success, data: parsedData } = DiscoverCollectionsResDto.safeParse(
-      data.items
-    );
+    const rawResponse = {
+      type: "success",
+      message: "Fetched successfully.",
+      data: result,
+      status: StatusCodes.OK,
+    };
+    const { success, data: parsedData } =
+      DiscoverCollectionsResDto.safeParse(rawResponse);
+
     if (!success) {
       throw new InternalServerError();
     }
-    res.status(StatusCodes.OK).json({
-      message: "Fetched successfully.",
-      ...data,
-      items: parsedData,
-    });
+    res.status(parsedData.status).json(parsedData);
   };
 
   public getCurrentUserCollections = async (
     request: Request<
-      {},
-      {},
-      {},
-      Pick<FindCollectionsDtoType, "limit" | "query" | "cursor">
+      object,
+      object,
+      object,
+      Pick<GetUserCollectionsRequestQueryDtoType, "limit" | "query" | "cursor">
     >,
     response: Response
   ) => {
-    const data = await this.CollectionService.findCurrentUserCollections(
+    const result = await this.CollectionService.findCurrentUserCollections(
       request.context,
       request.validatedQuery
     );
+    const rawResponse = {
+      type: "owner-success",
+      status: StatusCodes.OK,
+      message: "Fetched successfully.",
+      data: result,
+    };
+
     const { success, data: parsedData } =
-      GetCurrentUserCollectionsResDto.safeParse({
-        stats: data.stats,
-        collections: data.items,
-      });
+      GetUserCollectionsResDto.safeParse(rawResponse);
+
     if (!success) {
       throw new InternalServerError();
     }
-    response.status(StatusCodes.OK).json({
-      message: "Fetched successfully.",
-      ...data,
-      items: parsedData.collections,
-      stats: parsedData.stats,
-    });
+
+    response.status(parsedData.status).json(parsedData);
   };
 
   public getUserCollections = async (
     request: Request<
-      Pick<FindCollectionsDtoType, "creatorName">,
-      {},
-      {},
-      Omit<FindCollectionsDtoType, "creatorName">
+      GetUserCollectionsRequestParamDtoType,
+      object,
+      object,
+      GetUserCollectionsRequestQueryDtoType
     >,
     response: Response
   ) => {
-    const data = await this.CollectionService.find(request.context, {
+    const result = await this.CollectionService.find(request.context, {
       ...request.params,
-      ...(request.validatedQuery as Omit<
-        FindCollectionsDtoType,
-        "creatorName"
-      >),
+      ...request.validatedQuery,
     });
-    if ("redirect" in data) {
+
+    if ("redirect" in result) {
       response.status(StatusCodes.PERMANENT_REDIRECT).json({
-        newUsername: data.name,
+        newUsername: result.name,
       });
     } else {
       const isCurrentUserOwner =
-        request.context?.user?.id === data?.items?.[0]?.creator?.id;
+        request.context?.user?.id === result?.items?.[0]?.creator?.id;
 
-      let dataToReturn:
-        | GetCurrentUserCollectionsResDtoType
-        | GetPublicUserCollectionsResDtoType;
+      const rawResponse = {
+        type: isCurrentUserOwner ? "owner-success" : "public-success",
+        status: StatusCodes.OK,
+        message: "Fetched successfully.",
+        data: result,
+      };
 
-      if (isCurrentUserOwner) {
-        // run the owner dto
-        const { success, data: parsedData } =
-          GetCurrentUserCollectionsResDto.safeParse({
-            stats: data.stats,
-            collections: data.items,
-          });
-        if (!success) {
-          throw new InternalServerError();
-        }
-        dataToReturn = parsedData;
-      } else {
-        // run the public dto
-        const { success, data: parsedData } =
-          GetPublicUserCollectionsResDto.safeParse({
-            stats: data.stats,
-            collections: data.items,
-          });
-        if (!success) {
-          throw new InternalServerError();
-        }
-        dataToReturn = parsedData;
+      const { success, data: parsedData } =
+        GetUserCollectionsResDto.safeParse(rawResponse);
+
+      if (!success) {
+        throw new InternalServerError();
       }
 
-      response.status(StatusCodes.OK).json({
-        message: "Fetched successfully.",
-        ...data,
-        items: dataToReturn.collections,
-        stats: dataToReturn.stats,
-      });
+      response.status(parsedData.status).json(parsedData);
     }
   };
 
   public getCollection = async (
-    request: Request<FindCollectionDtoType>,
+    request: Request<GetCollectionRequestParamDtoType>,
     response: Response
   ) => {
-    const data = await this.CollectionService.findOne(
+    const result = await this.CollectionService.findOne(
       request.context,
       request.params
     );
 
-    if ("redirect" in data) {
+    if ("redirect" in result) {
       response.status(StatusCodes.PERMANENT_REDIRECT).json({
-        newSlug: data.slug,
+        newSlug: result.slug,
       });
     } else {
       const isCurrentUserOwner =
-        request.context?.user?.id === (data as Collection)?.creatorId;
+        request.context?.user?.id === (result as Collection)?.creatorId;
 
-      let dataToReturn: GetCollectionResDtoType | GetPublicCollectionResDtoType;
-      if (isCurrentUserOwner) {
-        // run owner dto
-        const { success, data: parsedData } =
-          GetCollectionResDto.safeParse(data);
-        if (!success) {
-          throw new InternalServerError();
-        }
-        dataToReturn = parsedData;
-      } else {
-        // run public dto
-        const { success, data: parsedData } =
-          GetPublicCollectionResDto.safeParse(data);
-        if (!success) {
-          throw new InternalServerError();
-        }
-        dataToReturn = parsedData;
+      const rawResponse = {
+        type: isCurrentUserOwner ? "owner-success" : "public-success",
+        status: StatusCodes.OK,
+        message: "Fetched successfully.",
+        data: result,
+      };
+
+      const { success, data: parsedData } =
+        GetCollectionResDto.safeParse(rawResponse);
+      if (!success) {
+        throw new InternalServerError();
       }
 
-      response.status(StatusCodes.OK).json({
-        message: "Fetched successfully.",
-        data: dataToReturn,
-      });
+      response.status(parsedData.status).json(parsedData);
     }
   };
 }

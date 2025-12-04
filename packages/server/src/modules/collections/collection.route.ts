@@ -3,15 +3,17 @@ import { zodValidatorMiddleware } from "../../common/middlewares/zod-validator.m
 import { authMiddleware } from "../../common/middlewares/auth.middleware";
 import type { Route } from "../../common/types/express";
 import { CollectionController } from "./collection.controller";
-import { CreateCollectionDto } from "./dto/create-collection.dto";
 import {
-  DiscoverCollectionsDto,
-  FindCollectionDto,
-  FindCollectionsDto,
-} from "./dto/find-collection.dto";
-import { DeleteCollectionDto } from "./dto/delete-collection.dto";
-import { UpdateCollectionDto } from "./dto/update-collection.dto";
-import { ForkCollectionDto } from "./dto/fork-collection.dto";
+  CreateCollectionRequestDto,
+  DeleteCollectionRequestParamDto,
+  DiscoverCollectionsRequestQueryDto,
+  ForkCollectionRequestParamDto,
+  GetCollectionRequestParamDto,
+  UpdateCollectionRequestBodyDto,
+  UpdateCollectionRequestParamDto,
+  GetUserCollectionsRequestParamDto,
+  GetUserCollectionsRequestQueryDto,
+} from "@snippetly/common/dto";
 
 export class CollectionRoute implements Route {
   public path: string = "/collections";
@@ -27,45 +29,36 @@ export class CollectionRoute implements Route {
     this.router.post(
       `${this.path}`,
       authMiddleware,
-      zodValidatorMiddleware(CreateCollectionDto, "Body"),
+      zodValidatorMiddleware(CreateCollectionRequestDto, "Body"),
       this.controller.create
     );
 
     // --- static GET routes ---
     this.router.get(
       `${this.path}/discover`,
-      zodValidatorMiddleware(DiscoverCollectionsDto, "Query"),
+      zodValidatorMiddleware(DiscoverCollectionsRequestQueryDto, "Query"),
       this.controller.discover
     );
     this.router.get(
       `${this.path}/current`,
       authMiddleware,
-      zodValidatorMiddleware(
-        FindCollectionsDto.omit({ creatorName: true }),
-        "Query"
-      ),
+      zodValidatorMiddleware(GetUserCollectionsRequestQueryDto, "Query"),
       this.controller.getCurrentUserCollections
     );
 
     // --- user collections (more specific than :slug) ---
     this.router.get(
       `${this.path}/user/:creatorName`,
-      zodValidatorMiddleware(
-        FindCollectionsDto.omit({ creatorName: true }),
-        "Query"
-      ),
-      zodValidatorMiddleware(
-        FindCollectionsDto.pick({ creatorName: true }),
-        "Params"
-      ),
-      this.controller.getUserCollections as any
+      zodValidatorMiddleware(GetUserCollectionsRequestQueryDto, "Query"),
+      zodValidatorMiddleware(GetUserCollectionsRequestParamDto, "Params"),
+      this.controller.getUserCollections
     );
 
     // --- fork (longer param path, must be before :slug) ---
     this.router.put(
       `${this.path}/:slug/fork`,
       authMiddleware,
-      zodValidatorMiddleware(ForkCollectionDto, "Params"),
+      zodValidatorMiddleware(ForkCollectionRequestParamDto, "Params"),
       this.controller.fork
     );
 
@@ -73,24 +66,21 @@ export class CollectionRoute implements Route {
     this.router.put(
       `${this.path}/:slug`,
       authMiddleware,
-      zodValidatorMiddleware(
-        UpdateCollectionDto.pick({ slug: true }),
-        "Params"
-      ),
-      zodValidatorMiddleware(UpdateCollectionDto.shape.data, "Body"),
+      zodValidatorMiddleware(UpdateCollectionRequestParamDto, "Params"),
+      zodValidatorMiddleware(UpdateCollectionRequestBodyDto, "Body"),
       this.controller.update
     );
     this.router.delete(
       `${this.path}/:slug`,
       authMiddleware,
-      zodValidatorMiddleware(DeleteCollectionDto, "Params"),
+      zodValidatorMiddleware(DeleteCollectionRequestParamDto, "Params"),
       this.controller.delete
     );
 
     // --- get single collection (catch-all, must be last) ---
     this.router.get(
       `${this.path}/:slug`,
-      zodValidatorMiddleware(FindCollectionDto, "Params"),
+      zodValidatorMiddleware(GetCollectionRequestParamDto, "Params"),
       this.controller.getCollection
     );
   }
