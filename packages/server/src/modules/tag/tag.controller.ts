@@ -1,8 +1,8 @@
 import type { Request, Response } from "express";
 import { TagService } from "./tag.service";
 import { StatusCodes } from "http-status-codes";
-import { GetPopularTagsResDto } from "./dto/response.dto";
 import { InternalServerError } from "../../common/lib/exception";
+import { GetPopularTagsResDto } from "@snippetly/common/dto";
 
 export class TagController {
   private readonly TagService: TagService;
@@ -12,14 +12,19 @@ export class TagController {
   }
 
   public getPopularTags = async (_req: Request, res: Response) => {
-    const tags = await this.TagService.getPopularTags();
-    const { success, data: parsedData } = GetPopularTagsResDto.safeParse(tags);
+    const result = await this.TagService.getPopularTags();
+    const rawResponse = {
+      type: "success",
+      message: "Fetched successfully.",
+      data: result,
+      status: StatusCodes.OK,
+    };
+    const { success, data: parsedData } =
+      GetPopularTagsResDto.safeParse(rawResponse);
+
     if (!success) {
       throw new InternalServerError();
     }
-    res.status(StatusCodes.OK).json({
-      message: "Fetched successfully.",
-      data: parsedData,
-    });
+    res.status(parsedData.status).json(parsedData);
   };
 }

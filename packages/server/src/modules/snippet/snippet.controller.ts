@@ -1,27 +1,30 @@
 import type { Request, Response } from "express";
-import type { CreateSnippetDtoType } from "./dto/create-snippet.dto";
 import { SnippetService } from "./snippet.service";
-import type { UpdateSnippetDtoType } from "./dto/update-snippet.dto";
-import type { DeleteSnippetDtoType } from "./dto/delete-snippet.dto";
-import type { GetUserSnippetsDtoType } from "./dto/get-user-snippets.dto";
 import { StatusCodes } from "http-status-codes";
-import type { ForkSnippetDtoType } from "./dto/fork-snippet.dto";
-import type { GetSnippetDtoType } from "./dto/get-snippet.dto";
-import type { DiscoverSnippetsDtoType } from "./dto/discover-snippets.dto";
-import type { GetCollectionSnippetsDtoType } from "./dto/get-collection-snippets";
-import {
-  CreateSnippetResDto,
-  DiscoverSnippetsResDto,
-  GetCurrentUserFriendsSnippetsResDto,
-  GetCurrentUserSnippetsResDto,
-  GetPublicSnippetResDto,
-  GetPublicSnippetsByCollectionResDto,
-  GetSnippetResDto,
-  GetSnippetsByCollectionResDto,
-  GetUserSnippetsResDto,
-  UpdateSnippetResDto,
-} from "./dto/response.dto";
 import { InternalServerError } from "../../common/lib/exception";
+import {
+  CreateSnippetRequestDtoType,
+  CreateSnippetResDto,
+  DeleteSnippetRequestParamDtoType,
+  DeleteSnippetResDto,
+  DiscoverSnippetsRequestQueryDtoType,
+  DiscoverSnippetsResDto,
+  ForkSnippetRequestBodyDtoType,
+  ForkSnippetRequestParamDtoType,
+  ForkSnippetResDto,
+  GetCollectionSnippetsRequestParamDtoType,
+  GetCollectionSnippetsRequestQueryDtoType,
+  GetCollectionSnippetsResDto,
+  GetSnippetRequestParamDtoType,
+  GetSnippetResDto,
+  GetUserFriendsSnippetsResDto,
+  GetUserSnippetsRequestParamDtoType,
+  GetUserSnippetsRequestQueryDtoType,
+  GetUserSnippetsResDto,
+  UpdateSnippetRequestBodyDtoType,
+  UpdateSnippetRequestParamDtoType,
+  UpdateSnippetResDto,
+} from "@snippetly/common/dto";
 
 export class SnippetController {
   private readonly SnippetService: SnippetService;
@@ -31,105 +34,122 @@ export class SnippetController {
   }
 
   public create = async (
-    req: Request<{}, {}, CreateSnippetDtoType>,
+    req: Request<object, object, CreateSnippetRequestDtoType>,
     res: Response
   ) => {
-    const data = await this.SnippetService.create(req.context, req.body);
-    const {
-      success,
-      data: parsedData,
-      error,
-    } = CreateSnippetResDto.safeParse(data);
-    console.log(error);
+    const result = await this.SnippetService.create(req.context, req.body);
+    const rawRes = {
+      type: "success",
+      status: StatusCodes.CREATED,
+      message: "Snippet has been created successfully.",
+      data: result,
+    };
+    const { success, data: parsedData } = CreateSnippetResDto.safeParse(rawRes);
+
     if (!success) {
       throw new InternalServerError();
     }
-    res.status(StatusCodes.CREATED).json({
-      message: "Snippet has been created successfully.",
-      data: parsedData,
-    });
+    res.status(parsedData.status).json(parsedData);
   };
 
   public update = async (
     req: Request<
-      Pick<UpdateSnippetDtoType, "slug">,
-      {},
-      UpdateSnippetDtoType["data"]
+      UpdateSnippetRequestParamDtoType,
+      object,
+      UpdateSnippetRequestBodyDtoType
     >,
     res: Response
   ) => {
     const result = await this.SnippetService.update(req.context, {
-      slug: req.params.slug,
+      params: req.params,
       data: req.body,
     });
     if ("redirect" in result) {
       res.redirect(StatusCodes.TEMPORARY_REDIRECT, `/snippets/${result?.slug}`);
     } else {
       const { updatedSnippet, collectionId } = result;
-      const { success, data: parsedData } =
-        UpdateSnippetResDto.safeParse(updatedSnippet);
-      if (!success) {
-        throw new InternalServerError();
-      }
-      res.status(StatusCodes.OK).json({
+      const rawRes = {
+        type: "success",
+        status: StatusCodes.OK,
         message: `Snippet has been updated successfully${
-          req.body.collection && !collectionId
+          req.body.collectionSlug && !collectionId
             ? ", but the collection couldn't be found."
             : "."
         }`,
-        data: parsedData,
-      });
+        data: updatedSnippet,
+      };
+      const { success, data: parsedData } =
+        UpdateSnippetResDto.safeParse(rawRes);
+
+      if (!success) {
+        throw new InternalServerError();
+      }
+      res.status(parsedData.status).json(parsedData);
     }
   };
 
   public fork = async (
     req: Request<
-      Pick<ForkSnippetDtoType, "slug">,
-      {},
-      Omit<ForkSnippetDtoType, "slug">
+      ForkSnippetRequestParamDtoType,
+      object,
+      ForkSnippetRequestBodyDtoType
     >,
     res: Response
   ) => {
-    const data = await this.SnippetService.fork(req.context, {
-      slug: req.params.slug,
-      ...req.body,
+    const result = await this.SnippetService.fork(req.context, {
+      params: req.params,
+      data: req.body,
     });
-    if ("redirect" in data) {
+    if ("redirect" in result) {
       res.redirect(
         StatusCodes.TEMPORARY_REDIRECT,
-        `/snippets/${data?.slug}/fork`
+        `/snippets/${result?.slug}/fork`
       );
     } else {
-      const { success, data: parsedData } = UpdateSnippetResDto.safeParse(data);
+      const rawRes = {
+        type: "success",
+        status: StatusCodes.OK,
+        message: "Snippet has been updated successfully",
+        data: result,
+      };
+      const { success, data: parsedData } = ForkSnippetResDto.safeParse(rawRes);
       if (!success) {
         throw new InternalServerError();
       }
 
-      res.status(StatusCodes.OK).json({
-        message: `Snippet has been forked successfully.`,
-        data: parsedData,
-      });
+      res.status(parsedData.status).json(parsedData);
     }
   };
 
-  public delete = async (req: Request<DeleteSnippetDtoType>, res: Response) => {
+  public delete = async (
+    req: Request<DeleteSnippetRequestParamDtoType>,
+    res: Response
+  ) => {
     const result = await this.SnippetService.delete(req.context, req.params);
     if ("redirect" in result) {
       res.redirect(StatusCodes.TEMPORARY_REDIRECT, `/snippets/${result?.slug}`);
     } else {
-      res.status(StatusCodes.OK).json({
-        message: "Snippet has been deleted successfully.",
+      const rawRes = {
+        type: "success",
+        status: StatusCodes.OK,
+        message: "Snippet has been updated successfully",
         data: null,
-      });
+      };
+      const { success, data: parsedData } =
+        DeleteSnippetResDto.safeParse(rawRes);
+      if (!success) {
+        throw new InternalServerError();
+      }
+      res.status(parsedData.status).json(parsedData);
     }
   };
 
   public getSnippetsByCollection = async (
     req: Request<
-      Pick<GetCollectionSnippetsDtoType, "collection">,
-      {},
-      {},
-      Omit<GetCollectionSnippetsDtoType, "collection">
+      GetCollectionSnippetsRequestParamDtoType,
+      object,
+      object,
+      GetCollectionSnippetsRequestQueryDtoType
     >,
     res: Response
   ) => {
@@ -137,7 +157,7 @@ export class SnippetController {
       req.context,
       {
         ...req.params,
-        ...(req.validatedQuery as Omit<GetUserSnippetsDtoType, "creator">),
+        ...req.validatedQuery,
       }
     );
     if ("redirect" in result) {
@@ -149,97 +169,84 @@ export class SnippetController {
         newSlug: result.slug,
       });
     } else {
-      const { items, collection, nextCursor, total } = result;
-
-      const isCurrentUserOwner = req.context.user.id === collection.creatorId;
-      let dataToReturn: any;
-      if (isCurrentUserOwner) {
-        // use owner dto
-        const { success, data: parsedData } =
-          GetSnippetsByCollectionResDto.safeParse({
-            snippets: items,
-            collection,
-          });
-        if (!success) {
-          throw new InternalServerError();
-        }
-        dataToReturn = parsedData;
-      } else {
-        // use public dto
-        const { success, data: parsedData } =
-          GetPublicSnippetsByCollectionResDto.safeParse({
-            snippets: items,
-            collection,
-          });
-        if (!success) {
-          throw new InternalServerError();
-        }
-        dataToReturn = parsedData;
-      }
-      res.status(StatusCodes.OK).json({
+      const isCurrentUserOwner =
+        req.context.user.id === result.collection.creatorId;
+      const rawRes = {
+        type: isCurrentUserOwner ? "owner-success" : "public-success",
         message: "Fetched successfully.",
-        items: dataToReturn,
-        nextCursor,
-        total,
-      });
+        data: result,
+        status: StatusCodes.OK,
+      };
+      const { success, data: parsedData } =
+        GetCollectionSnippetsResDto.safeParse(rawRes);
+      if (!success) {
+        throw new InternalServerError();
+      }
+
+      res.status(parsedData.status).json(parsedData);
     }
   };
 
   public discover = async (
-    req: Request<{}, {}, {}, DiscoverSnippetsDtoType>,
+    req: Request<object, object, object, DiscoverSnippetsRequestQueryDtoType>,
     res: Response
   ) => {
-    const data = await this.SnippetService.discover(
+    const result = await this.SnippetService.discover(
       req.context,
       req.validatedQuery
     );
-    const { success, data: parsedData } = DiscoverSnippetsResDto.safeParse(
-      data.items
-    );
+    const rawRes = {
+      type: "success",
+      message: "Fetched successfully.",
+      status: StatusCodes.OK,
+      data: result,
+    };
+    const { success, data: parsedData } =
+      DiscoverSnippetsResDto.safeParse(rawRes);
     if (!success) {
       throw new InternalServerError();
     }
-    res.status(StatusCodes.OK).json({
-      message: "Fetched successfully.",
-      ...data,
-      items: parsedData,
-    });
+    res.status(parsedData.status).json(parsedData);
   };
 
   public getCurrentUserSnippets = async (
-    req: Request<{}, {}, {}, Omit<GetUserSnippetsDtoType, "creator">>,
+    req: Request<object, object, object, GetUserSnippetsRequestQueryDtoType>,
     res: Response
   ) => {
-    const { items, nextCursor, total } =
-      await this.SnippetService.getCurrentUserSnippets(req.context, {
-        ...(req.validatedQuery as Omit<GetUserSnippetsDtoType, "creatorName">),
-      });
-
-    const { success, data: parsedData } =
-      GetCurrentUserSnippetsResDto.safeParse(items);
-    if (!success) {
-      throw new InternalServerError();
+    const result = await this.SnippetService.getCurrentUserSnippets(
+      req.context,
+      {
+        ...req.validatedQuery,
+      }
+    );
+    if (!("redirect" in result)) {
+      const rawRes = {
+        type: "owner-success",
+        message: "Fetched successfully.",
+        status: StatusCodes.OK,
+        data: result,
+      };
+      const { success, data: parsedData } =
+        GetUserSnippetsResDto.safeParse(rawRes);
+      if (!success) {
+        throw new InternalServerError();
+      }
+      res.status(parsedData.status).json(parsedData);
     }
-    res.status(StatusCodes.OK).json({
-      message: "Fetched successfully.",
-      items: parsedData,
-      nextCursor,
-      total,
-    });
   };
 
   public getUserSnippets = async (
     req: Request<
-      Pick<GetUserSnippetsDtoType, "creatorName">,
-      {},
-      {},
-      Omit<GetUserSnippetsDtoType, "creatorName">
+      GetUserSnippetsRequestParamDtoType,
+      object,
+      object,
+      GetUserSnippetsRequestQueryDtoType
     >,
     res: Response
   ) => {
     const result = await this.SnippetService.getUserSnippets(req.context, {
       ...req.params,
-      ...(req.validatedQuery as Omit<GetUserSnippetsDtoType, "creatorName">),
+      ...req.validatedQuery,
     });
     if ("redirect" in result) {
       res.redirect(
@@ -250,60 +257,54 @@ export class SnippetController {
       const { items, total, nextCursor } = result;
       const isCurrentUserOwner =
         req.context.user?.id === items?.[0]?.creator?.id;
-      let dataToReturn: any;
-      if (isCurrentUserOwner) {
-        // use owner dto
-        const { success, data: parsedData } =
-          GetCurrentUserSnippetsResDto.safeParse(items);
-        if (!success) {
-          throw new InternalServerError();
-        }
-        dataToReturn = parsedData;
-      } else {
-        // use public dto
-        const { success, data: parsedData } =
-          GetUserSnippetsResDto.safeParse(items);
-        if (!success) {
-          throw new InternalServerError();
-        }
-        dataToReturn = parsedData;
-      }
-      res.status(StatusCodes.OK).json({
+      const rawRes = {
+        type: isCurrentUserOwner ? "owner-success" : "public-success",
         message: "Fetched successfully.",
-        items: dataToReturn,
-        nextCursor,
-        total,
-      });
+        data: { items, total, nextCursor },
+        status: StatusCodes.OK,
+      };
+      const { success, data: parsedData } =
+        GetUserSnippetsResDto.safeParse(rawRes);
+      if (!success) {
+        throw new InternalServerError();
+      }
+      res.status(parsedData.status).json(parsedData);
     }
   };
 
   public getCurrentUserFriendsSnippets = async (
-    req: Request<{}, {}, {}, Omit<GetUserSnippetsDtoType, "creatorName">>,
+    req: Request<object, object, object, GetUserSnippetsRequestQueryDtoType>,
     res: Response
   ) => {
-    const { items, nextCursor, total } =
-      await this.SnippetService.getCurrentUserFriendsSnippets(req.context, {
-        ...(req.validatedQuery as Omit<GetUserSnippetsDtoType, "creatorName">),
-      });
+    const result = await this.SnippetService.getCurrentUserFriendsSnippets(
+      req.context,
+      {
+        ...req.validatedQuery,
+      }
+    );
+
+    const rawRes = {
+      type: "success",
+      message: "Fetched successfully.",
+      status: StatusCodes.OK,
+      data: result,
+    };
+
     const { success, data: parsedData } =
-      GetCurrentUserFriendsSnippetsResDto.safeParse(items);
+      GetUserFriendsSnippetsResDto.safeParse(rawRes);
+
     if (!success) {
       throw new InternalServerError();
     }
-    res.status(StatusCodes.OK).json({
-      message: "Fetched successfully.",
-      items: parsedData,
-      nextCursor,
-      total,
-    });
+    res.status(parsedData.status).json(parsedData);
   };
 
   public getUserFriendsSnippets = async (
     req: Request<
-      Pick<GetUserSnippetsDtoType, "creatorName">,
-      {},
-      {},
-      Omit<GetUserSnippetsDtoType, "creatorName">
+      GetUserSnippetsRequestParamDtoType,
+      object,
+      object,
+      GetUserSnippetsRequestQueryDtoType
     >,
     res: Response
   ) => {
@@ -311,7 +312,7 @@ export class SnippetController {
       req.context,
       {
         ...req.params,
-        ...(req.validatedQuery as Omit<GetUserSnippetsDtoType, "creatorName">),
+        ...req.validatedQuery,
       }
     );
     if ("redirect" in result) {
@@ -320,51 +321,45 @@ export class SnippetController {
         `/snippets/${result.name}/friends`
       );
     } else {
-      const { items, total, nextCursor } = result;
+      const rawRes = {
+        type: "success",
+        message: "Fetched successfully.",
+        data: result,
+        status: StatusCodes.OK,
+      };
+
       const { success, data: parsedData } =
-        GetCurrentUserFriendsSnippetsResDto.safeParse(items);
+        GetUserFriendsSnippetsResDto.safeParse(rawRes);
+
       if (!success) {
         throw new InternalServerError();
       }
-      res.status(StatusCodes.OK).json({
-        message: "Fetched successfully.",
-        items: parsedData,
-        nextCursor,
-        total,
-      });
+
+      res.status(parsedData.status).json(parsedData);
     }
   };
 
   public getSnippet = async (
-    req: Request<GetSnippetDtoType>,
+    req: Request<GetSnippetRequestParamDtoType>,
     res: Response
   ) => {
-    const data = await this.SnippetService.findOne(req.context, req.params);
-    if ("redirect" in data) {
-      res.redirect(StatusCodes.TEMPORARY_REDIRECT, `/snippets/${data.slug}`);
+    const result = await this.SnippetService.findOne(req.context, req.params);
+    if ("redirect" in result) {
+      res.redirect(StatusCodes.TEMPORARY_REDIRECT, `/snippets/${result.slug}`);
     } else {
-      const isCurrentUserOwner = req.context?.user?.id === data.creatorId;
-      let dataToReturn: any;
-      if (isCurrentUserOwner) {
-        // use owner dto
-        const { success, data: parsedData } = GetSnippetResDto.safeParse(data);
-        if (!success) {
-          throw new InternalServerError();
-        }
-        dataToReturn = parsedData;
-      } else {
-        // use public dto
-        const { success, data: parsedData } =
-          GetPublicSnippetResDto.safeParse(data);
-        if (!success) {
-          throw new InternalServerError();
-        }
-        dataToReturn = parsedData;
-      }
-      res.status(StatusCodes.OK).json({
+      const isCurrentUserOwner = req.context?.user?.id === result.creatorId;
+      const rawRes = {
+        type: isCurrentUserOwner ? "owner-success" : "public-success",
         message: "Fetched successfully.",
-        data: dataToReturn,
-      });
+        data: result,
+        status: StatusCodes.OK,
+      };
+      const { success, data: parsedData } = GetSnippetResDto.safeParse(rawRes);
+      if (!success) {
+        throw new InternalServerError();
+      }
+
+      res.status(parsedData.status).json(parsedData);
     }
   };
 }

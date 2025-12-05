@@ -63,7 +63,7 @@ export class CollectionRoute implements Route {
     );
 
     // --- update/delete by slug ---
-    this.router.put(
+    this.router.patch(
       `${this.path}/:slug`,
       authMiddleware,
       zodValidatorMiddleware(UpdateCollectionRequestParamDto, "Params"),

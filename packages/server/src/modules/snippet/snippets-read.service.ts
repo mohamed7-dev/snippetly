@@ -19,9 +19,11 @@ import {
   tagsTable,
   usersTable,
 } from "../../common/db/schema";
-import type { DiscoverSnippetsDtoType } from "./dto/discover-snippets.dto";
-import type { GetUserSnippetsDtoType } from "./dto/get-user-snippets.dto";
-import type { GetCollectionSnippetsDtoType } from "./dto/get-collection-snippets";
+import {
+  DiscoverSnippetsRequestQueryDtoType,
+  GetCollectionSnippetsRequestQueryDtoType,
+  GetUserSnippetsRequestQueryDtoType,
+} from "@snippetly/common/dto";
 
 export class SnippetsReadService {
   async findOneSlim(by: "slug" | "id", value: string | number) {
@@ -81,8 +83,8 @@ export class SnippetsReadService {
       query,
       limit,
       cursor,
-    }: Omit<GetCollectionSnippetsDtoType, "collection"> &
-      Required<Pick<GetCollectionSnippetsDtoType, "limit">>,
+    }: GetCollectionSnippetsRequestQueryDtoType &
+      Required<Pick<GetCollectionSnippetsRequestQueryDtoType, "limit">>,
     collectionId: number,
     isCurrentUserOwner: boolean
   ) {
@@ -139,8 +141,8 @@ export class SnippetsReadService {
     cursor,
     query,
     loggedInUserId,
-  }: DiscoverSnippetsDtoType &
-    Required<Pick<DiscoverSnippetsDtoType, "limit">> & {
+  }: DiscoverSnippetsRequestQueryDtoType &
+    Required<Pick<DiscoverSnippetsRequestQueryDtoType, "limit">> & {
       loggedInUserId?: number;
     }) {
     const [data, total] = await Promise.all([
@@ -225,8 +227,8 @@ export class SnippetsReadService {
       limit,
       query,
       cursor,
-    }: Omit<GetUserSnippetsDtoType, "creatorName"> &
-      Required<Pick<GetUserSnippetsDtoType, "limit">>,
+    }: GetUserSnippetsRequestQueryDtoType &
+      Required<Pick<GetUserSnippetsRequestQueryDtoType, "limit">>,
     creatorId: number,
     isCurrentUserOwner: boolean
   ) {
@@ -309,8 +311,8 @@ export class SnippetsReadService {
       limit,
       query,
       cursor,
-    }: Omit<GetUserSnippetsDtoType, "creatorName"> &
-      Required<Pick<GetUserSnippetsDtoType, "limit">>,
+    }: GetUserSnippetsRequestQueryDtoType &
+      Required<Pick<GetUserSnippetsRequestQueryDtoType, "limit">>,
     userId: number
   ) {
     const [data, total] = await Promise.all([

@@ -30,35 +30,47 @@ import {
   getCurrentUserInboxRouteConfig,
   getCurrentUserOutboxRouteConfig,
 } from "../../modules/user/friendship.openapi";
+import {
+  createCollectionRouteConfig,
+  deleteCollectionRouteConfig,
+  discoverCollectionsRouteConfig,
+  forkCollectionRouteConfig,
+  getCollectionRouteConfig,
+  getCurrentUserCollectionsRouteConfig,
+  getUserCollectionsRouteConfig,
+  updateCollectionRouteConfig,
+} from "../../modules/collections/collections.openapi";
+import { getPopularTagsRouteConfig } from "../../modules/tag/tags.openapi";
+import {
+  createSnippetRouteConfig,
+  deleteSnippetRouteConfig,
+  discoverSnippetsRouteConfig,
+  forkSnippetRouteConfig,
+  getCollectionSnippetsRouteConfig,
+  getCurrentUserFriendsSnippetsRouteConfig,
+  getCurrentUserSnippetsRouteConfig,
+  getSnippetRouteConfig,
+  getUserFriendsSnippetsRouteConfig,
+  getUserSnippetsRouteConfig,
+  updateSnippetRouteConfig,
+} from "../../modules/snippet/snippet.openapi";
 
 const registry = new OpenAPIRegistry();
 
 registry.registerPath(loginRouteConfig);
-
 registry.registerPath(signupRouteConfig);
-
 registry.registerPath(logoutRouteConfig);
-
 registry.registerPath(refreshTokenRouteConfig);
-
 registry.registerPath(sendVEmailRouteConfig);
-
 registry.registerPath(verifyVEmailRouteConfig);
-
 registry.registerPath(sendREmailRouteConfig);
-
 registry.registerPath(resetPasswordRouteConfig);
 
 registry.registerPath(updateUserRouteConfig);
-
 registry.registerPath(deleteUserRouteConfig);
-
 registry.registerPath(getUserProfileRouteConfig);
-
 registry.registerPath(getCurrentUserProfileRouteConfig);
-
 registry.registerPath(discoverUsersRouteConfig);
-
 registry.registerPath(getCurrentUserDashboardRouteConfig);
 
 registry.registerPath(sendFriendshipRequestRouteConfig);
@@ -68,6 +80,29 @@ registry.registerPath(cancelFriendshipRequestRouteConfig);
 registry.registerPath(getCurrentUserFriendsRouteConfig);
 registry.registerPath(getCurrentUserInboxRouteConfig);
 registry.registerPath(getCurrentUserOutboxRouteConfig);
+
+registry.registerPath(createCollectionRouteConfig);
+registry.registerPath(updateCollectionRouteConfig);
+registry.registerPath(deleteCollectionRouteConfig);
+registry.registerPath(forkCollectionRouteConfig);
+registry.registerPath(getCollectionRouteConfig);
+registry.registerPath(getUserCollectionsRouteConfig);
+registry.registerPath(getCurrentUserCollectionsRouteConfig);
+registry.registerPath(discoverCollectionsRouteConfig);
+
+registry.registerPath(createSnippetRouteConfig);
+registry.registerPath(updateSnippetRouteConfig);
+registry.registerPath(deleteSnippetRouteConfig);
+registry.registerPath(forkSnippetRouteConfig);
+registry.registerPath(discoverSnippetsRouteConfig);
+registry.registerPath(getSnippetRouteConfig);
+registry.registerPath(getCollectionSnippetsRouteConfig);
+// registry.registerPath(getUserSnippetsRouteConfig);
+// registry.registerPath(getCurrentUserSnippetsRouteConfig);
+// registry.registerPath(getUserFriendsSnippetsRouteConfig);
+// registry.registerPath(getCurrentUserFriendsSnippetsRouteConfig);
+
+registry.registerPath(getPopularTagsRouteConfig);
 
 // Base document
 const generator = new OpenApiGeneratorV31(registry.definitions);

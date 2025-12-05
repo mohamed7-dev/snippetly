@@ -9,7 +9,7 @@ export class HealthController {
         uptime: process.uptime(),
         timestamp: new Date().toISOString(),
       });
-    } catch (err) {
+    } catch {
       res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
         status: "error",
         message: "Database unavailable",

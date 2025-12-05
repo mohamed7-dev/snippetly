@@ -1,8 +1,5 @@
 import { StatusCodes } from "http-status-codes";
 import { HttpException } from "../../common/lib/exception";
-import type { CreateSnippetDtoType } from "./dto/create-snippet.dto";
-import type { UpdateSnippetDtoType } from "./dto/update-snippet.dto";
-import type { GetUserSnippetsDtoType } from "./dto/get-user-snippets.dto";
 import { UserService } from "../user/user.service";
 import {
   generateUniquePrefix,
@@ -14,10 +11,6 @@ import {
   DISCOVER_SNIPPETS_DEFAULT_LIMIT,
   FIND_SNIPPETS_DEFAULT_LIMIT,
 } from "./constants";
-import type { ForkSnippetDtoType } from "./dto/fork-snippet.dto";
-import type { DeleteSnippetDtoType } from "./dto/delete-snippet.dto";
-import type { GetSnippetDtoType } from "./dto/get-snippet.dto";
-import type { DiscoverSnippetsDtoType } from "./dto/discover-snippets.dto";
 import type { RequestContext } from "../../common/middlewares/request-context-middleware";
 import { CollectionService } from "../collections/collection.service";
 import { CollectionReadService } from "../collections/collection-read.service";
@@ -27,8 +20,21 @@ import { SnippetsTagsRepository } from "./snippets-tags.repository";
 import { SnippetsReadService } from "./snippets-read.service";
 import { TagReadService } from "../tag/tag-read.service";
 import { UserReadService } from "../user/user-read.service";
-import type { GetCollectionSnippetsDtoType } from "./dto/get-collection-snippets";
 import type { Tags, User } from "../../common/db/schema";
+import {
+  CreateSnippetRequestDtoType,
+  DeleteSnippetRequestParamDtoType,
+  DiscoverSnippetsRequestQueryDtoType,
+  ForkSnippetRequestBodyDtoType,
+  ForkSnippetRequestParamDtoType,
+  GetCollectionSnippetsRequestParamDtoType,
+  GetCollectionSnippetsRequestQueryDtoType,
+  GetSnippetRequestParamDtoType,
+  GetUserSnippetsRequestParamDtoType,
+  GetUserSnippetsRequestQueryDtoType,
+  UpdateSnippetRequestBodyDtoType,
+  UpdateSnippetRequestParamDtoType,
+} from "@snippetly/common/dto";
 
 export class SnippetService {
   public readonly UserService: UserService;
@@ -55,24 +61,23 @@ export class SnippetService {
 
   public async create(
     ctx: NonNullableFields<RequestContext>,
-    input: CreateSnippetDtoType & { forkedFrom?: number }
+    input: CreateSnippetRequestDtoType & { forkedFrom?: number }
   ) {
-    const { title, tags, collection, forkedFrom, ...rest } = input;
+    const { title, tags, collectionSlug, forkedFrom, ...rest } = input;
 
     let foundCollection = await this.CollectionReadService.findOneSlim(
       "slug",
-      collection
+      collectionSlug
     );
     if (!foundCollection) {
-      foundCollection = await this.CollectionReadService.findOneSlimByOldSlug(
-        collection
-      );
+      foundCollection =
+        await this.CollectionReadService.findOneSlimByOldSlug(collectionSlug);
     }
 
     if (!foundCollection) {
       throw new HttpException(
         StatusCodes.NOT_FOUND,
-        `Collection ${collection} is not found.`
+        `Collection ${collectionSlug} is not found.`
       );
     }
 
@@ -114,9 +119,15 @@ export class SnippetService {
 
   public async update(
     ctx: NonNullableFields<RequestContext>,
-    input: UpdateSnippetDtoType
+    input: {
+      params: UpdateSnippetRequestParamDtoType;
+      data: UpdateSnippetRequestBodyDtoType;
+    }
   ) {
-    const { data, slug } = input;
+    const {
+      data,
+      params: { slug },
+    } = input;
     const userId = ctx.user.id;
 
     const foundSnippet = await this.SnippetRepository.findOne(
@@ -133,7 +144,7 @@ export class SnippetService {
       throw new HttpException(StatusCodes.NOT_FOUND, "Snippet not found.");
     }
 
-    const { addTags, removeTags, collection, title, ...rest } = data;
+    const { addTags, removeTags, collectionSlug, title, ...rest } = data;
 
     if (addTags && addTags.length) {
       const tagDocs = await this.TagService.ensureTagsExistence(
@@ -154,14 +165,14 @@ export class SnippetService {
     }
 
     let collectionId = null;
-    if (collection) {
+    if (collectionSlug) {
       const foundCollection = await this.CollectionReadService.findOneSlim(
         "slug",
-        collection
+        collectionSlug
       );
       if (!foundCollection) {
         const foundCollectionWithOldSlug =
-          await this.CollectionReadService.findOneSlimByOldSlug(collection);
+          await this.CollectionReadService.findOneSlimByOldSlug(collectionSlug);
         collectionId = foundCollectionWithOldSlug
           ? foundCollectionWithOldSlug.id
           : null;
@@ -202,7 +213,7 @@ export class SnippetService {
 
   public async delete(
     ctx: NonNullableFields<RequestContext>,
-    input: DeleteSnippetDtoType
+    input: DeleteSnippetRequestParamDtoType
   ) {
     const { slug } = input;
     const userId = ctx.user.id;
@@ -226,9 +237,15 @@ export class SnippetService {
 
   public async fork(
     ctx: NonNullableFields<RequestContext>,
-    input: ForkSnippetDtoType
+    input: {
+      params: ForkSnippetRequestParamDtoType;
+      data: ForkSnippetRequestBodyDtoType;
+    }
   ) {
-    const { slug, collection } = input;
+    const {
+      params: { slug },
+      data: { collectionSlug },
+    } = input;
     const foundSnippet = await this.SnippetRepository.findOne("slug", slug);
 
     if (!foundSnippet) {
@@ -265,7 +282,7 @@ export class SnippetService {
       allowForking,
       code,
       language,
-      collection,
+      collectionSlug,
       tags: (tags as Pick<Tags, "name">[]).map((tag) => tag.name),
       forkedFrom: foundSnippet.id,
     });
@@ -277,7 +294,10 @@ export class SnippetService {
     };
   }
 
-  public async discover(ctx: RequestContext, input: DiscoverSnippetsDtoType) {
+  public async discover(
+    ctx: RequestContext,
+    input: DiscoverSnippetsRequestQueryDtoType
+  ) {
     const { limit } = input;
     const defaultLimit = limit ?? DISCOVER_SNIPPETS_DEFAULT_LIMIT;
 
@@ -297,7 +317,7 @@ export class SnippetService {
       nextCursor: nextCursor
         ? ({
             updatedAt: nextCursor.updatedAt,
-          } satisfies DiscoverSnippetsDtoType["cursor"])
+          } satisfies DiscoverSnippetsRequestQueryDtoType["cursor"])
         : null,
       total,
     };
@@ -305,7 +325,7 @@ export class SnippetService {
 
   public async getCurrentUserSnippets(
     ctx: NonNullableFields<RequestContext>,
-    input: Omit<GetUserSnippetsDtoType, "creatorName">
+    input: GetUserSnippetsRequestQueryDtoType
   ) {
     const foundUser = await this.UserReadService.findOneSlim("id", ctx.user.id);
     const snippets = await this.getUserSnippets(ctx, {
@@ -317,7 +337,9 @@ export class SnippetService {
 
   public async getUserSnippets(
     ctx: RequestContext,
-    input: Partial<GetUserSnippetsDtoType> & { user?: User }
+    input: Partial<
+      GetUserSnippetsRequestQueryDtoType & GetUserSnippetsRequestParamDtoType
+    > & { user?: User }
   ) {
     const { limit, creatorName, user } = input;
     const defaultLimit = limit ?? FIND_SNIPPETS_DEFAULT_LIMIT;
@@ -363,7 +385,7 @@ export class SnippetService {
       nextCursor: nextCursor
         ? ({
             updatedAt: nextCursor.updatedAt,
-          } satisfies GetUserSnippetsDtoType["cursor"])
+          } satisfies GetUserSnippetsRequestQueryDtoType["cursor"])
         : null,
       total,
     };
@@ -371,7 +393,7 @@ export class SnippetService {
 
   public async getCurrentUserFriendsSnippets(
     ctx: NonNullableFields<RequestContext>,
-    input: Omit<GetUserSnippetsDtoType, "creatorName">
+    input: GetUserSnippetsRequestQueryDtoType
   ) {
     const foundUser = await this.UserReadService.findOneSlim("id", ctx.user.id);
 
@@ -384,7 +406,9 @@ export class SnippetService {
 
   public async getUserFriendsSnippets(
     _ctx: RequestContext,
-    input: Partial<GetUserSnippetsDtoType> & { user?: User }
+    input: Partial<
+      GetUserSnippetsRequestQueryDtoType & GetUserSnippetsRequestParamDtoType
+    > & { user?: User }
   ) {
     const { limit, creatorName, user } = input;
     const defaultLimit = limit ?? FIND_SNIPPETS_DEFAULT_LIMIT;
@@ -426,14 +450,17 @@ export class SnippetService {
       nextCursor: nextCursor
         ? ({
             updatedAt: nextCursor.updatedAt,
-          } satisfies GetUserSnippetsDtoType["cursor"])
+          } satisfies GetUserSnippetsRequestQueryDtoType["cursor"])
         : null,
       total,
     };
   }
 
-  public async findOne(ctx: RequestContext, input: GetSnippetDtoType) {
-    let foundSnippet = await this.SnippetsReadService.findOneSlim(
+  public async findOne(
+    ctx: RequestContext,
+    input: GetSnippetRequestParamDtoType
+  ) {
+    const foundSnippet = await this.SnippetsReadService.findOneSlim(
       "slug",
       input.slug
     );
@@ -461,17 +488,20 @@ export class SnippetService {
 
   public async getSnippetsByCollection(
     ctx: RequestContext,
-    input: GetCollectionSnippetsDtoType
+    input: GetCollectionSnippetsRequestParamDtoType &
+      GetCollectionSnippetsRequestQueryDtoType
   ) {
     const defaultLimit = input.limit ?? FIND_SNIPPETS_DEFAULT_LIMIT;
-    let foundCollection = await this.CollectionReadService.findOneSlim(
+    const foundCollection = await this.CollectionReadService.findOneSlim(
       "slug",
-      input.collection
+      input.collectionSlug
     );
 
     if (!foundCollection) {
       const foundCollectionWithOldSlug =
-        await this.CollectionReadService.findOneSlimByOldSlug(input.collection);
+        await this.CollectionReadService.findOneSlimByOldSlug(
+          input.collectionSlug
+        );
       if (!foundCollectionWithOldSlug) {
         throw new HttpException(StatusCodes.NOT_FOUND, "Collection not found.");
       }
@@ -480,7 +510,7 @@ export class SnippetService {
 
     const isCurrentUserOwner = foundCollection.creatorId === ctx.user?.id;
 
-    let { data, total } =
+    const { data, total } =
       await this.SnippetsReadService.findSnippetsByCollection(
         {
           ...input,
@@ -500,7 +530,7 @@ export class SnippetService {
       nextCursor: nextCursor
         ? ({
             updatedAt: nextCursor.updatedAt,
-          } satisfies GetCollectionSnippetsDtoType["cursor"])
+          } satisfies GetCollectionSnippetsRequestQueryDtoType["cursor"])
         : null,
       total,
       collection: foundCollection,
