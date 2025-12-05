@@ -142,6 +142,17 @@ export const BadRequestErrorResponseDto = createErrorResponse().meta({
     type: "error",
     status: 400,
     message: "Bad request.",
-    cause: "zod error",
+    cause: "{{ZodError}}",
+  },
+});
+
+export const NotFoundErrorResponseDto = createErrorResponse().meta({
+  id: "NotFoundErrorResponse",
+  description: "Not found error response body",
+  example: {
+    type: "error",
+    status: 404,
+    message: "Not found",
+    cause: null,
   },
 });
