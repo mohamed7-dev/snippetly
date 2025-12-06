@@ -1,5 +1,5 @@
 import { createSuccessResponse, GlobalErrorResponseDto, z } from "../zod";
-import { CommonAuthResponseDto, CommonAuthResponseDtoExample } from "./common";
+import { accessTokenExample, CommonAuthResponseDto } from "./common";
 
 // Refresh Token Response Schemas
 export const RefreshTokenSuccessResponseDto = createSuccessResponse(
@@ -7,14 +7,22 @@ export const RefreshTokenSuccessResponseDto = createSuccessResponse(
   "RefreshTokenSuccessResponse",
   "Access token has been generated successfully from the refresh token.",
   {
-    ...CommonAuthResponseDtoExample,
-  },
+    accessToken: accessTokenExample,
+    user: {
+      name: "John_doe20",
+      firstName: "john",
+      lastName: "doe",
+      image: null,
+      imageKey: null,
+      imageCustomId: null,
+      email: "test@example.com",
+      createdAt: new Date().toISOString() as unknown as Date,
+      updatedAt: new Date().toISOString() as unknown as Date,
+      isPrivate: false,
+    },
+  } satisfies z.infer<typeof CommonAuthResponseDto>,
   "Access token has been refreshed successfully."
 );
-
-export type RefreshTokenSuccessResponseDtoType = z.infer<
-  typeof RefreshTokenSuccessResponseDto
->;
 
 export const RefreshTokenResponseDto = z.discriminatedUnion("type", [
   RefreshTokenSuccessResponseDto,

@@ -17,7 +17,7 @@ export const SendRTokenSuccessResponseDto = createSuccessResponse(
   "SendRTokenSuccessResponseBody",
   "Password reset link has been sent to the email.",
   null,
-  "Password reset link has been sent to '${email}', check your inbox to reset your password."
+  "Password reset link has been sent to {{email}}, check your inbox to reset your password."
 );
 
 export const SendRTokenResponseDto = z.discriminatedUnion("type", [

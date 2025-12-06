@@ -1,13 +1,13 @@
 import { SelectUserDto } from "../user/select-user.dto";
 import { createSuccessResponse, GlobalErrorResponseDto, z } from "../zod";
-import { VerifyTokenRequestDto } from "./common";
+import { accessTokenExample, VerifyTokenRequestDto } from "./common";
 
 // Verify R Token Request Schema <Query Param>
 export const VerifyRTokenRequestQueryDto = VerifyTokenRequestDto.meta({
   id: "VerifyRTokenRequestQuery",
   description: "Verify password reset token request query param",
   example: {
-    token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    token: accessTokenExample,
   },
 });
 
@@ -24,7 +24,7 @@ export const VerifyRTokenRequestBodyDto = z
     id: "VerifyRTokenRequestBody",
     description: "Verify password reset token request body",
     example: {
-      password: "super-secure-password",
+      password: "{{password}}",
     },
   });
 

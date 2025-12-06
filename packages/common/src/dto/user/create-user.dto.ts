@@ -8,6 +8,9 @@ export const CreateUserDto = SelectUserDto.pick({
   email: true,
   acceptedPolicies: true,
   isPrivate: true,
+}).partial({
+  isPrivate: true,
+  acceptedPolicies: true,
 });
 
 export type CreateUserDtoType = z.infer<typeof CreateUserDto>;

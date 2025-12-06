@@ -1,7 +1,7 @@
 import z from "zod";
 import { createSuccessResponse, GlobalErrorResponseDto } from "../zod";
 import { SignupRequestDto } from "./signup.dto";
-import { CommonAuthResponseDto, CommonAuthResponseDtoExample } from "./common";
+import { accessTokenExample, CommonAuthResponseDto } from "./common";
 
 // Login Request DTO
 export const LoginRequestDto = SignupRequestDto.pick({
@@ -9,13 +9,13 @@ export const LoginRequestDto = SignupRequestDto.pick({
   name: true,
 })
   .extend({
-    rememberMe: z.boolean().optional(),
+    rememberMe: z.boolean().optional().default(false),
   })
   .meta({
     id: "LoginRequestBody",
     description: "Login request body",
     example: {
-      name: "alice",
+      name: "john_doe20",
       password: "Password@12345678",
       rememberMe: true,
     },
@@ -28,16 +28,24 @@ export type LoginRequestDtoType = z.infer<typeof LoginRequestDto>;
 export const LoginSuccessResponseDto = createSuccessResponse(
   CommonAuthResponseDto,
   "LoginSuccessResponseBody",
-  "Login response body when login is successful",
+  "Login response body if login is successful",
   {
-    ...CommonAuthResponseDtoExample,
-  },
+    accessToken: accessTokenExample,
+    user: {
+      name: "John_doe20",
+      firstName: "john",
+      lastName: "doe",
+      image: null,
+      imageKey: null,
+      imageCustomId: null,
+      email: "test@example.com",
+      createdAt: new Date().toISOString() as unknown as Date,
+      updatedAt: new Date().toISOString() as unknown as Date,
+      isPrivate: false,
+    },
+  } satisfies z.infer<typeof CommonAuthResponseDto>,
   "Successfully authenticated"
 );
-
-export type LoginSuccessResponseDtoType = z.infer<
-  typeof LoginSuccessResponseDto
->;
 
 export const LoginResponseDto = z.discriminatedUnion("type", [
   LoginSuccessResponseDto,

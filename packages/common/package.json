@@ -9,27 +9,33 @@
     "lib/**/*"
   ],
   "exports": {
-        ".": {
+    ".": {
       "require": "./lib/index.js",
-      "default": "./lib/index.js",
-      "types": "./lib/index.d.ts"
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
     },
     "./dto": {
       "require": "./lib/dto/index.js",
-      "default": "./lib/dto/index.js",
-      "types": "./lib/dto/index.d.ts"
+      "types": "./lib/dto/index.d.ts",
+      "default": "./lib/dto/index.js"
     }
   },
   "typesVersions": {
     "*": {
-      "dto": ["./lib/dto/index.d.ts"],
-      "*": []
+      "dto": [
+        "./lib/dto/index.d.ts"
+      ],
+      "*": [
+        "./lib/index.d.ts"
+      ]
     }
   },
   "scripts": {
     "dev": "tsc -p ./build/tsconfig.build.json -w",
     "build": "rimraf lib & tsc -p ./build/tsconfig.build.json",
-    "lint": "eslint --fix ."
+    "lint": "eslint --fix .",
+    "test": "vitest",
+    "test:coverage": "vitest --coverage"
   },
   "keywords": [],
   "author": "",
@@ -38,6 +44,7 @@
   "devDependencies": {
     "@snippetly/eslint-config": "workspace:*",
     "@snippetly/tsconfig": "workspace:*",
+    "@vitest/coverage-v8": "3.2.4",
     "eslint": "^9.39.1",
     "globals": "^16.5.0",
     "rimraf": "^5.0.5",

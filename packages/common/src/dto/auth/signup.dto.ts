@@ -1,16 +1,16 @@
 import { CreateUserDto } from "../user/create-user.dto";
 import { createConflictResponse, GlobalErrorResponseDto, z } from "../zod";
 import { createSuccessResponse } from "../zod";
-import { CommonAuthResponseDto, CommonAuthResponseDtoExample } from "./common";
+import { accessTokenExample, CommonAuthResponseDto } from "./common";
 
 // Signup Request DTO
 export const SignupRequestDto = CreateUserDto.meta({
   id: "SignupRequestBody",
   description: "Signup request body",
   example: {
-    name: "alice",
+    name: "john_doe20",
     password: "Password@12345678",
-    email: "alice@snippetly.com",
+    email: "test@example.com",
     acceptedPolicies: true,
     isPrivate: false,
   },
@@ -19,7 +19,6 @@ export const SignupRequestDto = CreateUserDto.meta({
 export type SignupRequestDtoType = z.infer<typeof SignupRequestDto>;
 
 // Signup Response Schemas
-
 export const SignupConflictResponseDto = createConflictResponse(
   z.object({
     suggestedNames: z.array(z.string()),
@@ -27,42 +26,39 @@ export const SignupConflictResponseDto = createConflictResponse(
   "SignupConflictResponse",
   "Signup response body when conflict exists",
   {
-    suggestedNames: ["alice-1", "alice-3", "alice-4"],
+    suggestedNames: ["john_doe20-2", "john_doe20-3", "john_doe20-4"],
   },
-  "User account with the same name '${name}' already exists, but you can use one of the generated names."
+  "User account with the same name {{name}} already exists, but you can use one of the generated names."
 );
 
-export type SignupConflictResponseDtoType = z.infer<
-  typeof SignupConflictResponseDto
->;
-
-const {
-  accessToken,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  user: { updatedAt, ...userResExample },
-} = CommonAuthResponseDtoExample;
-export const SignupSuccessResponseDto = createSuccessResponse(
-  z.object({
-    user: CommonAuthResponseDto.shape.user.omit({
-      updatedAt: true,
-    }),
-    accessToken: CommonAuthResponseDto.shape.accessToken,
+const SignupSuccessRes = z.object({
+  user: CommonAuthResponseDto.shape.user.omit({
+    updatedAt: true,
   }),
-  "SignupSuccessResponse",
-  "Signup response body when conflict does not exist",
+  accessToken: CommonAuthResponseDto.shape.accessToken,
+});
+
+export const SignupSuccessResponseDto = createSuccessResponse(
+  SignupSuccessRes,
+  "SignupSuccessResponseBody",
+  "Signup response body if the user account created successfully",
   {
-    accessToken,
+    accessToken: accessTokenExample,
     user: {
-      ...userResExample,
+      name: "John_doe20",
+      firstName: null,
+      lastName: null,
+      image: null,
+      imageKey: null,
+      imageCustomId: null,
+      email: "test@example.com",
+      createdAt: new Date().toISOString() as unknown as Date,
+      isPrivate: false,
     },
-  },
+  } satisfies z.infer<typeof SignupSuccessRes>,
   "User account has been created successfully.",
   201
 );
-
-export type SignupSuccessResponseDtoType = z.infer<
-  typeof SignupSuccessResponseDto
->;
 
 export const SignupResponseDto = z.discriminatedUnion("type", [
   SignupSuccessResponseDto,

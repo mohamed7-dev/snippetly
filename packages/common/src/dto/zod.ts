@@ -32,13 +32,13 @@ export const LIMIT_SCHEMA = z
 
 // Base shapes
 const BaseSuccess = z.object({
-  status: z.number().int(),
+  status: z.literal(200).or(z.literal(201)),
   message: z.string(),
   type: z.literal("success"),
 });
 
 const BaseConflict = z.object({
-  status: z.number().int(),
+  status: z.literal(409),
   message: z.string(),
   type: z.literal("conflict"),
 });
@@ -47,7 +47,7 @@ const BaseError = z.object({
   type: z.literal("error"),
   status: z.number().int(),
   message: z.string(),
-  cause: z.string().nullable(),
+  cause: z.any().nullable(),
 });
 
 // Factory for success responses
@@ -102,57 +102,94 @@ export function createErrorResponse() {
 
 export const GlobalErrorResponseDto = createErrorResponse();
 
-export const InternalServerErrorResponseDto = createErrorResponse().meta({
-  id: "InternalServerErrorResponse",
-  description: "Internal server error response body",
-  example: {
-    type: "error",
-    status: 500,
-    message: "Oops, Something went wrong.",
-    cause: "error details",
-  },
-});
+export const InternalServerErrorResponseDto = createErrorResponse()
+  .extend({
+    status: z.literal(500),
+  })
+  .meta({
+    id: "InternalServerErrorResponse",
+    description: "Internal server error response body",
+    example: {
+      type: "error",
+      status: 500,
+      message: "Oops, Something went wrong.",
+      cause: "{{Cause}}",
+    },
+  });
 
-export const UnauthorizedErrorResponseDto = createErrorResponse().meta({
-  id: "UnauthorizedErrorResponse",
-  description: "Unauthorized error response body",
-  example: {
-    type: "error",
-    status: 401,
-    message: "Invalid session info",
-    cause: null,
-  },
-});
+export const UnauthorizedErrorResponseDto = createErrorResponse()
+  .extend({
+    status: z.literal(401),
+  })
+  .meta({
+    id: "UnauthorizedErrorResponse",
+    description: "Unauthorized error response body",
+    example: {
+      type: "error",
+      status: 401,
+      message: "UnAuthorized",
+      cause: null,
+    },
+  });
 
-export const ForbiddenErrorResponseDto = createErrorResponse().meta({
-  id: "ForbiddenErrorResponse",
-  description: "Forbidden error response body",
-  example: {
-    type: "error",
-    status: 403,
-    message: "Forbidden.",
-    cause: null,
-  },
-});
+export const ForbiddenErrorResponseDto = createErrorResponse()
+  .extend({
+    status: z.literal(403),
+  })
+  .meta({
+    id: "ForbiddenErrorResponse",
+    description: "Forbidden error response body",
+    example: {
+      type: "error",
+      status: 403,
+      message: "Forbidden",
+      cause: null,
+    },
+  });
 
-export const BadRequestErrorResponseDto = createErrorResponse().meta({
-  id: "BadRequestErrorResponse",
-  description: "Bad request error response body",
-  example: {
-    type: "error",
-    status: 400,
-    message: "Bad request.",
-    cause: "{{ZodError}}",
-  },
-});
+export const BadRequestErrorResponseDto = createErrorResponse()
+  .extend({
+    status: z.literal(400),
+  })
+  .meta({
+    id: "BadRequestErrorResponse",
+    description: "Bad request error response body",
+    example: {
+      type: "error",
+      status: 400,
+      message: "Bad request",
+      cause: "{{ZodError}}",
+    },
+  });
 
-export const NotFoundErrorResponseDto = createErrorResponse().meta({
-  id: "NotFoundErrorResponse",
-  description: "Not found error response body",
-  example: {
-    type: "error",
-    status: 404,
-    message: "Not found",
-    cause: null,
-  },
-});
+export const NotFoundErrorResponseDto = createErrorResponse()
+  .extend({
+    status: z.literal(404),
+  })
+  .meta({
+    id: "NotFoundErrorResponse",
+    description: "Not found error response body",
+    example: {
+      type: "error",
+      status: 404,
+      message: "Not found",
+      cause: null,
+    },
+  });
+
+export const MethodNotAllowedErrorResponseDto = createErrorResponse()
+  .extend({
+    status: z.literal(405),
+  })
+  .meta({
+    id: "MethodNotAllowedErrorResponse",
+    description: "Method not allowed error response body",
+    example: {
+      type: "error",
+      status: 405,
+      message: "Method not allowed",
+      cause: {
+        allowedMethods: ["get", "post", "patch", "delete"],
+      },
+    },
+  });

@@ -14,34 +14,20 @@ const CommonUserResponse = SelectUserDto.pick({
   updatedAt: true,
 });
 
-const CommonUserResDtoExample = {
-  name: "John_doe7",
-  firstName: "John",
-  lastName: "Doe",
-  image: "https://uploadthing...",
-  imageKey: "{{key}}",
-  email: "test@example.com",
-  createdAt: new Date().toISOString() as unknown as Date,
-  updatedAt: new Date().toISOString() as unknown as Date,
-  isPrivate: false,
-} satisfies z.infer<typeof CommonUserResponse>;
-
 export const CommonAuthResponseDto = z.object({
   user: CommonUserResponse,
   accessToken: z.jwt(),
 });
 
-export const CommonAuthResponseDtoExample = {
-  user: CommonUserResDtoExample,
-  accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-} satisfies z.infer<typeof CommonAuthResponseDto>;
+export const accessTokenExample =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMn0.KMUFsIDTnFmyG3nMiGM6H9FNFUROf3wh7SmqJp-QV30";
 
 export const SendTokenViaEmailDto = SelectUserDto.pick({
   email: true,
 });
 
 export const VerifyTokenRequestDto = z.object({
-  token: z.uuidv4(),
+  token: z.uuid(),
 });
 
 export const protectedRouteCookiesSchema = z
@@ -49,10 +35,10 @@ export const protectedRouteCookiesSchema = z
     "refresh-token": z.string(),
   })
   .meta({
-    id: "RefreshTokenCookie",
-    description: "refresh token http cookie",
+    id: "ProtectedRoutesCookies",
+    description: "Protected routes cookies",
     example: {
-      authorization: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9 ...",
+      authorization: accessTokenExample,
     },
   });
 
@@ -61,9 +47,9 @@ export const protectedRouteHeadersSchema = z
     authorization: z.string().nonoptional(),
   })
   .meta({
-    id: "AuthorizationHeader",
-    description: "authorization header",
+    id: "ProtectedRoutesHeaders",
+    description: "Protected routes headers",
     example: {
-      authorization: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9 ...",
+      authorization: accessTokenExample,
     },
   });

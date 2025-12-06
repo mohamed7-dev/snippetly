@@ -1,12 +1,12 @@
 import { createSuccessResponse, GlobalErrorResponseDto, z } from "../zod";
-import { VerifyTokenRequestDto } from "./common";
+import { accessTokenExample, VerifyTokenRequestDto } from "./common";
 
 // Verify V Token Request Schema
 export const VerifyVTokenRequestDto = VerifyTokenRequestDto.meta({
   id: "VerifyEmailVTokenRequestQuery",
   description: "Verify email verification token request query param",
   example: {
-    token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    token: accessTokenExample,
   },
 });
 export type VerifyVTokenRequestDtoType = z.infer<typeof VerifyVTokenRequestDto>;
@@ -24,6 +24,7 @@ export const VerifyVTokenResponseDto = z.discriminatedUnion("type", [
   VerifyVTokenSuccessResponseDto,
   GlobalErrorResponseDto,
 ]);
+
 export type VerifyVTokenResponseDtoType = z.infer<
   typeof VerifyVTokenResponseDto
 >;

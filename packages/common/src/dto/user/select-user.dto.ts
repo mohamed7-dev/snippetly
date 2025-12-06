@@ -25,7 +25,7 @@ export const SelectUserDto = baseModelSchema.extend({
 
   rememberMe: z.boolean().default(false),
   isPrivate: z.boolean().default(false),
-  acceptedPolicies: z.boolean().default(true),
+  acceptedPolicies: z.boolean().default(false),
 
   emailVerifiedAt: z.date().nullable().optional(),
   emailVerificationToken: z.uuidv4().nullable().optional(),

@@ -16,14 +16,10 @@ export type SendVEmailRequestDtoType = z.infer<typeof SendVEmailRequestDto>;
 export const SendVEmailSuccessResponseDto = createSuccessResponse(
   z.null(),
   "SendVEmailSuccessResponseBody",
-  "Verification link has been sent the email.",
+  "Verification link has been sent the email",
   null,
-  "Email verification has been sent to '${email}', check your inbox to verify your account."
+  "Email verification has been sent to {{email}}, check your inbox to verify your account."
 );
-
-export type SendVEmailSuccessResponseDtoType = z.infer<
-  typeof SendVEmailSuccessResponseDto
->;
 
 export const SendVEmailResponseDto = z.discriminatedUnion("type", [
   SendVEmailSuccessResponseDto,
