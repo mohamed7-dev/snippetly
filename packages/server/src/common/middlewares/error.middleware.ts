@@ -4,7 +4,8 @@ import { HttpException } from "../lib/exception";
 import { StatusCodes } from "http-status-codes";
 import { ErrorLogger } from "../logger/utils";
 import { LogContextEnum } from "../logger/constants";
-import { createErrorResponse } from "@snippetly/common";
+import { GlobalErrorResponseDto } from "@snippetly/common";
+import z from "zod";
 
 export default class ErrorMiddleWare extends Interceptor {
   constructor(req: Request, res: Response, next: NextFunction) {
@@ -17,16 +18,21 @@ export default class ErrorMiddleWare extends Interceptor {
     res: Response
   ) {
     if (error instanceof HttpException) {
-      const status: number = error.status || 500;
-      const errorSchema = createErrorResponse();
-      const { data } = errorSchema.safeParse(error);
-      res.status(status).json({ ...data });
-    } else {
-      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-        message: "Something went wrong.",
-        status: StatusCodes.INTERNAL_SERVER_ERROR,
+      const data = {
+        type: "error",
+        message: error.message,
+        status: error.status ?? 500,
         cause: error.cause ?? null,
-      });
+      } satisfies z.infer<typeof GlobalErrorResponseDto>;
+      res.status(data.status).json(data);
+    } else {
+      const data = {
+        type: "error",
+        message: error.message,
+        status: StatusCodes.INTERNAL_SERVER_ERROR,
+        cause: error.cause,
+      } satisfies z.infer<typeof GlobalErrorResponseDto>;
+      res.status(data.status).json(data);
       ErrorLogger.logUnhandledError(error, LogContextEnum.SERVER, {
         endpoint: req.path,
         method: req.method,

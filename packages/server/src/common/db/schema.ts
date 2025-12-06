@@ -32,7 +32,7 @@ export const usersTable = pgTable(
     imageKey: text("image_Key"),
     rememberMe: boolean("remember_me").default(false).notNull(),
     isPrivate: boolean("is_private").default(false).notNull(),
-    acceptedPolicies: boolean("accepted_policies").default(true).notNull(),
+    acceptedPolicies: boolean("accepted_policies").default(false).notNull(),
     emailVerifiedAt: timestamp("email_verified_at", { mode: "date" }),
     emailVerificationToken: text("email_verification_token"),
     emailVerificationTokenExpiresAt: timestamp(

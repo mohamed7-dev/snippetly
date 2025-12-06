@@ -1,5 +1,10 @@
+import {
+  MethodNotAllowedErrorResponseDto,
+  NotFoundErrorResponseDto,
+} from "@snippetly/common/dto";
 import type { Application, NextFunction, Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
+import z from "zod";
 
 type RouteWithMethods = {
   path: string;
@@ -12,13 +17,12 @@ export function notFoundErrorMiddleware(
   _next: NextFunction,
   app: Application
 ) {
-  // Get all registered routes
+  // Get all registered routes, and filter only routes
   const routes = app.router.stack
-    .filter((r) => r.route) // filter only routes
+    .filter((r) => r.route)
     .map((r) => r.route as unknown as RouteWithMethods)
     .filter((r) => r !== undefined);
 
-  // Check if path exists
   const match = routes.find((r) => r.path === req.path);
 
   if (match) {
@@ -27,12 +31,24 @@ export function notFoundErrorMiddleware(
       .map((m) => m.toUpperCase())
       .join(", ");
 
-    return res.status(405).json({
-      error: StatusCodes.METHOD_NOT_ALLOWED,
-      allowedMethods: allowed,
-    });
+    const rawRes = {
+      type: "error",
+      message: `Cannot ${req.method} ${req.originalUrl}`,
+      status: StatusCodes.METHOD_NOT_ALLOWED,
+      cause: {
+        allowedMethods: allowed,
+      },
+    } satisfies z.infer<typeof MethodNotAllowedErrorResponseDto>;
+
+    return res.status(rawRes.status).json(rawRes);
   }
-  return res
-    .status(StatusCodes.NOT_FOUND)
-    .json({ message: `Cannot ${req.method} ${req.originalUrl}` });
+
+  const rawRes = {
+    type: "error",
+    message: `Cannot ${req.method} ${req.originalUrl}`,
+    status: StatusCodes.NOT_FOUND,
+    cause: null,
+  } satisfies z.infer<typeof NotFoundErrorResponseDto>;
+
+  return res.status(rawRes.status).json(rawRes);
 }

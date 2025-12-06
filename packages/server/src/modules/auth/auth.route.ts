@@ -93,8 +93,7 @@ export class AuthRoute implements Route {
       `${this.path}/verify-email-token`,
       emailFlowLimiter,
       zodValidatorMiddleware(VerifyVTokenRequestDto, "Query"),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      this.controller.verifyVerificationToken as any
+      this.controller.verifyVerificationToken
     );
 
     this.router.put(
@@ -109,8 +108,7 @@ export class AuthRoute implements Route {
       emailFlowLimiter,
       zodValidatorMiddleware(VerifyRTokenRequestQueryDto, "Query"),
       zodValidatorMiddleware(VerifyRTokenRequestBodyDto, "Body"),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      this.controller.resetPassword as any
+      this.controller.resetPassword
     );
   }
 }

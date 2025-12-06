@@ -46,8 +46,7 @@
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "uploadthing": "^7.7.4",
-    "zod": "^4.1.5",
-    "zod-openapi": "^5.4.5"
+    "zod": "^4.1.13"
   },
   "devDependencies": {
     "@snippetly/eslint-config": "workspace:*",

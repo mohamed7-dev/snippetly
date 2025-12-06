@@ -3,7 +3,7 @@ import { HttpException } from "../../common/lib/exception";
 import { UserService } from "../user/user.service";
 import type { Response } from "express";
 import { type JWTPayload, TokenService } from "./token.service";
-import { REFRESH_TOKEN_COOKIE_KEY } from "./constants";
+import { REFRESH_TOKEN_COOKIE_KEY } from "@snippetly/common";
 import { PasswordHashService } from "./password-hash.service";
 import { EmailService } from "../email/email.service";
 import {
@@ -118,7 +118,7 @@ export class AuthService {
 
       const data = await this.login(
         ctx,
-        { name: newUser.name, password: input.password },
+        { name: newUser.name, password: input.password, rememberMe: false },
         res
       );
 

@@ -26,11 +26,11 @@ import {
 export const loginRouteConfig: RouteConfig = {
   method: "put",
   path: "/auth/login",
-  summary: "Log in a user",
+  summary: "Authenticate user",
   tags: ["Auth"],
   request: {
     body: {
-      description: "Login credentials",
+      description: "Login request body",
       content: {
         "application/json": {
           schema: LoginRequestDto,
@@ -82,7 +82,7 @@ export const signupRouteConfig: RouteConfig = {
   request: {
     body: {
       required: true,
-      description: "Signup credentials",
+      description: "Signup request body",
       content: {
         "application/json": {
           schema: SignupRequestDto,
@@ -145,7 +145,7 @@ export const logoutRouteConfig: RouteConfig = {
       },
     },
     401: {
-      description: "Session is not found or invalid.",
+      description: "Session is missing or invalid",
       content: {
         "application/json": {
           schema: UnauthorizedErrorResponseDto,
@@ -166,14 +166,14 @@ export const logoutRouteConfig: RouteConfig = {
 export const refreshTokenRouteConfig: RouteConfig = {
   method: "put",
   path: "/auth/refresh",
-  summary: "Refresh access token using refresh token cookie.",
+  summary: "Refresh access token using refresh token cookie",
   tags: ["Auth"],
   request: {
     cookies: protectedRouteCookiesSchema,
   },
   responses: {
     200: {
-      description: "Access token refreshed successfully.",
+      description: "Access token refreshed successfully",
       content: {
         "application/json": {
           schema: RefreshTokenSuccessResponseDto,
@@ -181,8 +181,7 @@ export const refreshTokenRouteConfig: RouteConfig = {
       },
     },
     401: {
-      description:
-        "Session is not found, invalid or the refresh-token cookie is missing.",
+      description: "Refresh-token cookie is missing",
       content: {
         "application/json": {
           schema: UnauthorizedErrorResponseDto,
@@ -227,7 +226,7 @@ export const sendVEmailRouteConfig: RouteConfig = {
       },
     },
     400: {
-      description: "Invalid credentials e.g. missing email",
+      description: "Invalid request body e.g. missing email",
       content: {
         "application/json": {
           schema: BadRequestErrorResponseDto,
@@ -248,7 +247,7 @@ export const sendVEmailRouteConfig: RouteConfig = {
 export const verifyVEmailRouteConfig: RouteConfig = {
   method: "put",
   path: "/auth/verify-email-token",
-  summary: "Verify token sent to the user's email.",
+  summary: "Verify token sent to the user's email",
   tags: ["Auth"],
   request: {
     query: VerifyVTokenRequestDto,
@@ -264,7 +263,7 @@ export const verifyVEmailRouteConfig: RouteConfig = {
       },
     },
     400: {
-      description: "Invalid data e.g. missing token",
+      description: "Invalid request query params e.g. missing token",
       content: {
         "application/json": {
           schema: BadRequestErrorResponseDto,
@@ -309,7 +308,7 @@ export const sendREmailRouteConfig: RouteConfig = {
       },
     },
     400: {
-      description: "Invalid data e.g. missing token",
+      description: "Invalid request body e.g. missing email",
       content: {
         "application/json": {
           schema: BadRequestErrorResponseDto,
@@ -355,7 +354,8 @@ export const resetPasswordRouteConfig: RouteConfig = {
       },
     },
     400: {
-      description: "Invalid data e.g. missing token or password",
+      description:
+        "Invalid request body or query params e.g. missing token or password",
       content: {
         "application/json": {
           schema: BadRequestErrorResponseDto,

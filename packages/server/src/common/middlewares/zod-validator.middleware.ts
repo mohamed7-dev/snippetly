@@ -1,3 +1,4 @@
+import { BadRequestErrorResponseDto } from "@snippetly/common/dto";
 import type { NextFunction, Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
 import z, { ZodError } from "zod";
@@ -23,11 +24,13 @@ export function zodValidatorMiddleware(
       next();
     } catch (error) {
       if (error instanceof ZodError) {
-        const errorTree = z.treeifyError(error);
-        return res.status(StatusCodes.BAD_REQUEST).json({
-          message: "Bad Request: invalid input data.",
-          cause: errorTree,
-        });
+        const rawRes = {
+          type: "error",
+          message: "Bad Request: invalid input data",
+          status: StatusCodes.BAD_REQUEST,
+          cause: z.treeifyError(error),
+        } satisfies z.infer<typeof BadRequestErrorResponseDto>;
+        return res.status(rawRes.status).json(rawRes);
       }
       next(error);
     }
