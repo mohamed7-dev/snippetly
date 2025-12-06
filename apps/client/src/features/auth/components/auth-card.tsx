@@ -1,6 +1,5 @@
 import {
   Card,
-  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
@@ -34,14 +33,20 @@ export function AuthCard({
 
       <Card className="border-border">
         <CardHeader className="text-center">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <Code2Icon className="h-8 w-8 text-primary" />
-            <span className="font-heading font-bold text-xl">{APP_NAME}</span>
+          <div className="flex gap-4">
+            <Link
+              to="/"
+              className="flex items-center justify-center gap-2 mb-4"
+            >
+              <Code2Icon className="h-8 w-8 text-primary" />
+              <span className="font-heading font-bold text-xl">{APP_NAME}</span>
+            </Link>
+            {'/'}
+            <CardTitle className="font-heading text-2xl">{cardTitle}</CardTitle>
           </div>
-          <CardTitle className="font-heading text-2xl">{cardTitle}</CardTitle>
           <CardDescription>{cardDescription}</CardDescription>
         </CardHeader>
-        <CardContent>{children}</CardContent>
+        {children}
       </Card>
     </div>
   )
