@@ -1,11 +1,10 @@
-import { describe, it, expect } from "vitest";
-import {
-  RefreshTokenSuccessResponseDto,
-  RefreshTokenResponseDto,
-} from "./refresh-token.dto";
-import { GlobalErrorResponseDto } from "../zod";
-import z from "zod";
+import { describe, expect, it } from "vitest";
 import { accessTokenExample } from "./common";
+import {
+  RefreshTokenResponseDto,
+  RefreshTokenResponseDtoType,
+  RefreshTokenSuccessResponseDto,
+} from "./refresh-token.dto";
 
 describe("RefreshTokenSuccessResponseDto", () => {
   it("validates a correct refresh token success response", () => {
@@ -28,7 +27,7 @@ describe("RefreshTokenSuccessResponseDto", () => {
           isPrivate: false,
         },
       },
-    } satisfies z.infer<typeof RefreshTokenSuccessResponseDto>;
+    } satisfies RefreshTokenResponseDtoType["success"];
 
     const result = RefreshTokenSuccessResponseDto.safeParse(input);
 
@@ -107,10 +106,10 @@ describe("RefreshTokenResponseDto (union)", () => {
           isPrivate: false,
         },
       },
-    } satisfies z.infer<typeof RefreshTokenSuccessResponseDto>);
+    } satisfies RefreshTokenResponseDtoType["success"]);
 
     expect(result.success).toBe(true);
-    expect(result.data?.type).toBe("success");
+    expect(result.data?.status).toBe(200);
   });
 
   it("accepts the error variant", () => {
@@ -119,15 +118,17 @@ describe("RefreshTokenResponseDto (union)", () => {
       status: 401,
       message: "Unauthorized: Invalid session, or missing refresh token",
       cause: null,
-    } satisfies z.infer<typeof GlobalErrorResponseDto>);
+    } satisfies RefreshTokenResponseDtoType["error"]);
     expect(result.success).toBe(true);
-    expect(result.data?.type).toBe("error");
+    expect(result.data?.status).toBe(401);
   });
 
-  it("fails on unknown type", () => {
+  it("fails on unknown status", () => {
     const result = RefreshTokenResponseDto.safeParse({
-      type: "weird",
-      message: "???",
+      type: "error",
+      status: 204,
+      message: "Unauthorized: Invalid session, or missing refresh token",
+      cause: null,
     });
 
     expect(result.success).toBe(false);

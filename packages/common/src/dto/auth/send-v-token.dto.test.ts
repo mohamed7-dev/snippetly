@@ -1,11 +1,12 @@
+import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { describe, it, expect } from "vitest";
+import { GlobalErrorResponseDto } from "../zod";
 import {
   SendVEmailRequestDto,
   SendVEmailResponseDto,
+  SendVEmailResponseDtoType,
   SendVEmailSuccessResponseDto,
 } from "./send-v-token.dto";
-import { GlobalErrorResponseDto } from "../zod";
 
 describe("SendVEmailRequestDto", () => {
   it("should parse a valid request body", () => {
@@ -24,7 +25,6 @@ describe("SendVEmailRequestDto", () => {
 
     const result = SendVEmailRequestDto.safeParse(input);
 
-    // Only email should remain (Zod strips unknown keys by default)
     expect(result.data).toEqual({ email: "test@example.com" });
   });
 
@@ -43,11 +43,11 @@ describe("SendVEmailResponseDto", () => {
       message:
         "Email verification has been sent to {{email}}, check your inbox to verify your account.",
       data: null,
-    } satisfies z.infer<typeof SendVEmailSuccessResponseDto>;
+    } satisfies SendVEmailResponseDtoType["success"];
 
     const result = SendVEmailSuccessResponseDto.safeParse(input);
 
-    expect(result.data?.type).toBe("success");
+    expect(result.data?.status).toBe(200);
     expect(result.data?.data).toBeNull();
   });
 
@@ -72,11 +72,11 @@ describe("SendVEmailResponseDto", () => {
       status: 400,
       message: "Bad Request: Invalid request body",
       cause: {}, // zod error instance
-    } satisfies z.infer<typeof GlobalErrorResponseDto>;
+    } satisfies SendVEmailResponseDtoType["error"];
 
     const result = GlobalErrorResponseDto.safeParse(input);
     expect(result.success).toBe(true);
-    expect(result.data?.type).toBe("error");
+    expect(result.data?.status).toBe(400);
   });
 
   it("should correctly discriminate between success and error", () => {
@@ -86,19 +86,19 @@ describe("SendVEmailResponseDto", () => {
       message:
         "Email verification has been sent to {{email}}, check your inbox to verify your account.",
       data: null,
-    } satisfies z.infer<typeof SendVEmailSuccessResponseDto>;
+    } satisfies SendVEmailResponseDtoType["success"];
 
     const errorInput = {
       type: "error",
       message: "Bad Request: Invalid request body",
       status: 400,
       cause: {},
-    } satisfies z.infer<typeof GlobalErrorResponseDto>;
+    } satisfies SendVEmailResponseDtoType["error"];
 
     const success = SendVEmailResponseDto.safeParse(successInput);
     const error = SendVEmailResponseDto.safeParse(errorInput);
 
-    expect(success.data?.type).toBe("success");
-    expect(error.data?.type).toBe("error");
+    expect(success.data?.status).toBe(200);
+    expect(error.data?.status).toBe(400);
   });
 });

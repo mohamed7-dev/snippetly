@@ -1,15 +1,18 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
+import { GlobalErrorResponseDto } from "../zod";
 import {
   SendRTokenRequestDto,
+  SendRTokenRequestDtoType,
   SendRTokenResponseDto,
+  SendRTokenResponseDtoType,
   SendRTokenSuccessResponseDto,
 } from "./send-r-token.dto";
-import { GlobalErrorResponseDto } from "../zod";
-import z from "zod";
 
 describe("SendRTokenRequestDto", () => {
   it("should validate a valid request", () => {
-    const input = { email: "test@example.com" };
+    const input = {
+      email: "test@example.com",
+    } satisfies SendRTokenRequestDtoType;
 
     const result = SendRTokenRequestDto.safeParse(input);
 
@@ -55,7 +58,7 @@ describe("SendRTokenResponseDto", () => {
       message:
         "Password reset link has been sent to {{email}}, check your inbox to reset your password.",
       data: null,
-    } satisfies z.infer<typeof SendRTokenSuccessResponseDto>;
+    } satisfies SendRTokenResponseDtoType["success"];
 
     const result = SendRTokenSuccessResponseDto.safeParse(input);
 
@@ -84,7 +87,7 @@ describe("SendRTokenResponseDto", () => {
       status: 400,
       message: "Bad Request: Invalid request body",
       cause: {}, // zod error
-    } satisfies z.infer<typeof GlobalErrorResponseDto>;
+    } satisfies SendRTokenResponseDtoType["error"];
 
     const result = GlobalErrorResponseDto.safeParse(input);
 
@@ -98,22 +101,22 @@ describe("SendRTokenResponseDto", () => {
       message:
         "Password reset link has been sent to {{email}}, check your inbox to reset your password.",
       data: null,
-    } satisfies z.infer<typeof SendRTokenSuccessResponseDto>;
+    } satisfies SendRTokenResponseDtoType["success"];
 
     const errorInput = {
       type: "error",
       status: 400,
       message: "Bad Request: Invalid request body",
       cause: {}, // zod error
-    } satisfies z.infer<typeof GlobalErrorResponseDto>;
+    } satisfies SendRTokenResponseDtoType["error"];
 
     const successResult = SendRTokenResponseDto.safeParse(successInput);
     const errorResult = SendRTokenResponseDto.safeParse(errorInput);
 
     expect(successResult.success).toBe(true);
-    expect(successResult.data?.type).toBe("success");
+    expect(successResult.data?.status).toBe(200);
 
     expect(errorResult.success).toBe(true);
-    expect(errorResult.data?.type).toBe("error");
+    expect(errorResult.data?.status).toBe(400);
   });
 });

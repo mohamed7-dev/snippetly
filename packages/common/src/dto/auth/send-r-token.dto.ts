@@ -1,4 +1,12 @@
-import { createSuccessResponse, GlobalErrorResponseDto, z } from "../zod";
+import {
+  BadRequestErrorResponseDto,
+  createSuccessResponse,
+  RateLimiterErrorResponseDto,
+  SharedErrorResDto,
+  SharedErrorResDtoType,
+  UnauthorizedErrorResponseDto,
+  z,
+} from "../zod";
 import { SendTokenViaEmailDto } from "./common";
 
 // Send Reset Token Request Schema
@@ -20,8 +28,19 @@ export const SendRTokenSuccessResponseDto = createSuccessResponse(
   "Password reset link has been sent to {{email}}, check your inbox to reset your password."
 );
 
-export const SendRTokenResponseDto = z.discriminatedUnion("type", [
+export const SendRTokenResponseDto = z.discriminatedUnion("status", [
   SendRTokenSuccessResponseDto,
-  GlobalErrorResponseDto,
+  BadRequestErrorResponseDto,
+  RateLimiterErrorResponseDto,
+  UnauthorizedErrorResponseDto,
+  ...SharedErrorResDto,
 ]);
-export type SendRTokenResponseDtoType = z.infer<typeof SendRTokenResponseDto>;
+
+export type SendRTokenResponseDtoType = {
+  success: z.infer<typeof SendRTokenSuccessResponseDto>;
+  error:
+    | SharedErrorResDtoType
+    | z.infer<typeof BadRequestErrorResponseDto>
+    | z.infer<typeof RateLimiterErrorResponseDto>
+    | z.infer<typeof UnauthorizedErrorResponseDto>;
+};

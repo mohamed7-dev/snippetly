@@ -1,7 +1,14 @@
 import z from "zod";
-import { createSuccessResponse, GlobalErrorResponseDto } from "../zod";
-import { SignupRequestDto } from "./signup.dto";
+import {
+  BadRequestErrorResponseDto,
+  createSuccessResponse,
+  RateLimiterErrorResponseDto,
+  SharedErrorResDto,
+  SharedErrorResDtoType,
+  UnauthorizedErrorResponseDto,
+} from "../zod";
 import { accessTokenExample, CommonAuthResponseDto } from "./common";
+import { SignupRequestDto } from "./signup.dto";
 
 // Login Request DTO
 export const LoginRequestDto = SignupRequestDto.pick({
@@ -47,9 +54,19 @@ export const LoginSuccessResponseDto = createSuccessResponse(
   "Successfully authenticated"
 );
 
-export const LoginResponseDto = z.discriminatedUnion("type", [
+export const LoginResponseDto = z.discriminatedUnion("status", [
   LoginSuccessResponseDto,
-  GlobalErrorResponseDto,
+  RateLimiterErrorResponseDto,
+  BadRequestErrorResponseDto,
+  UnauthorizedErrorResponseDto,
+  ...SharedErrorResDto,
 ]);
 
-export type LoginResponseDtoType = z.infer<typeof LoginResponseDto>;
+export type LoginResponseDtoType = {
+  success: z.infer<typeof LoginSuccessResponseDto>;
+  error:
+    | SharedErrorResDtoType
+    | z.infer<typeof RateLimiterErrorResponseDto>
+    | z.infer<typeof BadRequestErrorResponseDto>
+    | z.infer<typeof UnauthorizedErrorResponseDto>;
+};

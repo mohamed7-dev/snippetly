@@ -1,4 +1,12 @@
-import { createSuccessResponse, GlobalErrorResponseDto, z } from "../zod";
+import {
+  BadRequestErrorResponseDto,
+  createSuccessResponse,
+  RateLimiterErrorResponseDto,
+  SharedErrorResDto,
+  SharedErrorResDtoType,
+  UnauthorizedErrorResponseDto,
+  z,
+} from "../zod";
 import { SendTokenViaEmailDto } from "./common";
 
 // Send V Email Request Schema
@@ -21,8 +29,19 @@ export const SendVEmailSuccessResponseDto = createSuccessResponse(
   "Email verification has been sent to {{email}}, check your inbox to verify your account."
 );
 
-export const SendVEmailResponseDto = z.discriminatedUnion("type", [
+export const SendVEmailResponseDto = z.discriminatedUnion("status", [
   SendVEmailSuccessResponseDto,
-  GlobalErrorResponseDto,
+  BadRequestErrorResponseDto,
+  RateLimiterErrorResponseDto,
+  UnauthorizedErrorResponseDto,
+  ...SharedErrorResDto,
 ]);
-export type SendVEmailResponseDtoType = z.infer<typeof SendVEmailResponseDto>;
+
+export type SendVEmailResponseDtoType = {
+  success: z.infer<typeof SendVEmailSuccessResponseDto>;
+  error:
+    | SharedErrorResDtoType
+    | z.infer<typeof BadRequestErrorResponseDto>
+    | z.infer<typeof RateLimiterErrorResponseDto>
+    | z.infer<typeof UnauthorizedErrorResponseDto>;
+};

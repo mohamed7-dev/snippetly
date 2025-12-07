@@ -1,5 +1,13 @@
 import { SelectUserDto } from "../user/select-user.dto";
-import { createSuccessResponse, GlobalErrorResponseDto, z } from "../zod";
+import {
+  BadRequestErrorResponseDto,
+  createSuccessResponse,
+  RateLimiterErrorResponseDto,
+  SharedErrorResDto,
+  SharedErrorResDtoType,
+  UnauthorizedErrorResponseDto,
+  z,
+} from "../zod";
 import { accessTokenExample, VerifyTokenRequestDto } from "./common";
 
 // Verify R Token Request Schema <Query Param>
@@ -41,11 +49,19 @@ export const VerifyRTokenSuccessResponseDto = createSuccessResponse(
   "Password has been reset successfully"
 );
 
-export const VerifyRTokenResponseDto = z.discriminatedUnion("type", [
+export const VerifyRTokenResponseDto = z.discriminatedUnion("status", [
   VerifyRTokenSuccessResponseDto,
-  GlobalErrorResponseDto,
+  RateLimiterErrorResponseDto,
+  BadRequestErrorResponseDto,
+  UnauthorizedErrorResponseDto,
+  ...SharedErrorResDto,
 ]);
 
-export type VerifyRTokenResponseDtoType = z.infer<
-  typeof VerifyRTokenResponseDto
->;
+export type VerifyRTokenResponseDtoType = {
+  success: z.infer<typeof VerifyRTokenSuccessResponseDto>;
+  error:
+    | SharedErrorResDtoType
+    | z.infer<typeof BadRequestErrorResponseDto>
+    | z.infer<typeof RateLimiterErrorResponseDto>
+    | z.infer<typeof UnauthorizedErrorResponseDto>;
+};

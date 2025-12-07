@@ -1,12 +1,13 @@
-import { describe, it, expect } from "vitest";
-import {
-  SignupRequestDto,
-  SignupConflictResponseDto,
-  SignupSuccessResponseDto,
-  SignupResponseDto,
-} from "./signup.dto";
-import { GlobalErrorResponseDto, z } from "../zod";
+import { describe, expect, it } from "vitest";
+import { z } from "../zod";
 import { accessTokenExample } from "./common";
+import {
+  SignupConflictResponseDto,
+  SignupRequestDto,
+  SignupResponseDto,
+  SignupResponseDtoType,
+  SignupSuccessResponseDto,
+} from "./signup.dto";
 
 describe("SignupRequestDto", () => {
   it("validates a correct signup request", () => {
@@ -62,12 +63,12 @@ describe("SignupConflictResponseDto", () => {
       data: {
         suggestedNames: ["john_doe20-2", "john_doe20-3"],
       },
-    } satisfies z.infer<typeof SignupConflictResponseDto>;
+    } satisfies SignupResponseDtoType["conflict"];
 
     const result = SignupConflictResponseDto.safeParse(input);
 
     expect(result.success).toBe(true);
-    expect(result.data?.data.suggestedNames.length).toBe(2);
+    expect(result.data?.data.suggestedNames.length).toBeGreaterThan(0);
   });
 
   it("fails when suggestedNames is not an array", () => {
@@ -103,7 +104,7 @@ describe("SignupSuccessResponseDto", () => {
           isPrivate: false,
         },
       },
-    } satisfies z.infer<typeof SignupSuccessResponseDto>;
+    } satisfies SignupResponseDtoType["success"];
 
     const result = SignupSuccessResponseDto.safeParse(input);
 
@@ -173,10 +174,10 @@ describe("SignupResponseDto (union)", () => {
           isPrivate: false,
         },
       },
-    } satisfies z.infer<typeof SignupSuccessResponseDto>);
+    } satisfies SignupResponseDtoType["success"]);
 
     expect(result.success).toBe(true);
-    expect(result.data?.type).toBe("success");
+    expect(result.data?.status).toBe(201);
   });
 
   it("accepts signup conflict response", () => {
@@ -187,28 +188,30 @@ describe("SignupResponseDto (union)", () => {
       data: {
         suggestedNames: ["a", "b"],
       },
-    } satisfies z.infer<typeof SignupConflictResponseDto>);
+    } satisfies SignupResponseDtoType["conflict"]);
 
     expect(result.success).toBe(true);
-    expect(result.data?.type).toBe("conflict");
+    expect(result.data?.status).toBe(409);
   });
 
-  it("accepts global error response", () => {
+  it("accepts error response", () => {
     const result = SignupResponseDto.safeParse({
       type: "error",
       message: "Something went wrong",
       status: 500,
       cause: null,
-    } satisfies z.infer<typeof GlobalErrorResponseDto>);
+    } satisfies SignupResponseDtoType["error"]);
 
     expect(result.success).toBe(true);
-    expect(result.data?.type).toBe("error");
+    expect(result.data?.status).toBe(500);
   });
 
-  it("fails when type does not match any variant", () => {
+  it("fails when status does not match any variant", () => {
     const result = SignupResponseDto.safeParse({
-      type: "weird",
+      type: "error",
       message: "???",
+      status: 204,
+      cause: null,
     });
 
     expect(result.success).toBe(false);

@@ -1,4 +1,12 @@
-import { createSuccessResponse, GlobalErrorResponseDto, z } from "../zod";
+import {
+  BadRequestErrorResponseDto,
+  createSuccessResponse,
+  RateLimiterErrorResponseDto,
+  SharedErrorResDto,
+  SharedErrorResDtoType,
+  UnauthorizedErrorResponseDto,
+  z,
+} from "../zod";
 import { accessTokenExample, VerifyTokenRequestDto } from "./common";
 
 // Verify V Token Request Schema
@@ -20,11 +28,19 @@ export const VerifyVTokenSuccessResponseDto = createSuccessResponse(
   "Email has been verified successfully"
 );
 
-export const VerifyVTokenResponseDto = z.discriminatedUnion("type", [
+export const VerifyVTokenResponseDto = z.discriminatedUnion("status", [
   VerifyVTokenSuccessResponseDto,
-  GlobalErrorResponseDto,
+  RateLimiterErrorResponseDto,
+  BadRequestErrorResponseDto,
+  UnauthorizedErrorResponseDto,
+  ...SharedErrorResDto,
 ]);
 
-export type VerifyVTokenResponseDtoType = z.infer<
-  typeof VerifyVTokenResponseDto
->;
+export type VerifyVTokenResponseDtoType = {
+  success: z.infer<typeof VerifyVTokenSuccessResponseDto>;
+  error:
+    | SharedErrorResDtoType
+    | z.infer<typeof BadRequestErrorResponseDto>
+    | z.infer<typeof RateLimiterErrorResponseDto>
+    | z.infer<typeof UnauthorizedErrorResponseDto>;
+};

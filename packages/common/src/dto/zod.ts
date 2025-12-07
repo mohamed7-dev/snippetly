@@ -1,5 +1,5 @@
-import * as z from "zod";
 import { extendZodWithOpenApi } from "@asteasolutions/zod-to-openapi";
+import * as z from "zod";
 
 extendZodWithOpenApi(z);
 // export this Zod instance and use it everywhere
@@ -32,7 +32,13 @@ export const LIMIT_SCHEMA = z
 
 // Base shapes
 const BaseSuccess = z.object({
-  status: z.literal(200).or(z.literal(201)),
+  status: z.literal(200),
+  message: z.string(),
+  type: z.literal("success"),
+});
+
+const BaseCreated = z.object({
+  status: z.literal(201),
   message: z.string(),
   type: z.literal("success"),
 });
@@ -68,6 +74,28 @@ export function createSuccessResponse<T extends z.ZodTypeAny>(
       type: "success",
       status: status !== undefined ? status : 200,
       message: message ?? "Success",
+      data: dataExample,
+    },
+  });
+}
+
+// Factory for created responses
+export function createCreatedResponse<T extends z.ZodTypeAny>(
+  dataSchema: T,
+  id: string,
+  description: string,
+  dataExample: unknown,
+  message?: string
+) {
+  return BaseCreated.extend({
+    data: dataSchema,
+  }).meta({
+    id,
+    description,
+    example: {
+      type: "success",
+      status: 201,
+      message: message ?? "Created",
       data: dataExample,
     },
   });
@@ -193,3 +221,29 @@ export const MethodNotAllowedErrorResponseDto = createErrorResponse()
       },
     },
   });
+
+export const RateLimiterErrorResponseDto = createErrorResponse()
+  .extend({
+    status: z.literal(429),
+  })
+  .meta({
+    id: "RateLimiterErrorResponse",
+    description: "Rate limiter error response body",
+    example: {
+      type: "error",
+      status: 429,
+      message: "Too Many Requests",
+      cause: null,
+    },
+  });
+
+export type SharedErrorResDtoType =
+  | z.infer<typeof MethodNotAllowedErrorResponseDto>
+  | z.infer<typeof NotFoundErrorResponseDto>
+  | z.infer<typeof InternalServerErrorResponseDto>;
+
+export const SharedErrorResDto = [
+  InternalServerErrorResponseDto,
+  MethodNotAllowedErrorResponseDto,
+  NotFoundErrorResponseDto,
+];

@@ -1,6 +1,13 @@
 import { CreateUserDto } from "../user/create-user.dto";
-import { createConflictResponse, GlobalErrorResponseDto, z } from "../zod";
-import { createSuccessResponse } from "../zod";
+import {
+  BadRequestErrorResponseDto,
+  createConflictResponse,
+  createCreatedResponse,
+  RateLimiterErrorResponseDto,
+  SharedErrorResDto,
+  SharedErrorResDtoType,
+  z,
+} from "../zod";
 import { accessTokenExample, CommonAuthResponseDto } from "./common";
 
 // Signup Request DTO
@@ -38,7 +45,7 @@ const SignupSuccessRes = z.object({
   accessToken: CommonAuthResponseDto.shape.accessToken,
 });
 
-export const SignupSuccessResponseDto = createSuccessResponse(
+export const SignupSuccessResponseDto = createCreatedResponse(
   SignupSuccessRes,
   "SignupSuccessResponseBody",
   "Signup response body if the user account created successfully",
@@ -56,14 +63,22 @@ export const SignupSuccessResponseDto = createSuccessResponse(
       isPrivate: false,
     },
   } satisfies z.infer<typeof SignupSuccessRes>,
-  "User account has been created successfully.",
-  201
+  "User account has been created successfully."
 );
 
-export const SignupResponseDto = z.discriminatedUnion("type", [
+export const SignupResponseDto = z.discriminatedUnion("status", [
   SignupSuccessResponseDto,
   SignupConflictResponseDto,
-  GlobalErrorResponseDto,
+  BadRequestErrorResponseDto,
+  RateLimiterErrorResponseDto,
+  ...SharedErrorResDto,
 ]);
 
-export type SignupResponseDtoType = z.infer<typeof SignupResponseDto>;
+export type SignupResponseDtoType = {
+  success: z.infer<typeof SignupSuccessResponseDto>;
+  conflict: z.infer<typeof SignupConflictResponseDto>;
+  error:
+    | SharedErrorResDtoType
+    | z.infer<typeof BadRequestErrorResponseDto>
+    | z.infer<typeof RateLimiterErrorResponseDto>;
+};

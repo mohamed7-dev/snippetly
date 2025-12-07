@@ -1,4 +1,10 @@
-import { createSuccessResponse, GlobalErrorResponseDto, z } from "../zod";
+import {
+  createSuccessResponse,
+  SharedErrorResDto,
+  SharedErrorResDtoType,
+  UnauthorizedErrorResponseDto,
+  z,
+} from "../zod";
 
 // Logout Response Schema
 export const LogoutSuccessResponseDto = createSuccessResponse(
@@ -9,9 +15,13 @@ export const LogoutSuccessResponseDto = createSuccessResponse(
   "Logged out successfully."
 );
 
-export const LogoutResponseDto = z.discriminatedUnion("type", [
+export const LogoutResponseDto = z.discriminatedUnion("status", [
   LogoutSuccessResponseDto,
-  GlobalErrorResponseDto,
+  UnauthorizedErrorResponseDto,
+  ...SharedErrorResDto,
 ]);
 
-export type LogoutResponseDtoType = z.infer<typeof LogoutResponseDto>;
+export type LogoutResponseDtoType = {
+  success: z.infer<typeof LogoutSuccessResponseDto>;
+  error: SharedErrorResDtoType | z.infer<typeof UnauthorizedErrorResponseDto>;
+};

@@ -1,7 +1,11 @@
-import { describe, it, expect } from "vitest";
-import { z } from "zod";
-import { LoginRequestDto, LoginSuccessResponseDto } from "./login.dto";
+import { describe, expect, it } from "vitest";
 import { accessTokenExample } from "./common";
+import {
+  LoginRequestDto,
+  LoginResponseDto,
+  LoginResponseDtoType,
+  LoginSuccessResponseDto,
+} from "./login.dto";
 
 describe("LoginRequestDto", () => {
   it("validates a correct login request", () => {
@@ -49,7 +53,8 @@ describe("LoginSuccessResponseDto", () => {
           isPrivate: false,
         },
       },
-    } satisfies z.infer<typeof LoginSuccessResponseDto>;
+    } satisfies LoginResponseDtoType["success"];
+
     const result = LoginSuccessResponseDto.safeParse(validResponse);
 
     expect(result.success).toBe(true);
@@ -61,7 +66,7 @@ describe("LoginSuccessResponseDto", () => {
       type: "success",
       message: "Successfully authenticated",
       data: {
-        accessToken: "token",
+        accessToken: accessTokenExample,
       },
     };
 
@@ -69,7 +74,7 @@ describe("LoginSuccessResponseDto", () => {
     expect(result.success).toBe(false);
   });
 
-  it("strips out email verification token field", () => {
+  it("strips extra fields", () => {
     const validResponseWithExtraField = {
       type: "success",
       status: 200,
@@ -97,5 +102,56 @@ describe("LoginSuccessResponseDto", () => {
     );
     expect(result.success).toBe(true); // validation is successful
     expect(result.data?.data.user).not.toHaveProperty("emailVerificationToken");
+  });
+});
+
+describe("LoginResponseDto (union)", () => {
+  it("accepts login success response", () => {
+    const result = LoginResponseDto.safeParse({
+      type: "success",
+      status: 200,
+      message: "User account has been created successfully.",
+      data: {
+        accessToken: accessTokenExample,
+        user: {
+          name: "john",
+          firstName: null,
+          lastName: null,
+          email: "john@example.com",
+          image: null,
+          imageKey: null,
+          imageCustomId: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          isPrivate: false,
+        },
+      },
+    } satisfies LoginResponseDtoType["success"]);
+
+    expect(result.success).toBe(true);
+    expect(result.data?.status).toBe(200);
+  });
+
+  it("accepts error response", () => {
+    const result = LoginResponseDto.safeParse({
+      type: "error",
+      message: "Something went wrong",
+      status: 500,
+      cause: null,
+    } satisfies LoginResponseDtoType["error"]);
+
+    expect(result.success).toBe(true);
+    expect(result.data?.status).toBe(500);
+  });
+
+  it("fails when status does not match any variant", () => {
+    const result = LoginResponseDto.safeParse({
+      type: "error",
+      message: "???",
+      status: 204,
+      cause: null,
+    });
+
+    expect(result.success).toBe(false);
   });
 });

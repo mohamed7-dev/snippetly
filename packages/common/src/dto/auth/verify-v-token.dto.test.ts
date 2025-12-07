@@ -1,18 +1,20 @@
-import { describe, it, expect } from "vitest";
+import { randomUUID } from "node:crypto";
+import { describe, expect, it } from "vitest";
+import { z } from "zod";
+import { GlobalErrorResponseDto } from "../zod";
 import {
   VerifyVTokenRequestDto,
+  VerifyVTokenRequestDtoType,
   VerifyVTokenResponseDto,
+  VerifyVTokenResponseDtoType,
   VerifyVTokenSuccessResponseDto,
 } from "./verify-v-token.dto";
-import { GlobalErrorResponseDto } from "../zod";
-import { z } from "zod";
-import { randomUUID } from "node:crypto";
 
 const uuid = randomUUID();
 
 describe("VerifyVTokenRequestDto", () => {
   it("should parse a valid request", () => {
-    const input = { token: uuid };
+    const input = { token: uuid } satisfies VerifyVTokenRequestDtoType;
 
     const result = VerifyVTokenRequestDto.safeParse(input);
 
@@ -43,12 +45,13 @@ describe("VerifyVTokenResponseDto", () => {
       status: 200,
       message: "Email has been verified successfully",
       data: null,
-    } satisfies z.infer<typeof VerifyVTokenSuccessResponseDto>;
+    } satisfies VerifyVTokenResponseDtoType["success"];
 
     const result = VerifyVTokenSuccessResponseDto.safeParse(input);
 
     expect(result.success).toBe(true);
     expect(result.data?.type).toBe("success");
+    expect(result.data?.status).toBe(200);
     expect(result.data?.data).toBeNull();
   });
 
@@ -72,12 +75,13 @@ describe("VerifyVTokenResponseDto", () => {
       message: "Bad Request: Invalid query param",
       status: 400,
       cause: {}, // zod error
-    } satisfies z.infer<typeof GlobalErrorResponseDto>;
+    } satisfies VerifyVTokenResponseDtoType["error"];
 
     const result = GlobalErrorResponseDto.safeParse(input);
 
     expect(result.success).toBe(true);
     expect(result.data?.type).toBe("error");
+    expect(result.data?.status).toBe(400);
   });
 
   it("should discriminate between success and error responses", () => {
@@ -86,19 +90,19 @@ describe("VerifyVTokenResponseDto", () => {
       status: 200,
       message: "Email has been verified successfully",
       data: null,
-    } satisfies z.infer<typeof VerifyVTokenSuccessResponseDto>;
+    } satisfies VerifyVTokenResponseDtoType["success"];
 
     const errorInput = {
       type: "error",
       message: "Bad Request: Invalid query param",
       status: 400,
       cause: {}, // zod error
-    } satisfies z.infer<typeof GlobalErrorResponseDto>;
+    } satisfies VerifyVTokenResponseDtoType["error"];
 
     const success = VerifyVTokenResponseDto.safeParse(successInput);
     const error = VerifyVTokenResponseDto.safeParse(errorInput);
 
-    expect(success.data?.type).toBe("success");
-    expect(error.data?.type).toBe("error");
+    expect(success.data?.status).toBe(200);
+    expect(error.data?.status).toBe(400);
   });
 });

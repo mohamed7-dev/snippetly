@@ -1,4 +1,11 @@
-import { createSuccessResponse, GlobalErrorResponseDto, z } from "../zod";
+import {
+  createSuccessResponse,
+  RateLimiterErrorResponseDto,
+  SharedErrorResDto,
+  SharedErrorResDtoType,
+  UnauthorizedErrorResponseDto,
+  z,
+} from "../zod";
 import { accessTokenExample, CommonAuthResponseDto } from "./common";
 
 // Refresh Token Response Schemas
@@ -24,11 +31,17 @@ export const RefreshTokenSuccessResponseDto = createSuccessResponse(
   "Access token has been refreshed successfully."
 );
 
-export const RefreshTokenResponseDto = z.discriminatedUnion("type", [
+export const RefreshTokenResponseDto = z.discriminatedUnion("status", [
   RefreshTokenSuccessResponseDto,
-  GlobalErrorResponseDto,
+  UnauthorizedErrorResponseDto,
+  RateLimiterErrorResponseDto,
+  ...SharedErrorResDto,
 ]);
 
-export type RefreshTokenResponseDtoType = z.infer<
-  typeof RefreshTokenResponseDto
->;
+export type RefreshTokenResponseDtoType = {
+  success: z.infer<typeof RefreshTokenSuccessResponseDto>;
+  error:
+    | SharedErrorResDtoType
+    | z.infer<typeof UnauthorizedErrorResponseDto>
+    | z.infer<typeof RateLimiterErrorResponseDto>;
+};

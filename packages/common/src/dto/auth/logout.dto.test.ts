@@ -1,7 +1,10 @@
-import { describe, it, expect } from "vitest";
-import { LogoutSuccessResponseDto, LogoutResponseDto } from "./logout.dto";
-import { GlobalErrorResponseDto } from "../zod";
+import { describe, expect, it } from "vitest";
 import z from "zod";
+import {
+  LogoutResponseDto,
+  LogoutResponseDtoType,
+  LogoutSuccessResponseDto,
+} from "./logout.dto";
 
 describe("LogoutSuccessResponseDto", () => {
   it("validates a correct logout success response", () => {
@@ -36,10 +39,10 @@ describe("LogoutResponseDto (union)", () => {
       status: 200,
       message: "Logged out successfully.",
       data: null,
-    } satisfies z.infer<typeof LogoutSuccessResponseDto>);
+    } satisfies LogoutResponseDtoType["success"]);
 
     expect(result.success).toBe(true);
-    expect(result.data?.type).toBe("success");
+    expect(result.data?.status).toBe(200);
   });
 
   it("accepts a valid error response", () => {
@@ -48,17 +51,19 @@ describe("LogoutResponseDto (union)", () => {
       message: "Unauthorized: Invalid session",
       status: 401,
       cause: null,
-    } satisfies z.infer<typeof GlobalErrorResponseDto>;
+    } satisfies LogoutResponseDtoType["error"];
 
     const result = LogoutResponseDto.safeParse(input);
     expect(result.success).toBe(true);
-    expect(result.data?.type).toBe("error");
+    expect(result.data?.status).toBe(401);
   });
 
   it("fails on unknown type", () => {
     const result = LogoutResponseDto.safeParse({
-      type: "weird",
-      message: "???",
+      type: "error",
+      message: "Unauthorized: Invalid session",
+      status: 204,
+      cause: null,
     });
 
     expect(result.success).toBe(false);
