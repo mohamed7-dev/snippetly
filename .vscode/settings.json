@@ -8,6 +8,9 @@
   "files.readonlyInclude": {
     "**/routeTree.gen.ts": true
   },
-  "conventionalCommits.scopes": ["server", "client", "common"],
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": "explicit"
+  },
+  "conventionalCommits.scopes": ["server", "client", "common", "eslint-config"],
   "cSpell.words": ["JWTOKEN", "snippetly", "Unstar", "virtuals"]
 }
