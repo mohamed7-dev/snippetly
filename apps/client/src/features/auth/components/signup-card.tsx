@@ -1,8 +1,8 @@
-import { AuthCard } from './auth-card'
-import { Input } from '@/components/ui/input'
-import { Link, useNavigate, useSearch } from '@tanstack/react-router'
+import { ProcessStatus } from '@/components/feedback/process-status'
+import { LoadingButton } from '@/components/inputs/loading-button'
+import { PasswordField } from '@/components/inputs/password-field'
+import { CardContent, CardFooter } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
-import { useForm } from '@tanstack/react-form'
 import {
   Field,
   FieldDescription,
@@ -10,14 +10,14 @@ import {
   FieldGroup,
   FieldLabel,
 } from '@/components/ui/field'
-import { LoadingButton } from '@/components/inputs/loading-button'
-import { useSignup } from '../hooks/use-signup'
-import { ProcessStatus } from '@/components/feedback/process-status'
+import { Input } from '@/components/ui/input'
+import { useForm } from '@tanstack/react-form'
+import { Link, useNavigate, useSearch } from '@tanstack/react-router'
 import { toast } from 'sonner'
-import { useAuth } from './auth-provider'
-import { PasswordField } from '@/components/inputs/password-field'
+import { useSignup } from '../hooks/use-signup'
 import { signupSchema, type SignupSchema } from '../lib/schema'
-import { CardContent, CardFooter } from '@/components/ui/card'
+import { AuthCard } from './auth-card'
+import { useAuth } from './auth-provider'
 
 function SuggestedNames({ names }: { names: string[] }) {
   return (
@@ -66,6 +66,7 @@ export function SignupCard() {
   })
 
   const onSubmit = async (values: SignupSchema) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordConfirm, ...rest } = values
     await signup(rest)
   }
@@ -96,8 +97,10 @@ export function SignupCard() {
           <ProcessStatus
             title={error.response?.statusText ?? error.name}
             description={
-              error.status === 409 ? (
-                <SuggestedNames names={error.response?.data?.data ?? []} />
+              error.response?.data.status === 409 ? (
+                <SuggestedNames
+                  names={error.response?.data?.data.suggestedNames ?? []}
+                />
               ) : (
                 (error.response?.data.message ?? error.message)
               )

@@ -1,25 +1,25 @@
+import type { LoginResponseDtoType } from '@snippetly/common/dto'
 import { useMutation, type MutateOptions } from '@tanstack/react-query'
-import type { LoginSchema } from '../lib/schema'
-import { serverEndpoints } from '@/lib/routes'
 import type { AxiosError } from 'axios'
-import type { ErrorResponse, SharedSuccessRes } from '@/lib/types'
-import { api } from '@/lib/api'
-import type { AuthUser } from '../lib/types'
+import { login } from '../lib/api'
+import type { LoginSchema } from '../lib/schema'
 
-type LoginSuccessRes = SharedSuccessRes<{ accessToken: string; user: AuthUser }>
-type LoginErrorRes = AxiosError<ErrorResponse>
 type Input = LoginSchema
 
 export function useLogin(
   options?: Omit<
-    MutateOptions<LoginSuccessRes, LoginErrorRes, Input>,
+    MutateOptions<
+      LoginResponseDtoType['success'],
+      AxiosError<LoginResponseDtoType['error']>,
+      Input
+    >,
     'MutationFn'
   >,
 ) {
   return useMutation({
     ...options,
     mutationFn: async (input) => {
-      const res = await api.put(serverEndpoints.login, input)
+      const res = await login(input)
       return res.data
     },
   })

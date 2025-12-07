@@ -1,17 +1,18 @@
-import type { ErrorResponse, SharedSuccessRes } from '@/lib/types'
+import type { VerifyRTokenResponseDtoType } from '@snippetly/common/dto'
 import { useMutation, type MutateOptions } from '@tanstack/react-query'
 import type { AxiosError } from 'axios'
+import { resetPassword } from '../lib/api'
 import type { ResetPasswordSchema } from '../lib/schema'
-import { api } from '@/lib/api'
-import { serverEndpoints } from '@/lib/routes'
 
-type ResetPasswordSuccessRes = SharedSuccessRes<null>
-type ResetPasswordErrorRes = AxiosError<ErrorResponse>
 type Input = ResetPasswordSchema
 
 export function useResetPassword(
   options?: Omit<
-    MutateOptions<ResetPasswordSuccessRes, ResetPasswordErrorRes, Input>,
+    MutateOptions<
+      VerifyRTokenResponseDtoType['success'],
+      AxiosError<VerifyRTokenResponseDtoType['error']>,
+      Input
+    >,
     'MutationFn'
   >,
 ) {
@@ -20,10 +21,7 @@ export function useResetPassword(
     mutationFn: async ({ password, token }) => {
       const searchParams = new URLSearchParams()
       searchParams.set('token', token)
-      const res = await api.put(
-        `${serverEndpoints.resetPassword}?${searchParams.toString()}`,
-        { password },
-      )
+      const res = await resetPassword(searchParams.toString(), { password })
       return res.data
     },
   })

@@ -1,11 +1,11 @@
-import { AuthCard } from './auth-card'
-import { useVerifyEmail } from '../hooks/use-verify-email'
-import { PageLoader } from '@/components/loaders/page-loader'
 import { ProcessStatus } from '@/components/feedback/process-status'
-import { useSearch } from '@tanstack/react-router'
+import { PageLoader } from '@/components/loaders/page-loader'
 import { useQueryClient } from '@tanstack/react-query'
+import { useSearch } from '@tanstack/react-router'
 import React from 'react'
 import { toast } from 'sonner'
+import { useVerifyEmail } from '../hooks/use-verify-email'
+import { AuthCard } from './auth-card'
 
 export function EmailVerificationCard() {
   const { token } = useSearch({

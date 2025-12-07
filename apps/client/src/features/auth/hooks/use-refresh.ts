@@ -1,15 +1,18 @@
-import type { ErrorResponse } from '@/lib/types'
+import type { RefreshTokenResponseDtoType } from '@snippetly/common/dto'
 import { useMutation, type MutateOptions } from '@tanstack/react-query'
 import type { AxiosError } from 'axios'
-import { refreshAccessToken } from '../lib/api'
 import { useAuth } from '../components/auth-provider'
+import { refreshAccessToken } from '../lib/api'
 import { authStore } from '../lib/auth-store'
 
-type RefreshSuccessRes = Awaited<ReturnType<typeof refreshAccessToken>>['data']
-type LoginErrorRes = AxiosError<ErrorResponse>
-
 export function useRefresh(
-  options?: Omit<MutateOptions<RefreshSuccessRes, LoginErrorRes>, 'MutationFn'>,
+  options?: Omit<
+    MutateOptions<
+      RefreshTokenResponseDtoType['success'],
+      AxiosError<RefreshTokenResponseDtoType['error']>
+    >,
+    'MutationFn'
+  >,
 ) {
   const ctx = useAuth()
   return useMutation({
@@ -18,13 +21,13 @@ export function useRefresh(
       const res = await refreshAccessToken()
       return res.data
     },
-    onSuccess: (data, variables, context) => {
+    onSuccess: (data, variables, onMutateResult, context) => {
       ctx?.updateAccessToken(data.data.accessToken)
       authStore.setAccessToken(data.data.accessToken)
-      options?.onSuccess?.(data, variables, context)
+      options?.onSuccess?.(data, variables, onMutateResult, context)
     },
-    onError: (error, variables, context) => {
-      options?.onError?.(error, variables, context)
+    onError: (error, variables, onMutateResult, context) => {
+      options?.onError?.(error, variables, onMutateResult, context)
     },
   })
 }

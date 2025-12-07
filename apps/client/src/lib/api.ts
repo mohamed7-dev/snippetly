@@ -1,6 +1,6 @@
-import axios from 'axios'
 import { refreshAccessToken } from '@/features/auth/lib/api'
 import { authStore } from '@/features/auth/lib/auth-store'
+import axios from 'axios'
 
 export const API_SERVER_URL = import.meta.env.VITE_API_SERVER_URL
 
@@ -22,7 +22,7 @@ export const publicApi = axios.create({
  */
 export const api = axios.create({
   baseURL: API_SERVER_URL,
-  withCredentials: true, // 👈 send cookies (refresh token lives here)
+  withCredentials: true, // send cookies (refresh token lives here)
 })
 
 let isRefreshing = false

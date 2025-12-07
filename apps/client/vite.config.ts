@@ -9,7 +9,6 @@ export default defineConfig({
   plugins: [
     tanstackRouter({ autoCodeSplitting: true }),
     viteReact(),
-    // eslint(),
     tailwindcss(),
     injectSWPrecache(),
   ],
