@@ -50,6 +50,13 @@
       "when": 1758560752986,
       "tag": "0006_added-image-metadata-fields",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1765121998058,
+      "tag": "0007_accepted-ploicies-default-false",
+      "breakpoints": true
     }
   ]
 }

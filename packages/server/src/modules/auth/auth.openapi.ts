@@ -1,7 +1,6 @@
 import { RouteConfig } from "@asteasolutions/zod-to-openapi";
 import {
   BadRequestErrorResponseDto,
-  InternalServerErrorResponseDto,
   LoginRequestDto,
   LoginSuccessResponseDto,
   LogoutSuccessResponseDto,
@@ -22,15 +21,19 @@ import {
   VerifyVTokenRequestDto,
   VerifyVTokenSuccessResponseDto,
 } from "@snippetly/common/dto";
+import {
+  rateLimiterResRouteConfig,
+  sharedResRouteConfig,
+} from "../../common/lib/swagger-registery";
 
 export const loginRouteConfig: RouteConfig = {
   method: "put",
   path: "/auth/login",
-  summary: "Authenticate user",
+  summary: "Endpoint to authenticate user",
   tags: ["Auth"],
   request: {
     body: {
-      description: "Login request body",
+      description: "Request body of the login endpoint",
       content: {
         "application/json": {
           schema: LoginRequestDto,
@@ -40,7 +43,7 @@ export const loginRouteConfig: RouteConfig = {
   },
   responses: {
     200: {
-      description: "Authenticated successfully",
+      description: "Response body if the authentication was successful",
       content: {
         "application/json": {
           schema: LoginSuccessResponseDto,
@@ -48,7 +51,8 @@ export const loginRouteConfig: RouteConfig = {
       },
     },
     401: {
-      description: "User is not found, or the password is invalid",
+      description:
+        "Response body if user was not found, or the password was invalid",
       content: {
         "application/json": {
           schema: UnauthorizedErrorResponseDto,
@@ -56,33 +60,27 @@ export const loginRouteConfig: RouteConfig = {
       },
     },
     400: {
-      description: "Invalid credentials",
+      description: "Response body if the request body was invalid",
       content: {
         "application/json": {
           schema: BadRequestErrorResponseDto,
         },
       },
     },
-    500: {
-      description: "Internal server error",
-      content: {
-        "application/json": {
-          schema: InternalServerErrorResponseDto,
-        },
-      },
-    },
+    ...sharedResRouteConfig,
+    ...rateLimiterResRouteConfig,
   },
 };
 
 export const signupRouteConfig: RouteConfig = {
   method: "put",
   path: "/auth/signup",
-  summary: "Create a new user account",
+  summary: "Endpoint to create a new user account",
   tags: ["Auth"],
   request: {
     body: {
       required: true,
-      description: "Signup request body",
+      description: "Request body of the signup endpoint",
       content: {
         "application/json": {
           schema: SignupRequestDto,
@@ -92,7 +90,7 @@ export const signupRouteConfig: RouteConfig = {
   },
   responses: {
     201: {
-      description: "User created",
+      description: "Response body if the user was created successfully",
       content: {
         "application/json": {
           schema: SignupSuccessResponseDto,
@@ -100,7 +98,7 @@ export const signupRouteConfig: RouteConfig = {
       },
     },
     409: {
-      description: "User with same name already exists",
+      description: "Response body if a user with same name exists",
       content: {
         "application/json": {
           schema: SignupConflictResponseDto,
@@ -108,28 +106,22 @@ export const signupRouteConfig: RouteConfig = {
       },
     },
     400: {
-      description: "Invalid credentials",
+      description: "Response body if the request body was invalid",
       content: {
         "application/json": {
           schema: BadRequestErrorResponseDto,
         },
       },
     },
-    500: {
-      description: "Internal server error",
-      content: {
-        "application/json": {
-          schema: InternalServerErrorResponseDto,
-        },
-      },
-    },
+    ...sharedResRouteConfig,
+    ...rateLimiterResRouteConfig,
   },
 };
 
 export const logoutRouteConfig: RouteConfig = {
   method: "put",
   path: "/auth/logout",
-  summary: "Logout and terminate session.",
+  summary: "Endpoint to logout and terminate session",
   tags: ["Auth"],
   request: {
     cookies: protectedRouteCookiesSchema,
@@ -137,7 +129,7 @@ export const logoutRouteConfig: RouteConfig = {
   },
   responses: {
     200: {
-      description: "Logged out successfully",
+      description: "Response body if the session was terminated successfully",
       content: {
         "application/json": {
           schema: LogoutSuccessResponseDto,
@@ -145,35 +137,29 @@ export const logoutRouteConfig: RouteConfig = {
       },
     },
     401: {
-      description: "Session is missing or invalid",
+      description: "Response body if the session was missing or invalid",
       content: {
         "application/json": {
           schema: UnauthorizedErrorResponseDto,
         },
       },
     },
-    500: {
-      description: "Internal server error",
-      content: {
-        "application/json": {
-          schema: InternalServerErrorResponseDto,
-        },
-      },
-    },
+    ...sharedResRouteConfig,
   },
 };
 
 export const refreshTokenRouteConfig: RouteConfig = {
   method: "put",
   path: "/auth/refresh",
-  summary: "Refresh access token using refresh token cookie",
+  summary: "Endpoint to refresh access token",
   tags: ["Auth"],
   request: {
     cookies: protectedRouteCookiesSchema,
   },
   responses: {
     200: {
-      description: "Access token refreshed successfully",
+      description:
+        "Response body if the access token was refreshed successfully",
       content: {
         "application/json": {
           schema: RefreshTokenSuccessResponseDto,
@@ -181,33 +167,26 @@ export const refreshTokenRouteConfig: RouteConfig = {
       },
     },
     401: {
-      description: "Refresh-token cookie is missing",
+      description: "Response body if the refresh-token cookie is missing",
       content: {
         "application/json": {
           schema: UnauthorizedErrorResponseDto,
         },
       },
     },
-    500: {
-      description: "Internal server error",
-      content: {
-        "application/json": {
-          schema: InternalServerErrorResponseDto,
-        },
-      },
-    },
+    ...sharedResRouteConfig,
+    ...rateLimiterResRouteConfig,
   },
 };
 
 export const sendVEmailRouteConfig: RouteConfig = {
   method: "put",
   path: "/auth/send-verification-email",
-  summary:
-    "Verify user's email by sending them a link with a token that takes them to the verification route",
+  summary: "Endpoint to verify user's email",
   tags: ["Auth"],
   request: {
     body: {
-      description: "Send email verification link request body",
+      description: "Request body of the send email verification link endpoint",
       required: true,
       content: {
         "application/json": {
@@ -218,36 +197,41 @@ export const sendVEmailRouteConfig: RouteConfig = {
   },
   responses: {
     200: {
-      description: "Verification link sent successfully",
+      description: "Response body if verification link was sent successfully",
       content: {
         "application/json": {
           schema: SendVEmailSuccessResponseDto,
         },
       },
     },
+    401: {
+      description:
+        "Response body user account associated with the email is not found.",
+      content: {
+        "application/json": {
+          schema: UnauthorizedErrorResponseDto,
+        },
+      },
+    },
     400: {
-      description: "Invalid request body e.g. missing email",
+      description:
+        "Response body if request body was invalid e.g. missing email",
       content: {
         "application/json": {
           schema: BadRequestErrorResponseDto,
         },
       },
     },
-    500: {
-      description: "Internal server error",
-      content: {
-        "application/json": {
-          schema: InternalServerErrorResponseDto,
-        },
-      },
-    },
+    ...sharedResRouteConfig,
+    ...rateLimiterResRouteConfig,
   },
 };
 
 export const verifyVEmailRouteConfig: RouteConfig = {
   method: "put",
   path: "/auth/verify-email-token",
-  summary: "Verify token sent to the user's email",
+  summary:
+    "Endpoint to verify the email verification token that was sent to the user's email",
   tags: ["Auth"],
   request: {
     query: VerifyVTokenRequestDto,
@@ -255,37 +239,38 @@ export const verifyVEmailRouteConfig: RouteConfig = {
   responses: {
     200: {
       description:
-        "Email verification token has been verified successfully, and the email is valid",
+        "Response body if email verification token was verified successfully",
       content: {
         "application/json": {
           schema: VerifyVTokenSuccessResponseDto,
         },
       },
     },
+    401: {
+      description: "Response body if token was invalid",
+      content: {
+        "application/json": {
+          schema: UnauthorizedErrorResponseDto,
+        },
+      },
+    },
     400: {
-      description: "Invalid request query params e.g. missing token",
+      description: "Response body if request query params was invalid",
       content: {
         "application/json": {
           schema: BadRequestErrorResponseDto,
         },
       },
     },
-    500: {
-      description: "Internal server error",
-      content: {
-        "application/json": {
-          schema: InternalServerErrorResponseDto,
-        },
-      },
-    },
+    ...sharedResRouteConfig,
+    ...rateLimiterResRouteConfig,
   },
 };
 
 export const sendREmailRouteConfig: RouteConfig = {
   method: "put",
   path: "/auth/send-reset-email",
-  summary:
-    "Reset user's password by sending them a link with token to their email that takes them to the resetting route",
+  summary: "Endpoint to send password reset token to the user's verified email",
   tags: ["Auth"],
   request: {
     body: {
@@ -300,41 +285,47 @@ export const sendREmailRouteConfig: RouteConfig = {
   },
   responses: {
     200: {
-      description: "Password reset link has been sent successfully",
+      description:
+        "Response body if the password reset link was sent successfully",
       content: {
         "application/json": {
           schema: SendRTokenSuccessResponseDto,
         },
       },
     },
+    401: {
+      description:
+        "Response body if the user account associated with the email is not found",
+      content: {
+        "application/json": {
+          schema: UnauthorizedErrorResponseDto,
+        },
+      },
+    },
     400: {
-      description: "Invalid request body e.g. missing email",
+      description:
+        "Response body if request body was invalid e.g. missing email",
       content: {
         "application/json": {
           schema: BadRequestErrorResponseDto,
         },
       },
     },
-    500: {
-      description: "Internal server error",
-      content: {
-        "application/json": {
-          schema: InternalServerErrorResponseDto,
-        },
-      },
-    },
+    ...sharedResRouteConfig,
+    ...rateLimiterResRouteConfig,
   },
 };
 
 export const resetPasswordRouteConfig: RouteConfig = {
   method: "put",
   path: "/auth/reset-password",
-  summary: "Verify password reset token sent to the user's email",
+  summary:
+    "Endpoint to verify the password reset token that was sent to the user's email",
   tags: ["Auth"],
   request: {
     query: VerifyRTokenRequestQueryDto,
     body: {
-      description: "ResetPasswordRequestBody",
+      description: "Request body of the reset password endpoint",
       required: true,
       content: {
         "application/json": {
@@ -346,29 +337,31 @@ export const resetPasswordRouteConfig: RouteConfig = {
   responses: {
     200: {
       description:
-        "Password reset token has been verified successfully, and the new password is saved",
+        "Response body if the password reset token was verified successfully",
       content: {
         "application/json": {
           schema: VerifyRTokenSuccessResponseDto,
         },
       },
     },
+    401: {
+      description: "Response body if the token is invalid",
+      content: {
+        "application/json": {
+          schema: UnauthorizedErrorResponseDto,
+        },
+      },
+    },
     400: {
       description:
-        "Invalid request body or query params e.g. missing token or password",
+        "Response body if the request body or query params are invalid e.g. missing token or password",
       content: {
         "application/json": {
           schema: BadRequestErrorResponseDto,
         },
       },
     },
-    500: {
-      description: "Internal server error",
-      content: {
-        "application/json": {
-          schema: InternalServerErrorResponseDto,
-        },
-      },
-    },
+    ...sharedResRouteConfig,
+    ...rateLimiterResRouteConfig,
   },
 };

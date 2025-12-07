@@ -1,6 +1,8 @@
+/* eslint-disable no-var */
 import {
   OpenAPIRegistry,
   OpenApiGeneratorV31,
+  RouteConfig,
 } from "@asteasolutions/zod-to-openapi";
 import {
   loginRouteConfig,
@@ -22,14 +24,11 @@ import {
 } from "../../modules/user/user.openapi";
 
 import {
-  sendFriendshipRequestRouteConfig,
-  acceptFriendshipRequestRouteConfig,
-  rejectFriendshipRequestRouteConfig,
-  cancelFriendshipRequestRouteConfig,
-  getCurrentUserFriendsRouteConfig,
-  getCurrentUserInboxRouteConfig,
-  getCurrentUserOutboxRouteConfig,
-} from "../../modules/user/friendship.openapi";
+  InternalServerErrorResponseDto,
+  MethodNotAllowedErrorResponseDto,
+  NotFoundErrorResponseDto,
+  RateLimiterErrorResponseDto,
+} from "@snippetly/common/dto";
 import {
   createCollectionRouteConfig,
   deleteCollectionRouteConfig,
@@ -40,20 +39,63 @@ import {
   getUserCollectionsRouteConfig,
   updateCollectionRouteConfig,
 } from "../../modules/collections/collections.openapi";
-import { getPopularTagsRouteConfig } from "../../modules/tag/tags.openapi";
 import {
   createSnippetRouteConfig,
   deleteSnippetRouteConfig,
   discoverSnippetsRouteConfig,
   forkSnippetRouteConfig,
   getCollectionSnippetsRouteConfig,
-  getCurrentUserFriendsSnippetsRouteConfig,
-  getCurrentUserSnippetsRouteConfig,
   getSnippetRouteConfig,
-  getUserFriendsSnippetsRouteConfig,
-  getUserSnippetsRouteConfig,
   updateSnippetRouteConfig,
 } from "../../modules/snippet/snippet.openapi";
+import { getPopularTagsRouteConfig } from "../../modules/tag/tags.openapi";
+import {
+  acceptFriendshipRequestRouteConfig,
+  cancelFriendshipRequestRouteConfig,
+  getCurrentUserFriendsRouteConfig,
+  getCurrentUserInboxRouteConfig,
+  getCurrentUserOutboxRouteConfig,
+  rejectFriendshipRequestRouteConfig,
+  sendFriendshipRequestRouteConfig,
+} from "../../modules/user/friendship.openapi";
+
+export var sharedResRouteConfig: RouteConfig["responses"] = {
+  500: {
+    description: "Internal server error",
+    content: {
+      "application/json": {
+        schema: InternalServerErrorResponseDto,
+      },
+    },
+  },
+  404: {
+    description: "Endpoint not found",
+    content: {
+      "application/json": {
+        schema: NotFoundErrorResponseDto,
+      },
+    },
+  },
+  405: {
+    description: "Method not allowed",
+    content: {
+      "application/json": {
+        schema: MethodNotAllowedErrorResponseDto,
+      },
+    },
+  },
+};
+
+export var rateLimiterResRouteConfig: RouteConfig["responses"] = {
+  429: {
+    description: "Rate limiter response body",
+    content: {
+      "application/json": {
+        schema: RateLimiterErrorResponseDto,
+      },
+    },
+  },
+};
 
 const registry = new OpenAPIRegistry();
 
@@ -97,6 +139,7 @@ registry.registerPath(forkSnippetRouteConfig);
 registry.registerPath(discoverSnippetsRouteConfig);
 registry.registerPath(getSnippetRouteConfig);
 registry.registerPath(getCollectionSnippetsRouteConfig);
+
 // registry.registerPath(getUserSnippetsRouteConfig);
 // registry.registerPath(getCurrentUserSnippetsRouteConfig);
 // registry.registerPath(getUserFriendsSnippetsRouteConfig);

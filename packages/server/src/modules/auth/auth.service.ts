@@ -1,21 +1,4 @@
-import { StatusCodes } from "http-status-codes";
-import { HttpException } from "../../common/lib/exception";
-import { UserService } from "../user/user.service";
-import type { Response } from "express";
-import { type JWTPayload, TokenService } from "./token.service";
 import { REFRESH_TOKEN_COOKIE_KEY } from "@snippetly/common";
-import { PasswordHashService } from "./password-hash.service";
-import { EmailService } from "../email/email.service";
-import {
-  CLIENTS_URLS,
-  JWT_REFRESH_EXPIRES,
-  JWT_REFRESH_REMEMBER_EXPIRES,
-} from "../../config/index";
-import { UserReadService } from "../user/user-read.service";
-import { UserRepository } from "../user/user.repository";
-import type { RequestContext } from "../../common/middlewares/request-context-middleware";
-import type { User } from "../../common/db/schema";
-import { isDevelopment } from "../../common/lib/utils";
 import {
   LoginRequestDtoType,
   SendRTokenRequestDtoType,
@@ -25,6 +8,23 @@ import {
   VerifyRTokenRequestQueryDtoType,
   VerifyVTokenRequestDtoType,
 } from "@snippetly/common/dto";
+import type { Response } from "express";
+import { StatusCodes } from "http-status-codes";
+import type { User } from "../../common/db/schema";
+import { HttpException } from "../../common/lib/exception";
+import { isDevelopment } from "../../common/lib/utils";
+import type { RequestContext } from "../../common/middlewares/request-context-middleware";
+import {
+  CLIENTS_URLS,
+  JWT_REFRESH_EXPIRES,
+  JWT_REFRESH_REMEMBER_EXPIRES,
+} from "../../config/index";
+import { EmailService } from "../email/email.service";
+import { UserReadService } from "../user/user-read.service";
+import { UserRepository } from "../user/user.repository";
+import { UserService } from "../user/user.service";
+import { PasswordHashService } from "./password-hash.service";
+import { type JWTPayload, TokenService } from "./token.service";
 
 export class AuthService {
   private readonly UserService: UserService;
@@ -221,7 +221,9 @@ export class AuthService {
 
     const [updatedUser] = await this.UserRepository.update(
       foundUserWithToken.id,
-      { refreshTokens: filteredUserTokens }
+      {
+        refreshTokens: filteredUserTokens,
+      }
     );
 
     this.clearRefreshTokenCookie(res);
@@ -263,7 +265,7 @@ export class AuthService {
     const { email } = input;
     const foundUser = await this.UserReadService.findOneSlim("email", email);
     if (!foundUser) {
-      throw new HttpException(StatusCodes.NOT_FOUND, "User account not found.");
+      throw new HttpException(StatusCodes.UNAUTHORIZED, "Invalid credentials");
     }
     if (!foundUser.emailVerifiedAt) {
       await this.sendVerificationEmail(_ctx, { email }, foundUser);
@@ -310,10 +312,7 @@ export class AuthService {
   }
 
   private throwSessionError(): never {
-    throw new HttpException(
-      StatusCodes.UNAUTHORIZED,
-      "Invalid session credentials."
-    );
+    throw new HttpException(StatusCodes.UNAUTHORIZED, "Invalid session");
   }
 
   private clearRefreshTokenCookie(res: Response) {

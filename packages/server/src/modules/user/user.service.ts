@@ -1,14 +1,3 @@
-import { StatusCodes } from "http-status-codes";
-import { HttpException } from "../../common/lib/exception";
-import { PasswordHashService } from "../auth/password-hash.service";
-import { DEFAULT_FIND_USERS_LIMIT } from "./constants";
-import { handleCursorPagination } from "../../common/lib/utils";
-import { UserReadService } from "./user-read.service";
-import { UserRepository } from "./user.repository";
-import type { RequestContext } from "../../common/middlewares/request-context-middleware";
-import type { NonNullableFields } from "../../common/types/utils";
-import type { User } from "../../common/db/schema";
-import { utapi } from "../../config/uploadthing";
 import {
   CreateUserDtoType,
   DiscoverUsersRequestQueryDtoType,
@@ -17,6 +6,17 @@ import {
   UpdateUserPasswordDtoType,
   UpdateUserRequestDtoType,
 } from "@snippetly/common/dto";
+import { StatusCodes } from "http-status-codes";
+import type { User } from "../../common/db/schema";
+import { HttpException } from "../../common/lib/exception";
+import { handleCursorPagination } from "../../common/lib/utils";
+import type { RequestContext } from "../../common/middlewares/request-context-middleware";
+import type { NonNullableFields } from "../../common/types/utils";
+import { utapi } from "../../config/uploadthing";
+import { PasswordHashService } from "../auth/password-hash.service";
+import { DEFAULT_FIND_USERS_LIMIT } from "./constants";
+import { UserReadService } from "./user-read.service";
+import { UserRepository } from "./user.repository";
 
 export class UserService {
   private readonly PasswordHashService: PasswordHashService;
@@ -107,7 +107,7 @@ export class UserService {
     if (loggedInUserEmail && loggedInUserEmail !== input.email) {
       // if user is logged in and the input.email is not his email
       // then reject the request.
-      throw new HttpException(StatusCodes.NOT_FOUND, "User account not found.");
+      throw new HttpException(StatusCodes.UNAUTHORIZED, "Invalid credentials");
     }
 
     const foundUser = await this.UserReadService.findOneSlim(
@@ -116,7 +116,7 @@ export class UserService {
     );
 
     if (!foundUser) {
-      throw new HttpException(StatusCodes.NOT_FOUND, "User account not found.");
+      throw new HttpException(StatusCodes.UNAUTHORIZED, "Invalid credentials");
     }
 
     if (input.currentPassword) {
@@ -126,8 +126,8 @@ export class UserService {
       });
       if (!isValid) {
         throw new HttpException(
-          StatusCodes.NOT_FOUND,
-          "User account not found."
+          StatusCodes.UNAUTHORIZED,
+          "Invalid credentials"
         );
       }
     }

@@ -1,24 +1,32 @@
-import type { Request, Response } from "express";
-import { AuthService } from "./auth.service";
-import { StatusCodes } from "http-status-codes";
-import { InternalServerError } from "../../common/lib/exception";
 import {
   LoginRequestDtoType,
   LoginResponseDto,
+  LoginResponseDtoType,
   LogoutResponseDto,
+  LogoutResponseDtoType,
   RefreshTokenResponseDto,
+  RefreshTokenResponseDtoType,
   SendRTokenRequestDtoType,
   SendRTokenResponseDto,
+  SendRTokenResponseDtoType,
   SendVEmailRequestDtoType,
   SendVEmailResponseDto,
+  SendVEmailResponseDtoType,
   SignupRequestDtoType,
   SignupResponseDto,
+  SignupResponseDtoType,
   VerifyRTokenRequestBodyDtoType,
   VerifyRTokenRequestQueryDtoType,
   VerifyRTokenResponseDto,
+  VerifyRTokenResponseDtoType,
   VerifyVTokenRequestDtoType,
   VerifyVTokenResponseDto,
+  VerifyVTokenResponseDtoType,
 } from "@snippetly/common/dto";
+import type { Request, Response } from "express";
+import { StatusCodes } from "http-status-codes";
+import { InternalServerError } from "../../common/lib/exception";
+import { AuthService } from "./auth.service";
 
 export class AuthController {
   private readonly AuthService: AuthService;
@@ -38,18 +46,17 @@ export class AuthController {
     );
 
     const rawResponse = {
-      type: "success" as const,
+      type: "success",
       status: StatusCodes.OK,
       message: "Authenticated successfully.",
       data: authResult,
-    };
+    } satisfies LoginResponseDtoType["success"];
 
     const parsed = LoginResponseDto.safeParse(rawResponse);
     if (!parsed.success) {
       throw new InternalServerError();
     }
-    const result = parsed.data;
-    response.status(result.status).json(result);
+    response.status(parsed.data.status).json(parsed.data);
   };
 
   public signup = async (
@@ -68,14 +75,14 @@ export class AuthController {
         status: StatusCodes.CREATED,
         message: "User account has been created successfully.",
         data: authResult,
-      };
-    } else {
+      } satisfies SignupResponseDtoType["success"];
+    } else if ("suggestedNames" in authResult) {
       rawResponse = {
         type: "conflict" as const,
         status: StatusCodes.CONFLICT,
         message: `User account with the same name ${request.body.name} already exists, but you can use one of the generated names.`,
         data: authResult,
-      };
+      } satisfies SignupResponseDtoType["conflict"];
     }
 
     const parsed = SignupResponseDto.safeParse(rawResponse);
@@ -95,9 +102,9 @@ export class AuthController {
     const rawResponse = {
       status: StatusCodes.OK,
       message: "Access token has been refreshed successfully.",
-      type: "success" as const,
+      type: "success",
       data: result,
-    };
+    } satisfies RefreshTokenResponseDtoType["success"];
 
     const parsed = RefreshTokenResponseDto.safeParse(rawResponse);
     if (!parsed.success) {
@@ -114,7 +121,8 @@ export class AuthController {
       message: "Logged out successfully.",
       type: "success" as const,
       data: null,
-    };
+    } satisfies LogoutResponseDtoType["success"];
+
     const parsed = LogoutResponseDto.safeParse(rawResponse);
     if (!parsed.success) {
       throw new InternalServerError();
@@ -136,7 +144,8 @@ export class AuthController {
       message: `Email verification has been sent to ${result.user.email}, check your inbox to verify your account.`,
       type: "success" as const,
       data: null,
-    };
+    } satisfies SendVEmailResponseDtoType["success"];
+
     const parsed = SendVEmailResponseDto.safeParse(rawResponse);
     if (!parsed.success) {
       throw new InternalServerError();
@@ -157,7 +166,8 @@ export class AuthController {
       message: "Email verification token has been verified successfully.",
       type: "success" as const,
       data: null,
-    };
+    } satisfies VerifyVTokenResponseDtoType["success"];
+
     const parsed = VerifyVTokenResponseDto.safeParse(rawResponse);
     if (!parsed.success) {
       throw new InternalServerError();
@@ -177,11 +187,11 @@ export class AuthController {
       status: StatusCodes.OK,
       message:
         result.status === "reset-password-email-sent"
-          ? `Reset password email has been sent to ${result.user.email}, check your inbox!.`
+          ? `Reset password email has been sent to ${result.user.email}, check your inbox!`
           : "An email verification token was sent to your email, you need to verify your email first.",
       type: "success" as const,
       data: null,
-    };
+    } satisfies SendRTokenResponseDtoType["success"];
 
     const parsed = SendRTokenResponseDto.safeParse(rawResponse);
     if (!parsed.success) {
@@ -208,7 +218,8 @@ export class AuthController {
       message: "Password has been updated successfully.",
       type: "success" as const,
       data: null,
-    };
+    } satisfies VerifyRTokenResponseDtoType["success"];
+
     const parsed = VerifyRTokenResponseDto.safeParse(rawResponse);
     if (!parsed.success) {
       throw new InternalServerError();

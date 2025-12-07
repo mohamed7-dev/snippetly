@@ -1,18 +1,18 @@
+import crypto from "crypto";
+import type { Request } from "express";
+import { StatusCodes } from "http-status-codes";
 import jwt from "jsonwebtoken";
+import type { User } from "../../common/db/schema";
+import { HttpException } from "../../common/lib/exception";
+import { getRefreshTokenExpires } from "../../common/lib/utils";
 import {
   ACCESS_JWTOKEN_SECRET,
   JWT_ACCESS_EXPIRES,
   REFRESH_JWTOKEN_SECRET,
 } from "../../config/index";
-import { HttpException } from "../../common/lib/exception";
-import { StatusCodes } from "http-status-codes";
-import { TOKEN_EXPIRES } from "./constants";
-import crypto from "crypto";
-import type { Request } from "express";
 import { UserReadService } from "../user/user-read.service";
 import { UserRepository } from "../user/user.repository";
-import { getRefreshTokenExpires } from "../../common/lib/utils";
-import type { User } from "../../common/db/schema";
+import { TOKEN_EXPIRES } from "./constants";
 
 export type JWTPayload = Request["context"]["user"];
 
@@ -64,7 +64,7 @@ export class TokenService {
       foundUser = await this.findUserByEmail(email);
     }
     if (!foundUser) {
-      throw new HttpException(StatusCodes.NOT_FOUND, "User account not found.");
+      throw new HttpException(StatusCodes.UNAUTHORIZED, "Invalid credentials");
     }
 
     const generatedToken = this.generateRandomUUID();
@@ -78,9 +78,8 @@ export class TokenService {
   }
 
   public async verifyEmailVerificationToken(token: string) {
-    const foundUserWithToken = await this.UserReadService.findOneByEmailVToken(
-      token
-    );
+    const foundUserWithToken =
+      await this.UserReadService.findOneByEmailVToken(token);
 
     if (
       !foundUserWithToken ||
@@ -115,7 +114,7 @@ export class TokenService {
       foundUser = await this.findUserByEmail(email);
     }
     if (!foundUser) {
-      throw new HttpException(StatusCodes.NOT_FOUND, `User not found.`);
+      throw new HttpException(StatusCodes.UNAUTHORIZED, "Invalid credentials");
     }
     const generatedToken = this.generateRandomUUID();
 
@@ -128,9 +127,8 @@ export class TokenService {
   }
 
   public async verifyResetPasswordToken(token: string) {
-    const foundUserWithToken = await this.UserReadService.findOneByResetToken(
-      token
-    );
+    const foundUserWithToken =
+      await this.UserReadService.findOneByResetToken(token);
 
     if (
       !foundUserWithToken ||
@@ -165,10 +163,7 @@ export class TokenService {
     const foundUser = await this.UserReadService.findOneSlim("email", email);
 
     if (!foundUser) {
-      throw new HttpException(
-        StatusCodes.NOT_FOUND,
-        `User with email ${email} is not found`
-      );
+      throw new HttpException(StatusCodes.UNAUTHORIZED, "Invalid credentials");
     }
     return foundUser;
   }
