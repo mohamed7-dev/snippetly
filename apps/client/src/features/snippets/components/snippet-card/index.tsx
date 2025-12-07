@@ -38,8 +38,10 @@ type SnippetItem = Pick<
     >
   }
 
-interface SnippetCardProps
-  extends Omit<SnippetActionsDropdownProps, 'snippet'> {
+interface SnippetCardProps extends Omit<
+  SnippetActionsDropdownProps,
+  'snippet'
+> {
   snippet: SnippetItem
 }
 
