@@ -6,9 +6,10 @@
   "scripts": {
     "dev:client": "pnpm --filter @snippetly/client dev",
     "dev:server": "pnpm --filter @snippetly/server dev",
-    "dev": "concurrently 'pnpm run dev:client' 'pnpm run dev:server'",
     "dev:common": "pnpm --filter @snippetly/common dev",
-    "build:common": "pnpm --filter @snippetly/common build"
+    "build:common": "pnpm --filter @snippetly/common build",
+    "dev:client-server": "concurrently 'pnpm dev:client' 'pnpm dev:server'",
+    "dev:common-server": "concurrently 'pnpm dev:common' 'pnpm dev:server'"
   },
   "keywords": [],
   "author": "",
