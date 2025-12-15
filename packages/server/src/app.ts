@@ -1,30 +1,30 @@
+import cookieParser from "cookie-parser";
+import cors from "cors";
 import "dotenv/config";
 import express, {
   type Application,
   type Request,
   type Response,
 } from "express";
-import { PORT } from "./config/index";
-import cors from "cors";
-import { morganMiddleware } from "./common/middlewares/morgan.middleware";
-import ErrorMiddleWare from "./common/middlewares/error.middleware";
-import { type Route } from "./common/types/express";
-import { DefaultLogger } from "./common/logger/default-logger";
-import { Logger, ServerLogger } from "./common/logger/index";
-import { requestContextMiddleware } from "./common/middlewares/request-context-middleware";
-import cookieParser from "cookie-parser";
-import { corsOptions } from "./common/lib/cors";
-import { provideCredentialsMiddleware } from "./common/middlewares/provide-credentials.middleware";
-import { Database } from "./common/db/index";
-import { multerErrorMiddleware } from "./common/middlewares/multer-error-middleware";
-import path from "path";
-import { notFoundErrorMiddleware } from "./common/middlewares/not-found-error-middleware";
 import { Server } from "http";
 import { StatusCodes } from "http-status-codes";
-import { createRouteHandler } from "uploadthing/express";
-import { uploadRouter } from "./modules/upload/upload.service";
+import path from "path";
 import swaggerUi from "swagger-ui-express";
+import { createRouteHandler } from "uploadthing/express";
+import { Database } from "./common/db/index";
+import { corsOptions } from "./common/lib/cors";
 import { openApiDocument } from "./common/lib/swagger-registery";
+import { DefaultLogger } from "./common/logger/default-logger";
+import { Logger, ServerLogger } from "./common/logger/index";
+import ErrorMiddleWare from "./common/middlewares/error.middleware";
+import { morganMiddleware } from "./common/middlewares/morgan.middleware";
+import { multerErrorMiddleware } from "./common/middlewares/multer-error-middleware";
+import { notFoundErrorMiddleware } from "./common/middlewares/not-found-error-middleware";
+import { provideCredentialsMiddleware } from "./common/middlewares/provide-credentials.middleware";
+import { requestContextMiddleware } from "./common/middlewares/request-context-middleware";
+import { type Route } from "./common/types/express";
+import { PORT } from "./config/index";
+import { uploadRouter } from "./modules/upload/upload.service";
 
 class App {
   public app: Application;
@@ -51,6 +51,7 @@ class App {
 
   private initializeMiddlewares(): void {
     this.app.use(express.json());
+    this.app.use(express.urlencoded({ extended: true }));
     this.app.use(cookieParser());
     this.app.use(
       "/uploads",

@@ -14,7 +14,8 @@
     "db:seed": "tsx --tsconfig ./tsconfig.json --env-file=.env.local src/common/db/seed.ts",
     "lint": "eslint .",
     "format": "prettier",
-    "check": "prettier --write . && eslint --fix"
+    "check": "prettier --write . && eslint --fix",
+    "test": "vitest"
   },
   "keywords": [],
   "author": "mohamed shaban",
@@ -51,6 +52,7 @@
   "devDependencies": {
     "@snippetly/eslint-config": "workspace:*",
     "@snippetly/tsconfig": "workspace:*",
+    "@testcontainers/postgresql": "^11.10.0",
     "@types/cookie-parser": "^1.4.9",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
@@ -60,12 +62,15 @@
     "@types/node": "^24.1.0",
     "@types/nodemailer": "^7.0.1",
     "@types/pg": "^8.15.6",
+    "@types/supertest": "^6.0.3",
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.8",
     "drizzle-kit": "^0.31.4",
     "eslint": "^9.39.1",
     "globals": "^16.5.0",
     "prettier": "^3.5.3",
+    "supertest": "^7.1.4",
+    "testcontainers": "^11.10.0",
     "tsx": "^4.20.3",
     "typescript": "^5.9.2"
   }

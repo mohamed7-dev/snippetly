@@ -15,6 +15,8 @@ const app = new App([
   new HealthRoute(),
 ]);
 
+export { app };
+
 app.connectToDatabase().then(() => {
   app.listen();
 });

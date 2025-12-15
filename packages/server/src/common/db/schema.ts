@@ -1,3 +1,4 @@
+import { relations, sql } from "drizzle-orm";
 import {
   type AnyPgColumn,
   boolean,
@@ -12,7 +13,6 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { baseTable } from "./utils";
-import { relations, sql } from "drizzle-orm";
 
 // ------------------- User -------------------
 
@@ -28,7 +28,6 @@ export const usersTable = pgTable(
     password: text("password").notNull(),
     bio: text("bio"),
     image: text("image"),
-    imageCustomId: text("image_custom_id"),
     imageKey: text("image_Key"),
     rememberMe: boolean("remember_me").default(false).notNull(),
     isPrivate: boolean("is_private").default(false).notNull(),

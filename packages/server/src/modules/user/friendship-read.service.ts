@@ -1,3 +1,4 @@
+import { GetCurrentUserFriendsRequestQueryDtoType } from "@snippetly/common/dto";
 import {
   and,
   count,
@@ -9,6 +10,7 @@ import {
   or,
   sql,
 } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { Database } from "../../common/db/index";
 import {
   type Friendship,
@@ -16,8 +18,6 @@ import {
   snippetsTable,
   usersTable,
 } from "../../common/db/schema";
-import { alias } from "drizzle-orm/pg-core";
-import { GetCurrentUserFriendsRequestQueryDtoType } from "@snippetly/common/dto";
 
 export class FriendshipReadService {
   /**
@@ -63,7 +63,7 @@ export class FriendshipReadService {
       with: {
         requester: {
           extras: {
-            snippetsCount: sql<string>`(
+            snippetsCount: sql<number>`(
                 select count(*)
                 from ${snippetsTable} as s
                 inner join friendships as f
@@ -95,7 +95,7 @@ export class FriendshipReadService {
         },
         addressee: {
           extras: {
-            snippetsCount: sql<string>`(
+            snippetsCount: sql<number>`(
                 select count(*)
                 from ${snippetsTable} as s
                 inner join friendships as f
@@ -149,7 +149,7 @@ export class FriendshipReadService {
           recentSnippets: snippets,
           requestSentAt: friendship.createdAt,
           requestStatus: friendship.status,
-          requestAcceptedAt: friendship.acceptedAt,
+          requestAcceptedAt: friendship.acceptedAt as Date,
         };
       }
       const { snippets, ...rest } = friendship.requester;
@@ -158,7 +158,7 @@ export class FriendshipReadService {
         recentSnippets: snippets,
         requestSentAt: friendship.createdAt,
         requestStatus: friendship.status,
-        requestAcceptedAt: friendship.acceptedAt,
+        requestAcceptedAt: friendship.acceptedAt as Date,
       };
     });
     return { data: friends, total };

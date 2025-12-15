@@ -5,57 +5,15 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1757697534789,
-      "tag": "0000_initial-schema",
+      "when": 1765541783638,
+      "tag": "0000_supreme_human_cannonball",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "7",
-      "when": 1757716861882,
-      "tag": "0001_added-is-private-column-to-users",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1757759941050,
-      "tag": "0002_added-default-empty-array-to-users",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1757767707234,
-      "tag": "0003_changed-timestamps-name",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1757890424656,
-      "tag": "0004_added-fts-and-note-field",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1758210126628,
-      "tag": "0005_added-old-slugs-fields",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1758560752986,
-      "tag": "0006_added-image-metadata-fields",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1765121998058,
-      "tag": "0007_accepted-ploicies-default-false",
+      "when": 1765619484369,
+      "tag": "0001_busy_captain_flint",
       "breakpoints": true
     }
   ]

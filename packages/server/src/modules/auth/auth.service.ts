@@ -12,7 +12,7 @@ import type { Response } from "express";
 import { StatusCodes } from "http-status-codes";
 import type { User } from "../../common/db/schema";
 import { HttpException } from "../../common/lib/exception";
-import { isDevelopment } from "../../common/lib/utils";
+import { isProduction } from "../../common/lib/utils";
 import type { RequestContext } from "../../common/middlewares/request-context-middleware";
 import {
   CLIENTS_URLS,
@@ -318,8 +318,8 @@ export class AuthService {
   private clearRefreshTokenCookie(res: Response) {
     res.clearCookie(REFRESH_TOKEN_COOKIE_KEY, {
       httpOnly: true,
-      sameSite: isDevelopment ? "lax" : "none",
-      secure: isDevelopment ? false : true,
+      sameSite: isProduction ? "none" : "lax",
+      secure: isProduction ? true : false,
     });
   }
 
@@ -330,8 +330,8 @@ export class AuthService {
   ) {
     res.cookie(REFRESH_TOKEN_COOKIE_KEY, refreshToken, {
       httpOnly: true,
-      sameSite: isDevelopment ? "lax" : "none",
-      secure: isDevelopment ? false : true,
+      sameSite: isProduction ? "none" : "lax",
+      secure: isProduction ? true : false,
       maxAge: rememberMe ? JWT_REFRESH_REMEMBER_EXPIRES : JWT_REFRESH_EXPIRES,
     });
   }

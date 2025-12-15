@@ -1,3 +1,4 @@
+import { DiscoverUsersRequestQueryDtoType } from "@snippetly/common/dto";
 import {
   and,
   arrayContains,
@@ -21,6 +22,7 @@ import {
   User,
   usersTable,
 } from "../../common/db/schema";
+import { normalizeCounts } from "../../common/lib/utils";
 
 export class UserReadService {
   /**
@@ -32,18 +34,28 @@ export class UserReadService {
     value: string | number,
     exact?: boolean
   ) {
-    return await Database.client.query.usersTable.findFirst({
-      where: (t, { or, eq, like }) =>
-        or(
-          by === "name"
-            ? exact
-              ? eq(t.name, value as string)
-              : like(t.name, value as string)
-            : undefined,
-          by === "email" ? eq(t.email, value as string) : undefined,
-          by === "id" ? eq(t.id, value as number) : undefined
-        ),
+    const foundUser = await Database.client.query.usersTable.findFirst({
+      where: (t, { or, eq, like }) => {
+        const conditions = [];
+
+        if (by === "name") {
+          conditions.push(
+            exact ? eq(t.name, value as string) : like(t.name, value as string)
+          );
+        }
+
+        if (by === "email") {
+          conditions.push(eq(t.email, value as string));
+        }
+
+        if (by === "id") {
+          conditions.push(eq(t.id, value as number));
+        }
+        // Drizzle requires OR with at least 1 condition
+        return conditions.length === 1 ? conditions[0]! : or(...conditions);
+      },
     });
+    return foundUser;
   }
 
   /**
@@ -121,8 +133,8 @@ export class UserReadService {
     limit,
     query: searchString,
     loggedInUserId,
-  }: DiscoverUsersDtoType &
-    Required<Pick<DiscoverUsersDtoType, "limit">> & {
+  }: DiscoverUsersRequestQueryDtoType &
+    Required<Pick<DiscoverUsersRequestQueryDtoType, "limit">> & {
       loggedInUserId?: number;
     }) {
     const snippetsCount = Database.client.$count(
@@ -140,7 +152,6 @@ export class UserReadService {
         bio: usersTable.bio,
         image: usersTable.image,
         imageKey: usersTable.imageKey,
-        imageCustomId: usersTable.imageCustomId,
         createdAt: usersTable.createdAt,
         friendsCount: Database.client.$count(
           friendshipsTable,
@@ -329,10 +340,23 @@ export class UserReadService {
     const [[snippetStats], [collectionStats], [friendStats]] =
       await Promise.all([snippetQuery, collectionQuery, friendsQuery]);
 
+    const normalizedSnippetStats = normalizeCounts(snippetStats, [
+      "snippetsCount",
+      "forkedSnippetsCount",
+    ]);
+    const normalizedCollectionStats = normalizeCounts(collectionStats, [
+      "collectionsCount",
+      "forkedCollectionsCount",
+    ]);
+    const normalizedFriendStats = normalizeCounts(friendStats, [
+      "friendsCount",
+      "friendsInboxCount",
+      "friendsOutboxCount",
+    ]);
     return {
-      ...snippetStats,
-      ...collectionStats,
-      ...friendStats,
+      ...normalizedSnippetStats,
+      ...normalizedCollectionStats,
+      ...normalizedFriendStats,
     };
   }
 

@@ -1,6 +1,6 @@
+import { StatusCodes } from "http-status-codes";
 import { createUploadthing, type FileRouter } from "uploadthing/express";
 import { HttpException } from "../../common/lib/exception";
-import { StatusCodes } from "http-status-codes";
 import { UserRepository } from "../user/user.repository";
 
 export class UploadRouter {
@@ -33,7 +33,6 @@ export class UploadRouter {
           if (metadata.user) {
             await userRepository.update(metadata.user.id, {
               image: file.ufsUrl,
-              imageCustomId: file.customId,
               imageKey: file.key,
             });
           }

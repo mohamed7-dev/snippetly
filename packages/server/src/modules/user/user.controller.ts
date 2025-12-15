@@ -1,19 +1,25 @@
 import { type Request, type Response } from "express";
-import { UserService } from "./user.service";
+import { StatusCodes } from "http-status-codes";
 import { InternalServerError } from "../../common/lib/exception";
 import { AuthService } from "../auth/auth.service";
-import { StatusCodes } from "http-status-codes";
+import { UserService } from "./user.service";
 
 import {
-  UpdateUserRequestDtoType,
-  UpdateUserResponseDto,
   DeleteUserResponseDto,
+  DeleteUserResponseDtoType,
+  DiscoverUsersRequestQueryDtoType,
+  DiscoverUsersResponseDto,
+  DiscoverUsersResponseDtoType,
+  GetCurrentUserDashboardResDto,
+  GetCurrentUserDashboardResDtoType,
+  GetCurrentUserResponseDto,
+  GetCurrentUserResponseDtoType,
   GetUserRequestDtoType,
   GetUserResponseDto,
-  GetCurrentUserResponseDto,
-  DiscoverUsersResponseDto,
-  DiscoverUsersRequestQueryDtoType,
-  GetCurrentUserDashboardResDto,
+  GetUserResponseDtoType,
+  UpdateUserRequestDtoType,
+  UpdateUserResponseDto,
+  UpdateUserResponseDtoType,
 } from "@snippetly/common/dto";
 
 export class UserController {
@@ -29,7 +35,7 @@ export class UserController {
     req: Request<
       object,
       object,
-      Omit<UpdateUserRequestDtoType, "image" | "imageCustomId" | "imageKey">
+      Omit<UpdateUserRequestDtoType, "image" | "imageKey">
     >,
     res: Response
   ) => {
@@ -42,15 +48,15 @@ export class UserController {
       status: StatusCodes.OK,
       message: `User info has been updated successfully.`,
       data: result,
-      type: "success" as const,
-    };
+      type: "success",
+    } satisfies UpdateUserResponseDtoType["success"];
+
     const { success, data: parsedData } =
       UpdateUserResponseDto.safeParse(rawResponse);
 
     if (!success) {
       throw new InternalServerError();
     }
-
     // i don't know if i am going to log the user out or not
     res.status(parsedData.status).json(parsedData);
   };
@@ -64,8 +70,8 @@ export class UserController {
       status: StatusCodes.OK,
       message: `User account has been deleted successfully, and session has been ended on the server.`,
       data: null,
-      type: "success" as const,
-    };
+      type: "success",
+    } satisfies DeleteUserResponseDtoType["success"];
 
     const { success, data: parsedData } =
       DeleteUserResponseDto.safeParse(rawResponse);
@@ -91,7 +97,8 @@ export class UserController {
       message: "Fetched successfully.",
       data: result,
       type: "success",
-    };
+    } satisfies DiscoverUsersResponseDtoType["success"];
+
     const { success, data: parsedData } =
       DiscoverUsersResponseDto.safeParse(rawResponse);
 
@@ -113,7 +120,8 @@ export class UserController {
         stats: result.stats,
       },
       type: "success",
-    };
+    } satisfies GetCurrentUserDashboardResDtoType["success"];
+
     const { success, data: parsedData } =
       GetCurrentUserDashboardResDto.safeParse(rawResponse);
 
@@ -125,19 +133,21 @@ export class UserController {
 
   public getCurrentUserProfile = async (req: Request, res: Response) => {
     const result = await this.UserService.getCurrentUserProfile(req.context);
-    const rawResponse = {
-      status: StatusCodes.OK,
-      message: "Fetched successfully",
-      data: result,
-      type: "owner-success",
-    };
-    const { success, data: parsedData } =
-      GetCurrentUserResponseDto.safeParse(rawResponse);
+    if ("profile" in result && result.profile) {
+      const rawResponse = {
+        status: StatusCodes.OK,
+        message: "Fetched successfully",
+        data: result,
+        type: "success",
+      } satisfies GetCurrentUserResponseDtoType["success"];
 
-    if (!success) {
-      throw new InternalServerError();
+      const { success, data: parsedData } =
+        GetCurrentUserResponseDto.safeParse(rawResponse);
+      if (!success) {
+        throw new InternalServerError();
+      }
+      res.status(parsedData.status).json(parsedData);
     }
-    res.status(parsedData.status).json(parsedData);
   };
 
   public getUserProfile = async (
@@ -157,13 +167,16 @@ export class UserController {
         status: StatusCodes.OK,
         message: "Fetched successfully",
         data: result,
-      };
-      // use owner dto
-      const { success, data: parsedData } = GetUserResponseDto.safeParse({
-        ...rawResponse,
         type: isOwner ? "owner-success" : "public-success",
-      });
+      } satisfies GetUserResponseDtoType["success"];
 
+      const {
+        success,
+        data: parsedData,
+        error,
+      } = GetUserResponseDto.safeParse({
+        ...rawResponse,
+      });
       if (!success) {
         throw new InternalServerError();
       }

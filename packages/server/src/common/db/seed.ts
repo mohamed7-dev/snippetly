@@ -1,9 +1,9 @@
 import "dotenv/config";
-import { Database } from "./index";
-import { eq, and, inArray } from "drizzle-orm";
-import { Logger } from "../logger/logger";
-import { DefaultLogger } from "../logger/default-logger";
+import { and, eq, inArray } from "drizzle-orm";
 import { PasswordHashService } from "../../modules/auth/password-hash.service";
+import { DefaultLogger } from "../logger/default-logger";
+import { Logger } from "../logger/logger";
+import { Database } from "./index";
 
 async function main() {
   // Ensure logger is initialized for standalone seed execution
@@ -35,7 +35,6 @@ async function main() {
       password: await PasswordService.hash("Password@12345678"),
       bio: "Frontend engineer who loves React.",
       image: null as string | null,
-      imageCustomId: null as string | null,
       imageKey: null as string | null,
       acceptedPolicies: true,
       emailVerifiedAt: now,
@@ -52,7 +51,6 @@ async function main() {
       password: await PasswordService.hash("Password@12345678"),
       bio: "Backend enthusiast and database tinkerer.",
       image: null,
-      imageCustomId: null,
       imageKey: null,
       acceptedPolicies: true,
       emailVerifiedAt: now,
@@ -69,7 +67,6 @@ async function main() {
       password: await PasswordService.hash("Password@12345678"),
       bio: "Full-stack dev. Typescript all the way.",
       image: null,
-      imageCustomId: null,
       imageKey: null,
       acceptedPolicies: true,
       emailVerifiedAt: now,

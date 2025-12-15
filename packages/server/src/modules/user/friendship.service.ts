@@ -1,17 +1,17 @@
+import {
+  GetCurrentUserFriendsRequestQueryDtoType,
+  ManageFriendshipRequestParamDtoType,
+} from "@snippetly/common/dto";
 import { StatusCodes } from "http-status-codes";
+import type { Friendship } from "../../common/db/schema";
 import { HttpException } from "../../common/lib/exception";
 import { handleCursorPagination } from "../../common/lib/utils";
 import type { RequestContext } from "../../common/middlewares/request-context-middleware";
 import type { NonNullableFields } from "../../common/types/utils";
 import { DEFAULT_USERS_PENDING_FRIENDS_LIMIT } from "./constants";
 import { FriendshipReadService } from "./friendship-read.service";
-import { UserReadService } from "./user-read.service";
 import { FriendshipRepository } from "./friendship.repository";
-import type { Friendship } from "../../common/db/schema";
-import {
-  GetCurrentUserFriendsRequestQueryDtoType,
-  ManageFriendshipRequestParamDtoType,
-} from "@snippetly/common/dto";
+import { UserReadService } from "./user-read.service";
 
 export class FriendshipService {
   private UserReadService: UserReadService;
@@ -47,7 +47,7 @@ export class FriendshipService {
         ? ({
             id: nextCursor.id,
           } satisfies GetCurrentUserFriendsRequestQueryDtoType["cursor"])
-        : null,
+        : undefined,
       total,
     };
   }
@@ -76,7 +76,7 @@ export class FriendshipService {
         ? ({
             id: nextCursor.id,
           } satisfies GetCurrentUserFriendsRequestQueryDtoType["cursor"])
-        : null,
+        : undefined,
       total,
     };
   }
@@ -105,7 +105,7 @@ export class FriendshipService {
         ? ({
             id: nextCursor.id,
           } satisfies GetCurrentUserFriendsRequestQueryDtoType["cursor"])
-        : null,
+        : undefined,
       total,
     };
   }

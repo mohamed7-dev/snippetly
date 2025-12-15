@@ -32,7 +32,6 @@ export class UserService {
   public async create(_ctx: RequestContext, input: CreateUserDtoType) {
     const { password, ...rest } = input;
     const foundUser = await this.UserReadService.findOneSlim("name", rest.name);
-
     if (foundUser) {
       throw new HttpException(
         StatusCodes.CONFLICT,
@@ -94,7 +93,6 @@ export class UserService {
       //   ? { oldNames: [...foundUser.oldNames, foundUser.name] }
       //   : {}),
     });
-
     return updatedUser;
   }
 
@@ -107,7 +105,7 @@ export class UserService {
     if (loggedInUserEmail && loggedInUserEmail !== input.email) {
       // if user is logged in and the input.email is not his email
       // then reject the request.
-      throw new HttpException(StatusCodes.UNAUTHORIZED, "Invalid credentials");
+      throw new HttpException(StatusCodes.UNAUTHORIZED, "Invalid session");
     }
 
     const foundUser = await this.UserReadService.findOneSlim(
@@ -116,7 +114,7 @@ export class UserService {
     );
 
     if (!foundUser) {
-      throw new HttpException(StatusCodes.UNAUTHORIZED, "Invalid credentials");
+      throw new HttpException(StatusCodes.UNAUTHORIZED, "Invalid session");
     }
 
     if (input.currentPassword) {
@@ -183,7 +181,7 @@ export class UserService {
             snippetsCount: nextCursor.snippetsCount,
             id: nextCursor.id,
           } satisfies DiscoverUsersRequestQueryDtoType["cursor"])
-        : null,
+        : undefined,
       total: data.length < filteredItems.length ? total - 1 : total,
     };
   }
@@ -277,7 +275,7 @@ export class UserService {
       profile: userProfile,
       friendshipInfo: {
         isCurrentUserAFriend,
-        ...(requestStatus && { requestStatus }),
+        requestStatus: requestStatus || null,
       },
       stats,
     };

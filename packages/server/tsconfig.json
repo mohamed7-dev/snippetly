@@ -16,9 +16,9 @@
     "outDir": "./dist",
     "target": "esnext",
     "module": "commonjs",
-    "rootDir": "./src",
+    "rootDir": "./",
     "moduleResolution": "node",
     "verbatimModuleSyntax": false
   },
-  "include": ["src", "./src/common/types"]
+  "include": ["src", "./src/common/types", "./tests"]
 }

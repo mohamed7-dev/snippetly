@@ -46,3 +46,15 @@ export function handleCursorPagination<T extends Array<object>>({
 export function getRefreshTokenExpires(rememberMe: boolean) {
   return rememberMe ? JWT_REFRESH_REMEMBER_EXPIRES : JWT_REFRESH_EXPIRES;
 }
+
+export const normalizeCounts = <T extends Record<string, unknown>>(
+  obj: T,
+  keys: (keyof T)[]
+) => {
+  for (const key of keys) {
+    if (obj[key] != null) {
+      obj[key] = Number(obj[key]) as T[keyof T];
+    }
+  }
+  return obj;
+};

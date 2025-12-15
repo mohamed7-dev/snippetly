@@ -1,8 +1,7 @@
+import { REFRESH_TOKEN_COOKIE_KEY } from "@snippetly/common";
+import { UnAuthorizedErrorResponseDtoType } from "@snippetly/common/dto";
 import type { NextFunction, Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
-import { REFRESH_TOKEN_COOKIE_KEY } from "@snippetly/common";
-import { UnauthorizedErrorResponseDto } from "@snippetly/common/dto";
-import z from "zod";
 
 export function authMiddleware(
   req: Request,
@@ -16,8 +15,7 @@ export function authMiddleware(
       message: "Invalid session, please login first.",
       status: StatusCodes.UNAUTHORIZED,
       cause: null,
-    } satisfies z.infer<typeof UnauthorizedErrorResponseDto>;
-
+    } satisfies UnAuthorizedErrorResponseDtoType;
     res.status(rawRes.status).json(rawRes);
   }
 

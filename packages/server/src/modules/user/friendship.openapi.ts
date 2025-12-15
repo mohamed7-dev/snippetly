@@ -9,7 +9,11 @@ import {
   GetCurrentUserOutboxSuccessResDto,
   InternalServerErrorResponseDto,
   ManageFriendshipRequestParamDto,
+  MethodNotAllowedErrorResponseDto,
+  NotFoundErrorResponseDto,
+  protectedRouteCookiesSchema,
   protectedRouteHeadersSchema,
+  RateLimiterErrorResponseDto,
   RejectFriendshipRequestSuccessResDto,
   SendFriendshipRequestSuccessResDto,
   UnauthorizedErrorResponseDto,
@@ -18,15 +22,17 @@ import {
 export const sendFriendshipRequestRouteConfig: RouteConfig = {
   method: "put",
   path: "/users/add-friend/:friend_name",
-  summary: "Send friendship request",
+  summary: "Endpoint to send a friendship request",
   tags: ["Users"],
   request: {
     headers: protectedRouteHeadersSchema,
+    cookies: protectedRouteCookiesSchema,
     params: ManageFriendshipRequestParamDto,
   },
   responses: {
     200: {
-      description: "Response body when the request is sent successfully",
+      description:
+        "Response body if the friendship request was sent successfully",
       content: {
         "application/json": {
           schema: SendFriendshipRequestSuccessResDto,
@@ -34,7 +40,7 @@ export const sendFriendshipRequestRouteConfig: RouteConfig = {
       },
     },
     400: {
-      description: "Invalid param",
+      description: "Response body if the request params were invalid",
       content: {
         "application/json": {
           schema: BadRequestErrorResponseDto,
@@ -42,7 +48,7 @@ export const sendFriendshipRequestRouteConfig: RouteConfig = {
       },
     },
     401: {
-      description: "User is not found, or access token is missing or invalid",
+      description: "Response body if the current session is missing or invalid",
       content: {
         "application/json": {
           schema: UnauthorizedErrorResponseDto,
@@ -54,6 +60,30 @@ export const sendFriendshipRequestRouteConfig: RouteConfig = {
       content: {
         "application/json": {
           schema: InternalServerErrorResponseDto,
+        },
+      },
+    },
+    404: {
+      description: "Endpoint not found",
+      content: {
+        "application/json": {
+          schema: NotFoundErrorResponseDto,
+        },
+      },
+    },
+    405: {
+      description: "Method not allowed",
+      content: {
+        "application/json": {
+          schema: MethodNotAllowedErrorResponseDto,
+        },
+      },
+    },
+    429: {
+      description: "Rate limiter response body",
+      content: {
+        "application/json": {
+          schema: RateLimiterErrorResponseDto,
         },
       },
     },
@@ -63,15 +93,17 @@ export const sendFriendshipRequestRouteConfig: RouteConfig = {
 export const acceptFriendshipRequestRouteConfig: RouteConfig = {
   method: "put",
   path: "/users/accept-friend/:friend_name",
-  summary: "Accept friendship request",
+  summary: "Endpoint to accept friendship request",
   tags: ["Users"],
   request: {
     headers: protectedRouteHeadersSchema,
+    cookies: protectedRouteCookiesSchema,
     params: ManageFriendshipRequestParamDto,
   },
   responses: {
     200: {
-      description: "Response body when the request is accepted successfully",
+      description:
+        "Response body if the friendship request was accepted successfully",
       content: {
         "application/json": {
           schema: AcceptFriendshipRequestSuccessResDto,
@@ -79,7 +111,7 @@ export const acceptFriendshipRequestRouteConfig: RouteConfig = {
       },
     },
     400: {
-      description: "Invalid param",
+      description: "Response body if the request params were invalid",
       content: {
         "application/json": {
           schema: BadRequestErrorResponseDto,
@@ -87,7 +119,7 @@ export const acceptFriendshipRequestRouteConfig: RouteConfig = {
       },
     },
     401: {
-      description: "User is not found, or access token is missing or invalid",
+      description: "Response body if the current session is missing or invalid",
       content: {
         "application/json": {
           schema: UnauthorizedErrorResponseDto,
@@ -99,6 +131,30 @@ export const acceptFriendshipRequestRouteConfig: RouteConfig = {
       content: {
         "application/json": {
           schema: InternalServerErrorResponseDto,
+        },
+      },
+    },
+    404: {
+      description: "Endpoint not found",
+      content: {
+        "application/json": {
+          schema: NotFoundErrorResponseDto,
+        },
+      },
+    },
+    405: {
+      description: "Method not allowed",
+      content: {
+        "application/json": {
+          schema: MethodNotAllowedErrorResponseDto,
+        },
+      },
+    },
+    429: {
+      description: "Rate limiter response body",
+      content: {
+        "application/json": {
+          schema: RateLimiterErrorResponseDto,
         },
       },
     },
@@ -108,15 +164,17 @@ export const acceptFriendshipRequestRouteConfig: RouteConfig = {
 export const rejectFriendshipRequestRouteConfig: RouteConfig = {
   method: "put",
   path: "/users/reject-friend/:friend_name",
-  summary: "Reject friendship request",
+  summary: "Endpoint to reject friendship request",
   tags: ["Users"],
   request: {
     headers: protectedRouteHeadersSchema,
+    cookies: protectedRouteCookiesSchema,
     params: ManageFriendshipRequestParamDto,
   },
   responses: {
     200: {
-      description: "Response body when the request is rejected successfully",
+      description:
+        "Response body if the friendship request was rejected successfully",
       content: {
         "application/json": {
           schema: RejectFriendshipRequestSuccessResDto,
@@ -124,7 +182,7 @@ export const rejectFriendshipRequestRouteConfig: RouteConfig = {
       },
     },
     400: {
-      description: "Invalid param",
+      description: "Response body if the request params were invalid",
       content: {
         "application/json": {
           schema: BadRequestErrorResponseDto,
@@ -132,7 +190,7 @@ export const rejectFriendshipRequestRouteConfig: RouteConfig = {
       },
     },
     401: {
-      description: "User is not found, or access token is missing or invalid",
+      description: "Response body if the current session is invalid or missing",
       content: {
         "application/json": {
           schema: UnauthorizedErrorResponseDto,
@@ -144,6 +202,30 @@ export const rejectFriendshipRequestRouteConfig: RouteConfig = {
       content: {
         "application/json": {
           schema: InternalServerErrorResponseDto,
+        },
+      },
+    },
+    404: {
+      description: "Endpoint not found",
+      content: {
+        "application/json": {
+          schema: NotFoundErrorResponseDto,
+        },
+      },
+    },
+    405: {
+      description: "Method not allowed",
+      content: {
+        "application/json": {
+          schema: MethodNotAllowedErrorResponseDto,
+        },
+      },
+    },
+    429: {
+      description: "Rate limiter response body",
+      content: {
+        "application/json": {
+          schema: RateLimiterErrorResponseDto,
         },
       },
     },
@@ -153,15 +235,17 @@ export const rejectFriendshipRequestRouteConfig: RouteConfig = {
 export const cancelFriendshipRequestRouteConfig: RouteConfig = {
   method: "put",
   path: "/users/cancel-friend/:friend_name",
-  summary: "Cancel friendship request",
+  summary: "Endpoint to cancel friendship request",
   tags: ["Users"],
   request: {
     headers: protectedRouteHeadersSchema,
+    cookies: protectedRouteCookiesSchema,
     params: ManageFriendshipRequestParamDto,
   },
   responses: {
     200: {
-      description: "Response body when the request is cancelled successfully",
+      description:
+        "Response body if the friendship request was cancelled successfully",
       content: {
         "application/json": {
           schema: CancelFriendshipRequestSuccessResDto,
@@ -169,7 +253,7 @@ export const cancelFriendshipRequestRouteConfig: RouteConfig = {
       },
     },
     400: {
-      description: "Invalid param",
+      description: "Response body if the request params were invalid",
       content: {
         "application/json": {
           schema: BadRequestErrorResponseDto,
@@ -177,7 +261,7 @@ export const cancelFriendshipRequestRouteConfig: RouteConfig = {
       },
     },
     401: {
-      description: "User is not found, or access token is missing or invalid",
+      description: "Response body if the current session is invalid or missing",
       content: {
         "application/json": {
           schema: UnauthorizedErrorResponseDto,
@@ -189,6 +273,30 @@ export const cancelFriendshipRequestRouteConfig: RouteConfig = {
       content: {
         "application/json": {
           schema: InternalServerErrorResponseDto,
+        },
+      },
+    },
+    404: {
+      description: "Endpoint not found",
+      content: {
+        "application/json": {
+          schema: NotFoundErrorResponseDto,
+        },
+      },
+    },
+    405: {
+      description: "Method not allowed",
+      content: {
+        "application/json": {
+          schema: MethodNotAllowedErrorResponseDto,
+        },
+      },
+    },
+    429: {
+      description: "Rate limiter response body",
+      content: {
+        "application/json": {
+          schema: RateLimiterErrorResponseDto,
         },
       },
     },
@@ -198,15 +306,16 @@ export const cancelFriendshipRequestRouteConfig: RouteConfig = {
 export const getCurrentUserFriendsRouteConfig: RouteConfig = {
   method: "get",
   path: "/users/current/friends",
-  summary: "Get current user friends",
+  summary: "Endpoint to get the currently logged-in user's friends",
   tags: ["Users"],
   request: {
     headers: protectedRouteHeadersSchema,
+    cookies: protectedRouteCookiesSchema,
     query: GetCurrentUserFriendsRequestQueryDto,
   },
   responses: {
     200: {
-      description: "Response body when the request is successful",
+      description: "Response body if the request was successful",
       content: {
         "application/json": {
           schema: GetCurrentUserFriendsSuccessResDto,
@@ -214,7 +323,7 @@ export const getCurrentUserFriendsRouteConfig: RouteConfig = {
       },
     },
     400: {
-      description: "Invalid query params",
+      description: "Response body if the request query params were invalid",
       content: {
         "application/json": {
           schema: BadRequestErrorResponseDto,
@@ -222,7 +331,7 @@ export const getCurrentUserFriendsRouteConfig: RouteConfig = {
       },
     },
     401: {
-      description: "User is not found, or access token is missing or invalid",
+      description: "Response body if the current session is invalid or missing",
       content: {
         "application/json": {
           schema: UnauthorizedErrorResponseDto,
@@ -234,6 +343,30 @@ export const getCurrentUserFriendsRouteConfig: RouteConfig = {
       content: {
         "application/json": {
           schema: InternalServerErrorResponseDto,
+        },
+      },
+    },
+    404: {
+      description: "Endpoint not found",
+      content: {
+        "application/json": {
+          schema: NotFoundErrorResponseDto,
+        },
+      },
+    },
+    405: {
+      description: "Method not allowed",
+      content: {
+        "application/json": {
+          schema: MethodNotAllowedErrorResponseDto,
+        },
+      },
+    },
+    429: {
+      description: "Rate limiter response body",
+      content: {
+        "application/json": {
+          schema: RateLimiterErrorResponseDto,
         },
       },
     },
@@ -243,15 +376,16 @@ export const getCurrentUserFriendsRouteConfig: RouteConfig = {
 export const getCurrentUserInboxRouteConfig: RouteConfig = {
   method: "get",
   path: "/users/current/inbox",
-  summary: "Get friendship requests sent to the current user",
+  summary: "Endpoint to get friendship requests was sent to the current user",
   tags: ["Users"],
   request: {
     headers: protectedRouteHeadersSchema,
+    cookies: protectedRouteCookiesSchema,
     query: GetCurrentUserFriendsRequestQueryDto,
   },
   responses: {
     200: {
-      description: "Response body when the request is successful",
+      description: "Response body if the request was successful",
       content: {
         "application/json": {
           schema: GetCurrentUserInboxSuccessResDto,
@@ -259,7 +393,7 @@ export const getCurrentUserInboxRouteConfig: RouteConfig = {
       },
     },
     400: {
-      description: "Invalid query params",
+      description: "Response body if the request query params were invalid",
       content: {
         "application/json": {
           schema: BadRequestErrorResponseDto,
@@ -267,7 +401,7 @@ export const getCurrentUserInboxRouteConfig: RouteConfig = {
       },
     },
     401: {
-      description: "User is not found, or access token is missing or invalid",
+      description: "Response body if the current session is missing or invalid",
       content: {
         "application/json": {
           schema: UnauthorizedErrorResponseDto,
@@ -279,6 +413,30 @@ export const getCurrentUserInboxRouteConfig: RouteConfig = {
       content: {
         "application/json": {
           schema: InternalServerErrorResponseDto,
+        },
+      },
+    },
+    404: {
+      description: "Endpoint not found",
+      content: {
+        "application/json": {
+          schema: NotFoundErrorResponseDto,
+        },
+      },
+    },
+    405: {
+      description: "Method not allowed",
+      content: {
+        "application/json": {
+          schema: MethodNotAllowedErrorResponseDto,
+        },
+      },
+    },
+    429: {
+      description: "Rate limiter response body",
+      content: {
+        "application/json": {
+          schema: RateLimiterErrorResponseDto,
         },
       },
     },
@@ -288,15 +446,16 @@ export const getCurrentUserInboxRouteConfig: RouteConfig = {
 export const getCurrentUserOutboxRouteConfig: RouteConfig = {
   method: "get",
   path: "/users/current/outbox",
-  summary: "Get friendship requests sent by the current user",
+  summary: "Endpoint to get friendship requests was sent by the current user",
   tags: ["Users"],
   request: {
     headers: protectedRouteHeadersSchema,
+    cookies: protectedRouteCookiesSchema,
     query: GetCurrentUserFriendsRequestQueryDto,
   },
   responses: {
     200: {
-      description: "Response body when the request is successful",
+      description: "Response body if the request was successful",
       content: {
         "application/json": {
           schema: GetCurrentUserOutboxSuccessResDto,
@@ -304,7 +463,7 @@ export const getCurrentUserOutboxRouteConfig: RouteConfig = {
       },
     },
     400: {
-      description: "Invalid query params",
+      description: "Response body if the request query params were invalid",
       content: {
         "application/json": {
           schema: BadRequestErrorResponseDto,
@@ -312,7 +471,7 @@ export const getCurrentUserOutboxRouteConfig: RouteConfig = {
       },
     },
     401: {
-      description: "User is not found, or access token is missing or invalid",
+      description: "Response body if the current session is missing or invalid",
       content: {
         "application/json": {
           schema: UnauthorizedErrorResponseDto,
@@ -324,6 +483,30 @@ export const getCurrentUserOutboxRouteConfig: RouteConfig = {
       content: {
         "application/json": {
           schema: InternalServerErrorResponseDto,
+        },
+      },
+    },
+    404: {
+      description: "Endpoint not found",
+      content: {
+        "application/json": {
+          schema: NotFoundErrorResponseDto,
+        },
+      },
+    },
+    405: {
+      description: "Method not allowed",
+      content: {
+        "application/json": {
+          schema: MethodNotAllowedErrorResponseDto,
+        },
+      },
+    },
+    429: {
+      description: "Rate limiter response body",
+      content: {
+        "application/json": {
+          schema: RateLimiterErrorResponseDto,
         },
       },
     },

@@ -1,11 +1,15 @@
 import { RouteConfig } from "@asteasolutions/zod-to-openapi";
 import {
   BadRequestErrorResponseDto,
+  InternalServerErrorResponseDto,
   LoginRequestDto,
   LoginSuccessResponseDto,
   LogoutSuccessResponseDto,
+  MethodNotAllowedErrorResponseDto,
+  NotFoundErrorResponseDto,
   protectedRouteCookiesSchema,
   protectedRouteHeadersSchema,
+  RateLimiterErrorResponseDto,
   RefreshTokenSuccessResponseDto,
   SendRTokenRequestDto,
   SendRTokenSuccessResponseDto,
@@ -21,10 +25,6 @@ import {
   VerifyVTokenRequestDto,
   VerifyVTokenSuccessResponseDto,
 } from "@snippetly/common/dto";
-import {
-  rateLimiterResRouteConfig,
-  sharedResRouteConfig,
-} from "../../common/lib/swagger-registery";
 
 export const loginRouteConfig: RouteConfig = {
   method: "put",
@@ -67,8 +67,38 @@ export const loginRouteConfig: RouteConfig = {
         },
       },
     },
-    ...sharedResRouteConfig,
-    ...rateLimiterResRouteConfig,
+    500: {
+      description: "Internal server error",
+      content: {
+        "application/json": {
+          schema: InternalServerErrorResponseDto,
+        },
+      },
+    },
+    404: {
+      description: "Endpoint not found",
+      content: {
+        "application/json": {
+          schema: NotFoundErrorResponseDto,
+        },
+      },
+    },
+    405: {
+      description: "Method not allowed",
+      content: {
+        "application/json": {
+          schema: MethodNotAllowedErrorResponseDto,
+        },
+      },
+    },
+    429: {
+      description: "Rate limiter response body",
+      content: {
+        "application/json": {
+          schema: RateLimiterErrorResponseDto,
+        },
+      },
+    },
   },
 };
 
@@ -113,8 +143,38 @@ export const signupRouteConfig: RouteConfig = {
         },
       },
     },
-    ...sharedResRouteConfig,
-    ...rateLimiterResRouteConfig,
+    500: {
+      description: "Internal server error",
+      content: {
+        "application/json": {
+          schema: InternalServerErrorResponseDto,
+        },
+      },
+    },
+    404: {
+      description: "Endpoint not found",
+      content: {
+        "application/json": {
+          schema: NotFoundErrorResponseDto,
+        },
+      },
+    },
+    405: {
+      description: "Method not allowed",
+      content: {
+        "application/json": {
+          schema: MethodNotAllowedErrorResponseDto,
+        },
+      },
+    },
+    429: {
+      description: "Rate limiter response body",
+      content: {
+        "application/json": {
+          schema: RateLimiterErrorResponseDto,
+        },
+      },
+    },
   },
 };
 
@@ -144,7 +204,30 @@ export const logoutRouteConfig: RouteConfig = {
         },
       },
     },
-    ...sharedResRouteConfig,
+    500: {
+      description: "Internal server error",
+      content: {
+        "application/json": {
+          schema: InternalServerErrorResponseDto,
+        },
+      },
+    },
+    404: {
+      description: "Endpoint not found",
+      content: {
+        "application/json": {
+          schema: NotFoundErrorResponseDto,
+        },
+      },
+    },
+    405: {
+      description: "Method not allowed",
+      content: {
+        "application/json": {
+          schema: MethodNotAllowedErrorResponseDto,
+        },
+      },
+    },
   },
 };
 
@@ -174,8 +257,38 @@ export const refreshTokenRouteConfig: RouteConfig = {
         },
       },
     },
-    ...sharedResRouteConfig,
-    ...rateLimiterResRouteConfig,
+    500: {
+      description: "Internal server error",
+      content: {
+        "application/json": {
+          schema: InternalServerErrorResponseDto,
+        },
+      },
+    },
+    404: {
+      description: "Endpoint not found",
+      content: {
+        "application/json": {
+          schema: NotFoundErrorResponseDto,
+        },
+      },
+    },
+    405: {
+      description: "Method not allowed",
+      content: {
+        "application/json": {
+          schema: MethodNotAllowedErrorResponseDto,
+        },
+      },
+    },
+    429: {
+      description: "Rate limiter response body",
+      content: {
+        "application/json": {
+          schema: RateLimiterErrorResponseDto,
+        },
+      },
+    },
   },
 };
 
@@ -222,8 +335,38 @@ export const sendVEmailRouteConfig: RouteConfig = {
         },
       },
     },
-    ...sharedResRouteConfig,
-    ...rateLimiterResRouteConfig,
+    500: {
+      description: "Internal server error",
+      content: {
+        "application/json": {
+          schema: InternalServerErrorResponseDto,
+        },
+      },
+    },
+    404: {
+      description: "Endpoint not found",
+      content: {
+        "application/json": {
+          schema: NotFoundErrorResponseDto,
+        },
+      },
+    },
+    405: {
+      description: "Method not allowed",
+      content: {
+        "application/json": {
+          schema: MethodNotAllowedErrorResponseDto,
+        },
+      },
+    },
+    429: {
+      description: "Rate limiter response body",
+      content: {
+        "application/json": {
+          schema: RateLimiterErrorResponseDto,
+        },
+      },
+    },
   },
 };
 
@@ -262,8 +405,38 @@ export const verifyVEmailRouteConfig: RouteConfig = {
         },
       },
     },
-    ...sharedResRouteConfig,
-    ...rateLimiterResRouteConfig,
+    500: {
+      description: "Internal server error",
+      content: {
+        "application/json": {
+          schema: InternalServerErrorResponseDto,
+        },
+      },
+    },
+    404: {
+      description: "Endpoint not found",
+      content: {
+        "application/json": {
+          schema: NotFoundErrorResponseDto,
+        },
+      },
+    },
+    405: {
+      description: "Method not allowed",
+      content: {
+        "application/json": {
+          schema: MethodNotAllowedErrorResponseDto,
+        },
+      },
+    },
+    429: {
+      description: "Rate limiter response body",
+      content: {
+        "application/json": {
+          schema: RateLimiterErrorResponseDto,
+        },
+      },
+    },
   },
 };
 
@@ -311,8 +484,38 @@ export const sendREmailRouteConfig: RouteConfig = {
         },
       },
     },
-    ...sharedResRouteConfig,
-    ...rateLimiterResRouteConfig,
+    500: {
+      description: "Internal server error",
+      content: {
+        "application/json": {
+          schema: InternalServerErrorResponseDto,
+        },
+      },
+    },
+    404: {
+      description: "Endpoint not found",
+      content: {
+        "application/json": {
+          schema: NotFoundErrorResponseDto,
+        },
+      },
+    },
+    405: {
+      description: "Method not allowed",
+      content: {
+        "application/json": {
+          schema: MethodNotAllowedErrorResponseDto,
+        },
+      },
+    },
+    429: {
+      description: "Rate limiter response body",
+      content: {
+        "application/json": {
+          schema: RateLimiterErrorResponseDto,
+        },
+      },
+    },
   },
 };
 
@@ -361,7 +564,37 @@ export const resetPasswordRouteConfig: RouteConfig = {
         },
       },
     },
-    ...sharedResRouteConfig,
-    ...rateLimiterResRouteConfig,
+    500: {
+      description: "Internal server error",
+      content: {
+        "application/json": {
+          schema: InternalServerErrorResponseDto,
+        },
+      },
+    },
+    404: {
+      description: "Endpoint not found",
+      content: {
+        "application/json": {
+          schema: NotFoundErrorResponseDto,
+        },
+      },
+    },
+    405: {
+      description: "Method not allowed",
+      content: {
+        "application/json": {
+          schema: MethodNotAllowedErrorResponseDto,
+        },
+      },
+    },
+    429: {
+      description: "Rate limiter response body",
+      content: {
+        "application/json": {
+          schema: RateLimiterErrorResponseDto,
+        },
+      },
+    },
   },
 };

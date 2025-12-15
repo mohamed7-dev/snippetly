@@ -8,12 +8,8 @@ import {
   type NodePgDatabase,
 } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
-import * as schema from "./schema";
 import { DatabaseLogger } from "../logger/utils";
-
-const DATABASE_URL = process.env.DATABASE_URL;
-
-if (!DATABASE_URL) throw new Error("Missing DATABASE_URL Env Variable.");
+import * as schema from "./schema";
 
 type NeonDb = NeonHttpDatabase<typeof schema> & {
   $client?: NeonQueryFunction<false, false>;
@@ -26,9 +22,14 @@ function isNeonUrl(url: string): boolean {
 }
 
 export class Database {
-  private static db: AnyDb;
+  private static db: AnyDb | null = null;
 
   static get client() {
+    if (!this.db) {
+      throw new Error(
+        "Database not initialized. Call Database.connect() first."
+      );
+    }
     return this.db;
   }
 
@@ -37,7 +38,9 @@ export class Database {
   }
 
   static async connect() {
-    const url = DATABASE_URL!;
+    if (this.db) return this.db;
+    const url = process.env.DATABASE_URL;
+    if (!url) throw new Error("Missing DATABASE_URL Env Variable.");
 
     if (isNeonUrl(url)) {
       const sql = neon(url);
@@ -47,19 +50,11 @@ export class Database {
       DatabaseLogger.logConnection("connect");
       return;
     }
-
     const pool = new Pool({ connectionString: url });
 
-    try {
-      await pool.query("SELECT 1"); // forces connection
-      this.db = drizzlePg(pool, { schema }) as AnyDb;
-      DatabaseLogger.logConnection("connect");
-    } catch (e) {
-      DatabaseLogger.logConnection(
-        "error",
-        { message: (e as Error).message },
-        (e as Error).stack
-      );
-    }
+    await pool.query("SELECT 1"); // test connection
+
+    this.db = drizzlePg(pool, { schema }) as AnyDb;
+    DatabaseLogger.logConnection("connect");
   }
 }

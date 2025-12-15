@@ -1,20 +1,20 @@
+import {
+  DiscoverUsersRequestQueryDto,
+  GetCurrentUserFriendsRequestQueryDto,
+  GetUserRequestDto,
+  ManageFriendshipRequestParamDto,
+  UpdateUserRequestDto,
+} from "@snippetly/common/dto";
 import { type Request, Router } from "express";
-import { UserController } from "./user.controller";
+import { StatusCodes } from "http-status-codes";
+import multer, { type FileFilterCallback } from "multer";
+import path from "path";
+import { HttpException } from "../../common/lib/exception";
 import { authMiddleware } from "../../common/middlewares/auth.middleware";
 import { zodValidatorMiddleware } from "../../common/middlewares/zod-validator.middleware";
 import { type Route } from "../../common/types/express";
 import { FriendshipController } from "./friendship.controller";
-import multer, { type FileFilterCallback } from "multer";
-import path from "path";
-import { HttpException } from "../../common/lib/exception";
-import { StatusCodes } from "http-status-codes";
-import {
-  GetUserRequestDto,
-  UpdateUserRequestDto,
-  DiscoverUsersRequestQueryDto,
-  ManageFriendshipRequestParamDto,
-  GetCurrentUserFriendsRequestQueryDto,
-} from "@snippetly/common/dto";
+import { UserController } from "./user.controller";
 
 export class UserRoute implements Route {
   public path: string = "/users";
@@ -64,14 +64,13 @@ export class UserRoute implements Route {
       this.controller.getCurrentUserDashboard
     );
     // --- user PUT/DELETE ---
-    this.router.put(
+    this.router.patch(
       `${this.path}`,
       authMiddleware,
       // this.configureMulter().single("image"), // deploying on vercel
       zodValidatorMiddleware(
         UpdateUserRequestDto.omit({
           image: true,
-          imageCustomId: true,
           imageKey: true,
         }),
         "Body"
