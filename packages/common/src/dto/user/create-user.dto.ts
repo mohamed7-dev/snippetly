@@ -10,7 +10,6 @@ export const CreateUserDto = SelectUserDto.pick({
   isPrivate: true,
 }).partial({
   isPrivate: true,
-  acceptedPolicies: true,
 });
 
 export type CreateUserDtoType = z.infer<typeof CreateUserDto>;

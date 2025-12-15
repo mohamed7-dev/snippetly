@@ -1,10 +1,13 @@
 import {
   BadRequestErrorResponseDto,
+  BadRequestErrorResponseDtoType,
   createSuccessResponse,
   RateLimiterErrorResponseDto,
+  RateLimiterErrorResponseDtoType,
   SharedErrorResDto,
   SharedErrorResDtoType,
   UnauthorizedErrorResponseDto,
+  UnAuthorizedErrorResponseDtoType,
   z,
 } from "../zod";
 import { SendTokenViaEmailDto } from "./common";
@@ -15,7 +18,7 @@ export const SendVEmailRequestDto = SendTokenViaEmailDto.meta({
   description: "Send email verification token request body",
   example: {
     email: "test@example.com",
-  },
+  } satisfies z.infer<typeof SendTokenViaEmailDto>,
 });
 
 export type SendVEmailRequestDtoType = z.infer<typeof SendVEmailRequestDto>;
@@ -41,7 +44,7 @@ export type SendVEmailResponseDtoType = {
   success: z.infer<typeof SendVEmailSuccessResponseDto>;
   error:
     | SharedErrorResDtoType
-    | z.infer<typeof BadRequestErrorResponseDto>
-    | z.infer<typeof RateLimiterErrorResponseDto>
-    | z.infer<typeof UnauthorizedErrorResponseDto>;
+    | BadRequestErrorResponseDtoType<SendVEmailRequestDtoType>
+    | RateLimiterErrorResponseDtoType
+    | UnAuthorizedErrorResponseDtoType;
 };

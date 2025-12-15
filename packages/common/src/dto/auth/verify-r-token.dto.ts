@@ -1,11 +1,14 @@
 import { SelectUserDto } from "../user/select-user.dto";
 import {
   BadRequestErrorResponseDto,
+  BadRequestErrorResponseDtoType,
   createSuccessResponse,
   RateLimiterErrorResponseDto,
+  RateLimiterErrorResponseDtoType,
   SharedErrorResDto,
   SharedErrorResDtoType,
   UnauthorizedErrorResponseDto,
+  UnAuthorizedErrorResponseDtoType,
   z,
 } from "../zod";
 import { accessTokenExample, VerifyTokenRequestDto } from "./common";
@@ -16,7 +19,7 @@ export const VerifyRTokenRequestQueryDto = VerifyTokenRequestDto.meta({
   description: "Verify password reset token request query param",
   example: {
     token: accessTokenExample,
-  },
+  } satisfies z.infer<typeof VerifyTokenRequestDto>,
 });
 
 export type VerifyRTokenRequestQueryDtoType = z.infer<
@@ -24,17 +27,16 @@ export type VerifyRTokenRequestQueryDtoType = z.infer<
 >;
 
 // Verify R Token Request Schema <Body>
-export const VerifyRTokenRequestBodyDto = z
-  .object({
-    password: SelectUserDto.shape.password,
-  })
-  .meta({
-    id: "VerifyRTokenRequestBody",
-    description: "Verify password reset token request body",
-    example: {
-      password: "{{password}}",
-    },
-  });
+const VerifyRTokenRequestBody = z.object({
+  password: SelectUserDto.shape.password,
+});
+export const VerifyRTokenRequestBodyDto = VerifyRTokenRequestBody.meta({
+  id: "VerifyRTokenRequestBody",
+  description: "Verify password reset token request body",
+  example: {
+    password: "{{password}}",
+  } satisfies z.infer<typeof VerifyRTokenRequestBody>,
+});
 
 export type VerifyRTokenRequestBodyDtoType = z.infer<
   typeof VerifyRTokenRequestBodyDto
@@ -61,7 +63,8 @@ export type VerifyRTokenResponseDtoType = {
   success: z.infer<typeof VerifyRTokenSuccessResponseDto>;
   error:
     | SharedErrorResDtoType
-    | z.infer<typeof BadRequestErrorResponseDto>
-    | z.infer<typeof RateLimiterErrorResponseDto>
-    | z.infer<typeof UnauthorizedErrorResponseDto>;
+    | BadRequestErrorResponseDtoType<VerifyRTokenRequestQueryDtoType>
+    | BadRequestErrorResponseDtoType<VerifyRTokenRequestBodyDtoType>
+    | RateLimiterErrorResponseDtoType
+    | UnAuthorizedErrorResponseDtoType;
 };

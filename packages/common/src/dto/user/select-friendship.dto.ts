@@ -6,9 +6,9 @@ export const SelectFriendshipDto = baseModelSchema.extend({
   status: z
     .enum(["pending", "accepted", "rejected", "cancelled"])
     .default("pending"),
-  acceptedAt: z.date().nullable().optional(),
-  rejectedAt: z.date().nullable().optional(),
-  cancelledAt: z.date().nullable().optional(),
+  acceptedAt: z.date().nullish(),
+  rejectedAt: z.date().nullish(),
+  cancelledAt: z.date().nullish(),
 });
 
 export type SelectFriendshipDtoType = z.infer<typeof SelectFriendshipDto>;

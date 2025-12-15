@@ -1,9 +1,11 @@
 import { CreateUserDto } from "../user/create-user.dto";
 import {
   BadRequestErrorResponseDto,
+  BadRequestErrorResponseDtoType,
   createConflictResponse,
   createCreatedResponse,
   RateLimiterErrorResponseDto,
+  RateLimiterErrorResponseDtoType,
   SharedErrorResDto,
   SharedErrorResDtoType,
   z,
@@ -20,7 +22,7 @@ export const SignupRequestDto = CreateUserDto.meta({
     email: "test@example.com",
     acceptedPolicies: true,
     isPrivate: false,
-  },
+  } satisfies z.infer<typeof CreateUserDto>,
 });
 
 export type SignupRequestDtoType = z.infer<typeof SignupRequestDto>;
@@ -57,7 +59,6 @@ export const SignupSuccessResponseDto = createCreatedResponse(
       lastName: null,
       image: null,
       imageKey: null,
-      imageCustomId: null,
       email: "test@example.com",
       createdAt: new Date().toISOString() as unknown as Date,
       isPrivate: false,
@@ -79,6 +80,6 @@ export type SignupResponseDtoType = {
   conflict: z.infer<typeof SignupConflictResponseDto>;
   error:
     | SharedErrorResDtoType
-    | z.infer<typeof BadRequestErrorResponseDto>
-    | z.infer<typeof RateLimiterErrorResponseDto>;
+    | BadRequestErrorResponseDtoType<SignupRequestDtoType>
+    | RateLimiterErrorResponseDtoType;
 };

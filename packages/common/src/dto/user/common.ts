@@ -16,19 +16,10 @@ export const CommonUserResDto = SelectUserDto.pick({
   isPrivate: true,
 });
 
-export const CommonUserResDtoExample = {
-  name: "John_doe7",
-  firstName: "John",
-  lastName: "Doe",
-  image: "https://uploadthing...",
-  imageKey: "{{key}}",
-  bio: "I'm a full-stack developer",
-  email: "test@example.com",
-  emailVerifiedAt: new Date().toISOString() as unknown as Date,
-  createdAt: new Date().toISOString() as unknown as Date,
-  updatedAt: new Date().toISOString() as unknown as Date,
-  isPrivate: false,
-} satisfies z.infer<typeof CommonUserResDto>;
+export const UPLOAD_THING_URL_EXAMPLE =
+  "https://3dszvf0s6v.ufs.sh/f/mKbzgiXo362DmiDstAcXo362DfKsYp9LXCPjJAE0OZ8c4ged";
+export const UPLOAD_THING_KEY_EXAMPLE =
+  "mKbzgiXo362DmiDstAcXo362DfKsYp9LXCPjJAE0OZ8c4ged";
 
 // User Activity Stats
 export const UserActivityStatsDto = z.object({

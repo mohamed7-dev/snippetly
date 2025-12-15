@@ -7,7 +7,6 @@ const CommonUserResponse = SelectUserDto.pick({
   lastName: true,
   email: true,
   image: true,
-  imageCustomId: true,
   imageKey: true,
   isPrivate: true,
   createdAt: true,

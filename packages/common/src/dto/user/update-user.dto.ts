@@ -1,35 +1,50 @@
-import { CommonUserResDtoExample } from "./common";
-import { createSuccessResponse, GlobalErrorResponseDto, z } from "../zod";
-import { CommonUserResDto } from "./common";
+import {
+  BadRequestErrorResponseDto,
+  BadRequestErrorResponseDtoType,
+  createSuccessResponse,
+  RateLimiterErrorResponseDto,
+  RateLimiterErrorResponseDtoType,
+  SharedErrorResDto,
+  SharedErrorResDtoType,
+  UnauthorizedErrorResponseDto,
+  UnAuthorizedErrorResponseDtoType,
+  z,
+} from "../zod";
+import {
+  CommonUserResDto,
+  UPLOAD_THING_KEY_EXAMPLE,
+  UPLOAD_THING_URL_EXAMPLE,
+} from "./common";
 import { SelectUserDto } from "./select-user.dto";
 import { UpdateUserPasswordDto } from "./update-password.dto";
 
-// Update User Request
-export const UpdateUserRequestDto = SelectUserDto.pick({
+const UpdateUserRequest = SelectUserDto.pick({
   firstName: true,
   lastName: true,
-  bio: true,
   image: true,
-  imageCustomId: true,
   imageKey: true,
   isPrivate: true,
   email: true,
-})
-  .extend(UpdateUserPasswordDto.omit({ email: true }).shape)
+  bio: true,
+});
+
+// Update User Request
+export const UpdateUserRequestDto = UpdateUserRequest.extend(
+  UpdateUserPasswordDto.omit({ email: true }).shape
+)
   .partial()
   .meta({
     id: "UpdateUserRequestBody",
     description: "update user request body",
     example: {
-      firstName: "updated first name",
-      lastName: "updated last name",
-      bio: "updated bio",
-      image: "url",
-      imageCustomId: "id",
-      imageKey: "key",
-      isPrivate: true,
+      firstName: "john",
+      lastName: "doe",
       email: "test@example.com",
-    },
+      image: UPLOAD_THING_URL_EXAMPLE,
+      imageKey: UPLOAD_THING_KEY_EXAMPLE,
+      isPrivate: true,
+      bio: "I'm a full-stack engineer",
+    } satisfies z.infer<typeof UpdateUserRequest>,
   });
 
 export type UpdateUserRequestDtoType = z.infer<typeof UpdateUserRequestDto>;
@@ -41,14 +56,32 @@ export const UpdateUserSuccessResponseDto = createSuccessResponse(
   "UpdateUserSuccessResponseBody",
   "Update user success response body",
   {
-    ...CommonUserResDtoExample,
-  },
+    name: "John_doe20",
+    firstName: "john",
+    lastName: "doe",
+    image: UPLOAD_THING_URL_EXAMPLE,
+    imageKey: UPLOAD_THING_KEY_EXAMPLE,
+    email: "test@example.com",
+    createdAt: new Date().toISOString() as unknown as Date,
+    updatedAt: new Date().toISOString() as unknown as Date,
+    isPrivate: false,
+  } satisfies z.infer<typeof CommonUserResDto>,
   "User info has been updated successfully"
 );
 
-export const UpdateUserResponseDto = z.discriminatedUnion("type", [
+export const UpdateUserResponseDto = z.discriminatedUnion("status", [
   UpdateUserSuccessResponseDto,
-  GlobalErrorResponseDto,
+  BadRequestErrorResponseDto,
+  UnauthorizedErrorResponseDto,
+  RateLimiterErrorResponseDto,
+  ...SharedErrorResDto,
 ]);
 
-export type UpdateUserResponseDtoType = z.infer<typeof UpdateUserResponseDto>;
+export type UpdateUserResponseDtoType = {
+  success: z.infer<typeof UpdateUserSuccessResponseDto>;
+  error:
+    | SharedErrorResDtoType
+    | BadRequestErrorResponseDtoType<UpdateUserRequestDtoType>
+    | UnAuthorizedErrorResponseDtoType
+    | RateLimiterErrorResponseDtoType;
+};

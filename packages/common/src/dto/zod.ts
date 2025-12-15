@@ -1,5 +1,6 @@
 import { extendZodWithOpenApi } from "@asteasolutions/zod-to-openapi";
 import * as z from "zod";
+import { $ZodErrorTree } from "zod/v4/core";
 
 extendZodWithOpenApi(z);
 // export this Zod instance and use it everywhere
@@ -24,11 +25,7 @@ export const STRONG_PASSWORD_SCHEMA = z
     { error: STRONG_PASSWORD_TITLE }
   );
 
-export const LIMIT_SCHEMA = z
-  .string()
-  .transform((val) => Number(val))
-  .refine((val) => val > 0 && val < 100)
-  .optional();
+export const LIMIT_SCHEMA = z.number().min(1).max(100).optional();
 
 // Base shapes
 const BaseSuccess = z.object({
@@ -148,6 +145,7 @@ export const InternalServerErrorResponseDto = createErrorResponse()
 export const UnauthorizedErrorResponseDto = createErrorResponse()
   .extend({
     status: z.literal(401),
+    cause: z.null(),
   })
   .meta({
     id: "UnauthorizedErrorResponse",
@@ -160,9 +158,14 @@ export const UnauthorizedErrorResponseDto = createErrorResponse()
     },
   });
 
+export type UnAuthorizedErrorResponseDtoType = z.infer<
+  typeof UnauthorizedErrorResponseDto
+>;
+
 export const ForbiddenErrorResponseDto = createErrorResponse()
   .extend({
     status: z.literal(403),
+    cause: z.null(),
   })
   .meta({
     id: "ForbiddenErrorResponse",
@@ -189,6 +192,12 @@ export const BadRequestErrorResponseDto = createErrorResponse()
       cause: "{{ZodError}}",
     },
   });
+
+export type BadRequestErrorResponseDtoType<T> = z.infer<
+  typeof BadRequestErrorResponseDto
+> & {
+  cause: $ZodErrorTree<T>;
+};
 
 export const NotFoundErrorResponseDto = createErrorResponse()
   .extend({
@@ -225,6 +234,7 @@ export const MethodNotAllowedErrorResponseDto = createErrorResponse()
 export const RateLimiterErrorResponseDto = createErrorResponse()
   .extend({
     status: z.literal(429),
+    cause: z.null(),
   })
   .meta({
     id: "RateLimiterErrorResponse",
@@ -236,6 +246,10 @@ export const RateLimiterErrorResponseDto = createErrorResponse()
       cause: null,
     },
   });
+
+export type RateLimiterErrorResponseDtoType = z.infer<
+  typeof RateLimiterErrorResponseDto
+>;
 
 export type SharedErrorResDtoType =
   | z.infer<typeof MethodNotAllowedErrorResponseDto>

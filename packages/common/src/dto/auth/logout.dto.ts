@@ -3,6 +3,7 @@ import {
   SharedErrorResDto,
   SharedErrorResDtoType,
   UnauthorizedErrorResponseDto,
+  UnAuthorizedErrorResponseDtoType,
   z,
 } from "../zod";
 
@@ -23,5 +24,5 @@ export const LogoutResponseDto = z.discriminatedUnion("status", [
 
 export type LogoutResponseDtoType = {
   success: z.infer<typeof LogoutSuccessResponseDto>;
-  error: SharedErrorResDtoType | z.infer<typeof UnauthorizedErrorResponseDto>;
+  error: SharedErrorResDtoType | UnAuthorizedErrorResponseDtoType;
 };

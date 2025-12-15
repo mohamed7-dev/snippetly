@@ -1,28 +1,38 @@
 import { SelectSnippetDto } from "../snippets/select-snippet.dto";
 import {
+  BadRequestErrorResponseDto,
+  BadRequestErrorResponseDtoType,
   baseModelSchema,
   createSuccessResponse,
-  GlobalErrorResponseDto,
+  LIMIT_SCHEMA,
+  RateLimiterErrorResponseDto,
+  RateLimiterErrorResponseDtoType,
+  SharedErrorResDto,
+  SharedErrorResDtoType,
+  UnauthorizedErrorResponseDto,
+  UnAuthorizedErrorResponseDtoType,
   z,
 } from "../zod";
+import { UPLOAD_THING_URL_EXAMPLE } from "./common";
 import { SelectFriendshipDto } from "./select-friendship.dto";
 import { SelectUserDto } from "./select-user.dto";
 
+const GetCurrentUserFriendsRequestQuery = z.object({
+  limit: LIMIT_SCHEMA,
+  cursor: baseModelSchema.pick({ id: true }).optional(),
+  query: z.string().nonempty().optional(),
+});
+
 // Get User's Inbox/Outbox/Friends Request
-export const GetCurrentUserFriendsRequestQueryDto = z
-  .object({
-    limit: z.number().min(1).max(100).optional(),
-    cursor: baseModelSchema.pick({ id: true }).optional(),
-    query: z.string().nonempty().optional(),
-  })
-  .meta({
+export const GetCurrentUserFriendsRequestQueryDto =
+  GetCurrentUserFriendsRequestQuery.meta({
     id: "GetCurrentUserFriendsRequestQuery",
     description: "Get current user friends request query param",
     example: {
       limit: 20,
       cursor: { id: 100 },
-      query: "search_query",
-    },
+      query: "john | doe | john_doe7",
+    } satisfies z.infer<typeof GetCurrentUserFriendsRequestQuery>,
   });
 
 export type GetCurrentUserFriendsRequestQueryDtoType = z.infer<
@@ -57,24 +67,25 @@ const GetCurrentUserFriendsSuccessRes = z.array(
   })
 );
 
+const GetCurrentUserFriendsSuccessResBody = z.object({
+  items: GetCurrentUserFriendsSuccessRes,
+  total: z.number(),
+  nextCursor: GetCurrentUserFriendsRequestQueryDto.shape.cursor,
+});
 export const GetCurrentUserFriendsSuccessResDto = createSuccessResponse(
-  z.object({
-    items: GetCurrentUserFriendsSuccessRes,
-    total: z.number(),
-    nextCursor: GetCurrentUserFriendsRequestQueryDto.shape.cursor,
-  }),
+  GetCurrentUserFriendsSuccessResBody,
   "GetUserFriendsSuccessResBody",
   "Get user friends success response body",
   {
     total: 2,
-    cursor: undefined,
+    nextCursor: undefined,
     items: [
       {
         firstName: "ahmed",
         lastName: "ali",
         name: "ahmedA70",
-        image: "https://uploadthign...",
-        bio: "Full-Stack developer",
+        image: UPLOAD_THING_URL_EXAMPLE,
+        bio: "I'm a front-end developer",
         requestSentAt: new Date().toISOString() as unknown as Date,
         requestStatus: "accepted",
         snippetsCount: 10,
@@ -88,7 +99,7 @@ export const GetCurrentUserFriendsSuccessResDto = createSuccessResponse(
           },
           {
             title: "usePresence hook",
-            slug: "usePresence-hook",
+            slug: "use-presence-hook",
             language: "javascript",
             createdAt: new Date().toISOString() as unknown as Date,
           },
@@ -97,9 +108,9 @@ export const GetCurrentUserFriendsSuccessResDto = createSuccessResponse(
       {
         firstName: "john",
         lastName: "doe",
-        name: "john_doe70",
-        image: "https://uploadthign...",
-        bio: "Front end developer",
+        name: "john_doe7",
+        image: UPLOAD_THING_URL_EXAMPLE,
+        bio: "I'm a full-stack developer",
         requestSentAt: new Date().toISOString() as unknown as Date,
         snippetsCount: 50,
         requestStatus: "accepted",
@@ -113,28 +124,38 @@ export const GetCurrentUserFriendsSuccessResDto = createSuccessResponse(
           },
         ],
       },
-    ] satisfies z.infer<typeof GetCurrentUserFriendsSuccessRes>,
-  },
+    ],
+  } satisfies z.infer<typeof GetCurrentUserFriendsSuccessResBody>,
   "Fetched successfully"
 );
 
-export const GetCurrentUserFriendsResDto = z.discriminatedUnion("type", [
+export const GetCurrentUserFriendsResDto = z.discriminatedUnion("status", [
   GetCurrentUserFriendsSuccessResDto,
-  GlobalErrorResponseDto,
+  UnauthorizedErrorResponseDto,
+  BadRequestErrorResponseDto,
+  RateLimiterErrorResponseDto,
+  ...SharedErrorResDto,
 ]);
-export type GetCurrentUserFriendsResDtoType = z.infer<
-  typeof GetCurrentUserFriendsResDto
->;
+
+export type GetCurrentUserFriendsResDtoType = {
+  success: z.infer<typeof GetCurrentUserFriendsSuccessResDto>;
+  error:
+    | SharedErrorResDtoType
+    | UnAuthorizedErrorResponseDtoType
+    | BadRequestErrorResponseDtoType<GetCurrentUserFriendsRequestQueryDtoType>
+    | RateLimiterErrorResponseDtoType;
+};
 
 // Get User Inbox Response
 const GetCurrentUserInboxOutboxSuccessRes = z.array(CommonFriendDto); // shared
 
+const GetCurrentUserInboxSuccessResBody = z.object({
+  items: GetCurrentUserInboxOutboxSuccessRes,
+  total: z.number(),
+  nextCursor: GetCurrentUserFriendsRequestQueryDto.shape.cursor,
+});
 export const GetCurrentUserInboxSuccessResDto = createSuccessResponse(
-  z.object({
-    items: GetCurrentUserInboxOutboxSuccessRes,
-    total: z.number(),
-    nextCursor: GetCurrentUserFriendsRequestQueryDto.shape.cursor,
-  }),
+  GetCurrentUserInboxSuccessResBody,
   "GetUserInboxSuccessResBody",
   "Response body of the friendship requests sent to the current user",
   {
@@ -142,46 +163,50 @@ export const GetCurrentUserInboxSuccessResDto = createSuccessResponse(
     nextCursor: { id: 298 },
     items: [
       {
-        firstName: "ahmed",
-        lastName: "ali",
-        name: "ahmedA70",
-        image: "https://uploadthign...",
-        bio: "Full-Stack developer",
+        firstName: "omar",
+        lastName: "mohamed",
+        name: "omar-mohamed70",
+        image: UPLOAD_THING_URL_EXAMPLE,
+        bio: "I'm a data analyst",
         requestSentAt: new Date().toISOString() as unknown as Date,
         requestStatus: "pending",
         snippetsCount: 10,
       },
       {
-        firstName: "john",
-        lastName: "doe",
-        name: "john_doe70",
-        image: "https://uploadthign...",
-        bio: "Front end developer",
+        firstName: "ahmed",
+        lastName: "mohamed",
+        name: "ahmed_mo",
+        image: UPLOAD_THING_URL_EXAMPLE,
+        bio: "I'm a Dev-Ops engineer",
         requestSentAt: new Date().toISOString() as unknown as Date,
         snippetsCount: 50,
         requestStatus: "pending",
       },
-    ] satisfies z.infer<typeof GetCurrentUserInboxOutboxSuccessRes>,
-  },
+    ],
+  } satisfies z.infer<typeof GetCurrentUserInboxSuccessResBody>,
 
   "Fetched successfully"
 );
 
-export const GetCurrentUserInboxResDto = z.discriminatedUnion("type", [
+export const GetCurrentUserInboxResDto = z.discriminatedUnion("status", [
   GetCurrentUserInboxSuccessResDto,
-  GlobalErrorResponseDto,
+  UnauthorizedErrorResponseDto,
+  BadRequestErrorResponseDto,
+  RateLimiterErrorResponseDto,
+  ...SharedErrorResDto,
 ]);
-export type GetCurrentUserInboxResDtoType = z.infer<
-  typeof GetCurrentUserInboxResDto
->;
+export type GetCurrentUserInboxResDtoType = {
+  success: z.infer<typeof GetCurrentUserInboxSuccessResDto>;
+  error:
+    | SharedErrorResDtoType
+    | UnAuthorizedErrorResponseDtoType
+    | BadRequestErrorResponseDtoType<GetCurrentUserFriendsRequestQueryDtoType>
+    | RateLimiterErrorResponseDtoType;
+};
 
 // Get User Outbox Response
 export const GetCurrentUserOutboxSuccessResDto = createSuccessResponse(
-  z.object({
-    items: GetCurrentUserInboxOutboxSuccessRes,
-    total: z.number(),
-    nextCursor: GetCurrentUserFriendsRequestQueryDto.shape.cursor,
-  }),
+  GetCurrentUserInboxSuccessResBody,
   "GetUserOutboxSuccessResBody",
   "Response body of the friendship requests sent by the current user",
   {
@@ -189,33 +214,41 @@ export const GetCurrentUserOutboxSuccessResDto = createSuccessResponse(
     nextCursor: undefined,
     items: [
       {
-        firstName: "ahmed",
-        lastName: "ali",
-        name: "ahmedA70",
-        image: "https://uploadthign...",
-        bio: "Full-Stack developer",
+        firstName: "john",
+        lastName: "smith",
+        name: "john-smith7",
+        image: UPLOAD_THING_URL_EXAMPLE,
+        bio: "I'm a full-Stack developer",
         requestSentAt: new Date().toISOString() as unknown as Date,
         requestStatus: "pending",
         snippetsCount: 10,
       },
       {
-        firstName: "john",
-        lastName: "doe",
-        name: "john_doe70",
-        image: "https://uploadthign...",
-        bio: "Front end developer",
+        firstName: "jenna",
+        lastName: "smith",
+        name: "jenna",
+        image: UPLOAD_THING_URL_EXAMPLE,
+        bio: "I'm a network engineer",
         requestSentAt: new Date().toISOString() as unknown as Date,
         snippetsCount: 50,
         requestStatus: "rejected",
       },
-    ] satisfies z.infer<typeof GetCurrentUserInboxOutboxSuccessRes>,
-  },
+    ],
+  } satisfies z.infer<typeof GetCurrentUserInboxSuccessResBody>,
   "Fetched successfully"
 );
-export const GetCurrentUserOutboxResDto = z.discriminatedUnion("type", [
+export const GetCurrentUserOutboxResDto = z.discriminatedUnion("status", [
   GetCurrentUserOutboxSuccessResDto,
-  GlobalErrorResponseDto,
+  UnauthorizedErrorResponseDto,
+  BadRequestErrorResponseDto,
+  RateLimiterErrorResponseDto,
+  ...SharedErrorResDto,
 ]);
-export type GetCurrentUserOutboxResDtoType = z.infer<
-  typeof GetCurrentUserOutboxResDto
->;
+export type GetCurrentUserOutboxResDtoType = {
+  success: z.infer<typeof GetCurrentUserOutboxSuccessResDto>;
+  error:
+    | SharedErrorResDtoType
+    | UnAuthorizedErrorResponseDtoType
+    | BadRequestErrorResponseDtoType<GetCurrentUserFriendsRequestQueryDtoType>
+    | RateLimiterErrorResponseDtoType;
+};

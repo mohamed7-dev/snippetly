@@ -1,4 +1,13 @@
-import { createSuccessResponse, GlobalErrorResponseDto, z } from "../zod";
+import {
+  createSuccessResponse,
+  RateLimiterErrorResponseDto,
+  RateLimiterErrorResponseDtoType,
+  SharedErrorResDto,
+  SharedErrorResDtoType,
+  UnauthorizedErrorResponseDto,
+  UnAuthorizedErrorResponseDtoType,
+  z,
+} from "../zod";
 
 // Delete User Response
 export const DeleteUserSuccessResponseDto = createSuccessResponse(
@@ -9,9 +18,17 @@ export const DeleteUserSuccessResponseDto = createSuccessResponse(
   "User account has been deleted successfully"
 );
 
-export const DeleteUserResponseDto = z.discriminatedUnion("type", [
+export const DeleteUserResponseDto = z.discriminatedUnion("status", [
   DeleteUserSuccessResponseDto,
-  GlobalErrorResponseDto,
+  UnauthorizedErrorResponseDto,
+  RateLimiterErrorResponseDto,
+  ...SharedErrorResDto,
 ]);
 
-export type DeleteUserResponseDtoType = z.infer<typeof DeleteUserResponseDto>;
+export type DeleteUserResponseDtoType = {
+  success: z.infer<typeof DeleteUserSuccessResponseDto>;
+  error:
+    | SharedErrorResDtoType
+    | UnAuthorizedErrorResponseDtoType
+    | RateLimiterErrorResponseDtoType;
+};

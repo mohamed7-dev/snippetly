@@ -1,9 +1,15 @@
 import {
+  UPLOAD_THING_KEY_EXAMPLE,
+  UPLOAD_THING_URL_EXAMPLE,
+} from "../user/common";
+import {
   createSuccessResponse,
   RateLimiterErrorResponseDto,
+  RateLimiterErrorResponseDtoType,
   SharedErrorResDto,
   SharedErrorResDtoType,
   UnauthorizedErrorResponseDto,
+  UnAuthorizedErrorResponseDtoType,
   z,
 } from "../zod";
 import { accessTokenExample, CommonAuthResponseDto } from "./common";
@@ -19,9 +25,8 @@ export const RefreshTokenSuccessResponseDto = createSuccessResponse(
       name: "John_doe20",
       firstName: "john",
       lastName: "doe",
-      image: null,
-      imageKey: null,
-      imageCustomId: null,
+      image: UPLOAD_THING_URL_EXAMPLE,
+      imageKey: UPLOAD_THING_KEY_EXAMPLE,
       email: "test@example.com",
       createdAt: new Date().toISOString() as unknown as Date,
       updatedAt: new Date().toISOString() as unknown as Date,
@@ -42,6 +47,6 @@ export type RefreshTokenResponseDtoType = {
   success: z.infer<typeof RefreshTokenSuccessResponseDto>;
   error:
     | SharedErrorResDtoType
-    | z.infer<typeof UnauthorizedErrorResponseDto>
-    | z.infer<typeof RateLimiterErrorResponseDto>;
+    | UnAuthorizedErrorResponseDtoType
+    | RateLimiterErrorResponseDtoType;
 };

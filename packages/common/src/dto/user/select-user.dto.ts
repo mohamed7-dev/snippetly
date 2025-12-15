@@ -13,26 +13,25 @@ export const SelectUserDto = baseModelSchema.extend({
   name: nameSchema,
   oldNames: z.array(z.string()).default([]),
 
-  firstName: z.string().nullable().optional(),
-  lastName: z.string().nullable().optional(),
+  firstName: z.string().nullish(),
+  lastName: z.string().nullish(),
   email: z.email(),
   password: STRONG_PASSWORD_SCHEMA,
 
-  bio: z.string().nullable().optional(),
-  image: z.string().nullable().optional(),
-  imageCustomId: z.string().nullable().optional(),
-  imageKey: z.string().nullable().optional(),
+  bio: z.string().nullish(),
+  image: z.string().nullish(),
+  imageKey: z.string().nullish(),
 
   rememberMe: z.boolean().default(false),
   isPrivate: z.boolean().default(false),
   acceptedPolicies: z.boolean().default(false),
 
-  emailVerifiedAt: z.date().nullable().optional(),
-  emailVerificationToken: z.uuidv4().nullable().optional(),
-  emailVerificationTokenExpiresAt: z.date().nullable().optional(),
+  emailVerifiedAt: z.date().nullish(),
+  emailVerificationToken: z.uuidv4().nullish(),
+  emailVerificationTokenExpiresAt: z.date().nullish(),
 
-  resetPasswordToken: z.uuidv4().nullable().optional(),
-  resetPasswordTokenExpiresAt: z.date().nullable().optional(),
+  resetPasswordToken: z.uuidv4().nullish(),
+  resetPasswordTokenExpiresAt: z.date().nullish(),
 
   refreshTokens: z.array(z.string()).default([]),
 });

@@ -1,18 +1,29 @@
-import { createSuccessResponse, GlobalErrorResponseDto, z } from "../zod";
+import {
+  BadRequestErrorResponseDto,
+  BadRequestErrorResponseDtoType,
+  createSuccessResponse,
+  RateLimiterErrorResponseDto,
+  RateLimiterErrorResponseDtoType,
+  SharedErrorResDto,
+  SharedErrorResDtoType,
+  UnauthorizedErrorResponseDto,
+  UnAuthorizedErrorResponseDtoType,
+  z,
+} from "../zod";
 import { CommonFriendshipResDto } from "./common";
 import { SelectUserDto } from "./select-user.dto";
 
 // Manage Friendship Request
-export const ManageFriendshipRequestParamDto = z
-  .object({
-    friend_name: SelectUserDto.shape.name,
-  })
-  .meta({
+const ManageFriendshipRequestParam = z.object({
+  friend_name: SelectUserDto.shape.name,
+});
+export const ManageFriendshipRequestParamDto =
+  ManageFriendshipRequestParam.meta({
     id: "ManageFriendshipRequestParam",
     description: "Manage friendship request param",
     example: {
-      friend_name: "john_doe98",
-    },
+      friend_name: "john_doe7",
+    } satisfies z.infer<typeof ManageFriendshipRequestParam>,
   });
 
 export type ManageFriendshipRequestParamDtoType = z.infer<
@@ -21,7 +32,7 @@ export type ManageFriendshipRequestParamDtoType = z.infer<
 
 // Send Friendship Response
 
-export const SendRequestSuccessRes = CommonFriendshipResDto.omit({
+const SendRequestSuccessRes = CommonFriendshipResDto.omit({
   rejectedAt: true,
   acceptedAt: true,
   cancelledAt: true,
@@ -32,26 +43,34 @@ export const SendFriendshipRequestSuccessResDto = createSuccessResponse(
   "SendRequestSuccessResBody",
   "Send friendship request success response body",
   {
-    createdAt: new Date().toISOString(),
+    createdAt: new Date().toISOString() as unknown as Date,
     requesterId: 5,
     addresseeId: 10,
     status: "pending",
-  },
+  } satisfies z.infer<typeof SendRequestSuccessRes>,
   "Friendship request has been sent successfully"
 );
 
-export const SendFriendshipRequestResDto = z.discriminatedUnion("type", [
+export const SendFriendshipRequestResDto = z.discriminatedUnion("status", [
   SendFriendshipRequestSuccessResDto,
-  GlobalErrorResponseDto,
+  ...SharedErrorResDto,
+  UnauthorizedErrorResponseDto,
+  BadRequestErrorResponseDto,
+  RateLimiterErrorResponseDto,
 ]);
 
-export type SendFriendshipRequestResDtoType = z.infer<
-  typeof SendFriendshipRequestResDto
->;
+export type SendFriendshipRequestResDtoType = {
+  success: z.infer<typeof SendFriendshipRequestSuccessResDto>;
+  error:
+    | SharedErrorResDtoType
+    | UnAuthorizedErrorResponseDtoType
+    | BadRequestErrorResponseDtoType<ManageFriendshipRequestParamDtoType>
+    | RateLimiterErrorResponseDtoType;
+};
 
 // Accept Friendship Response
 
-export const AcceptFriendshipRequestSuccessRes = CommonFriendshipResDto.omit({
+const AcceptFriendshipRequestSuccessRes = CommonFriendshipResDto.omit({
   rejectedAt: true,
   cancelledAt: true,
 });
@@ -61,26 +80,34 @@ export const AcceptFriendshipRequestSuccessResDto = createSuccessResponse(
   "AcceptFriendshipRequestSuccessResBody",
   "Accept friendship request success response body",
   {
-    createdAt: new Date().toISOString(),
+    createdAt: new Date().toISOString() as unknown as Date,
     requesterId: 5,
     addresseeId: 10,
-    status: "pending",
-    acceptedAt: new Date().toISOString(),
-  },
+    status: "accepted",
+    acceptedAt: new Date().toISOString() as unknown as Date,
+  } satisfies z.infer<typeof AcceptFriendshipRequestSuccessRes>,
   "Friendship request has been accepted successfully"
 );
 
-export const AcceptFriendshipRequestResDto = z.discriminatedUnion("type", [
+export const AcceptFriendshipRequestResDto = z.discriminatedUnion("status", [
   AcceptFriendshipRequestSuccessResDto,
-  GlobalErrorResponseDto,
+  ...SharedErrorResDto,
+  UnauthorizedErrorResponseDto,
+  BadRequestErrorResponseDto,
+  RateLimiterErrorResponseDto,
 ]);
 
-export type AcceptFriendshipRequestResDtoType = z.infer<
-  typeof AcceptFriendshipRequestResDto
->;
+export type AcceptFriendshipRequestResDtoType = {
+  success: z.infer<typeof AcceptFriendshipRequestSuccessResDto>;
+  error:
+    | SharedErrorResDtoType
+    | UnAuthorizedErrorResponseDtoType
+    | BadRequestErrorResponseDtoType<ManageFriendshipRequestParamDtoType>
+    | RateLimiterErrorResponseDtoType;
+};
 
 // Reject Friendship Response
-export const RejectFriendshipRequestSuccessRes = CommonFriendshipResDto.omit({
+const RejectFriendshipRequestSuccessRes = CommonFriendshipResDto.omit({
   acceptedAt: true,
   cancelledAt: true,
 });
@@ -90,27 +117,35 @@ export const RejectFriendshipRequestSuccessResDto = createSuccessResponse(
   "RejectFriendshipRequestSuccessResBody",
   "Reject friendship request success response body",
   {
-    createdAt: new Date().toISOString(),
+    createdAt: new Date().toISOString() as unknown as Date,
     requesterId: 5,
     addresseeId: 10,
-    status: "pending",
-    rejectedAt: new Date().toISOString(),
-  },
+    status: "rejected",
+    rejectedAt: new Date().toISOString() as unknown as Date,
+  } satisfies z.infer<typeof RejectFriendshipRequestSuccessRes>,
   "Friendship request has been rejected successfully"
 );
 
-export const RejectFriendshipRequestResDto = z.discriminatedUnion("type", [
+export const RejectFriendshipRequestResDto = z.discriminatedUnion("status", [
   RejectFriendshipRequestSuccessResDto,
-  GlobalErrorResponseDto,
+  ...SharedErrorResDto,
+  UnauthorizedErrorResponseDto,
+  BadRequestErrorResponseDto,
+  RateLimiterErrorResponseDto,
 ]);
 
-export type RejectFriendshipRequestResDtoType = z.infer<
-  typeof RejectFriendshipRequestResDto
->;
+export type RejectFriendshipRequestResDtoType = {
+  success: z.infer<typeof RejectFriendshipRequestSuccessResDto>;
+  error:
+    | SharedErrorResDtoType
+    | UnAuthorizedErrorResponseDtoType
+    | BadRequestErrorResponseDtoType<ManageFriendshipRequestParamDtoType>
+    | RateLimiterErrorResponseDtoType;
+};
 
 // Cancel Friendship Response
 
-export const CancelFriendshipRequestSuccessRes = CommonFriendshipResDto.omit({
+const CancelFriendshipRequestSuccessRes = CommonFriendshipResDto.omit({
   rejectedAt: true,
   acceptedAt: true,
 });
@@ -120,20 +155,28 @@ export const CancelFriendshipRequestSuccessResDto = createSuccessResponse(
   "CancelFriendshipRequestSuccessResBody",
   "Cancel friendship request success response body",
   {
-    createdAt: new Date().toISOString(),
+    createdAt: new Date().toISOString() as unknown as Date,
     requesterId: 5,
     addresseeId: 10,
     status: "pending",
-    cancelledAt: new Date().toISOString(),
-  },
+    cancelledAt: new Date().toISOString() as unknown as Date,
+  } satisfies z.infer<typeof CancelFriendshipRequestSuccessRes>,
   "Friendship request has been cancelled successfully"
 );
 
-export const CancelFriendshipRequestResDto = z.discriminatedUnion("type", [
+export const CancelFriendshipRequestResDto = z.discriminatedUnion("status", [
   CancelFriendshipRequestSuccessResDto,
-  GlobalErrorResponseDto,
+  ...SharedErrorResDto,
+  UnauthorizedErrorResponseDto,
+  BadRequestErrorResponseDto,
+  RateLimiterErrorResponseDto,
 ]);
 
-export type CancelFriendshipRequestResDtoType = z.infer<
-  typeof CancelFriendshipRequestResDto
->;
+export type CancelFriendshipRequestResDtoType = {
+  success: z.infer<typeof CancelFriendshipRequestSuccessResDto>;
+  error:
+    | SharedErrorResDtoType
+    | UnAuthorizedErrorResponseDtoType
+    | BadRequestErrorResponseDtoType<ManageFriendshipRequestParamDtoType>
+    | RateLimiterErrorResponseDtoType;
+};

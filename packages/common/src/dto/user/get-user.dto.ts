@@ -1,27 +1,37 @@
 import { SelectCollectionDto } from "../collections/select-collection.dto";
-import { createSuccessResponse, GlobalErrorResponseDto, z } from "../zod";
+import {
+  BadRequestErrorResponseDtoType,
+  createSuccessResponse,
+  GlobalErrorResponseDto,
+  RateLimiterErrorResponseDto,
+  RateLimiterErrorResponseDtoType,
+  SharedErrorResDto,
+  SharedErrorResDtoType,
+  UnauthorizedErrorResponseDto,
+  UnAuthorizedErrorResponseDtoType,
+  z,
+} from "../zod";
 import {
   CommonUserResDto,
-  CommonUserResDtoExample,
+  UPLOAD_THING_KEY_EXAMPLE,
+  UPLOAD_THING_URL_EXAMPLE,
   UserActivityExample,
   UserActivityStatsDto,
 } from "./common";
 import { CreateUserDto } from "./create-user.dto";
-// import { SelectFriendshipDto } from "./select-friendship.dto";
+import { SelectFriendshipDto } from "./select-friendship.dto";
 
 // Get User Request
-
-export const GetUserRequestDto = z
-  .object({
-    name: CreateUserDto.shape.name,
-  })
-  .meta({
-    id: "GetUserRequestBody",
-    description: "Get user request param",
-    example: {
-      name: "John_doe7",
-    },
-  });
+const GetUserRequest = z.object({
+  name: CreateUserDto.shape.name,
+});
+export const GetUserRequestDto = GetUserRequest.meta({
+  id: "GetUserRequestBody",
+  description: "Get user request param",
+  example: {
+    name: "John_doe7",
+  } satisfies z.infer<typeof GetUserRequest>,
+});
 export type GetUserRequestDtoType = z.infer<typeof GetUserRequestDto>;
 
 // Get User Response
@@ -32,15 +42,25 @@ const GetUserProfileSuccessResponseDto = z.object({
 });
 
 export const GetUserSuccessResponseDto = createSuccessResponse(
-  GetUserProfileSuccessResponseDto.extend({
-    type: z.literal("owner-success"),
-  }),
+  GetUserProfileSuccessResponseDto,
   "GetUserProfileSuccessResponseBody",
   "Get user profile success response body, tailored to the account owner",
   {
-    ...CommonUserResDtoExample,
+    profile: {
+      name: "john_doe7",
+      firstName: "john",
+      lastName: "doe",
+      image: UPLOAD_THING_URL_EXAMPLE,
+      imageKey: UPLOAD_THING_KEY_EXAMPLE,
+      bio: "I'm a full-stack developer",
+      email: "test@example.com",
+      emailVerifiedAt: new Date().toISOString() as unknown as Date,
+      createdAt: new Date().toISOString() as unknown as Date,
+      updatedAt: new Date().toISOString() as unknown as Date,
+      isPrivate: false,
+    },
     stats: UserActivityExample,
-  },
+  } satisfies z.infer<typeof GetUserProfileSuccessResponseDto>,
   "Fetched successfully"
 );
 
@@ -48,7 +68,7 @@ const GetPublicUserProfileSuccessResponseDto =
   GetUserProfileSuccessResponseDto.extend({
     friendshipInfo: z.object({
       isCurrentUserAFriend: z.boolean(),
-      // requestStatus: SelectFriendshipDto.shape.status.nullish(),
+      requestStatus: SelectFriendshipDto.shape.status.nullable(),
     }),
     profile: GetUserProfileSuccessResponseDto.shape.profile.omit({
       emailVerifiedAt: true,
@@ -57,41 +77,73 @@ const GetPublicUserProfileSuccessResponseDto =
     }),
   });
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const { emailVerifiedAt, updatedAt, isPrivate, ...publicUserResDtoExample } =
-  CommonUserResDtoExample;
 export const GetPublicUserSuccessResponseDto = createSuccessResponse(
-  GetPublicUserProfileSuccessResponseDto.extend({
-    type: z.literal("public-success"),
-  }),
+  GetPublicUserProfileSuccessResponseDto,
   "GetPublicUserProfileSuccessResponseBody",
   "Get user profile success response body, tailored to a guest",
   {
-    ...publicUserResDtoExample,
-  },
+    profile: {
+      name: "john_doe7",
+      firstName: "john",
+      lastName: "doe",
+      image: UPLOAD_THING_URL_EXAMPLE,
+      imageKey: UPLOAD_THING_KEY_EXAMPLE,
+      bio: "I'm a full-stack developer",
+      email: "test@example.com",
+      createdAt: new Date().toISOString() as unknown as Date,
+    },
+    friendshipInfo: {
+      isCurrentUserAFriend: false,
+      requestStatus: null,
+    },
+    stats: UserActivityExample,
+  } satisfies z.infer<typeof GetPublicUserProfileSuccessResponseDto>,
   "Fetched successfully"
 );
 
+// TODO: find a way to discriminate unions which supports error specific schemas
+export const GetPublicUserSuccessResponseBody =
+  GetPublicUserSuccessResponseDto.extend({
+    type: z.literal("public-success"),
+  });
+
+export const GetUserSuccessResponseBody = GetUserSuccessResponseDto.extend({
+  type: z.literal("owner-success"),
+});
 export const GetUserResponseDto = z.discriminatedUnion("type", [
-  GetUserSuccessResponseDto,
-  GetPublicUserSuccessResponseDto,
+  GetPublicUserSuccessResponseBody,
+  GetUserSuccessResponseBody,
   GlobalErrorResponseDto,
 ]);
 
-export type GetUserResponseDtoType = z.infer<typeof GetUserResponseDto>;
+export type GetUserResponseDtoType = {
+  success:
+    | z.infer<typeof GetPublicUserSuccessResponseBody>
+    | z.infer<typeof GetUserSuccessResponseBody>;
+  error:
+    | SharedErrorResDtoType
+    | BadRequestErrorResponseDtoType<GetUserRequestDtoType>
+    | RateLimiterErrorResponseDtoType;
+};
 
 // Get Current User Response <The Same As Owner Response>
-export const GetCurrentUserResponseDto = z.discriminatedUnion("type", [
+export const GetCurrentUserResponseDto = z.discriminatedUnion("status", [
   GetUserSuccessResponseDto,
-  GlobalErrorResponseDto,
+  RateLimiterErrorResponseDto,
+  ...SharedErrorResDto,
+  UnauthorizedErrorResponseDto,
 ]);
 
-export type GetCurrentUserResponseDtoType = z.infer<
-  typeof GetCurrentUserResponseDto
->;
+export type GetCurrentUserResponseDtoType = {
+  success: z.infer<typeof GetUserSuccessResponseDto>;
+  error:
+    | SharedErrorResDtoType
+    | UnAuthorizedErrorResponseDtoType
+    | RateLimiterErrorResponseDtoType;
+};
 
 // Get Current User Dashboard Response
-export const GetCurrentUserDashboardResponseDto = z.object({
+const GetCurrentUserDashboardResponse = z.object({
   user: GetUserProfileSuccessResponseDto.shape.profile,
   collections: z.array(
     SelectCollectionDto.pick({
@@ -106,31 +158,49 @@ export const GetCurrentUserDashboardResponseDto = z.object({
 });
 
 export const GetCurrentUserDashboardSuccessResDto = createSuccessResponse(
-  GetCurrentUserDashboardResponseDto,
+  GetCurrentUserDashboardResponse,
   "GetCurrentUserDashboardSuccessResBody",
   "Get current user dashboard success response body",
   {
-    user: { ...CommonUserResDtoExample },
+    user: {
+      name: "john_doe20",
+      firstName: "john",
+      lastName: "doe",
+      image: UPLOAD_THING_URL_EXAMPLE,
+      imageKey: UPLOAD_THING_KEY_EXAMPLE,
+      bio: "I'm a full-stack engineer",
+      email: "test@example.com",
+      emailVerifiedAt: new Date().toISOString() as unknown as Date,
+      createdAt: new Date().toISOString() as unknown as Date,
+      updatedAt: new Date().toISOString() as unknown as Date,
+      isPrivate: false,
+    },
     collections: [
       {
-        id: 20,
         title: "Reactjs hooks",
         slug: "reactjs-hooks",
         color: "#eee",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        createdAt: new Date().toISOString() as unknown as Date,
+        updatedAt: new Date().toISOString() as unknown as Date,
+        snippetsCount: 10,
       },
     ],
     stats: UserActivityExample,
-  },
+  } satisfies z.infer<typeof GetCurrentUserDashboardResponse>,
   "Fetched successfully"
 );
 
-export const GetCurrentUserDashboardResDto = z.discriminatedUnion("type", [
+export const GetCurrentUserDashboardResDto = z.discriminatedUnion("status", [
   GetCurrentUserDashboardSuccessResDto,
-  GlobalErrorResponseDto,
+  RateLimiterErrorResponseDto,
+  ...SharedErrorResDto,
+  UnauthorizedErrorResponseDto,
 ]);
 
-export type GetCurrentUserDashboardResDtoType = z.infer<
-  typeof GetCurrentUserDashboardResDto
->;
+export type GetCurrentUserDashboardResDtoType = {
+  success: z.infer<typeof GetCurrentUserDashboardSuccessResDto>;
+  error:
+    | SharedErrorResDtoType
+    | UnAuthorizedErrorResponseDtoType
+    | RateLimiterErrorResponseDtoType;
+};

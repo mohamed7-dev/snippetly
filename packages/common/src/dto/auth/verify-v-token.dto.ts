@@ -1,10 +1,13 @@
 import {
   BadRequestErrorResponseDto,
+  BadRequestErrorResponseDtoType,
   createSuccessResponse,
   RateLimiterErrorResponseDto,
+  RateLimiterErrorResponseDtoType,
   SharedErrorResDto,
   SharedErrorResDtoType,
   UnauthorizedErrorResponseDto,
+  UnAuthorizedErrorResponseDtoType,
   z,
 } from "../zod";
 import { accessTokenExample, VerifyTokenRequestDto } from "./common";
@@ -15,7 +18,7 @@ export const VerifyVTokenRequestDto = VerifyTokenRequestDto.meta({
   description: "Verify email verification token request query param",
   example: {
     token: accessTokenExample,
-  },
+  } satisfies z.infer<typeof VerifyTokenRequestDto>,
 });
 export type VerifyVTokenRequestDtoType = z.infer<typeof VerifyVTokenRequestDto>;
 
@@ -40,7 +43,7 @@ export type VerifyVTokenResponseDtoType = {
   success: z.infer<typeof VerifyVTokenSuccessResponseDto>;
   error:
     | SharedErrorResDtoType
-    | z.infer<typeof BadRequestErrorResponseDto>
-    | z.infer<typeof RateLimiterErrorResponseDto>
-    | z.infer<typeof UnauthorizedErrorResponseDto>;
+    | BadRequestErrorResponseDtoType<VerifyVTokenRequestDtoType>
+    | RateLimiterErrorResponseDtoType
+    | UnAuthorizedErrorResponseDtoType;
 };
