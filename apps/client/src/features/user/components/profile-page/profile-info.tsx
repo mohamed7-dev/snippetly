@@ -1,14 +1,13 @@
-import { Card, CardContent } from '@/components/ui/card'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { CalendarIcon, UsersIcon } from 'lucide-react'
-import { useSuspenseQuery } from '@tanstack/react-query'
-import { getUserProfile } from '../../lib/api'
-import { useParams } from '@tanstack/react-router'
-import { useSendFriendshipRequest } from '../../hooks/use-send-friendship-request'
-import { toast } from 'sonner'
 import { LoadingButton } from '@/components/inputs/loading-button'
-import { useQueryClient } from '@tanstack/react-query'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
+import { Card, CardContent } from '@/components/ui/card'
+import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
+import { useParams } from '@tanstack/react-router'
+import { CalendarIcon, UsersIcon } from 'lucide-react'
+import { toast } from 'sonner'
+import { useSendFriendshipRequest } from '../../hooks/use-send-friendship-request'
+import { getUserProfile } from '../../lib/api'
 
 export function ProfileInfo() {
   const { name } = useParams({ from: '/(public)/profile/$name' })
@@ -18,7 +17,8 @@ export function ProfileInfo() {
   const stats = data.data.stats
   // isCurrentUserAFriend is always true as long as there is an interaction
   // whether it's accepted or not
-  const friendshipInfo = data.data.friendshipInfo
+  const friendshipInfo =
+    'friendshipInfo' in data.data ? data.data?.friendshipInfo : undefined
   const shouldDisplayFriendshipInfo = !!friendshipInfo
 
   const {
@@ -42,31 +42,28 @@ export function ProfileInfo() {
           <Avatar className="h-32 w-32 mx-auto md:mx-0">
             <AvatarImage
               src={profile.image || '/placeholder.svg'}
-              alt={profile.username}
+              alt={profile.name}
             />
-            <AvatarFallback className="text-2xl">
-              {profile.fullName
-                .split(' ')
-                .map((n) => n[0])
-                .join('')}
-            </AvatarFallback>
+            <AvatarFallback className="text-2xl">{profile.name}</AvatarFallback>
           </Avatar>
 
           <div className="flex-1 space-y-4">
             <div className="text-center md:text-left">
-              <h1 className="text-3xl font-bold">{profile.fullName}</h1>
-              <p className="text-xl text-muted-foreground">
-                @{profile.username}
-              </p>
+              <h1 className="text-3xl font-bold">
+                {profile.firstName || profile.lastName || profile.name}
+              </h1>
+              <p className="text-xl text-muted-foreground">@{profile.name}</p>
             </div>
             <p className="text-muted-foreground">{profile.bio}</p>
             <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
               <div className="flex items-center gap-1">
                 <CalendarIcon className="h-4 w-4" />
-                Joined {new Date(profile.joinedAt).toLocaleDateString()}
+                Joined {new Date(profile.createdAt).toLocaleDateString()}
               </div>
               <Badge variant="secondary">
-                {profile?.isPrivate ? 'Private' : 'Public'}
+                {'isPrivate' in profile && profile?.isPrivate
+                  ? 'Private'
+                  : 'Public'}
               </Badge>
             </div>
             <div className="flex gap-6 text-sm">

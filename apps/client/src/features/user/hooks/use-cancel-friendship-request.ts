@@ -1,25 +1,21 @@
 import { api } from '@/lib/api'
 import { serverEndpoints } from '@/lib/routes'
-import type { ErrorResponse, SharedSuccessRes } from '@/lib/types'
+import type {
+  CancelFriendshipRequestResDtoType,
+  ManageFriendshipRequestParamDtoType,
+} from '@snippetly/common/dto'
 import { useMutation, type MutationOptions } from '@tanstack/react-query'
 import type { AxiosError } from 'axios'
-import type { Friendship } from '../lib/types'
 
-type Input = {
-  friendName: string
-}
-type CancelFriendshipRequestSuccessRes = SharedSuccessRes<
-  Pick<
-    Friendship,
-    | 'addresseeId'
-    | 'requesterId'
-    | 'requestStatus'
-    | 'requestSentAt'
-    | 'requestCancelledAt'
-  >
+type Input = ManageFriendshipRequestParamDtoType
+
+type CancelFriendshipRequestSuccessRes =
+  CancelFriendshipRequestResDtoType['success']
+
+type CancelFriendshipRequestErrorRes = AxiosError<
+  CancelFriendshipRequestResDtoType['error']
 >
 
-type CancelFriendshipRequestErrorRes = AxiosError<ErrorResponse>
 export function useCancelFriendshipRequest(
   options?: Omit<
     MutationOptions<
@@ -32,9 +28,9 @@ export function useCancelFriendshipRequest(
 ) {
   return useMutation({
     ...options,
-    mutationFn: async ({ friendName }) => {
+    mutationFn: async ({ friend_name }) => {
       const res = await api.put<CancelFriendshipRequestSuccessRes>(
-        serverEndpoints.cancelFriendshipRequest(friendName),
+        serverEndpoints.cancelFriendshipRequest(friend_name),
       )
       return res.data
     },

@@ -1,11 +1,13 @@
-import { SnippetsTabContent } from './snippets-tab-content'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { CollectionsTabContent } from './collections-tab-content'
-import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
-import { useSuspenseQuery } from '@tanstack/react-query'
-import { getUserProfile } from '../../lib/api'
-import React from 'react'
+import { ErrorBoundaryFallback } from '@/components/feedback/error-boundary-fallback'
 import { PageLoader } from '@/components/loaders/page-loader'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useSuspenseQuery } from '@tanstack/react-query'
+import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
+import React from 'react'
+import { ErrorBoundary } from 'react-error-boundary'
+import { getUserProfile } from '../../lib/api'
+import { CollectionsTabContent } from './collections-tab-content'
+import { SnippetsTabContent } from './snippets-tab-content'
 
 export function TabsSection() {
   const { name } = useParams({ from: '/(public)/profile/$name' })
@@ -32,13 +34,17 @@ export function TabsSection() {
       </TabsList>
 
       <TabsContent value="snippets" className="space-y-4">
-        <React.Suspense fallback={<PageLoader />}>
-          <SnippetsTabContent />
-        </React.Suspense>
+        <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
+          <React.Suspense fallback={<PageLoader />}>
+            <SnippetsTabContent />
+          </React.Suspense>
+        </ErrorBoundary>
       </TabsContent>
 
       <TabsContent value="collections" className="space-y-4">
-        <CollectionsTabContent />
+        <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
+          <CollectionsTabContent />
+        </ErrorBoundary>
       </TabsContent>
     </Tabs>
   )

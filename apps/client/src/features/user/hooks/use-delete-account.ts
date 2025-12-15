@@ -1,12 +1,12 @@
 import { api } from '@/lib/api'
 import { serverEndpoints } from '@/lib/routes'
-import type { ErrorResponse, SharedSuccessRes } from '@/lib/types'
+import type { DeleteUserResponseDtoType } from '@snippetly/common/dto'
 import { useMutation, type MutationOptions } from '@tanstack/react-query'
 import type { AxiosError } from 'axios'
 
-type DeleteAccountSuccessRes = SharedSuccessRes<null>
+type DeleteAccountSuccessRes = DeleteUserResponseDtoType['success']
 
-type DeleteAccountErrorRes = AxiosError<ErrorResponse>
+type DeleteAccountErrorRes = AxiosError<DeleteUserResponseDtoType['error']>
 export function useDeleteAccount(
   options?: Omit<
     MutationOptions<DeleteAccountSuccessRes, DeleteAccountErrorRes>,
@@ -16,7 +16,9 @@ export function useDeleteAccount(
   return useMutation({
     ...options,
     mutationFn: async () => {
-      const res = await api.delete(serverEndpoints.deleteUser)
+      const res = await api.delete<DeleteAccountSuccessRes>(
+        serverEndpoints.deleteUser,
+      )
       return res.data
     },
   })

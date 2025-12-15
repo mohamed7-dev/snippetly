@@ -5,35 +5,21 @@ import type { User } from '@/features/user/lib/types'
 import { api } from '@/lib/api'
 import { serverEndpoints } from '@/lib/routes'
 import type { SharedPaginatedSuccessRes } from '@/lib/types'
+import type {
+  DiscoverUsersRequestQueryDtoType,
+  DiscoverUsersResponseDtoType,
+} from '@snippetly/common/dto'
 import { infiniteQueryOptions } from '@tanstack/react-query'
 
-type Cursor = {
-  snippetsCount: number
-  id: number
-} | null
-type UserItem = Pick<
-  User,
-  | 'username'
-  | 'bio'
-  | 'firstName'
-  | 'lastName'
-  | 'fullName'
-  | 'email'
-  | 'image'
-  | 'imageKey'
-  | 'imageCustomId'
-  | 'joinedAt'
-> & {
-  snippetsCount: number
-  friendsCount: number
-  recentTags: Pick<Tag, 'name'>[]
-}
-
-type DiscoverUsersSuccessRes = SharedPaginatedSuccessRes<UserItem[], Cursor>
+type DiscoverUsersSuccessRes = DiscoverUsersResponseDtoType['success']
 
 export const discoverUsersQueryOptions = infiniteQueryOptions({
   queryKey: ['discover', 'users'],
-  queryFn: async ({ pageParam }: { pageParam: Cursor }) => {
+  queryFn: async ({
+    pageParam,
+  }: {
+    pageParam: DiscoverUsersRequestQueryDtoType['cursor']
+  }) => {
     const searchParams = new URLSearchParams()
     if (pageParam) {
       searchParams.set('cursor', JSON.stringify(pageParam))
@@ -43,8 +29,8 @@ export const discoverUsersQueryOptions = infiniteQueryOptions({
     )
     return res.data
   },
-  initialPageParam: null,
-  getNextPageParam: (lastPage) => lastPage.nextCursor,
+  initialPageParam: undefined,
+  getNextPageParam: (lastPage) => lastPage.data.nextCursor,
 })
 
 // Discover snippets

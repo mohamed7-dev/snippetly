@@ -1,25 +1,20 @@
 import { api } from '@/lib/api'
 import { serverEndpoints } from '@/lib/routes'
-import type { ErrorResponse, SharedSuccessRes } from '@/lib/types'
+import type {
+  AcceptFriendshipRequestResDtoType,
+  ManageFriendshipRequestParamDtoType,
+} from '@snippetly/common/dto'
 import { useMutation, type MutationOptions } from '@tanstack/react-query'
 import type { AxiosError } from 'axios'
-import type { Friendship } from '../lib/types'
 
-type Input = {
-  friendName: string
-}
-type AcceptFriendshipRequestSuccessRes = SharedSuccessRes<
-  Pick<
-    Friendship,
-    | 'addresseeId'
-    | 'requesterId'
-    | 'requestStatus'
-    | 'requestSentAt'
-    | 'requestAcceptedAt'
-  >
+type Input = ManageFriendshipRequestParamDtoType
+
+type AcceptFriendshipRequestSuccessRes =
+  AcceptFriendshipRequestResDtoType['success']
+
+type AcceptFriendshipRequestErrorRes = AxiosError<
+  AcceptFriendshipRequestResDtoType['error']
 >
-
-type AcceptFriendshipRequestErrorRes = AxiosError<ErrorResponse>
 export function useAcceptFriendshipRequest(
   options?: Omit<
     MutationOptions<
@@ -32,9 +27,9 @@ export function useAcceptFriendshipRequest(
 ) {
   return useMutation({
     ...options,
-    mutationFn: async ({ friendName }) => {
+    mutationFn: async ({ friend_name }) => {
       const res = await api.put<AcceptFriendshipRequestSuccessRes>(
-        serverEndpoints.acceptFriendshipRequest(friendName),
+        serverEndpoints.acceptFriendshipRequest(friend_name),
       )
       return res.data
     },

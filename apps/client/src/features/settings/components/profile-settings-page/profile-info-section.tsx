@@ -1,3 +1,5 @@
+import { ProcessStatus } from '@/components/feedback/process-status'
+import { LoadingButton } from '@/components/inputs/loading-button'
 import {
   Card,
   CardContent,
@@ -5,11 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { UserIcon } from 'lucide-react'
-import { Input } from '@/components/ui/input'
-import { Separator } from '@/components/ui/separator'
-import { LoadingButton } from '@/components/inputs/loading-button'
-import { useUpdateProfile } from '../../../user/hooks/use-update-profile'
 import {
   Form,
   FormControl,
@@ -18,17 +15,20 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
+import { Input } from '@/components/ui/input'
+import { Separator } from '@/components/ui/separator'
+import { Textarea } from '@/components/ui/textarea'
+import { getCurrentUserProfileOptions } from '@/features/user/lib/api'
 import {
   updateProfileSchema,
   type UpdateProfileSchema,
 } from '@/features/user/lib/schema'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { getCurrentUserProfileOptions } from '@/features/user/lib/api'
+import { UserIcon } from 'lucide-react'
+import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
-import { ProcessStatus } from '@/components/feedback/process-status'
-import { Textarea } from '@/components/ui/textarea'
+import { useUpdateProfile } from '../../../user/hooks/use-update-profile'
 import { AvatarSection } from './avatar-section'
 
 export function ProfileInfoSection() {
@@ -57,10 +57,9 @@ export function ProfileInfoSection() {
   const onSubmit = async ({
     firstName,
     lastName,
-    image,
     bio,
   }: UpdateProfileSchema) => {
-    await updateProfile({ firstName, lastName, image, bio })
+    await updateProfile({ firstName, lastName, bio })
   }
   return (
     <Card>
@@ -98,7 +97,11 @@ export function ProfileInfoSection() {
                   <FormItem>
                     <FormLabel>First Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter your first name" {...field} />
+                      <Input
+                        placeholder="Enter your first name"
+                        {...field}
+                        value={field.value ?? undefined}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -111,7 +114,11 @@ export function ProfileInfoSection() {
                   <FormItem>
                     <FormLabel>Last Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter your last name" {...field} />
+                      <Input
+                        placeholder="Enter your last name"
+                        {...field}
+                        value={field.value ?? undefined}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -130,6 +137,7 @@ export function ProfileInfoSection() {
                       rows={4}
                       className="resize-none"
                       {...field}
+                      value={field.value ?? undefined}
                     />
                   </FormControl>
                   <FormMessage />

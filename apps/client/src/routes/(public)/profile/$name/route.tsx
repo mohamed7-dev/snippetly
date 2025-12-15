@@ -16,15 +16,16 @@ export const Route = createFileRoute('/(public)/profile/$name')({
   head: async ({ params, match }) => {
     const queryClient = match.context.queryClient
     const data = await queryClient.ensureQueryData(getUserProfile(params.name))
+    const profile = data.data.profile
+    const name = profile.firstName || profile.lastName || profile.name
     return {
       meta: [
         {
           name: 'description',
-          content:
-            data.data.profile.bio ?? `${data.data.profile.fullName} profile`,
+          content: data.data.profile.bio ?? `${name} profile`,
         },
         {
-          title: data.data.profile.fullName,
+          title: name,
         },
       ],
     }

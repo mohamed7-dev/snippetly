@@ -1,22 +1,22 @@
-import React from 'react'
-import { Card, CardContent } from '@/components/ui/card'
-import { ClockIcon, UserPlusIcon, XIcon } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Link } from '@tanstack/react-router'
+import { LoadingButton } from '@/components/inputs/loading-button'
+import { InfiniteLoader } from '@/components/loaders/infinite-loader'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
-import { getCurrentUserOutbox } from '../../lib/api'
-import { InfiniteLoader } from '@/components/loaders/infinite-loader'
-import { LoadingButton } from '@/components/inputs/loading-button'
-import { useCancelFriendshipRequest } from '../../hooks/use-cancel-friendship-request'
-import { toast } from 'sonner'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 import { getCurrentUserDashboardOptions } from '@/features/dashboard/lib/api'
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
+import { Link } from '@tanstack/react-router'
+import { ClockIcon, UserPlusIcon, XIcon } from 'lucide-react'
+import React from 'react'
+import { toast } from 'sonner'
+import { useCancelFriendshipRequest } from '../../hooks/use-cancel-friendship-request'
+import { getCurrentUserOutbox } from '../../lib/api'
 
 export function OutboxTabContent() {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useInfiniteQuery(getCurrentUserOutbox)
-  const users = data?.pages?.flatMap((p) => p.items) ?? []
+  const users = data?.pages?.flatMap((p) => p.data.items) ?? []
 
   const qClient = useQueryClient()
   const { mutateAsync: cancelRequest, isPending: isCancelling } =
@@ -35,7 +35,7 @@ export function OutboxTabContent() {
       <div className="space-y-4">
         {users.map((request) => (
           <Card
-            key={request.username}
+            key={request.name}
             className="hover:shadow-md transition-shadow"
           >
             <CardContent className="space-y-4">
@@ -43,23 +43,20 @@ export function OutboxTabContent() {
                 <Avatar className="h-12 w-12">
                   <AvatarImage
                     src={request.image || '/placeholder.svg'}
-                    alt={request.username}
+                    alt={request.name}
                   />
-                  <AvatarFallback>
-                    {request.fullName
-                      .split(' ')
-                      .map((n) => n[0])
-                      .join('')}
-                  </AvatarFallback>
+                  <AvatarFallback>{request.name}</AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center justify-between">
                     <Link
                       to={`/profile/$name`}
-                      params={{ name: request.username }}
+                      params={{ name: request.name }}
                       className="font-semibold hover:text-primary"
                     >
-                      {request.fullName}
+                      {request.firstName && request.lastName
+                        ? request.firstName + request.lastName
+                        : request.name}
                     </Link>
                     <Badge
                       variant="secondary"
@@ -70,7 +67,7 @@ export function OutboxTabContent() {
                     </Badge>
                   </div>
                   <span className="text-sm text-muted-foreground">
-                    @{request.username}
+                    @{request.name}
                   </span>
                 </div>
               </div>
@@ -92,17 +89,12 @@ export function OutboxTabContent() {
                     size="sm"
                     variant="destructive-outline"
                     disabled={isCancelling}
-                    onClick={() =>
-                      cancelRequest({ friendName: request.username })
-                    }
+                    onClick={() => cancelRequest({ friendName: request.name })}
                   >
                     <XIcon className="h-4 w-4 mr-1" />
                     Cancel Request
                   </LoadingButton>
-                  <Link
-                    to={`/profile/$name`}
-                    params={{ name: request.username }}
-                  >
+                  <Link to={`/profile/$name`} params={{ name: request.name }}>
                     <Button size="sm" variant="ghost">
                       View Profile
                     </Button>

@@ -1,3 +1,4 @@
+import { useTheme } from '@/components/providers/theme-provider'
 import {
   Card,
   CardContent,
@@ -6,10 +7,9 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
-import { useTheme } from '@/components/providers/theme-provider'
+import { APP_NAME } from '@/config/app'
 import { THEME_OPTIONS } from '../../lib/data'
 import { ThemePreviewSection } from './theme-preview-section'
-import { APP_NAME } from '@/config/app'
 
 export function ThemeSettings() {
   const { theme, setTheme } = useTheme()
@@ -39,7 +39,7 @@ export function ThemeSettings() {
               >
                 <div className="flex items-start gap-4">
                   <div
-                    className={`w-16 h-12 rounded-md border-2 ${option.preview} flex-shrink-0`}
+                    className={`w-16 h-12 rounded-md border-2 ${option.preview} shrink-0`}
                   >
                     <div className="w-full h-full rounded-sm flex items-center justify-center">
                       <Icon className="h-4 w-4 text-gray-600" />

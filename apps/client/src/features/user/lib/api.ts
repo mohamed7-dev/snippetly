@@ -1,51 +1,26 @@
-import { api } from '@/lib/api'
-import { serverEndpoints } from '@/lib/routes'
-import type { SharedPaginatedSuccessRes, SharedSuccessRes } from '@/lib/types'
-import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query'
-import type { Friendship, User, UserActivityStats } from './types'
 import type { Collection } from '@/features/collections/lib/types'
 import type { Snippet } from '@/features/snippets/lib/types'
 import type { Tag } from '@/features/tags/lib/types'
+import { api } from '@/lib/api'
+import { serverEndpoints } from '@/lib/routes'
+import type { SharedPaginatedSuccessRes } from '@/lib/types'
+import type {
+  GetCurrentUserFriendsRequestQueryDtoType,
+  GetCurrentUserFriendsResDtoType,
+  GetCurrentUserInboxResDtoType,
+  GetCurrentUserOutboxResDtoType,
+  GetCurrentUserResponseDtoType,
+  GetUserResponseDtoType,
+} from '@snippetly/common/dto'
+import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query'
+import type { User } from './types'
 
 // Get User Profile
-type ProfileItem = Pick<
-  User,
-  | 'username'
-  | 'firstName'
-  | 'lastName'
-  | 'fullName'
-  | 'image'
-  | 'bio'
-  | 'joinedAt'
-  | 'lastUpdatedAt'
-  | 'acceptedPolicies'
-  | 'emailVerifiedAt'
-  | 'isPrivate'
-  | 'email'
->
-
-type GetUserProfileSuccessRes = SharedSuccessRes<{
-  profile: Omit<
-    ProfileItem,
-    'acceptedPolicies' | 'isPrivate' | 'emailVerifiedAt' | 'lastUpdatedAt'
-  > &
-    Partial<
-      Pick<
-        ProfileItem,
-        'acceptedPolicies' | 'isPrivate' | 'emailVerifiedAt' | 'lastUpdatedAt'
-      >
-    >
-  stats: UserActivityStats
-  friendshipInfo?: {
-    isCurrentUserAFriend: boolean
-    requestStatus?: Friendship['requestStatus']
-  }
-}>
 export const getUserProfile = (name: string) =>
   queryOptions({
     queryKey: ['users', 'profiles', name],
     queryFn: async () => {
-      const res = await api.get<GetUserProfileSuccessRes>(
+      const res = await api.get<GetUserResponseDtoType['success']>(
         serverEndpoints.getUserProfile(name),
       )
       return res.data
@@ -56,7 +31,7 @@ export const getUserProfile = (name: string) =>
 export const getCurrentUserProfileOptions = queryOptions({
   queryKey: ['users', 'profiles', 'current'],
   queryFn: async () => {
-    const res = await api.get<GetUserProfileSuccessRes>(
+    const res = await api.get<GetCurrentUserResponseDtoType['success']>(
       serverEndpoints.getCurrentUserProfile,
     )
     return res.data
@@ -68,19 +43,15 @@ type Cursor = {
   id: number
 }
 
-type UserItem = Pick<
-  User,
-  'username' | 'firstName' | 'lastName' | 'fullName' | 'image' | 'bio'
-> &
-  Pick<Friendship, 'requestStatus' | 'requestSentAt'> & {
-    snippetsCount: number
-  }
-
 // Get Current User Inbox
-type GetCurrentUserInboxSuccessRes = SharedPaginatedSuccessRes<UserItem[]>
+type GetCurrentUserInboxSuccessRes = GetCurrentUserInboxResDtoType['success']
 export const getCurrentUserInbox = infiniteQueryOptions({
   queryKey: ['users', 'current', 'inbox'],
-  queryFn: async ({ pageParam }: { pageParam: Cursor | null }) => {
+  queryFn: async ({
+    pageParam,
+  }: {
+    pageParam: GetCurrentUserFriendsRequestQueryDtoType['cursor']
+  }) => {
     const searchParams = new URLSearchParams()
     if (pageParam) {
       searchParams.set('cursor', JSON.stringify(pageParam))
@@ -90,15 +61,19 @@ export const getCurrentUserInbox = infiniteQueryOptions({
     )
     return res.data
   },
-  initialPageParam: null,
-  getNextPageParam: (lastPage) => lastPage.nextCursor,
+  initialPageParam: undefined,
+  getNextPageParam: (lastPage) => lastPage.data.nextCursor,
 })
 
 // Get Current User Outbox
-type GetCurrentUserOutboxSuccessRes = SharedPaginatedSuccessRes<UserItem[]>
+type GetCurrentUserOutboxSuccessRes = GetCurrentUserOutboxResDtoType['success']
 export const getCurrentUserOutbox = infiniteQueryOptions({
   queryKey: ['users', 'current', 'outbox'],
-  queryFn: async ({ pageParam }: { pageParam: Cursor | null }) => {
+  queryFn: async ({
+    pageParam,
+  }: {
+    pageParam: GetCurrentUserFriendsRequestQueryDtoType['cursor']
+  }) => {
     const searchParams = new URLSearchParams()
     if (pageParam) {
       searchParams.set('cursor', JSON.stringify(pageParam))
@@ -108,21 +83,20 @@ export const getCurrentUserOutbox = infiniteQueryOptions({
     )
     return res.data
   },
-  initialPageParam: null,
-  getNextPageParam: (lastPage) => lastPage.nextCursor,
+  initialPageParam: undefined,
+  getNextPageParam: (lastPage) => lastPage.data.nextCursor,
 })
 
 // Get Current User Friends
-type UserFriendItem = UserItem & {
-  requestAcceptedAt: string
-  recentSnippets: Pick<Snippet, 'title' | 'publicId' | 'addedAt' | 'language'>[]
-}
-type GetCurrentUserFriendsSuccessRes = SharedPaginatedSuccessRes<
-  UserFriendItem[]
->
+type GetCurrentUserFriendsSuccessRes =
+  GetCurrentUserFriendsResDtoType['success']
 export const getCurrentUserFriends = infiniteQueryOptions({
   queryKey: ['users', 'current', 'friends'],
-  queryFn: async ({ pageParam }: { pageParam: Cursor | null }) => {
+  queryFn: async ({
+    pageParam,
+  }: {
+    pageParam: GetCurrentUserFriendsRequestQueryDtoType['cursor']
+  }) => {
     const searchParams = new URLSearchParams()
     if (pageParam) {
       searchParams.set('cursor', JSON.stringify(pageParam))
@@ -132,8 +106,8 @@ export const getCurrentUserFriends = infiniteQueryOptions({
     )
     return res.data
   },
-  initialPageParam: null,
-  getNextPageParam: (lastPage) => lastPage.nextCursor,
+  initialPageParam: undefined,
+  getNextPageParam: (lastPage) => lastPage.data.nextCursor,
 })
 
 // Get Current User Friends Snippets

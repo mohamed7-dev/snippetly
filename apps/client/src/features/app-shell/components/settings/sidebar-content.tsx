@@ -1,6 +1,6 @@
-import { SETTINGS_NAV_ITEMS } from '../../lib/constants'
 import { cn } from '@/lib/utils'
 import { Link, useLocation } from '@tanstack/react-router'
+import { SETTINGS_NAV_ITEMS } from '../../lib/constants'
 
 export function SidebarContent() {
   const location = useLocation()
@@ -18,7 +18,7 @@ export function SidebarContent() {
               'flex items-start gap-3 rounded-lg px-3 py-3 text-sm transition-colors text-muted-foreground hover:text-foreground hover:bg-muted',
             )}
           >
-            <item.icon className="h-5 w-5 mt-0.5 flex-shrink-0" />
+            <item.icon className="h-5 w-5 mt-0.5 shrink-0" />
             <div>
               <div className="font-medium">{item.title}</div>
               <div

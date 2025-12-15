@@ -1,16 +1,17 @@
-import React from 'react'
+import { useFilter } from '@/components/filter-menu'
+import { InfiniteLoader } from '@/components/loaders/infinite-loader'
 import { Button } from '@/components/ui/button'
+import { SnippetCard } from '@/features/snippets/components/snippet-card'
+import { getCurrentSnippetsOptions } from '@/features/snippets/lib/api'
 import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query'
 import { Link, useSearch } from '@tanstack/react-router'
 import { Code2Icon, PlusIcon } from 'lucide-react'
-import { SnippetCard } from '@/features/snippets/components/snippet-card'
-import { InfiniteLoader } from '@/components/loaders/infinite-loader'
-import { getCurrentSnippetsOptions } from '@/features/snippets/lib/api'
-import { useFilter } from '@/components/filter-menu'
+import React from 'react'
 
 export function SnippetsSection() {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useSuspenseInfiniteQuery(getCurrentSnippetsOptions)
+
   const snippets = data.pages.flatMap((p) => p.items) ?? []
   const { filter } = useSearch({
     from: '/(protected)/dashboard/_dashboard-layout/_error-boundary/',

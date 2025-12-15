@@ -1,23 +1,23 @@
+import { LoadingButton } from '@/components/inputs/loading-button'
+import { InfiniteLoader } from '@/components/loaders/infinite-loader'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { getCurrentUserDashboardOptions } from '@/features/dashboard/lib/api'
 import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { CheckIcon, MailIcon, UserPlusIcon, XIcon } from 'lucide-react'
 import React from 'react'
-import { getCurrentUserInbox } from '../../lib/api'
-import { InfiniteLoader } from '@/components/loaders/infinite-loader'
+import { toast } from 'sonner'
 import { useAcceptFriendshipRequest } from '../../hooks/use-accept-friendship-request'
 import { useRejectFriendshipRequest } from '../../hooks/use-reject-friendship-request'
-import { LoadingButton } from '@/components/inputs/loading-button'
-import { toast } from 'sonner'
-import { getCurrentUserDashboardOptions } from '@/features/dashboard/lib/api'
+import { getCurrentUserInbox } from '../../lib/api'
 
 export function InboxTabContent() {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useSuspenseInfiniteQuery(getCurrentUserInbox)
-  const users = data.pages?.flatMap((p) => p.items) ?? []
+  const users = data.pages?.flatMap((p) => p.data.items) ?? []
 
   const qClient = useQueryClient()
   const { mutateAsync: acceptRequest, isPending: isAccepting } =
@@ -47,7 +47,7 @@ export function InboxTabContent() {
       <div className="space-y-4">
         {users.map((request) => (
           <Card
-            key={request.username}
+            key={request.name}
             className="hover:shadow-md transition-shadow"
           >
             <CardContent className="space-y-4 p-3">
@@ -55,23 +55,18 @@ export function InboxTabContent() {
                 <Avatar className="h-12 w-12">
                   <AvatarImage
                     src={request.image || '/placeholder.svg'}
-                    alt={request.username}
+                    alt={request.name}
                   />
-                  <AvatarFallback>
-                    {request.fullName
-                      .split(' ')
-                      .map((n) => n[0])
-                      .join('')}
-                  </AvatarFallback>
+                  <AvatarFallback>{request.name}</AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center justify-between">
                     <Link
                       to={`/profile/$name`}
-                      params={{ name: request.username }}
+                      params={{ name: request.name }}
                       className="font-semibold hover:text-primary"
                     >
-                      {request.fullName}
+                      {request.name}
                     </Link>
                     <Badge
                       variant="secondary"
@@ -82,7 +77,7 @@ export function InboxTabContent() {
                     </Badge>
                   </div>
                   <span className="text-sm text-muted-foreground">
-                    @{request.username}
+                    @{request.name}
                   </span>
                 </div>
               </div>
@@ -101,9 +96,7 @@ export function InboxTabContent() {
                   <LoadingButton
                     isLoading={isAccepting}
                     size="sm"
-                    onClick={() =>
-                      acceptRequest({ friendName: request.username })
-                    }
+                    onClick={() => acceptRequest({ friendName: request.name })}
                     disabled={isAccepting}
                     className="bg-green-600 hover:bg-green-700"
                   >
@@ -115,18 +108,13 @@ export function InboxTabContent() {
                     disabled={isRejecting}
                     size="sm"
                     variant="outline"
-                    onClick={() =>
-                      rejectRequest({ friendName: request.username })
-                    }
+                    onClick={() => rejectRequest({ friendName: request.name })}
                   >
                     <XIcon className="h-4 w-4 sm:mr-1" />
                     Decline
                   </LoadingButton>
                   <Button size="sm" variant="outline" asChild>
-                    <Link
-                      to={'/profile/$name'}
-                      params={{ name: request.username }}
-                    >
+                    <Link to={'/profile/$name'} params={{ name: request.name }}>
                       View
                     </Link>
                   </Button>

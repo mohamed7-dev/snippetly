@@ -19,6 +19,7 @@ export function AvatarSection() {
   const updateProfileForm: UseFormReturn<UpdateProfileSchema> = useFormContext()
 
   const { accessToken, updateAccessToken } = useAuth()
+
   const validateImage = (file: File) => {
     const isSizeLarge = file?.size > mbToBytesBinary(1)
     const isMediaValid = [
@@ -69,7 +70,7 @@ export function AvatarSection() {
           }
           alt="Profile"
         />
-        <AvatarFallback>{profile.username}</AvatarFallback>
+        <AvatarFallback>{profile.name}</AvatarFallback>
       </Avatar>
       <div className="space-y-2">
         <UploadButton
@@ -103,20 +104,6 @@ export function AvatarSection() {
           }}
         />
 
-        {/* commented this code because the server uses uploadthing to handle uploading  */}
-        {/* <Label htmlFor="profile-image" className="cursor-pointer">
-              <div className="flex items-center gap-2 px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/80 transition-colors text-xs sm:text-sm">
-                <CameraIcon className="h-4 w-4" />
-                Change Photo
-              </div>
-            </Label> */}
-        {/* <Input
-              id="profile-image"
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleImageUpload}
-            /> */}
         <p className="text-xs text-muted-foreground">
           JPG, JPEG, PNG, SVG . Max size 1MB.
         </p>

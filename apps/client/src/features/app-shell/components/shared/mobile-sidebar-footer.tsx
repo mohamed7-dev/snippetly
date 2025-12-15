@@ -24,7 +24,7 @@ export function MobileSidebarFooter() {
           </Link>
         </Button>
       )}
-      {!!!user && (
+      {!user && (
         <Button size={'lg'} className="w-full" variant={'outline'} asChild>
           <Link to="/login">Start here</Link>
         </Button>

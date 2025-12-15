@@ -1,36 +1,33 @@
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Link } from '@tanstack/react-router'
-import { Badge } from '@/components/ui/badge'
-import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
-import { discoverUsersQueryOptions } from '../lib/api'
-import React from 'react'
 import { InfiniteLoader } from '@/components/loaders/infinite-loader'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
+import { Link } from '@tanstack/react-router'
 import { Code2Icon } from 'lucide-react'
+import React from 'react'
+import { discoverUsersQueryOptions } from '../lib/api'
 
 export function UsersTabContent() {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useSuspenseInfiniteQuery(discoverUsersQueryOptions)
-  const users = data.pages?.flatMap((p) => p.items) ?? []
+  const users = data.pages?.flatMap((p) => p.data.items) ?? []
 
   return (
     <React.Fragment>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {users.map((user) => (
-          <Card
-            key={user.username}
-            className="hover:shadow-md transition-shadow"
-          >
+          <Card key={user.name} className="hover:shadow-md transition-shadow">
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <Avatar className="h-12 w-12">
                     <AvatarImage
                       src={user.image || '/placeholder.svg'}
-                      alt={user.username}
+                      alt={user.name}
                     />
                     <AvatarFallback>
-                      {user.username
+                      {user.name
                         .split(' ')
                         .map((n) => n[0])
                         .join('')}
@@ -39,18 +36,18 @@ export function UsersTabContent() {
                   <div>
                     <Link
                       to={'/profile/$name'}
-                      params={{ name: user.username }}
+                      params={{ name: user.name }}
                       className="font-semibold hover:text-primary"
                     >
-                      {user.fullName}
+                      {user.firstName || user.lastName || user.name}
                     </Link>
                     <p className="text-sm text-muted-foreground">
-                      @{user.username}
+                      @{user.name}
                     </p>
                   </div>
                 </div>
                 <Badge variant="secondary">
-                  joined {new Date(user.joinedAt).toLocaleDateString()}
+                  joined {new Date(user.createdAt).toLocaleDateString()}
                 </Badge>
               </div>
             </CardHeader>
@@ -69,7 +66,7 @@ export function UsersTabContent() {
               </div>
 
               <div className="flex flex-wrap gap-1">
-                {user.recentTags?.map((tag) => (
+                {user.tags?.map((tag) => (
                   <Badge key={tag.name} variant="secondary" className="text-xs">
                     {tag.name}
                   </Badge>

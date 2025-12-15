@@ -11,7 +11,7 @@ import {
 
 export function SidebarContent() {
   const query = useSuspenseQuery(getCurrentUserDashboardOptions)
-  const collections = query.data.data.recentCollections ?? []
+  const collections = query.data.data.collections ?? []
 
   return (
     <div className="p-6">
@@ -83,9 +83,9 @@ export function SidebarContent() {
           <div className="space-y-1">
             {collections?.map((collection) => (
               <Link
-                key={collection.publicId}
+                key={collection.slug}
                 to={'/dashboard/collections/$slug'}
-                params={{ slug: collection.publicId }}
+                params={{ slug: collection.slug }}
                 className="flex items-center gap-3 px-3 py-2 text-sm rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
               >
                 <div
