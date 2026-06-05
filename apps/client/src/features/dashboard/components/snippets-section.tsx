@@ -11,14 +11,16 @@ import React from 'react'
 export function SnippetsSection() {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useSuspenseInfiniteQuery(getCurrentSnippetsOptions)
-
-  const snippets = data.pages.flatMap((p) => p.items) ?? []
+  console.log({ data })
+  const snippets = data.pages.flatMap((p) => p.data.items) ?? []
   const { filter } = useSearch({
     from: '/(protected)/dashboard/_dashboard-layout/_error-boundary/',
   })
 
-  const filteredSnippets = useFilter({ data: snippets, filter })
-
+  const filteredSnippets = useFilter<typeof snippets>({
+    data: snippets,
+    filter,
+  })
   const qClient = useQueryClient()
   const onMutateSnippetSuccess = () => {
     qClient.invalidateQueries({ queryKey: ['users', 'current', 'dashboard'] })
@@ -26,9 +28,9 @@ export function SnippetsSection() {
   return (
     <React.Fragment>
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {filteredSnippets.map((snippet) => (
+        {filteredSnippets?.map((snippet) => (
           <SnippetCard
-            key={snippet.publicId}
+            key={snippet.slug}
             snippet={{ ...snippet }}
             deleteSnippet={{
               onSuccess: onMutateSnippetSuccess,

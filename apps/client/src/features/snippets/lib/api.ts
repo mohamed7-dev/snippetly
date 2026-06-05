@@ -1,12 +1,13 @@
+import type { Collection } from '@/features/collections/lib/types'
+import type { Tag } from '@/features/tags/lib/types'
+import type { User } from '@/features/user/lib/types'
 import { api } from '@/lib/api'
 import { serverEndpoints } from '@/lib/routes'
 import type { SharedPaginatedSuccessRes, SharedSuccessRes } from '@/lib/types'
+import { replaceUrl } from '@/lib/utils'
+import type { GetUserSnippetsResDtoType } from '@snippetly/common/dto'
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query'
 import type { Snippet } from './types'
-import type { Tag } from '@/features/tags/lib/types'
-import type { User } from '@/features/user/lib/types'
-import type { Collection } from '@/features/collections/lib/types'
-import { replaceUrl } from '@/lib/utils'
 
 //###################### Shared ################################
 type CollectionItem = Pick<Collection, 'title' | 'publicId' | 'color'>
@@ -110,13 +111,13 @@ export const getCurrentSnippetsOptions = infiniteQueryOptions({
     if (pageParam) {
       params.set('cursor', JSON.stringify(pageParam))
     }
-    const res = await api.get<GetCurrentSnippetsSuccessRes>(
+    const res = await api.get<GetUserSnippetsResDtoType['success']>(
       `${serverEndpoints.getCurrentUserSnippets}${params ? '?' + params : ''}`,
     )
     return res.data
   },
   initialPageParam: null,
-  getNextPageParam: (lastPage) => lastPage.nextCursor,
+  getNextPageParam: (lastPage) => lastPage.data.nextCursor,
 })
 
 // Get Profile Snippets

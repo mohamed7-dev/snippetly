@@ -11,6 +11,7 @@ import {
 
 export function SidebarContent() {
   const query = useSuspenseQuery(getCurrentUserDashboardOptions)
+  console.log(query.data)
   const collections = query.data.data.collections ?? []
 
   return (

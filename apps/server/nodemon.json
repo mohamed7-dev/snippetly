@@ -1,0 +1,7 @@
+{
+    "watch": ["src"],
+    "ext": "ts,json",
+    "execMap": {
+        "ts": "pnpm exec tsc --project ./tsconfig.build.json && NODE_ENV=development node --env-file=.env.development --env-file=.env ./dist/main.js"
+    }
+}

@@ -1,22 +1,22 @@
+import { disableReactDevTools } from '@fvilers/disable-react-devtools'
+import { createRouter } from '@tanstack/react-router'
 import { StrictMode } from 'react'
 import ReactDOM from 'react-dom/client'
-import { createRouter } from '@tanstack/react-router'
-import { queryClient } from './components/providers/tanstack-query-provider.tsx'
-import { disableReactDevTools } from '@fvilers/disable-react-devtools'
+import { queryClient } from './components/providers/tanstack-query-provider'
 
 // Import the generated route tree
 import { routeTree } from './routeTree.gen'
 
-import './styles.css'
-import reportWebVitals from './reportWebVitals.ts'
-import { App } from './app.tsx'
+import { App } from './app'
+import { PageLoader } from './components/loaders/page-loader'
+import { ErrorPageView } from './components/views/error-page-view'
 import {
   NotFoundPageView,
   type NotFoundMetaData,
-} from './components/views/not-found-page-view.tsx'
-import { PageLoader } from './components/loaders/page-loader.tsx'
-import { ErrorPageView } from './components/views/error-page-view.tsx'
-import { registerSW } from './lib/sw-utils.ts'
+} from './components/views/not-found-page-view'
+import { registerSW } from './lib/sw-utils'
+import reportWebVitals from './reportWebVitals'
+import './styles.css'
 
 // Create a new router instance
 export const router = createRouter({

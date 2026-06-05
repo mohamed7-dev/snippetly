@@ -1,0 +1,10 @@
+{
+    "extends": "@snippetly/tsconfig/node.json",
+    "compilerOptions": {
+        "useDefineForClassFields": false,
+        "strictPropertyInitialization": false,
+        "declaration": true,
+        "sourceMap": true,
+        "types": ["./src/common/types/express.d.ts"]
+    }
+}

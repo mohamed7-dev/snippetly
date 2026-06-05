@@ -1,0 +1,3 @@
+{
+    "extends": "@snippetly/tsconfig/node.json"
+}

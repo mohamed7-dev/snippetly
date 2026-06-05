@@ -11,7 +11,7 @@ type UseFilterProps<Data extends Array<object>> = {
   filter: z.infer<typeof searchFilterSchema>['filter']
   data: Data
 }
-export function useFilter<Data extends Array<{ addedAt: string }>>({
+export function useFilter<Data extends Array<{ createdAt: string }>>({
   data,
   filter,
 }: UseFilterProps<Data>) {
@@ -19,14 +19,14 @@ export function useFilter<Data extends Array<{ addedAt: string }>>({
     if (filter === 'recent') {
       return data.sort(
         (snippet, nextSnippet) =>
-          new Date(nextSnippet.addedAt).getTime() -
-          new Date(snippet.addedAt).getTime(),
+          new Date(nextSnippet.createdAt).getTime() -
+          new Date(snippet.createdAt).getTime(),
       )
     } else if (filter === 'old') {
       return data.sort(
         (snippet, nextSnippet) =>
-          new Date(snippet.addedAt).getTime() -
-          new Date(nextSnippet.addedAt).getTime(),
+          new Date(snippet.createdAt).getTime() -
+          new Date(nextSnippet.createdAt).getTime(),
       )
     } else {
       return data

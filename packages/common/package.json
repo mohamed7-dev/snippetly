@@ -1,57 +1,51 @@
 {
-  "name": "@snippetly/common",
-  "version": "1.0.0",
-  "description": "",
-  "type": "commonjs",
-  "main": "./lib/index.js",
-  "types": "./lib/index.d.ts",
-  "files": [
-    "lib/**/*"
-  ],
-  "exports": {
-    ".": {
-      "require": "./lib/index.js",
-      "types": "./lib/index.d.ts",
-      "default": "./lib/index.js"
+    "name": "@snippetly/common",
+    "version": "1.0.0",
+    "type": "module",
+    "publishConfig": {
+        "access": "public"
     },
-    "./dto": {
-      "require": "./lib/dto/index.js",
-      "types": "./lib/dto/index.d.ts",
-      "default": "./lib/dto/index.js"
+    "files": [
+        "dist/**/*"
+    ],
+    "exports": {
+        "./lib": {
+            "types": "./dist/lib/index.d.ts",
+            "import": "./dist/lib/index.js",
+            "require": "./dist/lib/index.js"
+        },
+        "./errors": {
+            "types": "./dist/errors/index.d.ts",
+            "import": "./dist/errors/index.js",
+            "require": "./dist/errors/index.js"
+        },
+        "./dto": {
+            "types": "./dist/dto/index.d.ts",
+            "import": "./dist/dto/index.js",
+            "require": "./dist/dto/index.js"
+        }
+    },
+    "scripts": {
+        "dev": "tsc -p ./build/tsconfig.build.json -w",
+        "build": "rimraf dist & tsc -p ./build/tsconfig.build.json",
+        "lint": "eslint --fix .",
+        "test": "vitest",
+        "test:coverage": "vitest --coverage"
+    },
+    "devDependencies": {
+        "@snippetly/eslint-config": "workspace:*",
+        "@snippetly/tsconfig": "workspace:*",
+        "@vitest/coverage-v8": "3.2.4",
+        "eslint": "^9.39.1",
+        "globals": "^16.5.0",
+        "rimraf": "^5.0.5",
+        "ts-node": "^10.9.2",
+        "tsconfig-paths": "^4.2.0",
+        "tsx": "^4.21.0",
+        "typescript": "5.8.2"
+    },
+    "dependencies": {
+        "@asteasolutions/zod-to-openapi": "^8.1.0",
+        "zod": "^4.1.13"
     }
-  },
-  "typesVersions": {
-    "*": {
-      "dto": [
-        "./lib/dto/index.d.ts"
-      ],
-      "*": [
-        "./lib/index.d.ts"
-      ]
-    }
-  },
-  "scripts": {
-    "dev": "tsc -p ./build/tsconfig.build.json -w",
-    "build": "rimraf lib & tsc -p ./build/tsconfig.build.json",
-    "lint": "eslint --fix .",
-    "test": "vitest",
-    "test:coverage": "vitest --coverage"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "packageManager": "pnpm@10.13.1",
-  "devDependencies": {
-    "@snippetly/eslint-config": "workspace:*",
-    "@snippetly/tsconfig": "workspace:*",
-    "@vitest/coverage-v8": "3.2.4",
-    "eslint": "^9.39.1",
-    "globals": "^16.5.0",
-    "rimraf": "^5.0.5",
-    "typescript": "5.8.2"
-  },
-  "dependencies": {
-    "@asteasolutions/zod-to-openapi": "^8.1.0",
-    "zod": "^4.1.13"
-  }
 }

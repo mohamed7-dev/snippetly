@@ -1,1 +1,0 @@
-ALTER TABLE "users" DROP COLUMN "image_custom_id";
