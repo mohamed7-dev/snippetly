@@ -1,3 +1,2 @@
-export * from './dto/index.js';
-export * from './errors/index.js';
 export * from './lib/index.js';
+export * from './schema/index.js';

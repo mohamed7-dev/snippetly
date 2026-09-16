@@ -13,6 +13,6 @@ export enum Permission {
   Owner = "Owner",
 }
 
-export const permissionEnumDto = z.enum(Object.values(Permission));
+export const permissionEnum = z.enum(Object.values(Permission));
 
 export type PermissionKey = "Public" | "Authenticated" | "SuperAdmin" | "Owner";
