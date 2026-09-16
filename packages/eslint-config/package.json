@@ -1,17 +1,38 @@
 {
-  "name": "@snippetly/eslint-config",
-  "version": "1.0.0",
-  "private": true,
-  "type": "module",
-  "exports": {
-    "./base": "./base.js",
-    "./node": "./node.js"
-  },
-  "dependencies": {
-    "eslint": "^9.39.1",
-    "@eslint/js": "^9.39.1",
-    "eslint-config-prettier": "^10.1.1",
-    "eslint-plugin-only-warn": "^1.1.0",
-    "typescript-eslint": "^8.50.0"
-  }
+    "name": "@snippetly/eslint-config",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "publishConfig": {
+        "access": "public"
+    },
+    "files": [
+        "dist/**/*"
+    ],
+    "exports": {
+        "./base": {
+            "types": "./dist/base.d.ts",
+            "import": "./dist/base.js",
+            "require": "./dist/base.js"
+        },
+        "./node": {
+            "types": "./dist/node.d.ts",
+            "import": "./dist/node.js",
+            "require": "./dist/node.js"
+        }
+    },
+    "scripts": {
+        "dev": "tsc -p ./build/tsconfig.build.json -w",
+        "build": "rimraf dist & tsc -p ./build/tsconfig.build.json"
+    },
+    "dependencies": {
+        "@snippetly/tsconfig": "workspace:*",
+        "eslint": "catalog:tooling",
+        "@eslint/js": "^9.39.1",
+        "eslint-config-prettier": "^10.1.1",
+        "eslint-plugin-only-warn": "^1.1.0",
+        "typescript-eslint": "^8.50.0",
+        "globals": "^16.5.0",
+        "rimraf": "catalog:tooling"
+    }
 }

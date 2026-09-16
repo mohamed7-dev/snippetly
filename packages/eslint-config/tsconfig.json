@@ -1,0 +1,6 @@
+{
+    "extends": "@snippetly/tsconfig/node.json",
+    "compilerOptions": {
+        "noLib": false
+    }
+}
