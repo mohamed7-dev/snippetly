@@ -1,16 +1,16 @@
 {
-  "files.watcherExclude": {
-    "**/routeTree.gen.ts": true
-  },
-  "search.exclude": {
-    "**/routeTree.gen.ts": true
-  },
-  "files.readonlyInclude": {
-    "**/routeTree.gen.ts": true
-  },
-  "editor.codeActionsOnSave": {
-    "source.organizeImports": "explicit"
-  },
-  "conventionalCommits.scopes": ["server", "client", "common", "eslint-config"],
-  "cSpell.words": ["JWTOKEN", "snippetly", "Unstar", "virtuals"]
+    "files.watcherExclude": {
+        "**/routeTree.gen.ts": true
+    },
+    "search.exclude": {
+        "**/routeTree.gen.ts": true
+    },
+    "files.readonlyInclude": {
+        "**/routeTree.gen.ts": true
+    },
+    "editor.codeActionsOnSave": {
+        "source.organizeImports": "explicit"
+    },
+    "conventionalCommits.scopes": ["server", "client", "common", "eslint-config", "tsconfig"],
+    "cSpell.words": ["JWTOKEN", "snippetly", "Unstar", "virtuals"]
 }

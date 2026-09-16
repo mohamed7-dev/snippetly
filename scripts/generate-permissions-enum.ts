@@ -23,7 +23,7 @@ export enum Permission {
 ${enumValues}
 }
 
-export const permissionEnumDto = z.enum(Object.values(Permission));
+export const permissionEnum = z.enum(Object.values(Permission));
 
 export type PermissionKey = ${unionValues};
 `;

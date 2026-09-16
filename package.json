@@ -11,20 +11,19 @@
         "generate": "ts-node -r tsconfig-paths/register scripts/generate.ts"
     },
     "dependencies": {
-        "concurrently": "^9.2.1",
-        "zod": "^4.1.13",
+        "concurrently": "catalog:tooling",
+        "zod": "catalog:",
         "sql.js": "^1.14.1"
     },
     "devDependencies": {
         "@snippetly/common": "workspace:*",
         "@snippetly/server": "workspace:*",
         "@snippetly/tsconfig": "workspace:*",
-        "@types/node": "^20.11.19",
-        "prettier": "^3.2.5",
+        "@types/node": "catalog:tooling",
+        "prettier": "catalog:tooling",
         "prettier-plugin-organize-imports": "^4.1.0",
-        "ts-node": "^10.9.2",
-        "tsconfig-paths": "^4.2.0",
-        "typescript": "5.8.2",
-        "vitest": "^3.2.4"
+        "ts-node": "catalog:tooling",
+        "tsconfig-paths": "catalog:tooling",
+        "typescript": "catalog:tooling"
     }
 }

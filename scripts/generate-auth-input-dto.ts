@@ -36,19 +36,19 @@ function buildFile(adminSchemas: string, developerSchemas: string) {
 
 import { z } from "zod";
 
-export const adminAuthInputDto = z.object({
+export const adminAuthInput = z.object({
     ${adminSchemas}
 });
 
-export const developerAuthInputDto = z.object({
+export const developerAuthInput = z.object({
     ${developerSchemas}
 });
 
 
 // ================= TYPES =================
 
-export type AdminAuthInputDto = z.infer<typeof adminAuthInputDto>;
+export type AdminAuthInput = z.infer<typeof adminAuthInput>;
 
-export type DeveloperAuthInputDto = z.infer<typeof developerAuthInputDto>;
+export type DeveloperAuthInput = z.infer<typeof developerAuthInput>;
             `;
 }

@@ -1,9 +1,9 @@
-import { config as base } from '@snippetly/eslint-config/base'
 import reactPlugin from 'eslint-plugin-react'
 import reactHooksPlugin from 'eslint-plugin-react-hooks'
 import reactRefreshPlugin from 'eslint-plugin-react-refresh'
 import { defineConfig } from 'eslint/config'
 import globals from 'globals'
+import { config as base } from '../../packages/eslint-config/src/base.js'
 
 export default defineConfig([
   // shared JS/TS + prettier + only-warn setup

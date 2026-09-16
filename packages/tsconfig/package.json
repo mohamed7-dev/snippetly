@@ -1,9 +1,9 @@
 {
-  "name": "@snippetly/tsconfig",
-  "version": "1.0.0",
-  "private": true,
-  "main": "base.json",
-  "publishConfig": {
-    "access": "public"
-  }
+    "name": "@snippetly/tsconfig",
+    "version": "0.0.0",
+    "private": true,
+    "main": "base.json",
+    "publishConfig": {
+        "access": "public"
+    }
 }
