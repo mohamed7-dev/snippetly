@@ -14,7 +14,7 @@ export class Developer extends AppEntity implements SoftDeletable {
         super(input);
     }
 
-    @OneToOne(() => User)
+    @OneToOne(() => User, { eager: true })
     @JoinColumn()
     user: User;
 
@@ -30,13 +30,13 @@ export class Developer extends AppEntity implements SoftDeletable {
     @Column()
     lastName: string;
 
-    @Column({ nullable: true })
+    @Column({ nullable: true, default: null })
     bio?: string;
 
-    @Column({ nullable: true })
+    @Column({ nullable: true, default: null })
     image?: string;
 
-    @Column({ nullable: true })
+    @Column({ nullable: true, default: null })
     imageKey?: string;
 
     @Column({ default: false })

@@ -3,7 +3,8 @@
     "compilerOptions": {
         "removeComments": false,
         "outDir": "./dist",
-        "rootDirs": ["./src"]
+        "rootDirs": ["./src"],
+        "incremental": true
     },
     "exclude": ["./package.json"],
     "files": ["./src/index.ts", "./src/main.ts"]

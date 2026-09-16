@@ -1,5 +1,5 @@
 import { DeepPartial } from '@snippetly/common/lib';
-import { Column, Entity, Index, JoinColumn, JoinTable, ManyToMany, ManyToOne, OneToMany } from 'typeorm';
+import { Column, Entity, Index, JoinTable, ManyToMany, ManyToOne, OneToMany } from 'typeorm';
 import { AppEntity } from '../../infra/database/app-entity';
 import { Collection } from '../collections/collection.entity';
 import { Developer } from '../developer/developer.entity';
@@ -12,7 +12,7 @@ export class Snippet extends AppEntity {
     }
 
     @Column()
-    title: string;
+    name: string;
 
     @Index({ unique: true })
     @Column()
@@ -24,10 +24,10 @@ export class Snippet extends AppEntity {
     @Column()
     language: string;
 
-    @Column({ nullable: true })
+    @Column({ nullable: true, default: null })
     description?: string;
 
-    @Column({ nullable: true })
+    @Column({ nullable: true, default: null })
     note?: string;
 
     @Column({ default: false })
@@ -36,21 +36,23 @@ export class Snippet extends AppEntity {
     @Column({ default: true })
     allowForking: boolean;
 
+    @Index()
     @ManyToOne(() => Snippet, snippet => snippet.forkedChildren, {
         onDelete: 'SET NULL',
         nullable: true,
     })
-    @JoinColumn({ name: 'forked_from' })
     forkedFrom: Snippet | null;
-
-    @ManyToOne(() => Developer, creator => creator.snippets, { onDelete: 'CASCADE' })
-    creator: Developer;
-
-    @ManyToOne(() => Collection, collection => collection.snippets, { onDelete: 'CASCADE' })
-    collection: Collection;
 
     @OneToMany(() => Snippet, snippet => snippet.forkedFrom)
     forkedChildren: Snippet[];
+
+    @Index()
+    @ManyToOne(() => Developer, creator => creator.snippets, { onDelete: 'CASCADE' })
+    creator: Developer;
+
+    @Index()
+    @ManyToOne(() => Collection, collection => collection.snippets, { onDelete: 'CASCADE' })
+    collection: Collection;
 
     @ManyToMany(() => Tag, tag => tag.snippets)
     @JoinTable()

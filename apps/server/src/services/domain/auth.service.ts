@@ -1,11 +1,10 @@
-import {
-    InternalServerError,
-    InvalidCredentialsError,
-    NotVerifiedAccountError,
-} from '@snippetly/common/errors';
-
 import { RequestContext } from '../../api/request-context/request-context';
 import { ApiType } from '../../api/utils/get-api-type';
+import { InternalServerError } from '../../common/errors/errors';
+import {
+    InvalidCredentialsError,
+    NotVerifiedAccountError,
+} from '../../common/errors/generated-developer-errors';
 import { ConfigService } from '../../config';
 import { ExternalAuthenticationMethod } from '../../entities/authentication-method/authentication-method.entity';
 import { Session } from '../../entities/session/session.entity';
@@ -27,7 +26,7 @@ export class AuthService {
         authStrategyName: string,
         authData: any,
         apiType: ApiType,
-    ): Promise<InvalidCredentialsError | Session | NotVerifiedAccountError> {
+    ): Promise<Session | InvalidCredentialsError | NotVerifiedAccountError> {
         const authStrategy = this.getAuthStrategy(apiType, authStrategyName);
         const result = await authStrategy.authenticate(ctx, authData);
         if (typeof result === 'string') {
@@ -35,7 +34,7 @@ export class AuthService {
         } else if (!result) {
             return new InvalidCredentialsError({ reason: '' });
         }
-        return await this.openAuthenticatedSession(ctx, result as User, authStrategy.name);
+        return await this.openAuthenticatedSession(ctx, result, authStrategy.name);
     }
 
     /**

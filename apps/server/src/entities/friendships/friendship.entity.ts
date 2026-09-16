@@ -17,7 +17,7 @@ export class Friendship extends AppEntity {
     @ManyToOne(() => Developer, user => user.friendshipsReceived, { onDelete: 'CASCADE' })
     addressee: Developer;
 
-    @Column()
+    @Column({ type: 'varchar' })
     status: FriendshipStatus;
 
     @Column({ type: 'date', nullable: true })

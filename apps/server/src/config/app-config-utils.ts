@@ -1,4 +1,4 @@
-import { isConstructorInstance, isObjectOrNull } from '@snippetly/common/lib';
+import { isConstructorInstance, isObject } from '@snippetly/common/lib';
 import path from 'node:path';
 import { assignPropToObject, prototypeObjectPropNames } from '../common/helpers/utils';
 import { AppConfig, PartialAppConfig, RuntimeAppConfig } from './app-config.interface';
@@ -60,7 +60,7 @@ export class AppConfigUtils {
     ): Dest {
         if (!source) return dest;
 
-        if (isObjectOrNull(source) && isObjectOrNull(dest)) {
+        if (isObject(source) && isObject(dest)) {
             for (const key in source) {
                 const typedKey = key as keyof typeof source;
                 if (prototypeObjectPropNames.includes(typedKey)) continue;
@@ -68,7 +68,7 @@ export class AppConfigUtils {
                 const sourceValue = source[typedKey];
                 const destValue = dest[typedKey];
 
-                if (isObjectOrNull(sourceValue)) {
+                if (isObject(sourceValue)) {
                     // if the dest object doesn't have this key -> initialize
                     if (!dest[typedKey]) {
                         this.assign(typedKey, {}, dest);

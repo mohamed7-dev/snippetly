@@ -73,7 +73,7 @@ export class SessionService implements EntitySubscriberInterface {
     }
 
     public async getSessionByToken(token: string): Promise<SessionCacheEntry | undefined> {
-        let sessionCacheEntry = await race(this.cache.get(token), this.sessionCacheTimeoutMs);
+        const sessionCacheEntry = await race(this.cache.get(token), this.sessionCacheTimeoutMs);
         const isCacheStale = !!(sessionCacheEntry && sessionCacheEntry.cacheExpiry < Date.now() / 1000);
         const isSessionExpired = !!(sessionCacheEntry && sessionCacheEntry.sessionExpiry < new Date());
 

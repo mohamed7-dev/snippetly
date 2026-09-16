@@ -1,24 +1,24 @@
 import { RequestContext } from '../../api/request-context/request-context';
-import { CredentialsAuthenticationMethod } from '../../entities/authentication-method/authentication-method.entity';
+import { NativeAuthenticationMethod } from '../../entities/authentication-method/authentication-method.entity';
 import { User } from '../../entities/users/user.entity';
 import { ModuleRef } from '../../infra/ioc-container/module-ref.service';
 import { AuthenticationStrategy } from './authentication-strategy.interface';
 
-export const CREDENTIALS_AUTH_STRATEGY_NAME = 'credentials';
+export const NATIVE_AUTH_STRATEGY_NAME = 'native';
 
-export interface CredentialsAuthenticationData {
+export interface NativeAuthenticationData {
     identifier: string;
     password: string;
 }
 
-export class CredentialsAuthenticationStrategy implements AuthenticationStrategy {
+export class NativeAuthenticationStrategy implements AuthenticationStrategy {
     private userService: import('../../services/domain/user.service').UserService;
     private passwordHashingService: import('../../services/helpers/password-hashing.service').PasswordHashingService;
     private databaseService: import('../../infra/database/database.service').DatabaseService;
 
-    name: string = CREDENTIALS_AUTH_STRATEGY_NAME;
+    name: string = NATIVE_AUTH_STRATEGY_NAME;
 
-    async onInit?(moduleRef: ModuleRef): Promise<void> {
+    onInit?(moduleRef: ModuleRef): void {
         const { UserService } = require('../../services/domain/user.service.js');
         const { PasswordHashingService } = require('../../services/helpers/password-hashing.service.js');
         const { DatabaseService } = require('../../infra/database/database.service.js');
@@ -37,10 +37,7 @@ export class CredentialsAuthenticationStrategy implements AuthenticationStrategy
         `;
     }
 
-    async authenticate(
-        ctx: RequestContext,
-        data: CredentialsAuthenticationData,
-    ): Promise<User | string | false> {
+    async authenticate(ctx: RequestContext, data: NativeAuthenticationData): Promise<User | string | false> {
         const user = await this.userService.getUserByIdentifier(ctx, data.identifier);
         if (!user) return false;
         const passwordVerificationResult = await this.verifyUserPassword(ctx, user.id, data.password);
@@ -60,7 +57,7 @@ export class CredentialsAuthenticationStrategy implements AuthenticationStrategy
         if (!credentialsAuthMethod) return false;
         const password =
             (
-                await this.databaseService.getRepository(ctx, CredentialsAuthenticationMethod).findOne({
+                await this.databaseService.getRepository(ctx, NativeAuthenticationMethod).findOne({
                     where: { id: credentialsAuthMethod.id },
                     select: ['password'],
                 })

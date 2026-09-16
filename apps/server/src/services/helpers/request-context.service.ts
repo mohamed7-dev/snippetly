@@ -1,7 +1,7 @@
-import { Permission } from '@snippetly/common/dto';
 import { LANGUAGE_CODE_QUERY_NAME } from '@snippetly/common/lib';
 import { Request } from 'express';
 import ms from 'ms';
+import { Permission } from '../../../../../packages/common/dist/schema';
 import { RequestContext } from '../../api/request-context/request-context';
 import { ApiType, getApiType } from '../../api/utils/get-api-type';
 import { getUserPermissions } from '../../api/utils/get-user-permissions';

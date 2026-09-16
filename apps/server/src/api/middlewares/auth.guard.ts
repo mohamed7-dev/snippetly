@@ -1,6 +1,6 @@
-import { Permission } from '@snippetly/common/dto';
-import { ForbiddenError } from '@snippetly/common/errors';
 import { Handler, NextFunction, Request, Response } from 'express';
+import { Permission } from '../../../../../packages/common/dist/schema';
+import { ForbiddenError } from '../../common/errors/errors';
 import { SessionCacheEntry } from '../../config/auth/session-cache-strategy.interface';
 import { iocContainer } from '../../infra/ioc-container/ioc-container';
 import { SessionService } from '../../services/domain/session.service';

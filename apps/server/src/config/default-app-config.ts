@@ -1,16 +1,17 @@
-import { LanguageCode } from '@snippetly/common/dto';
 import {
+    API_PORT,
     DEFAULT_ADMIN_API_PATH_PREFIX,
     DEFAULT_DEVELOPER_API_PATH_PREFIX,
     SUPER_ADMIN_IDENTIFIER,
     SUPER_ADMIN_PASSWORD,
 } from '@snippetly/common/lib';
+import { LanguageCode } from '../../../../packages/common/dist/schema';
 import { RuntimeAppConfig } from './app-config.interface';
 import { BcryptPasswordHashingStrategy } from './auth/bcrypt-hashing.strategy';
-import { CredentialsAuthenticationStrategy } from './auth/credentials-auth.strategy';
 import { DefaultPasswordValidationStrategy } from './auth/default-password-validation.strategy';
 import { DefaultSessionCacheStrategy } from './auth/default-session-cache.strategy';
 import { DefaultVerificationTokenStrategy } from './auth/default-verification-token.strategy';
+import { NativeAuthenticationStrategy } from './auth/native-auth.strategy';
 import { UploadthingStrategy } from './system/binary-storage/uploadthing.strategy';
 import { InMemoryCacheStrategy } from './system/cache/in-memory-cache.strategy';
 import { NodemailerStrategy } from './system/email/nodemailer.strategy';
@@ -20,7 +21,7 @@ export const defaultAppConfig: RuntimeAppConfig = {
     defaultLanguageCode: LanguageCode.English,
     api: {
         host: 'localhost',
-        port: 3000,
+        port: API_PORT,
         cors: { origin: true, credentials: true },
         admin: {
             listingLimit: 1000,
@@ -53,7 +54,7 @@ export const defaultAppConfig: RuntimeAppConfig = {
         passwordValidationStrategy: new DefaultPasswordValidationStrategy(),
         passwordHashingStrategy: new BcryptPasswordHashingStrategy(),
         verificationTokenStrategy: new DefaultVerificationTokenStrategy(),
-        adminAuthenticationStrategies: [new CredentialsAuthenticationStrategy()],
-        developerAuthenticationStrategies: [new CredentialsAuthenticationStrategy()],
+        adminAuthenticationStrategies: [new NativeAuthenticationStrategy()],
+        developerAuthenticationStrategies: [new NativeAuthenticationStrategy()],
     },
 };

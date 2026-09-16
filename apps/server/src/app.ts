@@ -52,6 +52,7 @@ export class App {
 
             this.handleShutdown();
         } catch (error) {
+            console.log(error);
             Logger.error('Failed to start server', undefined, (error as Error).message);
             process.exit(1);
         }
@@ -158,7 +159,7 @@ export class App {
                     process.exit(0);
                 });
 
-                void Promise.allSettled(this.shutdownHooks.map(h => h())).catch(() => {
+                void Promise.allSettled(this.shutdownHooks.map(h => h()) as any).catch(() => {
                     // ignore
                 });
 

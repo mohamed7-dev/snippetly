@@ -1,16 +1,16 @@
 import {
     AuthenticateDeveloperDtoType,
-    authenticatedUserDto,
-    AuthenticatedUserDto,
-    SuccessResponseDtoType,
+    authenticatedUser,
+    AuthenticatedUser,
+    SuccessResponse,
 } from '@snippetly/common/dto';
-import {
-    InternalServerError,
-    InvalidCredentialsError,
-    NotVerifiedAccountError,
-} from '@snippetly/common/errors';
 import { Request, Response } from 'express';
 import { isApiError } from '../../common/errors/api-error';
+import { InternalServerError } from '../../common/errors/errors';
+import {
+    InvalidCredentialsError,
+    NotVerifiedAccountError,
+} from '../../common/errors/generated-developer-errors';
 import { User } from '../../entities/users/user.entity';
 import { AdministratorService } from '../../services/domain/administrator.service';
 import { AuthService } from '../../services/domain/auth.service';
@@ -25,14 +25,14 @@ export class CommonAuth {
 
     public async sharedAuthenticate(
         ctx: RequestContext,
-        input: AuthenticateDeveloperDtoType['body'],
+        input: AuthenticateDeveloperDtoType['input'],
         req: Request,
         res: Response,
-    ): Promise<AuthenticatedUserDto | NotVerifiedAccountError | InvalidCredentialsError> {
+    ): Promise<AuthenticatedUser | InvalidCredentialsError | NotVerifiedAccountError> {
         const authInfo = Object.entries(input)[0];
         const sessionResult = await this.authService.authenticate(
             ctx,
-            authInfo?.[0] as string,
+            authInfo?.[0],
             authInfo?.[1],
             ctx.apiType,
         );
@@ -50,11 +50,7 @@ export class CommonAuth {
         return this.clientSafeUser(sessionResult.user);
     }
 
-    public async sharedLogout(
-        ctx: RequestContext,
-        req: Request,
-        res: Response,
-    ): Promise<SuccessResponseDtoType> {
+    public async sharedLogout(ctx: RequestContext, req: Request, res: Response): Promise<SuccessResponse> {
         const sessionToken = getSessionToken(req);
         if (!sessionToken) return { success: false };
         await this.authService.endSession(ctx, sessionToken);
@@ -67,8 +63,8 @@ export class CommonAuth {
         return { success: true };
     }
 
-    protected clientSafeUser(user: User): AuthenticatedUserDto {
-        const parsedData = authenticatedUserDto.safeParse(user);
+    protected clientSafeUser(user: User): AuthenticatedUser {
+        const parsedData = authenticatedUser.safeParse(user);
         if (parsedData.error) throw new InternalServerError('errors.invalid-user-data');
         return parsedData.data;
     }

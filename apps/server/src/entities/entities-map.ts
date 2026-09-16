@@ -1,8 +1,8 @@
 import { Administrator } from './administrator/administrator.entity';
 import {
     AuthenticationMethod,
-    CredentialsAuthenticationMethod,
     ExternalAuthenticationMethod,
+    NativeAuthenticationMethod,
 } from './authentication-method/authentication-method.entity';
 import { Collection } from './collections/collection.entity';
 import { Developer } from './developer/developer.entity';
@@ -19,7 +19,7 @@ export const entitiesMap = {
     Session,
     Role,
     AuthenticationMethod,
-    CredentialsAuthenticationMethod,
+    NativeAuthenticationMethod,
     ExternalAuthenticationMethod,
     Friendship,
     Collection,
@@ -27,3 +27,5 @@ export const entitiesMap = {
     Tag,
     Administrator,
 };
+
+export type EntityNames = keyof typeof entitiesMap;

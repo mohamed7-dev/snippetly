@@ -1,8 +1,7 @@
-import { LogLevel } from '@snippetly/common/errors';
 import pc from 'picocolors';
-import { LoggerStrategy } from './logger-strategy.interface';
+import { LoggerStrategy, LogLevel } from './logger-strategy.interface';
 
-export const DEFAULT_CONTEXT = 'Edusync-API';
+export const DEFAULT_CONTEXT = 'Snippetly-API';
 
 interface StdoutLoggerOptions {
     logLevel?: LogLevel;

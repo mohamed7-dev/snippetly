@@ -12,8 +12,8 @@ export abstract class AuthenticationMethod extends AppEntity {
 }
 
 @ChildEntity()
-export class CredentialsAuthenticationMethod extends AuthenticationMethod {
-    constructor(input?: DeepPartial<CredentialsAuthenticationMethod>) {
+export class NativeAuthenticationMethod extends AuthenticationMethod {
+    constructor(input?: DeepPartial<NativeAuthenticationMethod>) {
         super(input);
     }
 
@@ -38,7 +38,7 @@ export class CredentialsAuthenticationMethod extends AuthenticationMethod {
 
 @ChildEntity()
 export class ExternalAuthenticationMethod extends AuthenticationMethod {
-    constructor(input?: DeepPartial<CredentialsAuthenticationMethod>) {
+    constructor(input?: DeepPartial<ExternalAuthenticationMethod>) {
         super(input);
     }
 

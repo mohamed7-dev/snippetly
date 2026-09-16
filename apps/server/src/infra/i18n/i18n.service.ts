@@ -1,4 +1,3 @@
-import { ApiError, I18nError } from '@snippetly/common/errors';
 import { LANGUAGE_CODE_QUERY_NAME } from '@snippetly/common/lib';
 import { Handler, Request } from 'express';
 import i18next from 'i18next';
@@ -6,7 +5,9 @@ import BackendFS from 'i18next-fs-backend';
 import i18nextMiddleware from 'i18next-http-middleware';
 import ICU from 'i18next-icu';
 import path from 'node:path';
+import { ApiError } from '../../common/errors/api-error';
 import { Injectable } from '../ioc-container/injectable.decorator';
+import { I18nError } from './i18n-error';
 
 @Injectable()
 export class I18nService {

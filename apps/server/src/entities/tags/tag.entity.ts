@@ -13,12 +13,12 @@ export class Tag extends AppEntity {
 
     @Index({ unique: true })
     @Column()
-    name: string;
+    value: string;
 
     @Column({ default: 0 })
     usageCount: number;
 
-    @ManyToOne(() => Developer, user => user.addedTags, {
+    @ManyToOne(() => Developer, developer => developer.addedTags, {
         nullable: true,
         onDelete: 'SET NULL',
     })

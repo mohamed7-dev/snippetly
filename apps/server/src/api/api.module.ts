@@ -1,6 +1,8 @@
 import { Module } from '../infra/ioc-container/module.decorator';
 import { ServiceModule } from '../services/service.module';
 import { DeveloperAuthController } from './developer/developer-auth.controller';
+import { DeveloperCollectionController } from './developer/developer-collection.controller';
+import { DeveloperSnippetController } from './developer/developer-snippet.controller';
 
 @Module({
     imports: [ServiceModule],
@@ -16,7 +18,7 @@ class AdminApiModule {}
 
 @Module({
     imports: [CommonApiModule],
-    controllers: [DeveloperAuthController],
+    controllers: [DeveloperAuthController, DeveloperSnippetController, DeveloperCollectionController],
 })
 class DeveloperApiModule {}
 

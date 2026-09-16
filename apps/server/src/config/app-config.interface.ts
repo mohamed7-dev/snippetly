@@ -1,6 +1,6 @@
-import { LanguageCode } from '@snippetly/common/dto';
 import { CorsOptions } from 'cors';
 import { DataSourceOptions } from 'typeorm';
+import { LanguageCode } from '../../../../packages/common/dist/schema';
 import { AuthenticationStrategy } from './auth/authentication-strategy.interface';
 import { PasswordHashingStrategy } from './auth/password-hashing-strategy.interface';
 import { PasswordValidationStrategy } from './auth/password-validation-strategy.interface';

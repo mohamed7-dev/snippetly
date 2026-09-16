@@ -1,9 +1,9 @@
-import { PasswordValidationError } from '@snippetly/common/errors';
 import { RequestContext } from '../../api/request-context/request-context';
 import { isApiError } from '../../common/errors/api-error';
+import { PasswordValidationError } from '../../common/errors/generated-developer-errors';
 import { isEmailAddressLike, normalizeInput } from '../../common/helpers/validation';
 import { ConfigService } from '../../config/config.service';
-import { CredentialsAuthenticationMethod } from '../../entities/authentication-method/authentication-method.entity';
+import { NativeAuthenticationMethod } from '../../entities/authentication-method/authentication-method.entity';
 import { User } from '../../entities/users/user.entity';
 import { DatabaseService } from '../../infra/database/database.service';
 import { Injectable } from '../../infra/ioc-container/injectable.decorator';
@@ -52,6 +52,44 @@ export class UserService {
         return foundUser ?? undefined;
     }
 
+    async refreshVerificationToken(ctx: RequestContext, user: User): Promise<User> {
+        const nativeAuthMethod = user.getNativeAuthenticationMethod();
+        nativeAuthMethod.verificationToken =
+            await this.verificationTokenGenerator.generateVerificationToken(ctx);
+        user.isVerified = false;
+        await this.databaseService.getRepository(ctx, NativeAuthenticationMethod).save(nativeAuthMethod);
+        return this.databaseService.getRepository(ctx, User).save(user);
+    }
+
+    async verifyDeveloperAccount(ctx: RequestContext, verificationToken: string): Promise<User | undefined> {
+        const user = await this.databaseService
+            .getRepository(ctx, User)
+            .createQueryBuilder('user')
+            .leftJoinAndSelect('user.authenticationMethods', 'authMethods')
+            .leftJoin('user.authenticationMethods', 'authenticationMethod')
+            .addSelect('authMethods.passwordHash')
+            .where('authenticationMethod.verificationToken = :verificationToken', { verificationToken })
+            .getOne();
+
+        if (!user) {
+            return; // TODO: return error
+        } else {
+            const isValid = await this.verificationTokenGenerator.verifyVerificationToken(
+                ctx,
+                verificationToken,
+            );
+            if (!isValid) {
+                return; // TODO: return error
+            } else {
+                const nativeMethod = user.getNativeAuthenticationMethod();
+                nativeMethod.verificationToken = null;
+                user.isVerified = true;
+                await this.databaseService.getRepository(ctx, NativeAuthenticationMethod).save(nativeMethod);
+                return this.databaseService.getRepository(ctx, User).save(user);
+            }
+        }
+    }
+
     /**
      * @description
      * Creates a new admin user with credentials authentication.
@@ -68,13 +106,11 @@ export class UserService {
             identifier: normalizedInput,
             isVerified: true,
         });
-        const credentialsAuthMethod = new CredentialsAuthenticationMethod({
+        const credentialsAuthMethod = new NativeAuthenticationMethod({
             identifier: normalizedInput,
             password: await this.passwordHashingService.hash(credentials.plainPassword),
         });
-        await this.databaseService
-            .getRepository(ctx, CredentialsAuthenticationMethod)
-            .save(credentialsAuthMethod);
+        await this.databaseService.getRepository(ctx, NativeAuthenticationMethod).save(credentialsAuthMethod);
         user.authenticationMethods = [credentialsAuthMethod];
         return await this.databaseService.getRepository(ctx, User).save(user);
     }
@@ -112,7 +148,7 @@ export class UserService {
             if (foundUser && this.hasCredentialsAuthMethod(foundUser)) return foundUser;
         }
 
-        const credentialsAuthMethod = new CredentialsAuthenticationMethod();
+        const credentialsAuthMethod = new NativeAuthenticationMethod();
         if (this.configService.authOptions.requireVerification) {
             credentialsAuthMethod.verificationToken =
                 await this.verificationTokenGenerator.generateVerificationToken(ctx);
@@ -128,26 +164,22 @@ export class UserService {
         credentialsAuthMethod.password = await this.passwordHashingService.hash(credentials.password);
         credentialsAuthMethod.identifier = normalizeInput(credentials.identifier);
         credentialsAuthMethod.user = user;
-        await this.databaseService
-            .getRepository(ctx, CredentialsAuthenticationMethod)
-            .save(credentialsAuthMethod);
+        await this.databaseService.getRepository(ctx, NativeAuthenticationMethod).save(credentialsAuthMethod);
         user.authenticationMethods = [...(user.authenticationMethods ?? []), credentialsAuthMethod];
         return user;
     }
 
     public async generateAndAssignVerificationToken(ctx: RequestContext, user: User): Promise<User> {
-        const credentialsAuthMethod = user.getCredentialsAuthMethod();
+        const credentialsAuthMethod = user.getNativeAuthenticationMethod();
         credentialsAuthMethod.verificationToken =
             await this.verificationTokenGenerator.generateVerificationToken(ctx);
         user.isVerified = false;
-        await this.databaseService
-            .getRepository(ctx, CredentialsAuthenticationMethod)
-            .save(credentialsAuthMethod);
+        await this.databaseService.getRepository(ctx, NativeAuthenticationMethod).save(credentialsAuthMethod);
         return this.databaseService.getRepository(ctx, User).save(user);
     }
 
     public hasCredentialsAuthMethod(user: User): boolean {
-        return !!user?.authenticationMethods.find(m => m instanceof CredentialsAuthenticationMethod);
+        return !!user?.authenticationMethods.find(m => m instanceof NativeAuthenticationMethod);
     }
 
     private async validatePassword(
@@ -157,7 +189,7 @@ export class UserService {
         const result = await this.passwordValidationService.validate(ctx, plainPassword);
         if (result !== true) {
             const message = typeof result === 'string' ? result : 'Invalid password';
-            return new PasswordValidationError(message);
+            return new PasswordValidationError({ validationErrorMessage: message });
         } else {
             return true;
         }

@@ -1,4 +1,4 @@
-import { Permission } from '@snippetly/common/dto';
+import { Permission } from '../../../../../packages/common/dist/schema';
 
 interface AppPermissionPayload {
     /**

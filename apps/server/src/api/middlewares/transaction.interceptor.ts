@@ -80,6 +80,6 @@ export function transactionInterceptor(opts?: TransactionOptions): Interceptor {
     return handler => (req, res, next) =>
         withTransaction(opts)(req, res, err => {
             if (err) return next(err);
-            handler(req, res, next);
+            Promise.resolve(handler(req, res, next)).catch(next);
         });
 }

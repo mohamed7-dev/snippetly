@@ -12,13 +12,13 @@ export class Collection extends AppEntity {
     }
 
     @Column()
-    title: string;
+    name: string;
 
     @Index({ unique: true })
     @Column()
     slug: string;
 
-    @Column({ nullable: true })
+    @Column({ nullable: true, default: null })
     description?: string;
 
     @Column()
@@ -30,15 +30,16 @@ export class Collection extends AppEntity {
     @Column({ default: true })
     allowForking: boolean;
 
+    @Index()
+    @ManyToOne(() => Developer, creator => creator.collections, { onDelete: 'CASCADE' })
+    creator: Developer;
+
     @ManyToOne(() => Collection, collection => collection.forkedChildren, {
         onDelete: 'SET NULL',
         nullable: true,
     })
     @JoinColumn({ name: 'forked_from' })
     forkedFrom: Collection | null;
-
-    @ManyToOne(() => Developer, creator => creator.collections, { onDelete: 'CASCADE' })
-    creator: Developer;
 
     @OneToMany(() => Collection, collection => collection.forkedFrom)
     forkedChildren: Collection[];

@@ -1,6 +1,6 @@
-import { Permission } from '@snippetly/common/dto';
 import { Request } from 'express';
 import { TFunction } from 'i18next';
+import { Permission } from '../../../../../packages/common/dist/schema';
 import { arraysIntersect } from '../../common/helpers/array-intersect';
 import { SessionCacheEntry } from '../../config/auth/session-cache-strategy.interface';
 import { ApiType } from '../utils/get-api-type';

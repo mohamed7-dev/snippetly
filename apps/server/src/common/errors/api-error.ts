@@ -1,5 +1,28 @@
-import { ApiError } from '@snippetly/common/errors';
 import { AppEntity } from '../../infra/database/app-entity';
+
+/**
+ * @description
+ * ApiError represents an API error with code and message.
+ */
+export interface ApiError {
+    /**
+     * @description
+     * Error code identifying the type of error.
+     */
+    code: string;
+
+    /**
+     * @description
+     * HTTP status code for the error.
+     */
+    httpStatusCode: number;
+
+    /**
+     * @description
+     * Human-readable error message.
+     */
+    message: string;
+}
 
 /**
  * @description
@@ -27,6 +50,6 @@ export function isApiError<T, E extends AppEntity>(
     return (
         input &&
         !!((input as unknown as ApiError).code && (input as unknown as ApiError).message != null) &&
-        (input as unknown as ApiError).statusCode != null
+        (input as unknown as ApiError).httpStatusCode != null
     );
 }

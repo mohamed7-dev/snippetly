@@ -1,6 +1,6 @@
-import { UserInputError } from '@snippetly/common/errors';
 import { Request, RequestHandler } from 'express';
 import { ZodError, ZodType } from 'zod';
+import { UserInputError } from '../../common/errors/errors';
 
 export function mapZodError(error: ZodError): Record<string, string> {
     const fields: Record<string, string> = {};

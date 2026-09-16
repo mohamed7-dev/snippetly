@@ -10,8 +10,9 @@
     "scripts": {
         "build": "rm -rf dist && tsc --project ./tsconfig.build.json",
         "start": "NODE_ENV=production node --env-file=.env.production --env-file=.env ./dist/main.js",
-        "watch:tsc": "tsc --project ./tsconfig.build.json --watch",
-        "dev": "nodemon ./src/index.ts",
+        "watch:ts": "nodemon --config ./nodemon.json",
+        "watch:assets": "ts-node ./scripts/watch-assets --watch",
+        "dev": "concurrently 'pnpm run watch:ts' 'pnpm run watch:assets'",
         "lint": "eslint .",
         "format": "prettier",
         "check": "prettier --write . && eslint --fix",
@@ -45,7 +46,7 @@
         "swagger-ui-express": "^5.0.1",
         "typeorm": "^0.3.28",
         "uploadthing": "^7.7.4",
-        "zod": "^4.1.13"
+        "zod": "catalog:"
     },
     "devDependencies": {
         "@snippetly/eslint-config": "workspace:*",
@@ -63,13 +64,14 @@
         "@types/pg": "^8.15.6",
         "@types/supertest": "^6.0.3",
         "@types/swagger-ui-express": "^4.1.8",
-        "eslint": "^9.39.1",
-        "globals": "^16.5.0",
+        "chokidar": "^5.0.0",
+        "eslint": "catalog:tooling",
         "nodemailer": "^7.0.6",
         "nodemon": "^3.1.14",
         "supertest": "^7.1.4",
         "testcontainers": "^11.10.0",
-        "tsx": "^4.20.3",
-        "typescript": "^5.9.2"
+        "typescript": "catalog:tooling",
+        "vitest": "catalog:testing",
+        "concurrently": "catalog:tooling"
     }
 }

@@ -1,13 +1,22 @@
 import { DEFAULT_API_SERVER_PORT } from '@snippetly/common/lib';
+import { config } from 'dotenv';
+import path from 'node:path';
 import { AppConfig } from './config/app-config.interface';
 import { UploadthingStrategy } from './config/system/binary-storage/uploadthing.strategy';
 import { NodemailerStrategy } from './config/system/email/nodemailer.strategy';
+
+config({
+    path: ['.env', '.env.development', '.env.production'].map(env => path.join(process.cwd(), env)),
+});
 
 export const appConfig: AppConfig = {
     api: {
         host: 'localhost',
         port: DEFAULT_API_SERVER_PORT,
         // ...(isProduction() && { cors: productionCorsOptions }),
+    },
+    auth: {
+        requireVerification: false,
     },
     database: {
         type: 'postgres',

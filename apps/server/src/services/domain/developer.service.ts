@@ -1,11 +1,15 @@
-import { RegisterDeveloperAccountDtoType, SuccessResponseDtoType } from '@snippetly/common/dto';
 import {
-    EmailAddressConflictError,
-    MissingPasswordError,
-    PasswordValidationError,
-} from '@snippetly/common/errors';
+    RefreshVerificationTokenDtoType,
+    RegisterDeveloperAccountDtoType,
+    SuccessResponse,
+    VerifyAccountDtoType,
+} from '@snippetly/common/dto';
 import { RequestContext } from '../../api/request-context/request-context';
 import { isApiError } from '../../common/errors/api-error';
+import {
+    MissingPasswordError,
+    PasswordValidationError,
+} from '../../common/errors/generated-developer-errors';
 import { normalizeInput } from '../../common/helpers/validation';
 import { Developer } from '../../entities/developer/developer.entity';
 import { User } from '../../entities/users/user.entity';
@@ -21,10 +25,8 @@ export class DeveloperService {
     ) {}
     public async registerAccount(
         ctx: RequestContext,
-        input: RegisterDeveloperAccountDtoType['body'],
-    ): Promise<
-        SuccessResponseDtoType | EmailAddressConflictError | PasswordValidationError | MissingPasswordError
-    > {
+        input: RegisterDeveloperAccountDtoType['input'],
+    ): Promise<SuccessResponse | MissingPasswordError | PasswordValidationError> {
         if (!input.password) {
             return new MissingPasswordError();
         }
@@ -79,12 +81,43 @@ export class DeveloperService {
             reload: false,
         });
 
-        // if (!user.isVerified) {
-        //     await this.eventBus.publish(new AccountRegistrationEvent(ctx, user));
-        // }
-
         return {
             success: true,
         };
+    }
+
+    public async refreshVerificationToken(
+        ctx: RequestContext,
+        input: RefreshVerificationTokenDtoType['input'],
+    ): Promise<void> {
+        const user = await this.userService.getUserByIdentifier(ctx, input.emailAddress);
+
+        if (user && !user.isVerified) {
+            await this.userService.refreshVerificationToken(ctx, user);
+        }
+    }
+
+    public async verifyAccount(
+        ctx: RequestContext,
+        input: VerifyAccountDtoType['input'],
+    ): Promise<User | undefined> {
+        const result = await this.userService.verifyDeveloperAccount(ctx, input.token);
+
+        return result;
+    }
+
+    public async getActiveDeveloper(ctx: RequestContext): Promise<Developer | undefined> {
+        if (!ctx.activeUserId) return undefined;
+        const repo = this.databaseService.getRepository(ctx, Developer);
+
+        const developer = await repo.findOne({
+            where: {
+                user: {
+                    id: ctx.activeUserId,
+                },
+            },
+        });
+
+        return developer ?? undefined;
     }
 }

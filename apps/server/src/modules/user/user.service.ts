@@ -1,283 +1,263 @@
+import { StatusCodes } from 'http-status-codes';
 import {
-  CreateUserDtoType,
-  DiscoverUsersRequestQueryDtoType,
-  ForgetPasswordDtoType,
-  GetUserRequestDtoType,
-  UpdateUserPasswordDtoType,
-  UpdateUserRequestDtoType,
-} from "@snippetly/common/dto";
-import { StatusCodes } from "http-status-codes";
-import type { User } from "../../common/db/schema";
-import { HttpException } from "../../common/lib/exception";
-import { handleCursorPagination } from "../../common/lib/utils";
-import type { RequestContext } from "../../common/middlewares/request-context-middleware";
-import type { NonNullableFields } from "../../common/types/utils";
-import { utapi } from "../../config/uploadthing";
-import { PasswordHashService } from "../auth/password-hash.service";
-import { DEFAULT_FIND_USERS_LIMIT } from "./constants";
-import { UserReadService } from "./user-read.service";
-import { UserRepository } from "./user.repository";
+    CreateUserDtoType,
+    DiscoverUsersRequestQueryDtoType,
+    ForgetPasswordDtoType,
+    GetUserRequestDtoType,
+    UpdateUserPasswordDtoType,
+    UpdateUserRequestDtoType,
+} from '../../../../../packages/common/dist/schema';
+import type { User } from '../../common/db/schema';
+import { HttpException } from '../../common/lib/exception';
+import { handleCursorPagination } from '../../common/lib/utils';
+import type { RequestContext } from '../../common/middlewares/request-context-middleware';
+import type { NonNullableFields } from '../../common/types/utils';
+import { utapi } from '../../config/uploadthing';
+import { PasswordHashService } from '../auth/password-hash.service';
+import { DEFAULT_FIND_USERS_LIMIT } from './constants';
+import { UserReadService } from './user-read.service';
+import { UserRepository } from './user.repository';
 
 export class UserService {
-  private readonly PasswordHashService: PasswordHashService;
-  private UserReadService: UserReadService;
-  private UserRepository: UserRepository;
+    private readonly PasswordHashService: PasswordHashService;
+    private UserReadService: UserReadService;
+    private UserRepository: UserRepository;
 
-  constructor() {
-    this.PasswordHashService = new PasswordHashService();
-    this.UserReadService = new UserReadService();
-    this.UserRepository = new UserRepository();
-  }
-
-  public async create(_ctx: RequestContext, input: CreateUserDtoType) {
-    const { password, ...rest } = input;
-    const foundUser = await this.UserReadService.findOneSlim("name", rest.name);
-    if (foundUser) {
-      throw new HttpException(
-        StatusCodes.CONFLICT,
-        "User account already exists."
-      );
+    constructor() {
+        this.PasswordHashService = new PasswordHashService();
+        this.UserReadService = new UserReadService();
+        this.UserRepository = new UserRepository();
     }
 
-    const hashedPassword = await this.PasswordHashService.hash(password);
-
-    const [newUser] = await this.UserRepository.insert([
-      {
-        ...rest,
-        password: hashedPassword,
-      },
-    ]);
-
-    return newUser;
-  }
-
-  public async suggestUniqueNames(baseName: string) {
-    const suggestions: string[] = [];
-    const existingNames = new Set(
-      (await this.UserReadService.findManySlim("name", `%${baseName}%`)).map(
-        (u) => u.name.toLowerCase()
-      )
-    );
-
-    // Try appending numbers
-    for (let i = 1; suggestions.length < 3 && i <= 50; i++) {
-      const candidate = `${baseName}${i}`;
-      if (!existingNames.has(candidate.toLowerCase())) {
-        suggestions.push(candidate);
-      }
-    }
-    return suggestions;
-  }
-
-  public async update(
-    ctx: NonNullableFields<RequestContext>,
-    input: UpdateUserRequestDtoType
-  ) {
-    const foundUser = await this.UserReadService.findOneSlim("id", ctx.user.id);
-
-    if (!foundUser || ctx.user.id !== foundUser.id) {
-      throw new HttpException(StatusCodes.UNAUTHORIZED, `Invalid session`);
-    }
-    const { newPassword, currentPassword, ...rest } = input;
-    if (newPassword && currentPassword) {
-      await this.updatePassword(ctx, {
-        currentPassword,
-        newPassword,
-        email: foundUser.email,
-      });
-    }
-
-    const [updatedUser] = await this.UserRepository.update(ctx.user.id, {
-      ...rest,
-      // ...(input.name
-      //   ? { oldNames: [...foundUser.oldNames, foundUser.name] }
-      //   : {}),
-    });
-    return updatedUser;
-  }
-
-  public async updatePassword(
-    ctx: RequestContext,
-    input: UpdateUserPasswordDtoType | ForgetPasswordDtoType
-  ) {
-    const loggedInUserEmail = ctx.user?.email;
-
-    if (loggedInUserEmail && loggedInUserEmail !== input.email) {
-      // if user is logged in and the input.email is not his email
-      // then reject the request.
-      throw new HttpException(StatusCodes.UNAUTHORIZED, "Invalid session");
-    }
-
-    const foundUser = await this.UserReadService.findOneSlim(
-      "email",
-      input.email
-    );
-
-    if (!foundUser) {
-      throw new HttpException(StatusCodes.UNAUTHORIZED, "Invalid session");
-    }
-
-    if (input.currentPassword) {
-      const isValid = await this.PasswordHashService.verify({
-        plain: input.currentPassword,
-        hashed: foundUser.password,
-      });
-      if (!isValid) {
-        throw new HttpException(
-          StatusCodes.UNAUTHORIZED,
-          "Invalid credentials"
-        );
-      }
-    }
-
-    const updatedUser = await this.UserRepository.update(foundUser.id, {
-      password: await this.PasswordHashService.hash(input.newPassword),
-    });
-
-    return updatedUser;
-  }
-
-  public async delete(ctx: NonNullableFields<RequestContext>) {
-    const foundUser = await this.UserReadService.findOneSlim("id", ctx.user.id);
-    if (!foundUser || ctx.user.id !== foundUser.id) {
-      throw new HttpException(StatusCodes.UNAUTHORIZED, `Invalid session`);
-    }
-
-    await Promise.all([
-      await this.UserRepository.delete(foundUser.id),
-      !!foundUser.imageKey && (await utapi.deleteFiles(foundUser.imageKey)),
-    ]);
-
-    return foundUser;
-  }
-
-  public async discoverUsers(
-    ctx: RequestContext,
-    input: DiscoverUsersRequestQueryDtoType
-  ) {
-    const { limit } = input;
-    const defaultLimit = limit ?? DEFAULT_FIND_USERS_LIMIT;
-
-    const { data, total } = await this.UserReadService.discoverUsers({
-      ...input,
-      limit: defaultLimit,
-      loggedInUserId: ctx.user?.id,
-    });
-
-    // filter out current user from results if logged in
-    const filteredItems = ctx.user?.id
-      ? data.filter((user) => user.id !== ctx.user?.id)
-      : data;
-
-    const { nextCursor, data: items } = handleCursorPagination({
-      data: filteredItems,
-      limit: defaultLimit,
-    });
-
-    return {
-      items,
-      nextCursor: nextCursor
-        ? ({
-            snippetsCount: nextCursor.snippetsCount,
-            id: nextCursor.id,
-          } satisfies DiscoverUsersRequestQueryDtoType["cursor"])
-        : undefined,
-      total: data.length < filteredItems.length ? total - 1 : total,
-    };
-  }
-
-  public async getCurrentUserDashboard(ctx: NonNullableFields<RequestContext>) {
-    const foundUser = await this.UserReadService.getUserForDashboard({
-      userId: ctx.user.id,
-    });
-
-    if (!foundUser) {
-      throw new HttpException(StatusCodes.NOT_FOUND, "User not found.");
-    }
-
-    const stats = await this.UserReadService.getUserActivityStats({
-      userId: foundUser.id!,
-    });
-
-    return {
-      user: foundUser,
-      stats,
-    };
-  }
-
-  public async getCurrentUserProfile(ctx: NonNullableFields<RequestContext>) {
-    const foundUser = await this.UserReadService.findOneSlim("id", ctx.user.id);
-    const data = await this.getUserProfile(ctx, { user: foundUser });
-
-    if (data.profile?.id !== ctx.user.id) {
-      throw new HttpException(StatusCodes.UNAUTHORIZED, "Invalid session");
-    }
-    return data;
-  }
-
-  public async getUserProfile(
-    ctx: RequestContext,
-    input: Partial<GetUserRequestDtoType> & { user?: User }
-  ) {
-    const { name, user } = input;
-    const checkUserExists = user ? false : true;
-
-    let foundUser = !checkUserExists ? user : null;
-
-    if (checkUserExists && name) {
-      foundUser = await this.UserReadService.findOneSlim("name", name);
-      if (!foundUser) {
-        // search for that name in old names array
-        const foundUserWithOldName =
-          await this.UserReadService.findOneByOldNames(name);
-
-        if (!foundUserWithOldName) {
-          throw new HttpException(StatusCodes.NOT_FOUND, "User not found.");
+    public async create(_ctx: RequestContext, input: CreateUserDtoType) {
+        const { password, ...rest } = input;
+        const foundUser = await this.UserReadService.findOneSlim('name', rest.name);
+        if (foundUser) {
+            throw new HttpException(StatusCodes.CONFLICT, 'User account already exists.');
         }
-        return { redirect: true, name: foundUserWithOldName.name };
-      }
+
+        const hashedPassword = await this.PasswordHashService.hash(password);
+
+        const [newUser] = await this.UserRepository.insert([
+            {
+                ...rest,
+                password: hashedPassword,
+            },
+        ]);
+
+        return newUser;
     }
 
-    if (!foundUser) {
-      throw new HttpException(StatusCodes.NOT_FOUND, "User not found.");
+    public async suggestUniqueNames(baseName: string) {
+        const suggestions: string[] = [];
+        const existingNames = new Set(
+            (await this.UserReadService.findManySlim('name', `%${baseName}%`)).map(u => u.name.toLowerCase()),
+        );
+
+        // Try appending numbers
+        for (let i = 1; suggestions.length < 3 && i <= 50; i++) {
+            const candidate = `${baseName}${i}`;
+            if (!existingNames.has(candidate.toLowerCase())) {
+                suggestions.push(candidate);
+            }
+        }
+        return suggestions;
     }
 
-    const isCurrentUserOwner = ctx.user?.id === foundUser.id;
-    const userProfile = await this.UserReadService.getUserProfile(
-      foundUser.id,
-      isCurrentUserOwner,
-      ctx.user?.id
-    );
+    public async update(ctx: NonNullableFields<RequestContext>, input: UpdateUserRequestDtoType) {
+        const foundUser = await this.UserReadService.findOneSlim('id', ctx.user.id);
 
-    const isCurrentUserAFriend =
-      (userProfile?.friendshipsReceived?.length ?? 0) > 0 ||
-      (userProfile?.friendshipsRequested?.length ?? 0) > 0;
+        if (!foundUser || ctx.user.id !== foundUser.id) {
+            throw new HttpException(StatusCodes.UNAUTHORIZED, `Invalid session`);
+        }
+        const { newPassword, currentPassword, ...rest } = input;
+        if (newPassword && currentPassword) {
+            await this.updatePassword(ctx, {
+                currentPassword,
+                newPassword,
+                email: foundUser.email,
+            });
+        }
 
-    let requestStatus = null;
-    if (
-      (userProfile?.friendshipsRequested?.length ?? 0 > 0) ||
-      (userProfile?.friendshipsReceived?.length ?? 0 > 0)
+        const [updatedUser] = await this.UserRepository.update(ctx.user.id, {
+            ...rest,
+            // ...(input.name
+            //   ? { oldNames: [...foundUser.oldNames, foundUser.name] }
+            //   : {}),
+        });
+        return updatedUser;
+    }
+
+    public async updatePassword(
+        ctx: RequestContext,
+        input: UpdateUserPasswordDtoType | ForgetPasswordDtoType,
     ) {
-      requestStatus =
-        userProfile?.friendshipsRequested?.[0]?.status ??
-        userProfile?.friendshipsReceived?.[0]?.status;
+        const loggedInUserEmail = ctx.user?.email;
+
+        if (loggedInUserEmail && loggedInUserEmail !== input.email) {
+            // if user is logged in and the input.email is not his email
+            // then reject the request.
+            throw new HttpException(StatusCodes.UNAUTHORIZED, 'Invalid session');
+        }
+
+        const foundUser = await this.UserReadService.findOneSlim('email', input.email);
+
+        if (!foundUser) {
+            throw new HttpException(StatusCodes.UNAUTHORIZED, 'Invalid session');
+        }
+
+        if (input.currentPassword) {
+            const isValid = await this.PasswordHashService.verify({
+                plain: input.currentPassword,
+                hashed: foundUser.password,
+            });
+            if (!isValid) {
+                throw new HttpException(StatusCodes.UNAUTHORIZED, 'Invalid credentials');
+            }
+        }
+
+        const updatedUser = await this.UserRepository.update(foundUser.id, {
+            password: await this.PasswordHashService.hash(input.newPassword),
+        });
+
+        return updatedUser;
     }
 
-    if (!userProfile) {
-      throw new HttpException(StatusCodes.NOT_FOUND, "User account not found.");
+    public async delete(ctx: NonNullableFields<RequestContext>) {
+        const foundUser = await this.UserReadService.findOneSlim('id', ctx.user.id);
+        if (!foundUser || ctx.user.id !== foundUser.id) {
+            throw new HttpException(StatusCodes.UNAUTHORIZED, `Invalid session`);
+        }
+
+        await Promise.all([
+            await this.UserRepository.delete(foundUser.id),
+            !!foundUser.imageKey && (await utapi.deleteFiles(foundUser.imageKey)),
+        ]);
+
+        return foundUser;
     }
 
-    const stats = await this.UserReadService.getUserActivityStats({
-      userId: foundUser.id,
-    });
+    public async discoverUsers(ctx: RequestContext, input: DiscoverUsersRequestQueryDtoType) {
+        const { limit } = input;
+        const defaultLimit = limit ?? DEFAULT_FIND_USERS_LIMIT;
 
-    return {
-      profile: userProfile,
-      friendshipInfo: {
-        isCurrentUserAFriend,
-        requestStatus: requestStatus || null,
-      },
-      stats,
-    };
-  }
+        const { data, total } = await this.UserReadService.discoverUsers({
+            ...input,
+            limit: defaultLimit,
+            loggedInUserId: ctx.user?.id,
+        });
+
+        // filter out current user from results if logged in
+        const filteredItems = ctx.user?.id ? data.filter(user => user.id !== ctx.user?.id) : data;
+
+        const { nextCursor, data: items } = handleCursorPagination({
+            data: filteredItems,
+            limit: defaultLimit,
+        });
+
+        return {
+            items,
+            nextCursor: nextCursor
+                ? ({
+                      snippetsCount: nextCursor.snippetsCount,
+                      id: nextCursor.id,
+                  } satisfies DiscoverUsersRequestQueryDtoType['cursor'])
+                : undefined,
+            total: data.length < filteredItems.length ? total - 1 : total,
+        };
+    }
+
+    public async getCurrentUserDashboard(ctx: NonNullableFields<RequestContext>) {
+        const foundUser = await this.UserReadService.getUserForDashboard({
+            userId: ctx.user.id,
+        });
+
+        if (!foundUser) {
+            throw new HttpException(StatusCodes.NOT_FOUND, 'User not found.');
+        }
+
+        const stats = await this.UserReadService.getUserActivityStats({
+            userId: foundUser.id!,
+        });
+
+        return {
+            user: foundUser,
+            stats,
+        };
+    }
+
+    public async getCurrentUserProfile(ctx: NonNullableFields<RequestContext>) {
+        const foundUser = await this.UserReadService.findOneSlim('id', ctx.user.id);
+        const data = await this.getUserProfile(ctx, { user: foundUser });
+
+        if (data.profile?.id !== ctx.user.id) {
+            throw new HttpException(StatusCodes.UNAUTHORIZED, 'Invalid session');
+        }
+        return data;
+    }
+
+    public async getUserProfile(
+        ctx: RequestContext,
+        input: Partial<GetUserRequestDtoType> & { user?: User },
+    ) {
+        const { name, user } = input;
+        const checkUserExists = user ? false : true;
+
+        let foundUser = !checkUserExists ? user : null;
+
+        if (checkUserExists && name) {
+            foundUser = await this.UserReadService.findOneSlim('name', name);
+            if (!foundUser) {
+                // search for that name in old names array
+                const foundUserWithOldName = await this.UserReadService.findOneByOldNames(name);
+
+                if (!foundUserWithOldName) {
+                    throw new HttpException(StatusCodes.NOT_FOUND, 'User not found.');
+                }
+                return { redirect: true, name: foundUserWithOldName.name };
+            }
+        }
+
+        if (!foundUser) {
+            throw new HttpException(StatusCodes.NOT_FOUND, 'User not found.');
+        }
+
+        const isCurrentUserOwner = ctx.user?.id === foundUser.id;
+        const userProfile = await this.UserReadService.getUserProfile(
+            foundUser.id,
+            isCurrentUserOwner,
+            ctx.user?.id,
+        );
+
+        const isCurrentUserAFriend =
+            (userProfile?.friendshipsReceived?.length ?? 0) > 0 ||
+            (userProfile?.friendshipsRequested?.length ?? 0) > 0;
+
+        let requestStatus = null;
+        if (
+            (userProfile?.friendshipsRequested?.length ?? 0 > 0) ||
+            (userProfile?.friendshipsReceived?.length ?? 0 > 0)
+        ) {
+            requestStatus =
+                userProfile?.friendshipsRequested?.[0]?.status ??
+                userProfile?.friendshipsReceived?.[0]?.status;
+        }
+
+        if (!userProfile) {
+            throw new HttpException(StatusCodes.NOT_FOUND, 'User account not found.');
+        }
+
+        const stats = await this.UserReadService.getUserActivityStats({
+            userId: foundUser.id,
+        });
+
+        return {
+            profile: userProfile,
+            friendshipInfo: {
+                isCurrentUserAFriend,
+                requestStatus: requestStatus || null,
+            },
+            stats,
+        };
+    }
 }

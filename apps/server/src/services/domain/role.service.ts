@@ -1,13 +1,13 @@
-import { Permission } from '@snippetly/common/dto';
-import { InternalServerError } from '@snippetly/common/errors';
 import {
     DEVELOPER_ROLE_DESCRIPTION,
     DEVELOPER_ROLE_NAME,
     SUPER_ADMIN_ROLE_DESCRIPTION,
     SUPER_ADMIN_ROLE_NAME,
 } from '@snippetly/common/lib';
+import { Permission } from '../../../../../packages/common/dist/schema';
 import { getNormalizedAppPermissions } from '../../api';
 import { RequestContext } from '../../api/request-context/request-context';
+import { InternalServerError } from '../../common/errors/errors';
 import { unique } from '../../common/helpers/unique';
 import { Role } from '../../entities/role/role.entity';
 import { DatabaseService } from '../../infra/database/database.service';
@@ -31,11 +31,11 @@ export class RoleService {
     }
 
     public async getDeveloperRole(ctx?: RequestContext) {
-        const studentRole = await this.databaseService.getRepository(ctx, Role).findOne({
+        const developerRole = await this.databaseService.getRepository(ctx, Role).findOne({
             where: { name: DEVELOPER_ROLE_NAME },
         });
-        if (!studentRole) throw new InternalServerError('errors.developer-role-not-found');
-        return studentRole;
+        if (!developerRole) throw new InternalServerError('errors.developer-role-not-found');
+        return developerRole;
     }
 
     public async initSuperAdminRole() {

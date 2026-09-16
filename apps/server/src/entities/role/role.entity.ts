@@ -1,6 +1,6 @@
-import { Permission } from '@snippetly/common/dto';
 import { DeepPartial } from '@snippetly/common/lib';
 import { Column, Entity } from 'typeorm';
+import { Permission } from '../../../../../packages/common/dist/schema';
 import { AppEntity } from '../../infra/database/app-entity';
 
 @Entity()
