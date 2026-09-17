@@ -1,6 +1,16 @@
 import { RequestContext } from '../../api/request-context/request-context';
 import { isApiError } from '../../common/errors/api-error';
-import { PasswordValidationError } from '../../common/errors/generated-developer-errors';
+import { EntityNotFoundError, InternalServerError } from '../../common/errors/errors';
+import {
+    IdentifierChangeTokenExpiredError,
+    IdentifierChangeTokenInvalidError,
+    InvalidCredentialsError,
+    PasswordResetTokenExpiredError,
+    PasswordResetTokenInvalidError,
+    PasswordValidationError,
+    VerificationTokenExpiredError,
+    VerificationTokenInvalidError,
+} from '../../common/errors/generated-developer-errors';
 import { isEmailAddressLike, normalizeInput } from '../../common/helpers/validation';
 import { ConfigService } from '../../config/config.service';
 import { NativeAuthenticationMethod } from '../../entities/authentication-method/authentication-method.entity';
@@ -61,25 +71,27 @@ export class UserService {
         return this.databaseService.getRepository(ctx, User).save(user);
     }
 
-    async verifyDeveloperAccount(ctx: RequestContext, verificationToken: string): Promise<User | undefined> {
+    async verifyDeveloperAccount(
+        ctx: RequestContext,
+        verificationToken: string,
+    ): Promise<User | VerificationTokenInvalidError | VerificationTokenExpiredError> {
         const user = await this.databaseService
             .getRepository(ctx, User)
             .createQueryBuilder('user')
             .leftJoinAndSelect('user.authenticationMethods', 'authMethods')
             .leftJoin('user.authenticationMethods', 'authenticationMethod')
-            .addSelect('authMethods.passwordHash')
             .where('authenticationMethod.verificationToken = :verificationToken', { verificationToken })
             .getOne();
 
         if (!user) {
-            return; // TODO: return error
+            return new VerificationTokenInvalidError();
         } else {
             const isValid = await this.verificationTokenGenerator.verifyVerificationToken(
                 ctx,
                 verificationToken,
             );
             if (!isValid) {
-                return; // TODO: return error
+                return new VerificationTokenExpiredError();
             } else {
                 const nativeMethod = user.getNativeAuthenticationMethod();
                 nativeMethod.verificationToken = null;
@@ -88,6 +100,160 @@ export class UserService {
                 return this.databaseService.getRepository(ctx, User).save(user);
             }
         }
+    }
+
+    async generateAndSetPasswordResetToken(
+        ctx: RequestContext,
+        emailAddress: string,
+    ): Promise<User | undefined> {
+        const user = await this.getUserByIdentifier(ctx, emailAddress);
+        if (!user) return undefined;
+        const nativeAuthMethod = user.getNativeAuthenticationMethod({ throwError: false });
+        if (!nativeAuthMethod) return undefined;
+        nativeAuthMethod.passwordResetToken =
+            await this.verificationTokenGenerator.generateVerificationToken(ctx);
+        await this.databaseService.getRepository(ctx, NativeAuthenticationMethod).save(nativeAuthMethod);
+        return user;
+    }
+
+    async resetAccountPassword(
+        ctx: RequestContext,
+        passwordResetToken: string,
+        newPassword: string,
+    ): Promise<
+        User | PasswordResetTokenInvalidError | PasswordResetTokenExpiredError | PasswordValidationError
+    > {
+        const user = await this.databaseService
+            .getRepository(ctx, User)
+            .createQueryBuilder('user')
+            .leftJoinAndSelect('user.authenticationMethods', 'authMethods')
+            .leftJoin('user.authenticationMethods', 'authenticationMethod')
+            .addSelect('authMethods.passwordHash')
+            .where('authenticationMethod.passwordResetToken = :passwordResetToken', { passwordResetToken })
+            .getOne();
+
+        if (!user) {
+            return new PasswordResetTokenInvalidError();
+        } else {
+            const passwordValidationResult = await this.validatePassword(ctx, newPassword);
+            if (passwordValidationResult !== true) {
+                return passwordValidationResult;
+            }
+            const isValid = await this.verificationTokenGenerator.verifyVerificationToken(
+                ctx,
+                passwordResetToken,
+            );
+            if (!isValid) {
+                return new PasswordResetTokenExpiredError();
+            } else {
+                const nativeMethod = user.getNativeAuthenticationMethod();
+                nativeMethod.password = await this.passwordHashingService.hash(newPassword);
+                nativeMethod.passwordResetToken = null;
+                // completing password-reset workflow proves ownership of the email address to which the token was delivered
+                nativeMethod.verificationToken = null;
+                await this.databaseService.getRepository(ctx, NativeAuthenticationMethod).save(nativeMethod);
+                if (!user.isVerified && this.configService.authOptions.requireVerification) {
+                    // completing password-reset workflow proves ownership of the email address to which the token was delivered
+                    // so the flow makes the same guarantees made by the verification workflow therefore no need for account verification.
+                    user.isVerified = true;
+                }
+                return this.databaseService.getRepository(ctx, User).save(user);
+            }
+        }
+    }
+
+    async generateAndSetIdentifierChangeToken(ctx: RequestContext, user: User): Promise<User | undefined> {
+        const nativeAuthMethod = user.getNativeAuthenticationMethod();
+        nativeAuthMethod.identifierChangeToken =
+            await this.verificationTokenGenerator.generateVerificationToken(ctx);
+        await this.databaseService.getRepository(ctx, NativeAuthenticationMethod).save(nativeAuthMethod);
+        return user;
+    }
+
+    async changeIdentifier(
+        ctx: RequestContext,
+        identifierChangeToken: string,
+    ): Promise<
+        | IdentifierChangeTokenInvalidError
+        | IdentifierChangeTokenExpiredError
+        | { user: User; oldIdentifier: string }
+    > {
+        const user = await this.databaseService
+            .getRepository(ctx, User)
+            .createQueryBuilder('user')
+            .leftJoinAndSelect('user.authenticationMethods', 'authMethods')
+            .leftJoin('user.authenticationMethods', 'authenticationMethod')
+            .addSelect('authMethods.passwordHash')
+            .where('authenticationMethod.identifierChangeToken = :identifierChangeToken', {
+                identifierChangeToken,
+            })
+            .getOne();
+
+        if (!user) {
+            return new IdentifierChangeTokenInvalidError();
+        } else {
+            const isValid = await this.verificationTokenGenerator.verifyVerificationToken(
+                ctx,
+                identifierChangeToken,
+            );
+            if (!isValid) {
+                return new IdentifierChangeTokenExpiredError();
+            } else {
+                const nativeMethod = user.getNativeAuthenticationMethod();
+                const identifierPlaceholder = nativeMethod.identifierPlaceholder;
+                if (!identifierPlaceholder) {
+                    throw new InternalServerError('errors.identifier_placeholder_missing');
+                }
+
+                const oldIdentifier = user.identifier;
+                user.identifier = identifierPlaceholder;
+                nativeMethod.identifier = identifierPlaceholder;
+                nativeMethod.identifierChangeToken = null;
+                nativeMethod.identifierPlaceholder = null;
+
+                await this.databaseService.getRepository(ctx, NativeAuthenticationMethod).save(nativeMethod);
+                await this.databaseService.getRepository(ctx, User).save(user);
+                return { user, oldIdentifier };
+            }
+        }
+    }
+
+    public async updatePassword(
+        ctx: RequestContext,
+        input: { currentPassword: string; newPassword: string; userId: string },
+    ): Promise<InvalidCredentialsError | PasswordValidationError | boolean> {
+        const user = await this.databaseService
+            .getRepository(ctx, User)
+            .createQueryBuilder('user')
+            .leftJoinAndSelect('user.authenticationMethods', 'authMethods')
+            .addSelect('authMethods.password')
+            .where('user.id = :id', { id: input.userId })
+            .getOne();
+
+        if (!user) {
+            throw new EntityNotFoundError({ entityId: input.userId, entityName: 'User' });
+        }
+
+        const passwordValidationResult = await this.validatePassword(ctx, input.newPassword);
+        if (passwordValidationResult !== true) {
+            return passwordValidationResult;
+        }
+
+        const nativeMethod = user.getNativeAuthenticationMethod();
+        const matches = await this.passwordHashingService.verify(
+            input.currentPassword,
+            nativeMethod.password,
+        );
+        if (!matches) {
+            return new InvalidCredentialsError({ reason: '' });
+        }
+
+        nativeMethod.password = await this.passwordHashingService.hash(input.newPassword);
+
+        await this.databaseService
+            .getRepository(ctx, NativeAuthenticationMethod)
+            .save(nativeMethod, { reload: false });
+        return true;
     }
 
     /**

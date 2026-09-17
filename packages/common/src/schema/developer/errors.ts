@@ -43,7 +43,7 @@ export type NotVerifiedAccountError = z.infer<typeof notVerifiedAccountError>;
  */
 export const verificationTokenInvalidError = z.object({
     code: z.literal('VERIFICATION_TOKEN_INVALID_ERROR'),
-    httpStatusCode: z.literal(400),
+    httpStatusCode: z.literal(401),
     message: z.string().nonempty(),
 });
 
@@ -55,4 +55,55 @@ export const verificationTokenExpiredError = z.object({
     code: z.literal('VERIFICATION_TOKEN_EXPIRED_ERROR'),
     httpStatusCode: z.literal(401),
     message: z.string().nonempty(),
+});
+
+/**
+ * @description
+ * Represents the shape of an error that gets thrown when identifier-change token is invalid.
+ */
+export const identifierChangeTokenInvalidError = z.object({
+    code: z.literal('IDENTIFIER_CHANGE_TOKEN_INVALID_ERROR'),
+    httpStatusCode: z.literal(401),
+    message: z.string().nonempty(),
+});
+
+/**
+ * @description
+ * Represents the shape of an error that gets thrown when identifier-change token used to change the email address of the developer's account is valid, but expired.
+ */
+export const identifierChangeTokenExpiredError = z.object({
+    code: z.literal('IDENTIFIER_CHANGE_TOKEN_EXPIRED_ERROR'),
+    httpStatusCode: z.literal(401),
+    message: z.string().nonempty(),
+});
+
+/**
+ * @description
+ * Represents the shape of an error that gets thrown when password-reset token is invalid.
+ */
+export const passwordResetTokenInvalidError = z.object({
+    code: z.literal('PASSWORD_RESET_TOKEN_INVALID_ERROR'),
+    httpStatusCode: z.literal(401),
+    message: z.string().nonempty(),
+});
+
+/**
+ * @description
+ * Represents the shape of an error that gets thrown when password-reset token used to reset the password of the developer's account is valid, but expired.
+ */
+export const passwordResetTokenExpiredError = z.object({
+    code: z.literal('PASSWORD_RESET_TOKEN_EXPIRED_ERROR'),
+    httpStatusCode: z.literal(401),
+    message: z.string().nonempty(),
+});
+
+/**
+ * @description
+ * Represents the shape of an error that gets thrown when attempting friendship action that is not valid.
+ */
+export const invalidFriendshipActionError = z.object({
+    code: z.literal('INVALID_FRIENDSHIP_ACTION_ERROR'),
+    httpStatusCode: z.literal(400),
+    message: z.string().nonempty(),
+    reason: z.string().optional(),
 });

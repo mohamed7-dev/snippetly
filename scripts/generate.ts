@@ -1,6 +1,9 @@
-import { bootstrap } from '@snippetly/server';
+import { App, bootstrap } from '@snippetly/server';
 import path from 'node:path';
+import { generateAuthInputDto } from './generate-auth-input-dto';
 import { generateErrorClasses } from './generate-error-classes-dtos';
+import { generateLanguageCodeEnum } from './generate-language-code-enum';
+import { generatePermissionEnum } from './generate-permissions-enum';
 
 let cachedAppPromise: Promise<any> | undefined = undefined;
 
@@ -29,8 +32,8 @@ async function generateTypes() {
 
             await generateErrorClasses(
                 [
-                    path.resolve('.', 'packages', 'common', 'src', 'dto', 'developer'),
-                    path.resolve('.', 'packages', 'common', 'src', 'dto', 'shared'),
+                    path.resolve('.', 'packages', 'common', 'src', 'schema', 'developer'),
+                    path.resolve('.', 'packages', 'common', 'src', 'schema', 'shared'),
                 ],
                 path.resolve(
                     '.',
@@ -43,18 +46,26 @@ async function generateTypes() {
                 ),
             );
 
-            // await generateAuthInputDto(
-            //     path.resolve('.', 'packages', 'common', 'src', 'dto', 'shared', 'generated-auth-input.ts'),
-            //     app as App,
-            // );
+            await generateAuthInputDto(
+                path.resolve('.', 'packages', 'common', 'src', 'schema', 'shared', 'generated-auth-input.ts'),
+                app as App,
+            );
 
-            // await generatePermissionEnum(
-            //     path.resolve('.', 'packages', 'common', 'src', 'dto', 'shared', 'generated-permission.ts'),
-            // );
+            await generatePermissionEnum(
+                path.resolve('.', 'packages', 'common', 'src', 'schema', 'shared', 'generated-permission.ts'),
+            );
 
-            // await generateLanguageCodeEnum(
-            //     path.resolve('.', 'packages', 'common', 'src', 'dto', 'shared', 'generated-language-code.ts'),
-            // );
+            await generateLanguageCodeEnum(
+                path.resolve(
+                    '.',
+                    'packages',
+                    'common',
+                    'src',
+                    'schema',
+                    'shared',
+                    'generated-language-code.ts',
+                ),
+            );
         })
         .then(() => {
             console.log('Types generated successfully');

@@ -1,11 +1,19 @@
 import z from 'zod';
 import { authenticatedUser } from '../shared/auth.js';
 import { SuccessResponse, successResponse } from '../shared/common-schemas.js';
-import { invalidCredentialsError, nativeAuthStrategyError } from '../shared/errors.js';
+import {
+    emailAddressConflictError,
+    invalidCredentialsError,
+    nativeAuthStrategyError,
+} from '../shared/errors.js';
 import { developerAuthInput } from '../shared/generated-auth-input.js';
 import {
+    identifierChangeTokenExpiredError,
+    identifierChangeTokenInvalidError,
     missingPasswordError,
     notVerifiedAccountError,
+    passwordResetTokenExpiredError,
+    passwordResetTokenInvalidError,
     passwordValidationError,
     verificationTokenExpiredError,
     verificationTokenInvalidError,
@@ -111,4 +119,119 @@ export const verifyAccountDto = {
 export type VerifyAccountDtoType = {
     input: z.infer<typeof verifyAccountInput>;
     output: z.infer<typeof verifyAccountOutput>;
+};
+
+//############################ Request Email Address Change ##################################
+
+const requestEmailAddressChangeInput = z.object({
+    newEmailAddress: z.email().nonempty(),
+    password: z.string().nonempty(), // TODO: use strong password schema
+});
+
+const requestEmailAddressChangeOutput = z.union([
+    successResponse,
+    nativeAuthStrategyError,
+    emailAddressConflictError,
+    invalidCredentialsError,
+]);
+
+export const requestEmailAddressChangeDto = {
+    input: requestEmailAddressChangeInput,
+    output: requestEmailAddressChangeOutput,
+};
+
+export type RequestEmailAddressChangeDtoType = {
+    input: z.infer<typeof requestEmailAddressChangeInput>;
+    output: z.infer<typeof requestEmailAddressChangeOutput>;
+};
+
+//############################  Change Email Address ##################################
+
+const changeEmailAddressInput = z.object({
+    token: z.string().nonempty(),
+});
+
+const changeEmailAddressOutput = z.union([
+    successResponse,
+    nativeAuthStrategyError,
+    identifierChangeTokenExpiredError,
+    identifierChangeTokenInvalidError,
+]);
+
+export const changeEmailAddressDto = {
+    input: changeEmailAddressInput,
+    output: changeEmailAddressOutput,
+};
+
+export type ChangeEmailAddressDtoType = {
+    input: z.infer<typeof changeEmailAddressInput>;
+    output: z.infer<typeof changeEmailAddressOutput>;
+};
+
+//############################ Request Password Reset ##################################
+
+const requestPasswordResetInput = z.object({
+    emailAddress: z.email().nonempty(),
+});
+
+const requestPasswordResetOutput = z.union([successResponse, nativeAuthStrategyError]);
+
+export const requestPasswordResetDto = {
+    input: requestPasswordResetInput,
+    output: requestPasswordResetOutput,
+};
+
+export type RequestPasswordResetDtoType = {
+    input: z.infer<typeof requestPasswordResetInput>;
+    output: z.infer<typeof requestPasswordResetOutput>;
+};
+
+//############################  Reset Password ##################################
+
+const resetPasswordInput = z.object({
+    token: z.string().nonempty(),
+    newPassword: z.string().nonempty(), // TODO: use strong password schema
+});
+
+const resetPasswordOutput = z.union([
+    authenticatedUser,
+    nativeAuthStrategyError,
+    notVerifiedAccountError,
+    passwordValidationError,
+    passwordResetTokenExpiredError,
+    passwordResetTokenInvalidError,
+]);
+
+export const resetPasswordDto = {
+    input: resetPasswordInput,
+    output: resetPasswordOutput,
+};
+
+export type ResetPasswordDtoType = {
+    input: z.infer<typeof resetPasswordInput>;
+    output: z.infer<typeof resetPasswordOutput>;
+};
+
+//############################  Update Password ##################################
+
+const updateDeveloperPasswordInput = z.object({
+    newPassword: z.string().nonempty(), // TODO: use strong password schema
+    currentPassword: z.string().nonempty(), // TODO: use strong password schema
+});
+
+const updateDeveloperPasswordOutput = z.union([
+    successResponse,
+    nativeAuthStrategyError,
+    passwordValidationError,
+    invalidCredentialsError,
+]);
+
+export const updatePasswordDto = {
+    input: updateDeveloperPasswordInput,
+    output: updateDeveloperPasswordOutput,
+};
+
+export type UpdatePasswordDtoType = {
+    input: z.infer<typeof updateDeveloperPasswordInput>;
+    output: z.infer<typeof updateDeveloperPasswordOutput>;
 };

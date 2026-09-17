@@ -5,6 +5,7 @@ import { AdministratorService } from './domain/administrator.service';
 import { AuthService } from './domain/auth.service';
 import { CollectionService } from './domain/collection.service';
 import { DeveloperService } from './domain/developer.service';
+import { FriendshipService } from './domain/friendship.service';
 import { RoleService } from './domain/role.service';
 import { SessionService } from './domain/session.service';
 import { SnippetService } from './domain/snippet.service';
@@ -37,6 +38,7 @@ const services = [
     SnippetService,
     CollectionService,
     TagService,
+    FriendshipService,
 ];
 
 @Module({

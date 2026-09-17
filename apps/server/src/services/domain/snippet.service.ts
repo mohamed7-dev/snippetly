@@ -1,13 +1,15 @@
 import {
     CreateSnippetDtoType,
+    CurrentUserFriendsSnippetsListDtoType,
     DeleteSnippetDtoType,
     FindOneSnippetDtoType,
     ForkSnippetDtoType,
     SnippetListDtoType,
     UpdateSnippetDtoType,
+    UserFriendsSnippetsListDtoType,
 } from '@snippetly/common/dto';
 import { omit } from '@snippetly/common/lib';
-import { FindOptionsRelations } from 'typeorm';
+import { FindOptionsRelations, In } from 'typeorm';
 import { RequestContext } from '../../api/request-context/request-context';
 import { EntityNotFoundError, ForbiddenError } from '../../common/errors/errors';
 import { Snippet } from '../../entities/snippets/snippet.entity';
@@ -17,6 +19,7 @@ import { ListQueryBuilder } from '../helpers/list-query-builder/list-query-build
 import { SlugValidator } from '../helpers/slug-validator.service';
 import { CollectionService } from './collection.service';
 import { DeveloperService } from './developer.service';
+import { FriendshipService } from './friendship.service';
 import { TagService } from './tag.service';
 
 @Injectable()
@@ -28,6 +31,7 @@ export class SnippetService {
         private readonly databaseService: DatabaseService,
         private readonly tagService: TagService,
         private readonly listQueryBuilder: ListQueryBuilder,
+        private readonly friendshipService: FriendshipService,
     ) {}
 
     public async create(ctx: RequestContext, input: CreateSnippetDtoType['input']) {
@@ -88,6 +92,41 @@ export class SnippetService {
                 },
             })) ?? undefined
         );
+    }
+
+    public async getUserFriendsSnippets(
+        ctx: RequestContext,
+        userId: string,
+        input: UserFriendsSnippetsListDtoType['input'] | CurrentUserFriendsSnippetsListDtoType['input'],
+    ) {
+        const friendships = await this.friendshipService.getCurrentUserFriends(ctx, userId, {});
+
+        if (!friendships.items.length) {
+            return { items: [], itemsCount: 0 };
+        }
+
+        const friendIds = friendships.items.map(friendship =>
+            friendship.requester.id === userId ? friendship.addressee.id : friendship.requester.id,
+        );
+
+        const qb = this.listQueryBuilder.build(Snippet, input as any, {
+            ctx,
+            where: {
+                creator: { id: In(friendIds) },
+                isPrivate: false,
+            },
+            relations: {
+                creator: { user: true },
+                collection: true,
+                tags: true,
+            },
+            orderBy: {
+                createdAt: 'DESC',
+            },
+        });
+
+        const [items, itemsCount] = await qb.getManyAndCount();
+        return { items, itemsCount };
     }
 
     public async find(

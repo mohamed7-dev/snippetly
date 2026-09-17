@@ -1,15 +1,21 @@
 import {
     authenticateDeveloperDto,
     AuthenticateDeveloperDtoType,
+    changeEmailAddressDto,
     logoutDeveloperDto,
     LogoutDeveloperDtoType,
     Permission,
     refreshVerificationTokenDto,
     registerDeveloperAccountDto,
+    requestEmailAddressChangeDto,
+    requestPasswordResetDto,
+    resetPasswordDto,
+    updatePasswordDto,
     verifyAccountDto,
 } from '@snippetly/common/dto';
 import { Router } from 'express';
 import { isApiError } from '../../common/errors/api-error';
+import { ForbiddenError } from '../../common/errors/errors';
 import { NativeAuthStrategyError } from '../../common/errors/generated-developer-errors';
 import { AppRouter } from '../../common/types/app-router.interface';
 import { ConfigService } from '../../config';
@@ -19,6 +25,7 @@ import { Controller } from '../../infra/ioc-container/controller.decorator';
 import { AdministratorService } from '../../services/domain/administrator.service';
 import { AuthService } from '../../services/domain/auth.service';
 import { DeveloperService } from '../../services/domain/developer.service';
+import { UserService } from '../../services/domain/user.service';
 import { CommonAuth } from '../common/common-auth';
 import { authGuard } from '../middlewares/auth.guard';
 import { defineRoutePipeline } from '../middlewares/define-router-pipeline.mw';
@@ -34,6 +41,7 @@ export class DeveloperAuthController extends CommonAuth implements AppRouter {
         protected readonly authService: AuthService,
         protected readonly administratorService: AdministratorService,
         private readonly developerService: DeveloperService,
+        private readonly userService: UserService,
         private readonly configService: ConfigService,
     ) {
         super(authService, administratorService);
@@ -57,6 +65,27 @@ export class DeveloperAuthController extends CommonAuth implements AppRouter {
                 },
             }),
         );
+        router.patch(
+            '/accounts/current',
+            ...defineRoutePipeline({
+                before: [authGuard({ permissions: [Permission.Owner] })],
+                body: updatePasswordDto.input,
+                response: updatePasswordDto.output,
+                interceptors: [transactionInterceptor()],
+                handler: async (req, res) => {
+                    if (!req.getRequestContext().activeUserId) {
+                        throw new ForbiddenError();
+                    }
+                    const result = await this.userService.updatePassword(req.getRequestContext(), {
+                        ...req.body,
+                        userId: req.getRequestContext().activeUserId!,
+                    });
+                    if (isApiError(result)) return res.status(result.httpStatusCode).json(result);
+                    res.status(200).json({ success: result });
+                },
+            }),
+        );
+
         router.post(
             '/sessions',
             ...defineRoutePipeline({
@@ -129,12 +158,11 @@ export class DeveloperAuthController extends CommonAuth implements AppRouter {
                         req.body,
                     );
                     if (isApiError(result)) {
-                        // we need to actually return ApiError from the verification service
-                        return res.status((result as any).httpStatusCode).json(result);
+                        return res.status(result.httpStatusCode).json(result);
                     }
                     const session = await this.authService.openAuthenticatedSession(
                         req.getRequestContext(),
-                        result!,
+                        result,
                         NATIVE_AUTH_STRATEGY_NAME,
                     );
                     if (isApiError(session)) {
@@ -148,6 +176,140 @@ export class DeveloperAuthController extends CommonAuth implements AppRouter {
                         sessionToken: session.token,
                     });
                     res.status(200).json(this.clientSafeUser(session.user));
+                },
+            }),
+        );
+
+        router.post(
+            '/account-email-address-change',
+            ...defineRoutePipeline({
+                before: [authGuard({ permissions: [Permission.Owner] })],
+                body: requestEmailAddressChangeDto.input,
+                response: requestEmailAddressChangeDto.output,
+                interceptors: [transactionInterceptor()],
+                handler: async (req, res) => {
+                    const nativeAuthStrategyError = this.requireNativeAuthStrategy();
+                    if (nativeAuthStrategyError) {
+                        return nativeAuthStrategyError;
+                    }
+                    if (!req.getRequestContext().activeUserId) {
+                        throw new ForbiddenError();
+                    }
+                    const passwordVerificationResult = await this.authService.verifyUserPassword(
+                        req.getRequestContext(),
+                        req.getRequestContext().activeUserId!,
+                        req.body.password,
+                    );
+
+                    if (isApiError(passwordVerificationResult)) {
+                        return res
+                            .status(passwordVerificationResult.httpStatusCode)
+                            .json(passwordVerificationResult);
+                    }
+
+                    const result = await this.developerService.requestEmailAddressChange(
+                        req.getRequestContext(),
+                        req.getRequestContext().activeUserId!,
+                        req.body,
+                    );
+                    if (isApiError(result)) {
+                        return res.status(result.httpStatusCode).json(result);
+                    }
+
+                    res.status(200).json({ success: result });
+                },
+            }),
+        );
+
+        router.patch(
+            '/account-email-address-change',
+            ...defineRoutePipeline({
+                before: [authGuard({ permissions: [Permission.Owner] })],
+                body: changeEmailAddressDto.input,
+                response: changeEmailAddressDto.output,
+                interceptors: [transactionInterceptor()],
+                handler: async (req, res) => {
+                    const nativeAuthStrategyError = this.requireNativeAuthStrategy();
+                    if (nativeAuthStrategyError) {
+                        return nativeAuthStrategyError;
+                    }
+
+                    const result = await this.developerService.changeEmailAddress(
+                        req.getRequestContext(),
+                        req.body,
+                    );
+                    if (isApiError(result)) {
+                        return res.status(result.httpStatusCode).json(result);
+                    }
+
+                    res.status(200).json({ success: result });
+                },
+            }),
+        );
+
+        router.post(
+            '/account-password-change',
+            ...defineRoutePipeline({
+                before: [authGuard({ permissions: [Permission.Public] })],
+                body: requestPasswordResetDto.input,
+                response: requestPasswordResetDto.output,
+                interceptors: [transactionInterceptor()],
+                handler: async (req, res) => {
+                    const nativeAuthStrategyError = this.requireNativeAuthStrategy();
+                    if (nativeAuthStrategyError) {
+                        return nativeAuthStrategyError;
+                    }
+
+                    await this.developerService.requestPasswordReset(req.getRequestContext(), req.body);
+
+                    res.status(200).json({ success: true });
+                },
+            }),
+        );
+
+        router.patch(
+            '/account-password-change',
+            ...defineRoutePipeline({
+                before: [authGuard({ permissions: [Permission.Public] })],
+                body: resetPasswordDto.input,
+                response: resetPasswordDto.output,
+                interceptors: [transactionInterceptor()],
+                handler: async (req, res) => {
+                    const nativeAuthStrategyError = this.requireNativeAuthStrategy();
+                    if (nativeAuthStrategyError) {
+                        return nativeAuthStrategyError;
+                    }
+
+                    const result = await this.developerService.resetPassword(
+                        req.getRequestContext(),
+                        req.body,
+                    );
+                    if (isApiError(result)) {
+                        return res.status(result.httpStatusCode).json(result);
+                    }
+
+                    const authResult = await super.sharedAuthenticate(
+                        req.getRequestContext(),
+                        {
+                            [NATIVE_AUTH_STRATEGY_NAME]: {
+                                identifier: result.identifier,
+                                password: req.body.newPassword,
+                            },
+                        },
+                        req,
+                        res,
+                    );
+                    if (isApiError(authResult) && authResult.code === 'NOT_VERIFIED_ACCOUNT_ERROR') {
+                        return res.status(authResult.httpStatusCode).json(result);
+                    }
+
+                    if (isApiError(authResult)) {
+                        // this should never happen
+                        // eslint-disable-next-line @typescript-eslint/only-throw-error
+                        throw authResult;
+                    }
+
+                    res.status(200).json(authResult);
                 },
             }),
         );

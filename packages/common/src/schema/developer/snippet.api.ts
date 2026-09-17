@@ -187,7 +187,7 @@ const snippetListItem = snippet.omit({ collection: true, tags: true, creator: tr
     }),
 });
 
-const publicListSnippetItem = snippetItem.pick({
+const publicListSnippetItem = snippetListItem.pick({
     id: true,
     name: true,
     slug: true,
@@ -215,4 +215,62 @@ export const snippetListDto = {
 export interface SnippetListDtoType {
     input: z.infer<typeof snippetListInput>;
     output: z.infer<typeof snippetListOutput>;
+}
+
+//########################### List Current User Friends Snippets ########################################
+const currentUserFriendsSnippetsListInput = snippetListInput.omit({ creator: true });
+
+const currentUserFriendsSnippetsItem = snippetListItem.pick({
+    id: true,
+    name: true,
+    slug: true,
+    language: true,
+    code: true,
+    description: true,
+    note: true,
+    allowForking: true,
+    tags: true,
+    collection: true,
+    creator: true,
+});
+
+const currentUserFriendsSnippetsListOutput = createPaginatedListOutputSchema(currentUserFriendsSnippetsItem);
+
+export const currentUserFriendsSnippetsListDto = {
+    input: currentUserFriendsSnippetsListInput,
+    output: currentUserFriendsSnippetsListOutput,
+};
+
+export interface CurrentUserFriendsSnippetsListDtoType {
+    input: z.infer<typeof currentUserFriendsSnippetsListInput>;
+    output: z.infer<typeof currentUserFriendsSnippetsListOutput>;
+}
+
+//########################### List User Friends Snippets ########################################
+const userFriendsSnippetsListInput = snippetListInput;
+
+const userFriendsSnippetsItem = snippetListItem.pick({
+    id: true,
+    name: true,
+    slug: true,
+    language: true,
+    code: true,
+    description: true,
+    note: true,
+    allowForking: true,
+    tags: true,
+    collection: true,
+    creator: true,
+});
+
+const userFriendsSnippetsListOutput = createPaginatedListOutputSchema(userFriendsSnippetsItem);
+
+export const userFriendsSnippetsListDto = {
+    input: userFriendsSnippetsListInput,
+    output: userFriendsSnippetsListOutput,
+};
+
+export interface UserFriendsSnippetsListDtoType {
+    input: z.infer<typeof userFriendsSnippetsListInput>;
+    output: z.infer<typeof userFriendsSnippetsListOutput>;
 }

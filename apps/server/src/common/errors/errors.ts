@@ -89,3 +89,17 @@ export class BlockedByCorsError extends I18nError {
         super('errors.blocked-by-cors', {}, 403, 'BLOCKED_BY_CORS_ERROR', LogLevel.warn);
     }
 }
+
+/**
+ * @description
+ * Represents a request that was rejected by the rate limiter.
+ * Used when a client exceeds the allowed request quota.
+ */
+export class RateLimiterError extends I18nError {
+    constructor(
+        message = 'errors.rate-limiter-exceeded',
+        variables: { [key: string]: string | number } = {},
+    ) {
+        super(message, variables, 429, 'RATE_LIMITER_ERROR', LogLevel.warn);
+    }
+}

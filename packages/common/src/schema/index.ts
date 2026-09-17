@@ -9,7 +9,9 @@ export * from './shared/generated-permission.js';
 export * from './developer/auth.api.js';
 export * from './developer/collection.api.js';
 export * from './developer/errors.js';
+export * from './developer/friendship.api.js';
 export * from './developer/snippet.api.js';
+export * from './developer/tag.api.js';
 
 // entities
 export * from './shared/collection.type.js';

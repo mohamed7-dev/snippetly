@@ -27,7 +27,7 @@ interface ExtraOptions<Entity extends AppEntity> {
     alias?: string;
     relations?: FindOptionsRelations<Entity>;
     ctx?: RequestContext;
-    where?: FindOptionsWhere<Entity>;
+    where?: FindOptionsWhere<Entity> | FindOptionsWhere<Entity>[];
     orderBy?: FindOneOptions<Entity>['order'];
 }
 

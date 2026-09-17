@@ -6,6 +6,11 @@ import {
     NotVerifiedAccountError,
 } from '../../common/errors/generated-developer-errors';
 import { ConfigService } from '../../config';
+import { AuthenticationStrategy } from '../../config/auth/authentication-strategy.interface';
+import {
+    NATIVE_AUTH_STRATEGY_NAME,
+    NativeAuthenticationStrategy,
+} from '../../config/auth/native-auth.strategy';
 import { ExternalAuthenticationMethod } from '../../entities/authentication-method/authentication-method.entity';
 import { Session } from '../../entities/session/session.entity';
 import { User } from '../../entities/users/user.entity';
@@ -88,14 +93,32 @@ export class AuthService {
         }
     }
 
-    private getAuthStrategy(apiType: ApiType, authStrategyName: string) {
+    public async verifyUserPassword(
+        ctx: RequestContext,
+        userId: string,
+        password: string,
+    ): Promise<boolean | InvalidCredentialsError> {
+        const nativeAuthenticationStrategy = this.getAuthStrategy('developer', NATIVE_AUTH_STRATEGY_NAME);
+        const passwordMatches = await nativeAuthenticationStrategy.verifyUserPassword(ctx, userId, password);
+        if (!passwordMatches) {
+            return new InvalidCredentialsError({ reason: '' });
+        }
+        return true;
+    }
+
+    private getAuthStrategy(
+        apiType: ApiType,
+        method: typeof NATIVE_AUTH_STRATEGY_NAME,
+    ): NativeAuthenticationStrategy;
+    private getAuthStrategy(apiType: ApiType, method: string): AuthenticationStrategy;
+    private getAuthStrategy(apiType: ApiType, authStrategyName: string): AuthenticationStrategy {
         const { adminAuthenticationStrategies, developerAuthenticationStrategies } =
             this.configService.authOptions;
         const authStrategies =
             apiType === 'admin' ? adminAuthenticationStrategies : developerAuthenticationStrategies;
         const foundStrategy = authStrategies.find(s => s.name === authStrategyName);
         if (!foundStrategy) {
-            throw new InternalServerError('errors.authentication-strategy-not-found', {
+            throw new InternalServerError('errors.authentication_strategy_not_found', {
                 name: authStrategyName,
             });
         }

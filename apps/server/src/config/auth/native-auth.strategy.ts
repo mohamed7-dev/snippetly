@@ -53,7 +53,7 @@ export class NativeAuthenticationStrategy implements AuthenticationStrategy {
             relations: { authenticationMethods: true },
         });
         if (!user) return false;
-        const credentialsAuthMethod = user.getCredentialsAuthMethod();
+        const credentialsAuthMethod = user.getNativeAuthenticationMethod();
         if (!credentialsAuthMethod) return false;
         const password =
             (

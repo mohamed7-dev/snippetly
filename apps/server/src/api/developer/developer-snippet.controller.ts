@@ -1,14 +1,17 @@
 import {
     createSnippetDto,
+    currentUserFriendsSnippetsListDto,
     deleteSnippetDto,
     findOneSnippetDto,
     forkSnippetDto,
     Permission,
     snippetListDto,
     updateSnippetDto,
+    userFriendsSnippetsListDto,
 } from '@snippetly/common/dto';
 import { omit } from '@snippetly/common/lib';
 import { Router } from 'express';
+import rateLimit from 'express-rate-limit';
 import { EntityNotFoundError, ForbiddenError } from '../../common/errors/errors';
 import { AppRouter } from '../../common/types/app-router.interface';
 import { Controller } from '../../infra/ioc-container/controller.decorator';
@@ -27,11 +30,26 @@ export class DeveloperSnippetController implements AppRouter {
         private readonly snippetService: SnippetService,
         private readonly developerService: DeveloperService,
     ) {}
+
+    snippetWriteLimiter = rateLimit({
+        windowMs: 15 * 60 * 1000, // 15 minutes
+        max: 50,
+        standardHeaders: true,
+        legacyHeaders: false,
+    });
+
+    snippetReadLimiter = rateLimit({
+        windowMs: 60 * 1000, // 1 minute
+        max: 120,
+        standardHeaders: true,
+        legacyHeaders: false,
+    });
+
     initRoutes(router: Router): Router {
         router.post(
             '/',
             ...defineRoutePipeline({
-                before: [authGuard({ permissions: [Permission.Authenticated] })],
+                before: [this.snippetWriteLimiter, authGuard({ permissions: [Permission.Authenticated] })],
                 body: createSnippetDto.input,
                 response: createSnippetDto.output,
                 interceptors: [transactionInterceptor()],
@@ -45,7 +63,7 @@ export class DeveloperSnippetController implements AppRouter {
         router.patch(
             '/:id',
             ...defineRoutePipeline({
-                before: [authGuard({ permissions: [Permission.Authenticated] })],
+                before: [this.snippetWriteLimiter, authGuard({ permissions: [Permission.Authenticated] })],
                 body: updateSnippetDto.input.omit({ id: true }),
                 params: updateSnippetDto.input.pick({ id: true }),
                 response: updateSnippetDto.output,
@@ -63,7 +81,7 @@ export class DeveloperSnippetController implements AppRouter {
         router.delete(
             '/:id',
             ...defineRoutePipeline({
-                before: [authGuard({ permissions: [Permission.Authenticated] })],
+                before: [this.snippetWriteLimiter, authGuard({ permissions: [Permission.Authenticated] })],
                 params: deleteSnippetDto.input,
                 response: deleteSnippetDto.output,
                 interceptors: [transactionInterceptor()],
@@ -77,7 +95,7 @@ export class DeveloperSnippetController implements AppRouter {
         router.post(
             '/:id/forks',
             ...defineRoutePipeline({
-                before: [authGuard({ permissions: [Permission.Authenticated] })],
+                before: [this.snippetWriteLimiter, authGuard({ permissions: [Permission.Authenticated] })],
                 params: forkSnippetDto.input,
                 response: forkSnippetDto.output,
                 interceptors: [transactionInterceptor()],
@@ -91,6 +109,7 @@ export class DeveloperSnippetController implements AppRouter {
         router.get(
             '/',
             ...defineRoutePipeline({
+                before: [this.snippetReadLimiter],
                 query: snippetListDto.input,
                 response: snippetListDto.output,
                 handler: async (req, res) => {
@@ -115,7 +134,7 @@ export class DeveloperSnippetController implements AppRouter {
         router.get(
             '/me',
             ...defineRoutePipeline({
-                before: [authGuard({ permissions: [Permission.Authenticated] })],
+                before: [this.snippetReadLimiter, authGuard({ permissions: [Permission.Authenticated] })],
                 query: snippetListDto.input.omit({ creator: true }),
                 response: snippetListDto.output,
                 handler: async (req, res) => {
@@ -134,8 +153,54 @@ export class DeveloperSnippetController implements AppRouter {
         );
 
         router.get(
+            '/friends',
+            ...defineRoutePipeline({
+                before: [this.snippetReadLimiter, authGuard({ permissions: [Permission.Authenticated] })],
+                query: currentUserFriendsSnippetsListDto.input,
+                response: currentUserFriendsSnippetsListDto.output,
+                handler: async (req, res) => {
+                    const userId = req.getRequestContext().activeUserId;
+                    if (!userId) {
+                        throw new ForbiddenError();
+                    }
+
+                    const result = await this.snippetService.getUserFriendsSnippets(
+                        req.getRequestContext(),
+                        userId,
+                        req.query,
+                    );
+
+                    res.status(200).json(result);
+                },
+            }),
+        );
+
+        router.get(
+            '/:userId/friends',
+            ...defineRoutePipeline({
+                before: [this.snippetReadLimiter, authGuard({ permissions: [Permission.Authenticated] })],
+                params: userFriendsSnippetsListDto.input.pick({ creator: true }).required(),
+                query: userFriendsSnippetsListDto.input,
+                response: userFriendsSnippetsListDto.output,
+                handler: async (req, res) => {
+                    const result = await this.snippetService.getUserFriendsSnippets(
+                        req.getRequestContext(),
+                        req.params.creator,
+                        {
+                            ...req.query,
+                            creator: req.params.creator,
+                        },
+                    );
+
+                    res.status(200).json(result);
+                },
+            }),
+        );
+
+        router.get(
             '/:id',
             ...defineRoutePipeline({
+                before: [this.snippetReadLimiter],
                 params: findOneSnippetDto.input,
                 response: findOneSnippetDto.output,
                 handler: async (req, res) => {

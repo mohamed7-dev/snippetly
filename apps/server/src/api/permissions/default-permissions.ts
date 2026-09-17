@@ -1,4 +1,4 @@
-import { AppPermission, NormalizedPermission } from './permissions-factory';
+import { AppPermission, CrudPermission, NormalizedPermission } from './permissions-factory';
 
 export const DEFAULT_APP_PERMISSIONS = [
     new AppPermission({
@@ -34,6 +34,8 @@ export const DEFAULT_APP_PERMISSIONS = [
             internal: true,
         },
     }),
+    new CrudPermission('Snippet'),
+    new CrudPermission('Collection'),
 ];
 
 export function getNormalizedAppPermissions(): NormalizedPermission[] {
