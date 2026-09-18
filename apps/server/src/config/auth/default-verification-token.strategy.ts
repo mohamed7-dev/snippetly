@@ -12,7 +12,7 @@ export class DefaultVerificationTokenStrategy implements VerificationTokenStrate
         this.configService = moduleRef.getProvider(ConfigService);
     }
 
-    generateVerificationToken(_ctx: RequestContext): string {
+    generateVerificationToken(): string {
         const base64Now = Buffer.from(new Date().toJSON()).toString('base64');
         const id = generatePublicId();
         return `${base64Now}_${id}`;

@@ -89,7 +89,7 @@ function extractMountPath(layer: Layer): string {
     let source = layer.regexp.source;
 
     // Remove express-specific suffix used for optional trailing slash
-    source = source.replace('\\/?(?=\\\/|$)', '');
+    source = source.replace('\\/?(?=\\/|$)', '');
 
     // Convert escaped slashes to normal slashes
     source = source.replace(/\\\//g, '/');

@@ -32,8 +32,7 @@ export class AppConfigUtils {
         if (!this._appConfig) {
             try {
                 this._appConfig = this.getDefaultAppConfig();
-            } catch (e) {
-                console.log(e);
+            } catch {
                 console.error(
                     "[AppConfig]: config can't be loaded, make sure to call `AppConfigUtils.cacheConfig()` method before running this method.",
                 );
@@ -99,7 +98,6 @@ export class AppConfigUtils {
     }
 
     private static getDefaultAppConfig(): RuntimeAppConfig {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
         return require(AppConfigUtils.defaultConfigPath).defaultAppConfig as RuntimeAppConfig;
     }
 }

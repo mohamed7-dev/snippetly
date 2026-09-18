@@ -1,6 +1,6 @@
 import z from 'zod';
 import { authenticatedUser } from '../shared/auth.js';
-import { SuccessResponse, successResponse } from '../shared/common-schemas.js';
+import { passwordSchema, SuccessResponse, successResponse } from '../shared/common-schemas.js';
 import {
     emailAddressConflictError,
     invalidCredentialsError,
@@ -23,7 +23,7 @@ import {
 
 const registerDeveloperAccountInput = z.object({
     emailAddress: z.email().nonempty(),
-    password: z.string().nonempty(), // TODO: make sure it's strong password
+    password: passwordSchema,
     firstName: z.string().nonempty(),
     lastName: z.string().nonempty(),
 });
@@ -125,7 +125,7 @@ export type VerifyAccountDtoType = {
 
 const requestEmailAddressChangeInput = z.object({
     newEmailAddress: z.email().nonempty(),
-    password: z.string().nonempty(), // TODO: use strong password schema
+    password: passwordSchema,
 });
 
 const requestEmailAddressChangeOutput = z.union([
@@ -190,7 +190,7 @@ export type RequestPasswordResetDtoType = {
 
 const resetPasswordInput = z.object({
     token: z.string().nonempty(),
-    newPassword: z.string().nonempty(), // TODO: use strong password schema
+    newPassword: passwordSchema,
 });
 
 const resetPasswordOutput = z.union([
@@ -215,8 +215,8 @@ export type ResetPasswordDtoType = {
 //############################  Update Password ##################################
 
 const updateDeveloperPasswordInput = z.object({
-    newPassword: z.string().nonempty(), // TODO: use strong password schema
-    currentPassword: z.string().nonempty(), // TODO: use strong password schema
+    newPassword: passwordSchema,
+    currentPassword: passwordSchema,
 });
 
 const updateDeveloperPasswordOutput = z.union([
@@ -234,4 +234,18 @@ export const updatePasswordDto = {
 export type UpdatePasswordDtoType = {
     input: z.infer<typeof updateDeveloperPasswordInput>;
     output: z.infer<typeof updateDeveloperPasswordOutput>;
+};
+
+//############################  Me ##################################
+
+const developerUserMeOutput = authenticatedUser.nullable();
+
+export const developerUserMeDto = {
+    input: z.null(),
+    output: developerUserMeOutput,
+};
+
+export type DeveloperUserMeDtoType = {
+    input: null;
+    output: z.infer<typeof developerUserMeOutput>;
 };

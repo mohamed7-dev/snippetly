@@ -2,6 +2,7 @@ import {
     authenticateDeveloperDto,
     AuthenticateDeveloperDtoType,
     changeEmailAddressDto,
+    developerUserMeDto,
     logoutDeveloperDto,
     LogoutDeveloperDtoType,
     Permission,
@@ -14,6 +15,7 @@ import {
     verifyAccountDto,
 } from '@snippetly/common/dto';
 import { Router } from 'express';
+import rateLimit from 'express-rate-limit';
 import { isApiError } from '../../common/errors/api-error';
 import { ForbiddenError } from '../../common/errors/errors';
 import { NativeAuthStrategyError } from '../../common/errors/generated-developer-errors';
@@ -41,17 +43,66 @@ export class DeveloperAuthController extends CommonAuth implements AppRouter {
         protected readonly authService: AuthService,
         protected readonly administratorService: AdministratorService,
         private readonly developerService: DeveloperService,
-        private readonly userService: UserService,
+        protected readonly userService: UserService,
         private readonly configService: ConfigService,
     ) {
-        super(authService, administratorService);
+        super(authService, administratorService, userService);
     }
+
+    signupLimiter = rateLimit({
+        windowMs: 60 * 60 * 1000,
+        max: 20,
+        standardHeaders: true,
+        legacyHeaders: false,
+    });
+
+    loginLimiter = rateLimit({
+        windowMs: 15 * 60 * 1000,
+        max: 10,
+        standardHeaders: true,
+        legacyHeaders: false,
+    });
+
+    sessionLimiter = rateLimit({
+        windowMs: 15 * 60 * 1000,
+        max: 30,
+        standardHeaders: true,
+        legacyHeaders: false,
+    });
+
+    passwordChangeLimiter = rateLimit({
+        windowMs: 15 * 60 * 1000,
+        max: 10,
+        standardHeaders: true,
+        legacyHeaders: false,
+    });
+
+    emailFlowLimiter = rateLimit({
+        windowMs: 60 * 60 * 1000,
+        max: 10,
+        standardHeaders: true,
+        legacyHeaders: false,
+    });
+
+    emailChangeRequestLimiter = rateLimit({
+        windowMs: 60 * 60 * 1000,
+        max: 5,
+        standardHeaders: true,
+        legacyHeaders: false,
+    });
+
+    accountReadLimiter = rateLimit({
+        windowMs: 60 * 1000,
+        max: 120,
+        standardHeaders: true,
+        legacyHeaders: false,
+    });
 
     initRoutes(router: Router): Router {
         router.post(
             '/accounts',
             ...defineRoutePipeline({
-                before: [authGuard({ permissions: [Permission.Public] })],
+                before: [this.signupLimiter, authGuard({ permissions: [Permission.Public] })],
                 body: registerDeveloperAccountDto.input,
                 response: registerDeveloperAccountDto.output,
                 interceptors: [transactionInterceptor()],
@@ -66,9 +117,9 @@ export class DeveloperAuthController extends CommonAuth implements AppRouter {
             }),
         );
         router.patch(
-            '/accounts/current',
+            '/accounts/me',
             ...defineRoutePipeline({
-                before: [authGuard({ permissions: [Permission.Owner] })],
+                before: [this.passwordChangeLimiter, authGuard({ permissions: [Permission.Owner] })],
                 body: updatePasswordDto.input,
                 response: updatePasswordDto.output,
                 interceptors: [transactionInterceptor()],
@@ -85,11 +136,22 @@ export class DeveloperAuthController extends CommonAuth implements AppRouter {
                 },
             }),
         );
+        router.get(
+            '/accounts/me',
+            ...defineRoutePipeline({
+                before: [this.accountReadLimiter, authGuard({ permissions: [Permission.Authenticated] })],
+                response: developerUserMeDto.output,
+                handler: async (req, res) => {
+                    const result = await super.me(req.getRequestContext());
+                    res.status(200).json(result);
+                },
+            }),
+        );
 
         router.post(
             '/sessions',
             ...defineRoutePipeline({
-                before: [authGuard({ permissions: [Permission.Public] })],
+                before: [this.loginLimiter, authGuard({ permissions: [Permission.Public] })],
                 body: authenticateDeveloperDto.input,
                 response: authenticateDeveloperDto.output,
                 interceptors: [transactionInterceptor()],
@@ -108,7 +170,7 @@ export class DeveloperAuthController extends CommonAuth implements AppRouter {
         router.delete(
             '/sessions/current',
             ...defineRoutePipeline({
-                before: [authGuard({ permissions: [Permission.Public] })],
+                before: [this.sessionLimiter, authGuard({ permissions: [Permission.Public] })],
                 response: logoutDeveloperDto.output,
                 interceptors: [transactionInterceptor()],
                 handler: async (req, res, next) => {
@@ -126,7 +188,7 @@ export class DeveloperAuthController extends CommonAuth implements AppRouter {
         router.post(
             '/verification-tokens',
             ...defineRoutePipeline({
-                before: [authGuard({ permissions: [Permission.Public] })],
+                before: [this.emailFlowLimiter, authGuard({ permissions: [Permission.Public] })],
                 body: refreshVerificationTokenDto.input,
                 response: refreshVerificationTokenDto.output,
                 interceptors: [transactionInterceptor()],
@@ -144,7 +206,7 @@ export class DeveloperAuthController extends CommonAuth implements AppRouter {
         router.post(
             '/account-verifications',
             ...defineRoutePipeline({
-                before: [authGuard({ permissions: [Permission.Public] })],
+                before: [this.emailFlowLimiter, authGuard({ permissions: [Permission.Public] })],
                 body: verifyAccountDto.input,
                 response: verifyAccountDto.output,
                 interceptors: [transactionInterceptor()],
@@ -183,7 +245,7 @@ export class DeveloperAuthController extends CommonAuth implements AppRouter {
         router.post(
             '/account-email-address-change',
             ...defineRoutePipeline({
-                before: [authGuard({ permissions: [Permission.Owner] })],
+                before: [this.emailChangeRequestLimiter, authGuard({ permissions: [Permission.Owner] })],
                 body: requestEmailAddressChangeDto.input,
                 response: requestEmailAddressChangeDto.output,
                 interceptors: [transactionInterceptor()],
@@ -224,7 +286,7 @@ export class DeveloperAuthController extends CommonAuth implements AppRouter {
         router.patch(
             '/account-email-address-change',
             ...defineRoutePipeline({
-                before: [authGuard({ permissions: [Permission.Owner] })],
+                before: [this.emailFlowLimiter, authGuard({ permissions: [Permission.Owner] })],
                 body: changeEmailAddressDto.input,
                 response: changeEmailAddressDto.output,
                 interceptors: [transactionInterceptor()],
@@ -250,7 +312,7 @@ export class DeveloperAuthController extends CommonAuth implements AppRouter {
         router.post(
             '/account-password-change',
             ...defineRoutePipeline({
-                before: [authGuard({ permissions: [Permission.Public] })],
+                before: [this.emailFlowLimiter, authGuard({ permissions: [Permission.Public] })],
                 body: requestPasswordResetDto.input,
                 response: requestPasswordResetDto.output,
                 interceptors: [transactionInterceptor()],
@@ -270,7 +332,7 @@ export class DeveloperAuthController extends CommonAuth implements AppRouter {
         router.patch(
             '/account-password-change',
             ...defineRoutePipeline({
-                before: [authGuard({ permissions: [Permission.Public] })],
+                before: [this.emailFlowLimiter, authGuard({ permissions: [Permission.Public] })],
                 body: resetPasswordDto.input,
                 response: resetPasswordDto.output,
                 interceptors: [transactionInterceptor()],

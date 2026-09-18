@@ -17,6 +17,7 @@ export default defineConfig([
             '@typescript-eslint/no-unsafe-call': 'off',
             '@typescript-eslint/no-require-imports': 'off',
             '@typescript-eslint/no-redundant-type-constituents': 'off',
+            '@typescript-eslint/no-unsafe-function-type': 'off',
         },
     },
 ]);

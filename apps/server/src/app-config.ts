@@ -1,18 +1,28 @@
 import { DEFAULT_API_SERVER_PORT } from '@snippetly/common/lib';
 import { config } from 'dotenv';
 import path from 'node:path';
+import { isDevelopment, isProduction } from './common/helpers/utils';
 import { AppConfig } from './config/app-config.interface';
-import { UploadthingStrategy } from './config/system/binary-storage/uploadthing.strategy';
 import { NodemailerStrategy } from './config/system/email/nodemailer.strategy';
 
+const envPaths = ['.env'];
+
+if (isDevelopment()) {
+    envPaths.push('.env.development');
+}
+
+if (isProduction()) {
+    envPaths.push('.env.production');
+}
+
 config({
-    path: ['.env', '.env.development', '.env.production'].map(env => path.join(process.cwd(), env)),
+    path: envPaths.map(env => path.join(process.cwd(), env)),
 });
 
 export const appConfig: AppConfig = {
     api: {
-        host: 'localhost',
-        port: DEFAULT_API_SERVER_PORT,
+        host: process.env.HOST,
+        port: isDevelopment() ? DEFAULT_API_SERVER_PORT : undefined,
         // ...(isProduction() && { cors: productionCorsOptions }),
     },
     auth: {
@@ -30,10 +40,15 @@ export const appConfig: AppConfig = {
         schema: process.env.DB_SCHEMA,
     },
     system: {
-        emailTransporterStrategy: new NodemailerStrategy({
-            email: process.env.GMAIL_APP_EMAIL!,
-            password: process.env.GMAIL_APP_PASSWORD!,
-        }),
-        binaryStorageStrategy: new UploadthingStrategy({ token: process.env.UPLOADTHING_TOKEN as string }),
+        email: {
+            emailTransporterStrategy: new NodemailerStrategy({
+                email: process.env.GMAIL_APP_EMAIL!,
+                password: process.env.GMAIL_APP_PASSWORD!,
+            }),
+            from: process.env.GMAIL_APP_EMAIL,
+            accountVerificationCallbackUrl: process.env.ACCOUNT_VERIFICATION_CALLBACK_URL,
+            passwordResetCallbackUrl: process.env.PASSWORD_RESET_CALLBACK_URL,
+            identifierChangeCallbackUrl: process.env.IDENTIFIER_CHANGE_CALLBACK_URL,
+        },
     },
 };

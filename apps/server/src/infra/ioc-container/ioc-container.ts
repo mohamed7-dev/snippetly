@@ -103,7 +103,7 @@ export class IocContainer {
         }
 
         if (provider.scope === 'singleton' && provider.instance) {
-            return provider.instance;
+            return provider.instance as T;
         }
 
         let instance: any;
@@ -114,23 +114,25 @@ export class IocContainer {
             case 'existing':
                 instance = this.resolve(provider.useExisting, requestingModule);
                 break;
-            case 'factory':
+            case 'factory': {
                 const deps = (provider.inject || []).map(t => this.resolve(t, requestingModule));
                 instance = provider.useFactory!(...deps);
                 break;
+            }
             case 'class':
             default:
                 instance = this.instantiate(provider.useClass, provider.module);
         }
 
         if (provider.scope === 'singleton') provider.instance = instance;
-        return instance;
+        return instance as T;
     }
 
     public loadModule(entryModule: ModuleClass): void {
         this.loadModulesRecursively(entryModule);
 
         // processedModules is prepared; actual route mounting happens in initRoutes
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         for (const moduleClass of this.processedModules) {
             // no-op: keep processedModules populated for later initRoutes
         }
@@ -138,14 +140,14 @@ export class IocContainer {
 
     public getAppRouterModules(): AppRouter[] {
         // legacy compatibility - returns empty list
-        return [] as unknown as AppRouter[];
+        return [];
     }
 
     public getMountedRoutes() {
         return [...this.routes];
     }
 
-    private instantiate(cls: any, module?: ModuleClass) {
+    private instantiate(cls: any, module?: ModuleClass): any {
         const paramTypes = Reflect.getMetadata('design:paramtypes', cls) || [];
 
         const injectTokens = Reflect.getMetadata(INJECT_DECORATOR_METADATA_KEY, cls) || {};
@@ -224,10 +226,6 @@ export class IocContainer {
                 this.register(controller, moduleClass);
             });
         }
-    }
-
-    private isRoute(obj: any): obj is AppRouter {
-        return obj && typeof obj.path === 'string' && obj.router;
     }
 
     public initRoutes(appRouter: Application) {

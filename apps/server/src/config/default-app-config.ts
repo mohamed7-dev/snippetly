@@ -12,7 +12,6 @@ import { DefaultPasswordValidationStrategy } from './auth/default-password-valid
 import { DefaultSessionCacheStrategy } from './auth/default-session-cache.strategy';
 import { DefaultVerificationTokenStrategy } from './auth/default-verification-token.strategy';
 import { NativeAuthenticationStrategy } from './auth/native-auth.strategy';
-import { UploadthingStrategy } from './system/binary-storage/uploadthing.strategy';
 import { InMemoryCacheStrategy } from './system/cache/in-memory-cache.strategy';
 import { NodemailerStrategy } from './system/email/nodemailer.strategy';
 import { StdoutLoggerStrategy } from './system/logger/stdout-logger.strategy';
@@ -36,9 +35,14 @@ export const defaultAppConfig: RuntimeAppConfig = {
         type: 'postgres',
     },
     system: {
-        emailTransporterStrategy: new NodemailerStrategy({ email: '', password: '' }),
+        email: {
+            emailTransporterStrategy: new NodemailerStrategy({ email: '', password: '' }),
+            accountVerificationCallbackUrl: '',
+            passwordResetCallbackUrl: '',
+            identifierChangeCallbackUrl: '',
+            from: '',
+        },
         loggerStrategy: new StdoutLoggerStrategy(),
-        binaryStorageStrategy: new UploadthingStrategy({ token: '' }),
         cacheStrategy: new InMemoryCacheStrategy(),
     },
     auth: {
@@ -51,7 +55,7 @@ export const defaultAppConfig: RuntimeAppConfig = {
             password: SUPER_ADMIN_PASSWORD,
         },
         sessionCacheStrategy: new DefaultSessionCacheStrategy(),
-        passwordValidationStrategy: new DefaultPasswordValidationStrategy(),
+        passwordValidationStrategy: new DefaultPasswordValidationStrategy({ minLength: 8, maxLength: 32 }),
         passwordHashingStrategy: new BcryptPasswordHashingStrategy(),
         verificationTokenStrategy: new DefaultVerificationTokenStrategy(),
         adminAuthenticationStrategies: [new NativeAuthenticationStrategy()],

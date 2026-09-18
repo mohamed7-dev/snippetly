@@ -1,4 +1,4 @@
-import { App, bootstrap } from '@snippetly/server';
+import { App, bootstrap, Logger, LogLevel, StdoutLoggerStrategy } from '@snippetly/server';
 import path from 'node:path';
 import { generateAuthInputDto } from './generate-auth-input-dto';
 import { generateErrorClasses } from './generate-error-classes-dtos';
@@ -20,6 +20,9 @@ async function startServer() {
             synchronize: true,
             logging: false,
         },
+        system: {
+            loggerStrategy: new StdoutLoggerStrategy({ logLevel: LogLevel.debug }),
+        },
     });
 
     return cachedAppPromise;
@@ -28,7 +31,7 @@ async function startServer() {
 async function generateTypes() {
     await startServer()
         .then(async app => {
-            console.log('Attempting to generate types...');
+            Logger.info('Attempting to generate types...', LoggerContextName);
 
             await generateErrorClasses(
                 [
@@ -68,11 +71,15 @@ async function generateTypes() {
             );
         })
         .then(() => {
-            console.log('Types generated successfully');
+            Logger.info('Types generated successfully', LoggerContextName);
             process.exit(0);
         })
-        .catch(err => {
-            console.error(err);
+        .catch(e => {
+            Logger.error(
+                `Generation script failure, ${e instanceof Error ? e.message : JSON.stringify(e)}`,
+                LoggerContextName,
+            );
+
             process.exit(1);
         });
 }

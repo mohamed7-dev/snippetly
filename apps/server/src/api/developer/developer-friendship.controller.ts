@@ -9,6 +9,7 @@ import {
     sendFriendshipRequestDto,
 } from '@snippetly/common/dto';
 import { Router } from 'express';
+import rateLimit from 'express-rate-limit';
 import { isApiError } from '../../common/errors/api-error';
 import { ForbiddenError } from '../../common/errors/errors';
 import { AppRouter } from '../../common/types/app-router.interface';
@@ -25,11 +26,25 @@ import { transactionInterceptor } from '../middlewares/transaction.interceptor';
 export class DeveloperFriendshipController implements AppRouter {
     constructor(private readonly friendshipService: FriendshipService) {}
 
+    friendshipWriteLimiter = rateLimit({
+        windowMs: 15 * 60 * 1000,
+        max: 50,
+        standardHeaders: true,
+        legacyHeaders: false,
+    });
+
+    friendshipReadLimiter = rateLimit({
+        windowMs: 60 * 1000,
+        max: 120,
+        standardHeaders: true,
+        legacyHeaders: false,
+    });
+
     initRoutes(router: Router): Router {
         router.post(
             '/:friendId/requests',
             ...defineRoutePipeline({
-                before: [authGuard({ permissions: [Permission.Authenticated] })],
+                before: [this.friendshipWriteLimiter, authGuard({ permissions: [Permission.Authenticated] })],
                 params: sendFriendshipRequestDto.input,
                 response: sendFriendshipRequestDto.output,
                 interceptors: [transactionInterceptor()],
@@ -59,7 +74,7 @@ export class DeveloperFriendshipController implements AppRouter {
         router.patch(
             '/:friendId/accept',
             ...defineRoutePipeline({
-                before: [authGuard({ permissions: [Permission.Authenticated] })],
+                before: [this.friendshipWriteLimiter, authGuard({ permissions: [Permission.Authenticated] })],
                 params: acceptFriendshipRequestDto.input,
                 response: acceptFriendshipRequestDto.output,
                 interceptors: [transactionInterceptor()],
@@ -90,7 +105,7 @@ export class DeveloperFriendshipController implements AppRouter {
         router.patch(
             '/:friendId/reject',
             ...defineRoutePipeline({
-                before: [authGuard({ permissions: [Permission.Authenticated] })],
+                before: [this.friendshipWriteLimiter, authGuard({ permissions: [Permission.Authenticated] })],
                 params: rejectFriendshipRequestDto.input,
                 response: rejectFriendshipRequestDto.output,
                 interceptors: [transactionInterceptor()],
@@ -121,7 +136,7 @@ export class DeveloperFriendshipController implements AppRouter {
         router.delete(
             '/:friendId',
             ...defineRoutePipeline({
-                before: [authGuard({ permissions: [Permission.Authenticated] })],
+                before: [this.friendshipWriteLimiter, authGuard({ permissions: [Permission.Authenticated] })],
                 params: cancelFriendshipRequestDto.input,
                 response: cancelFriendshipRequestDto.output,
                 interceptors: [transactionInterceptor()],
@@ -152,7 +167,7 @@ export class DeveloperFriendshipController implements AppRouter {
         router.get(
             '/friends',
             ...defineRoutePipeline({
-                before: [authGuard({ permissions: [Permission.Authenticated] })],
+                before: [this.friendshipReadLimiter, authGuard({ permissions: [Permission.Authenticated] })],
                 query: currentUserFriendsListDto.input,
                 response: currentUserFriendsListDto.output,
                 handler: async (req, res) => {
@@ -175,7 +190,7 @@ export class DeveloperFriendshipController implements AppRouter {
         router.get(
             '/inbox',
             ...defineRoutePipeline({
-                before: [authGuard({ permissions: [Permission.Authenticated] })],
+                before: [this.friendshipReadLimiter, authGuard({ permissions: [Permission.Authenticated] })],
                 query: currentUserInboxListDto.input,
                 response: currentUserInboxListDto.output,
                 handler: async (req, res) => {
@@ -198,7 +213,7 @@ export class DeveloperFriendshipController implements AppRouter {
         router.get(
             '/outbox',
             ...defineRoutePipeline({
-                before: [authGuard({ permissions: [Permission.Authenticated] })],
+                before: [this.friendshipReadLimiter, authGuard({ permissions: [Permission.Authenticated] })],
                 query: currentUserOutboxListDto.input,
                 response: currentUserOutboxListDto.output,
                 handler: async (req, res) => {

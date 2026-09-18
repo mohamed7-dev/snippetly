@@ -1,16 +1,20 @@
 import {
     ChangeEmailAddressDtoType,
+    DeleteDeveloperAccountDtoType,
+    DeveloperListDtoType,
     RefreshVerificationTokenDtoType,
     RegisterDeveloperAccountDtoType,
     RequestEmailAddressChangeDtoType,
     RequestPasswordResetDtoType,
     ResetPasswordDtoType,
     SuccessResponse,
+    UpdateDeveloperAccountDtoType,
     VerifyAccountDtoType,
 } from '@snippetly/common/dto';
-import { FindOptionsRelations } from 'typeorm';
+import { FindOptionsRelations, IsNull } from 'typeorm';
 import { RequestContext } from '../../api/request-context/request-context';
 import { isApiError } from '../../common/errors/api-error';
+import { EntityNotFoundError, UserInputError } from '../../common/errors/errors';
 import {
     EmailAddressConflictError,
     IdentifierChangeTokenExpiredError,
@@ -26,8 +30,14 @@ import { normalizeInput } from '../../common/helpers/validation';
 import { ConfigService } from '../../config';
 import { Developer } from '../../entities/developer/developer.entity';
 import { User } from '../../entities/users/user.entity';
+import { Logger } from '../../infra';
 import { DatabaseService } from '../../infra/database/database.service';
+import { patchEntity } from '../../infra/database/patch-entity';
+import { EventBus } from '../../infra/event-bus/event-bus.service';
+import { AccountRegistrationEvent } from '../../infra/event-bus/events/account-registration.eveny';
 import { Injectable } from '../../infra/ioc-container/injectable.decorator';
+import { EmailClient } from '../helpers/email-client.service';
+import { ListQueryBuilder } from '../helpers/list-query-builder/list-query-builder.service';
 import { UserService } from './user.service';
 
 @Injectable()
@@ -36,7 +46,35 @@ export class DeveloperService {
         private readonly userService: UserService,
         private readonly databaseService: DatabaseService,
         private readonly configService: ConfigService,
+        private readonly listQueryBuilder: ListQueryBuilder,
+        private readonly eventBus: EventBus,
+        private readonly emailClient: EmailClient,
     ) {}
+
+    public subscribeToAccountRegistrationEvent() {
+        this.eventBus.ofType(AccountRegistrationEvent).subscribe(event => {
+            Logger.debug(`Handling event `);
+            const callbackUrl = `${this.configService.systemOptions.email.accountVerificationCallbackUrl}?token=${event.user.getNativeAuthenticationMethod().verificationToken}`;
+            void this.emailClient.sendEmail({
+                to: event.user.identifier,
+                subject: 'Account Verification',
+                html: `
+                    <a font-family="Helvetica"
+                        background-color="#f45e43"
+                        color="white"
+                        href="${callbackUrl}">
+                            Verify Me!
+                    </a>
+                
+                `,
+            });
+        });
+    }
+
+    onApplicationBootstrap() {
+        this.subscribeToAccountRegistrationEvent();
+    }
+
     public async registerAccount(
         ctx: RequestContext,
         input: RegisterDeveloperAccountDtoType['input'],
@@ -94,6 +132,10 @@ export class DeveloperService {
         await this.databaseService.getRepository(ctx, Developer).save(developer, {
             reload: false,
         });
+
+        if (!user.isVerified) {
+            await this.eventBus.publish(new AccountRegistrationEvent(ctx, user));
+        }
 
         return {
             success: true,
@@ -184,6 +226,65 @@ export class DeveloperService {
         return true;
     }
 
+    public async update(
+        ctx: RequestContext,
+        input: UpdateDeveloperAccountDtoType['input'] & { id: string },
+    ): Promise<Developer> {
+        // the current implementation accounts for a developer updating his own account.
+        // in the future, it should be extended to handle the case in which the admin updates
+        // the account without restrictions (emailAddress is allowed, ..etc)
+
+        if ('emailAddress' in input || 'deletedAt' in input) {
+            throw new UserInputError('errors.invalid_input_fields');
+        }
+
+        const repo = this.databaseService.getRepository(ctx, Developer);
+
+        let developer = await repo.findOne({
+            where: {
+                id: input.id,
+            },
+            relations: {
+                user: true,
+            },
+        });
+
+        if (!developer || developer.user.id !== ctx.activeUserId) {
+            throw new EntityNotFoundError({ entityId: input.id, entityName: 'Developer' });
+        }
+
+        developer = patchEntity(developer, input);
+
+        await repo.save(developer, { reload: false });
+
+        return developer;
+    }
+
+    public async softDelete(
+        ctx: RequestContext,
+        developerId: string,
+    ): Promise<DeleteDeveloperAccountDtoType['output']> {
+        const repo = this.databaseService.getRepository(ctx, Developer);
+
+        const developer = await repo.findOne({
+            where: {
+                id: developerId,
+            },
+        });
+
+        if (!developer || developer.user.id !== ctx.activeUserId) {
+            throw new EntityNotFoundError({ entityName: 'Developer', entityId: developerId });
+        }
+
+        await repo.update({ id: developerId }, { deletedAt: new Date() });
+
+        if (developer.user) {
+            await this.userService.softDelete(ctx, developer.user.id);
+        }
+
+        return { result: 'DELETED', message: '' };
+    }
+
     public async getActiveDeveloper(ctx: RequestContext): Promise<Developer | undefined> {
         if (!ctx.activeUserId) return undefined;
         const repo = this.databaseService.getRepository(ctx, Developer);
@@ -199,21 +300,75 @@ export class DeveloperService {
         return developer ?? undefined;
     }
 
-    public async getOneByUserId(
+    public async findOne(
         ctx: RequestContext,
-        userId: string,
+        id: string,
         relations?: FindOptionsRelations<Developer>,
     ): Promise<Developer | undefined> {
         const repo = this.databaseService.getRepository(ctx, Developer);
+        const developer = await repo.findOne({
+            where: {
+                id,
+                deletedAt: IsNull(),
+            },
+            relations: {
+                ...relations,
+            },
+        });
+
+        return developer ?? undefined;
+    }
+
+    public async find(
+        ctx: RequestContext,
+        input: DeveloperListDtoType['input'],
+        relations?: FindOptionsRelations<Developer>,
+    ) {
+        const qb = this.listQueryBuilder.build(Developer, input, {
+            ctx,
+            relations,
+        });
+
+        const [items, itemsCount] = await qb.getManyAndCount();
+        return { items, itemsCount };
+    }
+
+    async getOneByUserId(
+        ctx: RequestContext,
+        userId: string,
+        relations?: FindOptionsRelations<Developer>,
+    ): Promise<Developer | undefined>;
+    async getOneByUserId(
+        userId: string,
+        relations?: FindOptionsRelations<Developer>,
+    ): Promise<Developer | undefined>;
+    async getOneByUserId(
+        ctx: RequestContext | null,
+        userId: string,
+        relations?: FindOptionsRelations<Developer>,
+    ): Promise<Developer | undefined>;
+    public async getOneByUserId(
+        ctxOrUserId: RequestContext | string | null,
+        maybeUserIdOrRelations?: string | FindOptionsRelations<Developer>,
+        relations?: FindOptionsRelations<Developer>,
+    ): Promise<Developer | undefined> {
+        const hasContext = ctxOrUserId instanceof RequestContext || ctxOrUserId === null;
+        const ctx = hasContext ? ctxOrUserId : undefined;
+        const userId = hasContext ? (maybeUserIdOrRelations as string) : ctxOrUserId;
+        const resolvedRelations = hasContext
+            ? relations
+            : (maybeUserIdOrRelations as FindOptionsRelations<Developer> | undefined);
+        const repo = this.databaseService.getRepository(ctx ?? undefined, Developer);
 
         const developer = await repo.findOne({
             where: {
                 user: {
                     id: userId,
                 },
+                deletedAt: IsNull(),
             },
             relations: {
-                ...relations,
+                ...resolvedRelations,
             },
         });
 

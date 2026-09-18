@@ -1,7 +1,7 @@
 import pc from 'picocolors';
 import { LoggerStrategy, LogLevel } from './logger-strategy.interface';
 
-export const DEFAULT_CONTEXT = 'Snippetly-API';
+export const DEFAULT_CONTEXT = 'SnippetlyServer';
 
 interface StdoutLoggerOptions {
     logLevel?: LogLevel;

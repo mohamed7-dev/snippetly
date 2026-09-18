@@ -10,8 +10,8 @@ export interface CacheStrategy {
         key: string,
         value: Value,
         options?: CacheEntryOptions,
-    ): Promise<void>;
-    get<Value extends JSONCompatible<Value>>(key: string): Promise<Value | undefined>;
-    delete(key: string): Promise<void>;
-    invalidateTags(tags: string[]): Promise<void>;
+    ): Promise<void> | void;
+    get<Value extends JSONCompatible<Value>>(key: string): Promise<Value | undefined> | void;
+    delete(key: string): Promise<void> | void;
+    invalidateTags(tags: string[]): Promise<void> | void;
 }

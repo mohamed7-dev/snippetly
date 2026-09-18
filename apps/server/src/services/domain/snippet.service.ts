@@ -109,7 +109,7 @@ export class SnippetService {
             friendship.requester.id === userId ? friendship.addressee.id : friendship.requester.id,
         );
 
-        const qb = this.listQueryBuilder.build(Snippet, input as any, {
+        const qb = this.listQueryBuilder.build(Snippet, input, {
             ctx,
             where: {
                 creator: { id: In(friendIds) },

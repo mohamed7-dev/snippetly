@@ -6,7 +6,6 @@ import { PasswordHashingStrategy } from './auth/password-hashing-strategy.interf
 import { PasswordValidationStrategy } from './auth/password-validation-strategy.interface';
 import { SessionCacheStrategy } from './auth/session-cache-strategy.interface';
 import { VerificationTokenStrategy } from './auth/verification-token-strategy.interface';
-import { BinaryStorageStrategy } from './system/binary-storage/binary-storage-strategy.interface';
 import { CacheStrategy } from './system/cache/cache-strategy.interface';
 import { EmailTransporterStrategy } from './system/email/email-transporter-strategy.interface';
 import { LoggerStrategy } from './system/logger/logger-strategy.interface';
@@ -27,9 +26,14 @@ export interface ApiConfigOptions {
 export type DatabaseConfigOptions = DataSourceOptions;
 
 export interface SystemConfigOptions {
-    emailTransporterStrategy?: EmailTransporterStrategy;
+    email?: {
+        emailTransporterStrategy?: EmailTransporterStrategy;
+        accountVerificationCallbackUrl?: string;
+        passwordResetCallbackUrl?: string;
+        identifierChangeCallbackUrl?: string;
+        from?: string;
+    };
     loggerStrategy?: LoggerStrategy;
-    binaryStorageStrategy?: BinaryStorageStrategy;
     cacheStrategy?: CacheStrategy;
 }
 
@@ -101,7 +105,9 @@ export interface RuntimeAppConfig extends Required<AppConfig> {
     auth: Required<AuthConfigOptions> & {
         superAdminCredentials: Required<AuthConfigOptions['superAdminCredentials']>;
     };
-    system: Required<SystemConfigOptions>;
+    system: Required<SystemConfigOptions> & {
+        email: Required<SystemConfigOptions['email']>;
+    };
 }
 
 export type PartialAppConfig = Partial<AppConfig>;

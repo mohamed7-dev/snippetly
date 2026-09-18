@@ -1,16 +1,22 @@
 import z, { ZodObject, ZodType } from 'zod';
 
-/**
- * @description
- * Dto for generic success operations
- */
+//############################ Password Schema ##########################
+
+export const passwordSchema = z.string().min(8).max(32);
+
+//############################ Success Response ##########################
+
 export const successResponse = z.object({
     success: z.boolean(),
 });
 
 export type SuccessResponse = z.infer<typeof successResponse>;
 
+//############################ ID Schema ##########################
+
 export const idSchema = z.uuidv4();
+
+//############################ Node ##########################
 
 export const node = z.object({
     id: idSchema,
@@ -129,12 +135,21 @@ export function createPaginatedListInputSchema<Filter extends z.ZodRawShape, Sor
     filterSchema: ZodObject<Filter>,
     sortSchema: ZodObject<Sort>,
 ) {
+    const extendedFilterSchema = z
+        .object({
+            createdAt: dateTimeFilterOperators,
+            updatedAt: dateTimeFilterOperators,
+            id: stringFilterOperators,
+        })
+        .partial()
+        .extend(filterSchema.shape);
+
     return paginatedListInputSchema
         .extend({
             filter: z
-                .object({ _and: z.array(filterSchema), _or: z.array(filterSchema) })
+                .object({ _and: z.array(extendedFilterSchema), _or: z.array(extendedFilterSchema) })
                 .partial()
-                .extend(filterSchema.shape),
+                .extend(extendedFilterSchema.shape),
         })
         .extend({
             sort: z

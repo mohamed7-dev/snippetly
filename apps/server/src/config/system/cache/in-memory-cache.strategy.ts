@@ -21,11 +21,11 @@ export class InMemoryCacheStrategy implements CacheStrategy {
         this._cacheSize = options?.size ?? DEFAULT_CACHE_SIZE;
     }
 
-    public async set<Value extends JSONCompatible<Value>>(
+    public set<Value extends JSONCompatible<Value>>(
         key: string,
         value: Value,
         options?: CacheEntryOptions,
-    ): Promise<void> {
+    ): void {
         const isCacheHit = this._cacheStore.has(key);
         if (isCacheHit) {
             // delete the entry from the cache store, and then append it
@@ -51,17 +51,17 @@ export class InMemoryCacheStrategy implements CacheStrategy {
         }
     }
 
-    public async get<Value extends JSONCompatible<Value>>(key: string): Promise<Value | undefined> {
+    public get<Value extends JSONCompatible<Value>>(key: string): Value | undefined {
         const foundEntry = this._cacheStore.get(key);
-        if (foundEntry) return this.checkValidity<Value>(foundEntry) as Value;
+        if (foundEntry) return this.checkValidity<Value>(foundEntry);
         return undefined;
     }
 
-    public async delete(key: string): Promise<void> {
+    public delete(key: string): void {
         this._cacheStore.delete(key);
     }
 
-    public async invalidateTags(tags: string[]): Promise<void> {
+    public invalidateTags(tags: string[]): void {
         tags.forEach(tag => {
             this._cacheStore.forEach((value, key) => {
                 if (value.tags?.has(tag)) {

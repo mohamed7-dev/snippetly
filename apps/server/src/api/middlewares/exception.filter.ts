@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { InternalServerError, RateLimiterError } from '../../common/errors/errors';
 import { ApiError } from '../../common/errors/generated-developer-errors';
+import { Logger } from '../../infra';
 import { I18nError } from '../../infra/i18n/i18n-error';
 import { I18nService } from '../../infra/i18n/i18n.service';
 import { iocContainer } from '../../infra/ioc-container/ioc-container';
@@ -27,10 +28,14 @@ function isRateLimiterError(err: unknown): err is RateLimiterError {
 }
 
 export function exceptionFilter(err: unknown, req: Request, res: Response) {
-    console.log(err);
+    Logger.debug(
+        `Exception filter reported an error, ${err instanceof Error ? err.message : JSON.stringify(err)}`,
+    );
+
     const i18nService = iocContainer.resolve<I18nService>(I18nService);
     if (err instanceof I18nError) {
         const translated = i18nService.translateError(err, req);
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { logLevel, ...errorData } = err;
         return res.status(errorData.httpStatusCode).json({
             ...errorData,

@@ -33,7 +33,8 @@ export type PermissionKey = ${unionValues};
         Logger.info('Permission enum generated successfully', LoggerContextName);
     } catch (error) {
         Logger.error(
-            `[${LoggerContextName}]: failed to generate Permission enum, ${error instanceof Error ? error.message : JSON.stringify(error)}`,
+            `Failed to generate Permission enum, ${error instanceof Error ? error.message : JSON.stringify(error)}`,
+            LoggerContextName,
         );
     }
 }

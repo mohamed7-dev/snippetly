@@ -9,6 +9,7 @@ import {
 } from '@snippetly/common/dto';
 import { omit } from '@snippetly/common/lib';
 import { Router } from 'express';
+import rateLimit from 'express-rate-limit';
 import { EntityNotFoundError, ForbiddenError } from '../../common/errors/errors';
 import { AppRouter } from '../../common/types/app-router.interface';
 import { Controller } from '../../infra/ioc-container/controller.decorator';
@@ -27,11 +28,26 @@ export class DeveloperCollectionController implements AppRouter {
         private readonly collectionService: CollectionService,
         private readonly developerService: DeveloperService,
     ) {}
+
+    collectionWriteLimiter = rateLimit({
+        windowMs: 15 * 60 * 1000, // 15 minutes
+        max: 50,
+        standardHeaders: true,
+        legacyHeaders: false,
+    });
+
+    collectionReadLimiter = rateLimit({
+        windowMs: 60 * 1000, // 1 minute
+        max: 120,
+        standardHeaders: true,
+        legacyHeaders: false,
+    });
+
     initRoutes(router: Router): Router {
         router.post(
             '/',
             ...defineRoutePipeline({
-                before: [authGuard({ permissions: [Permission.Authenticated] })],
+                before: [this.collectionWriteLimiter, authGuard({ permissions: [Permission.Authenticated] })],
                 body: createCollectionDto.input,
                 response: createCollectionDto.output,
                 interceptors: [transactionInterceptor()],
@@ -45,7 +61,10 @@ export class DeveloperCollectionController implements AppRouter {
         router.delete(
             '/:id',
             ...defineRoutePipeline({
-                before: [authGuard({ permissions: [Permission.Authenticated, Permission.Owner] })],
+                before: [
+                    this.collectionWriteLimiter,
+                    authGuard({ permissions: [Permission.Authenticated, Permission.Owner] }),
+                ],
                 params: deleteCollectionDto.input,
                 response: deleteCollectionDto.output,
                 interceptors: [transactionInterceptor()],
@@ -59,7 +78,7 @@ export class DeveloperCollectionController implements AppRouter {
         router.post(
             '/:id/forks',
             ...defineRoutePipeline({
-                before: [authGuard({ permissions: [Permission.Authenticated] })],
+                before: [this.collectionWriteLimiter, authGuard({ permissions: [Permission.Authenticated] })],
                 params: forkCollectionDto.input,
                 response: forkCollectionDto.output,
                 interceptors: [transactionInterceptor()],
@@ -73,7 +92,10 @@ export class DeveloperCollectionController implements AppRouter {
         router.patch(
             '/:id',
             ...defineRoutePipeline({
-                before: [authGuard({ permissions: [Permission.Authenticated, Permission.Owner] })],
+                before: [
+                    this.collectionWriteLimiter,
+                    authGuard({ permissions: [Permission.Authenticated, Permission.Owner] }),
+                ],
                 body: updateCollectionDto.input.omit({ id: true }),
                 params: updateCollectionDto.input.pick({ id: true }),
                 response: updateCollectionDto.output,
@@ -92,6 +114,7 @@ export class DeveloperCollectionController implements AppRouter {
         router.get(
             '/',
             ...defineRoutePipeline({
+                before: [this.collectionReadLimiter],
                 query: collectionListDto.input,
                 response: collectionListDto.output,
                 handler: async (req, res) => {
@@ -116,7 +139,7 @@ export class DeveloperCollectionController implements AppRouter {
         router.get(
             '/me',
             ...defineRoutePipeline({
-                before: [authGuard({ permissions: [Permission.Authenticated] })],
+                before: [this.collectionReadLimiter, authGuard({ permissions: [Permission.Authenticated] })],
                 query: collectionListDto.input.omit({ creator: true }),
                 response: collectionListDto.output,
                 handler: async (req, res) => {
@@ -138,6 +161,7 @@ export class DeveloperCollectionController implements AppRouter {
         router.get(
             `/:id`,
             ...defineRoutePipeline({
+                before: [this.collectionReadLimiter],
                 params: findOneCollectionDto.input,
                 response: findOneCollectionDto.output,
                 handler: async (req, res) => {

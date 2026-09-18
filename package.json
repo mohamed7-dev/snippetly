@@ -8,7 +8,8 @@
     },
     "scripts": {
         "generate": "ts-node -r tsconfig-paths/register scripts/generate.ts",
-        "dev:server-common": "pnpm run --filter @snippetly/common --filter @snippetly/server dev"
+        "dev:server-common": "concurrently 'pnpm run --filter @snippetly/common dev' 'pnpm run --filter @snippetly/server dev'",
+        "build:server": "pnpm run --filter @snippetly/server build"
     },
     "dependencies": {
         "concurrently": "catalog:tooling",
@@ -24,6 +25,7 @@
         "prettier-plugin-organize-imports": "^4.1.0",
         "ts-node": "catalog:tooling",
         "tsconfig-paths": "catalog:tooling",
-        "typescript": "catalog:tooling"
+        "typescript": "catalog:tooling",
+        "concurrently": "catalog:tooling"
     }
 }

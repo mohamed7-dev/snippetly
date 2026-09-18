@@ -8,7 +8,7 @@ interface SetSessionTokenOptions {
 }
 
 export function setSessionToken(options: SetSessionTokenOptions): void {
-    const { sessionToken, rememberMe, res, req } = options;
+    const { sessionToken, rememberMe, req } = options;
     const year = 365 * 24 * 60 * 60 * 1000;
     // const day = 24 * 60 * 60 * 1000;
 
@@ -22,7 +22,7 @@ export function setSessionToken(options: SetSessionTokenOptions): void {
 
 export function getSessionToken(req: Request): string | undefined {
     if (req.session && req.session.token) {
-        return req.session.token;
+        return req.session.token as string;
     }
     return undefined;
 }

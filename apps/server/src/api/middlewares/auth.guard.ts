@@ -21,6 +21,7 @@ export function authGuard(options?: AuthGuardOptions): Handler {
 
         const requestContextService = iocContainer.resolve<RequestContextService>(RequestContextService);
         const session = await getSession(req, res);
+        // eslint-disable-next-line prefer-const
         requestContext = await requestContextService.buildFromRequest({
             req,
             requiredPermissions: permissions,

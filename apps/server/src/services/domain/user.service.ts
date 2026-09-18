@@ -1,3 +1,4 @@
+import { FindOptionsRelations } from 'typeorm';
 import { RequestContext } from '../../api/request-context/request-context';
 import { isApiError } from '../../common/errors/api-error';
 import { EntityNotFoundError, InternalServerError } from '../../common/errors/errors';
@@ -17,6 +18,7 @@ import { NativeAuthenticationMethod } from '../../entities/authentication-method
 import { User } from '../../entities/users/user.entity';
 import { DatabaseService } from '../../infra/database/database.service';
 import { Injectable } from '../../infra/ioc-container/injectable.decorator';
+import { iocContainer } from '../../infra/ioc-container/ioc-container';
 import { PasswordHashingService } from '../helpers/password-hashing.service';
 import { PasswordValidationService } from '../helpers/password-validation.service';
 import { VerificationTokenGenerator } from '../helpers/verification-token-generator.service';
@@ -48,7 +50,11 @@ export class UserService {
         return await query.getOne().then(result => result ?? undefined);
     }
 
-    public async getUserById(ctx: RequestContext, userId: string): Promise<User | undefined> {
+    public async getUserById(
+        ctx: RequestContext,
+        userId: string,
+        relations?: FindOptionsRelations<User>,
+    ): Promise<User | undefined> {
         const foundUser = await this.databaseService.getRepository(ctx, User).findOne({
             where: {
                 id: userId,
@@ -56,6 +62,7 @@ export class UserService {
             relations: {
                 roles: true,
                 authenticationMethods: true,
+                ...relations,
             },
         });
 
@@ -342,6 +349,23 @@ export class UserService {
         user.isVerified = false;
         await this.databaseService.getRepository(ctx, NativeAuthenticationMethod).save(credentialsAuthMethod);
         return this.databaseService.getRepository(ctx, User).save(user);
+    }
+
+    public async softDelete(ctx: RequestContext, id: string): Promise<void> {
+        // SessionService is imported dynamically to avoid circular dependency
+        // since SessionService depends on UserService
+        const { SessionService } = await import('./session.service.js');
+        const sessionService =
+            iocContainer.resolve<import('./session.service').SessionService>(SessionService);
+        await sessionService.deleteSessionsByUser(ctx, new User({ id }));
+
+        const user = await this.getUserById(ctx, id, { roles: false, authenticationMethods: false });
+        if (!user) {
+            throw new EntityNotFoundError({ entityName: 'User', entityId: id });
+        }
+        const repo = this.databaseService.getRepository(ctx, User);
+
+        await repo.update({ id }, { deletedAt: new Date() });
     }
 
     public hasCredentialsAuthMethod(user: User): boolean {

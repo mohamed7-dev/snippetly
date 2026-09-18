@@ -1,48 +1,59 @@
+import { Logger } from '@snippetly/server';
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { ZodObject } from 'zod';
+import { LoggerContextName } from './generate';
 
 const API_ERROR_NAME = 'ApiError';
 
 export async function generateErrorClasses(schemasDirPaths: string[], outputPath: string) {
-    const schemaFiles = findSchemaFiles(schemasDirPaths);
+    try {
+        const schemaFiles = findSchemaFiles(schemasDirPaths);
 
-    const schemas = await collectSchemas(schemaFiles);
-    if (schemas.length === 0) {
-        console.warn('No error schemas found — check your naming heuristic.');
-        return;
-    }
+        const schemas = await collectSchemas(schemaFiles);
+        if (schemas.length === 0) {
+            console.warn('No error schemas found — check your naming heuristic.');
+            return;
+        }
 
-    // write global imports
-    const globalImports = [
-        `/* eslint-disable */
+        // write global imports
+        const globalImports = [
+            `/* eslint-disable */
 /**
  * ---------------------------------------------------------
  * ⚠️ AUTO-GENERATED FILE — DO NOT EDIT
  * ---------------------------------------------------------
  */`,
 
-        'import { z } from "zod"',
-        `import { ${schemas.map(schema => schema.exportName).join(',')} } from "@snippetly/common/dto"`,
-        ' ',
-    ].join('\n');
+            'import { z } from "zod"',
+            `import { ${schemas.map(schema => schema.exportName).join(',')} } from "@snippetly/common/dto"`,
+            ' ',
+        ].join('\n');
 
-    fs.writeFileSync(outputPath, globalImports);
+        fs.writeFileSync(outputPath, globalImports);
 
-    // write ApiError class to the outputPath
-    const source = [
-        `export class ${API_ERROR_NAME} {`,
-        `  readonly code: string;`,
-        `  readonly httpStatusCode: number;`,
-        `  readonly message: string;`,
-        `}`,
-    ].join('\n');
-    fs.appendFileSync(outputPath, source);
-
-    for (const found of schemas) {
-        const source = generateClassSource(found);
+        // write ApiError class to the outputPath
+        const source = [
+            `export class ${API_ERROR_NAME} {`,
+            `  readonly code: string;`,
+            `  readonly httpStatusCode: number;`,
+            `  readonly message: string;`,
+            `}`,
+        ].join('\n');
         fs.appendFileSync(outputPath, source);
+
+        for (const found of schemas) {
+            const source = generateClassSource(found);
+            fs.appendFileSync(outputPath, source);
+        }
+
+        Logger.info('Error classes generated successfully', LoggerContextName);
+    } catch (error) {
+        Logger.error(
+            `Failed to generate error classes, ${error instanceof Error ? error.message : JSON.stringify(error)}`,
+            LoggerContextName,
+        );
     }
 }
 

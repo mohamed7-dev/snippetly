@@ -1,5 +1,6 @@
 import { ConfigModule } from '../config/config.module';
 import { DatabaseModule } from '../infra/database/database.module';
+import { EventBusModule } from '../infra/event-bus/even-bus.module';
 import { Module } from '../infra/ioc-container/module.decorator';
 import { AdministratorService } from './domain/administrator.service';
 import { AuthService } from './domain/auth.service';
@@ -11,6 +12,7 @@ import { SessionService } from './domain/session.service';
 import { SnippetService } from './domain/snippet.service';
 import { TagService } from './domain/tag.service';
 import { UserService } from './domain/user.service';
+import { EmailClient } from './helpers/email-client.service';
 import { InitializerService } from './helpers/initializer.service';
 import { ListQueryBuilder } from './helpers/list-query-builder/list-query-builder.service';
 import { PasswordHashingService } from './helpers/password-hashing.service';
@@ -26,6 +28,7 @@ const helpers = [
     PasswordValidationService,
     SlugValidator,
     ListQueryBuilder,
+    EmailClient,
 ];
 
 const services = [
@@ -42,7 +45,7 @@ const services = [
 ];
 
 @Module({
-    imports: [ConfigModule, DatabaseModule],
+    imports: [ConfigModule, DatabaseModule, EventBusModule],
     providers: [...helpers, ...services, InitializerService],
     exports: [...helpers, ...services],
 })

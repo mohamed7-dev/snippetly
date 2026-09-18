@@ -38,7 +38,7 @@ export function attachRequestContext(req: Request, requestContext: RequestContex
 }
 
 export function resolveRequestContext(req: Request): RequestContext {
-    let bucket: RequestContextBucket | undefined = (req as any)[REQUEST_CONTEXT_KEY];
+    const bucket: RequestContextBucket | undefined = (req as any)[REQUEST_CONTEXT_KEY];
 
     const txMgr = (bucket?.transactional as any)?.[DB_TRANSACTION_MANAGER_KEY] as EntityManager | undefined;
 

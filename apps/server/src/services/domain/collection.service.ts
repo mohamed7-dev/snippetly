@@ -65,7 +65,7 @@ export class CollectionService {
             const operator = tags?.operator ?? FilterGroupOperator.AND;
             const subquery = qb.connection
                 .createQueryBuilder()
-                .select('c.id')
+                .select('collection.id')
                 .from(Collection, 'collection')
                 .leftJoin('collection.tags', 'tags')
                 .where('tags.value IN (:...tags)');
@@ -74,7 +74,7 @@ export class CollectionService {
                 subquery.groupBy('collection.id').having('COUNT(collection.id) = :tagCount');
             }
 
-            qb.andWhere(`collection.id IN (${subquery.getQuery()})`).setParameters({
+            qb.andWhere(`c.id IN (${subquery.getQuery()})`).setParameters({
                 tags: tagValues,
                 tagCount: tagValues.length,
             });

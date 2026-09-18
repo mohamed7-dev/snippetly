@@ -9,7 +9,7 @@ interface NodemailerStrategyOptions {
 export class NodemailerStrategy implements EmailTransporterStrategy {
     private transporter: Transporter;
 
-    constructor(private options: NodemailerStrategyOptions) {}
+    constructor(private _options: NodemailerStrategyOptions) {}
 
     onInit(): void | Promise<void> {
         this.transporter = nodemailer.createTransport({
@@ -18,14 +18,15 @@ export class NodemailerStrategy implements EmailTransporterStrategy {
             port: 465,
             secure: true,
             auth: {
-                user: this.options.email,
-                pass: this.options.password,
+                user: this._options.email,
+                pass: this._options.password,
             },
         });
     }
 
-    public async sendEmail<Result = any>(options: SendEmailOptions): Promise<Result> {
+    public async sendEmail<Result = unknown>(options: SendEmailOptions): Promise<Result> {
         // we know the response is coming from gmail so we can strongly type the Result
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         return await this.transporter.sendMail(options);
     }
 }
