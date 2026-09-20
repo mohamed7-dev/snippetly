@@ -224,7 +224,7 @@ export class DeveloperAuthController extends CommonAuth implements AppRouter {
                     }
                     const session = await this.authService.openAuthenticatedSession(
                         req.getRequestContext(),
-                        result,
+                        result.user,
                         NATIVE_AUTH_STRATEGY_NAME,
                     );
                     if (isApiError(session)) {

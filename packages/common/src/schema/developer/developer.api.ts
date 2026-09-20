@@ -2,20 +2,17 @@ import z from 'zod';
 import {
     booleanFilterOperators,
     createPaginatedListInputSchema,
+    createPaginatedListOutputSchema,
     deletionResponse,
     inputIdSchema,
     sortDirection,
     stringFilterOperators,
 } from '../shared/common-schemas.js';
 import { developer } from '../shared/developer.type.js';
-import { user } from '../shared/user.type.js';
 
 //############################ Get Active Developer Account ############################
 
-const activeDeveloperOutput = developer
-    .omit({ user: true })
-    .extend({ user: user.omit({ authenticationMethods: true, roles: true }) })
-    .nullable();
+const activeDeveloperOutput = developer.nullable();
 
 export const activeDeveloperDto = {
     input: z.null(),
@@ -39,9 +36,7 @@ const updateDeveloperAccountInput = developer
     })
     .partial();
 
-const updateDeveloperAccountOutput = developer
-    .omit({ user: true })
-    .extend({ user: user.omit({ authenticationMethods: true, roles: true }) });
+const updateDeveloperAccountOutput = developer;
 
 export const updateDeveloperAccountDto = {
     input: updateDeveloperAccountInput,
@@ -71,9 +66,7 @@ export type DeleteDeveloperAccountDtoType = {
 
 const findOneDeveloperInput = inputIdSchema;
 
-const developerItem = developer
-    .omit({ user: true })
-    .extend({ user: user.omit({ authenticationMethods: true, roles: true }) });
+const developerItem = developer;
 
 const publicDeveloperItem = developerItem.pick({
     id: true,
@@ -125,11 +118,7 @@ const developerListInput = createPaginatedListInputSchema(
     .unwrap()
     .partial();
 
-const developerListItem = developer
-    .omit({ user: true, bio: true })
-    .extend({ user: user.omit({ authenticationMethods: true, roles: true }) });
-
-const publicDeveloperListItem = developerListItem.pick({
+const developerListItem = developer.pick({
     id: true,
     firstName: true,
     lastName: true,
@@ -137,9 +126,7 @@ const publicDeveloperListItem = developerListItem.pick({
     image: true,
 });
 
-const privateDeveloperListItem = developerListItem;
-
-const developerListOutput = z.union([publicDeveloperListItem, privateDeveloperListItem]);
+const developerListOutput = createPaginatedListOutputSchema(developerListItem);
 
 export const developerListDto = {
     input: developerListInput,

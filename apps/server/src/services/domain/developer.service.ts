@@ -14,7 +14,12 @@ import {
 import { FindOptionsRelations, IsNull } from 'typeorm';
 import { RequestContext } from '../../api/request-context/request-context';
 import { isApiError } from '../../common/errors/api-error';
-import { EntityNotFoundError, UserInputError } from '../../common/errors/errors';
+import {
+    EntityNotFoundError,
+    ForbiddenError,
+    InternalServerError,
+    UserInputError,
+} from '../../common/errors/errors';
 import {
     EmailAddressConflictError,
     IdentifierChangeTokenExpiredError,
@@ -35,6 +40,12 @@ import { DatabaseService } from '../../infra/database/database.service';
 import { patchEntity } from '../../infra/database/patch-entity';
 import { EventBus } from '../../infra/event-bus/event-bus.service';
 import { AccountRegistrationEvent } from '../../infra/event-bus/events/account-registration.eveny';
+import { AccountVerifiedEvent } from '../../infra/event-bus/events/account-verified.event';
+import { DeveloperEvent } from '../../infra/event-bus/events/developer.event';
+import { IdentifierChangeRequestedEvent } from '../../infra/event-bus/events/identifier-change-requested.event';
+import { IdentifierChangedEvent } from '../../infra/event-bus/events/identifier-changed.event';
+import { PasswordResetRequestedEvent } from '../../infra/event-bus/events/password-reset-requested.event';
+import { PasswordResetVerifiedEvent } from '../../infra/event-bus/events/password-reset-verified.event';
 import { Injectable } from '../../infra/ioc-container/injectable.decorator';
 import { EmailClient } from '../helpers/email-client.service';
 import { ListQueryBuilder } from '../helpers/list-query-builder/list-query-builder.service';
@@ -51,7 +62,14 @@ export class DeveloperService {
         private readonly emailClient: EmailClient,
     ) {}
 
-    public subscribeToAccountRegistrationEvent() {
+    /**@internal */
+    onApplicationBootstrap() {
+        this.subscribeToAccountRegistrationEvent();
+        this.subscribeToPasswordResetRequestedEvent();
+        this.subscribeToIdentifierChangeRequestedEvent();
+    }
+
+    private subscribeToAccountRegistrationEvent() {
         this.eventBus.ofType(AccountRegistrationEvent).subscribe(event => {
             Logger.debug(`Handling event `);
             const callbackUrl = `${this.configService.systemOptions.email.accountVerificationCallbackUrl}?token=${event.user.getNativeAuthenticationMethod().verificationToken}`;
@@ -71,14 +89,50 @@ export class DeveloperService {
         });
     }
 
-    onApplicationBootstrap() {
-        this.subscribeToAccountRegistrationEvent();
+    private subscribeToPasswordResetRequestedEvent() {
+        this.eventBus.ofType(PasswordResetRequestedEvent).subscribe(event => {
+            Logger.debug(`Handling event ...`);
+            const callbackUrl = `${this.configService.systemOptions.email.passwordResetCallbackUrl}?token=${event.user.getNativeAuthenticationMethod().passwordResetToken}`;
+            void this.emailClient.sendEmail({
+                to: event.user.identifier,
+                subject: 'Password Reset Request',
+                html: `
+                    <a font-family="Helvetica"
+                        background-color="#f45e43"
+                        color="white"
+                        href="${callbackUrl}">
+                            Reset Password!
+                    </a>
+                
+                `,
+            });
+        });
+    }
+
+    private subscribeToIdentifierChangeRequestedEvent() {
+        this.eventBus.ofType(IdentifierChangeRequestedEvent).subscribe(event => {
+            Logger.debug(`Handling event ...`);
+            const callbackUrl = `${this.configService.systemOptions.email.identifierChangeCallbackUrl}?token=${event.user.getNativeAuthenticationMethod().identifierChangeToken}`;
+            void this.emailClient.sendEmail({
+                to: event.user.identifier,
+                subject: 'Email-address Change Request',
+                html: `
+                    <a font-family="Helvetica"
+                        background-color="#f45e43"
+                        color="white"
+                        href="${callbackUrl}">
+                            Change Email-address!
+                    </a>
+                
+                `,
+            });
+        });
     }
 
     public async registerAccount(
         ctx: RequestContext,
         input: RegisterDeveloperAccountDtoType['input'],
-    ): Promise<SuccessResponse | MissingPasswordError | PasswordValidationError> {
+    ): Promise<SuccessResponse | MissingPasswordError | PasswordValidationError | EmailAddressConflictError> {
         if (!input.password) {
             return new MissingPasswordError();
         }
@@ -90,6 +144,16 @@ export class DeveloperService {
                     success: true,
                 };
         }
+
+        const foundDeveloper = await this.databaseService.getRepository(ctx, Developer).findOne({
+            where: {
+                emailAddress: normalizeInput(input.emailAddress),
+            },
+        });
+        if (foundDeveloper) {
+            return new EmailAddressConflictError();
+        }
+
         const developer = await this.databaseService.getRepository(ctx, Developer).save(
             new Developer({
                 emailAddress: normalizeInput(input.emailAddress),
@@ -150,23 +214,33 @@ export class DeveloperService {
 
         if (user && !user.isVerified) {
             await this.userService.refreshVerificationToken(ctx, user);
+            await this.eventBus.publish(new AccountRegistrationEvent(ctx, user));
         }
     }
 
     public async verifyAccount(
         ctx: RequestContext,
         input: VerifyAccountDtoType['input'],
-    ): Promise<User | VerificationTokenInvalidError | VerificationTokenExpiredError> {
+    ): Promise<Developer | VerificationTokenInvalidError | VerificationTokenExpiredError> {
         const result = await this.userService.verifyDeveloperAccount(ctx, input.token);
+        if (isApiError(result)) return result;
+        const developer = await this.getOneByUserId(ctx, result.id);
+        if (!developer) {
+            throw new InternalServerError("errors.developer_account_can't_be_located_for_user");
+        }
+        await this.eventBus.publish(new AccountVerifiedEvent(ctx, developer));
 
-        return result;
+        return developer;
     }
 
     public async requestPasswordReset(
         ctx: RequestContext,
         input: RequestPasswordResetDtoType['input'],
     ): Promise<void> {
-        await this.userService.generateAndSetPasswordResetToken(ctx, input.emailAddress);
+        const user = await this.userService.generateAndSetPasswordResetToken(ctx, input.emailAddress);
+        if (user) {
+            await this.eventBus.publish(new PasswordResetRequestedEvent(ctx, user));
+        }
     }
 
     public async resetPassword(
@@ -175,7 +249,10 @@ export class DeveloperService {
     ): Promise<
         User | PasswordResetTokenExpiredError | PasswordResetTokenInvalidError | PasswordValidationError
     > {
-        return await this.userService.resetAccountPassword(ctx, input.token, input.newPassword);
+        const result = await this.userService.resetAccountPassword(ctx, input.token, input.newPassword);
+        if (isApiError(result)) return result;
+        await this.eventBus.publish(new PasswordResetVerifiedEvent(ctx, result));
+        return result;
     }
 
     public async requestEmailAddressChange(
@@ -197,14 +274,18 @@ export class DeveloperService {
         if (this.configService.authOptions.requireVerification) {
             user.getNativeAuthenticationMethod().identifierPlaceholder = normalizedEmailAddress;
             await this.userService.generateAndSetIdentifierChangeToken(ctx, user);
+            await this.eventBus.publish(new IdentifierChangeRequestedEvent(ctx, user));
             return true;
         } else {
             const developer = await this.getOneByUserId(ctx, user.id);
             if (!developer) return false;
+            const oldIdentifier = user.identifier;
             user.identifier = normalizedEmailAddress;
             developer.emailAddress = normalizedEmailAddress;
             await this.databaseService.getRepository(ctx, User).save(user, { reload: false });
             await this.databaseService.getRepository(ctx, Developer).save(developer, { reload: false });
+            await this.eventBus.publish(new IdentifierChangedEvent(ctx, user, oldIdentifier));
+
             return true;
         }
     }
@@ -219,6 +300,8 @@ export class DeveloperService {
 
         const developer = await this.getOneByUserId(ctx, result.user.id);
         if (!developer) return false;
+
+        await this.eventBus.publish(new IdentifierChangedEvent(ctx, result.user, result.oldIdentifier));
 
         developer.emailAddress = result.user.identifier;
         await this.databaseService.getRepository(ctx, Developer).save(developer, { reload: false });
@@ -257,6 +340,8 @@ export class DeveloperService {
 
         await repo.save(developer, { reload: false });
 
+        await this.eventBus.publish(new DeveloperEvent(ctx, developer, 'updated', input));
+
         return developer;
     }
 
@@ -282,11 +367,23 @@ export class DeveloperService {
             await this.userService.softDelete(ctx, developer.user.id);
         }
 
+        await this.eventBus.publish(new DeveloperEvent(ctx, developer, 'deleted', { id: developerId }));
+
         return { result: 'DELETED', message: '' };
     }
 
-    public async getActiveDeveloper(ctx: RequestContext): Promise<Developer | undefined> {
-        if (!ctx.activeUserId) return undefined;
+    public async getActiveDeveloper(ctx: RequestContext, strict: boolean): Promise<Developer>;
+    public async getActiveDeveloper(ctx: RequestContext, strict?: boolean): Promise<Developer | undefined>;
+    public async getActiveDeveloper(
+        ctx: RequestContext,
+        maybeStrict?: boolean,
+    ): Promise<Developer | undefined> {
+        if (!ctx.activeUserId && maybeStrict) {
+            throw new ForbiddenError();
+        } else if (!ctx.activeUserId) {
+            return undefined;
+        }
+
         const repo = this.databaseService.getRepository(ctx, Developer);
 
         const developer = await repo.findOne({
@@ -296,6 +393,10 @@ export class DeveloperService {
                 },
             },
         });
+
+        if (maybeStrict && !developer) {
+            throw new InternalServerError("errors.developer_account_can't_be_located_for_user");
+        }
 
         return developer ?? undefined;
     }
@@ -327,6 +428,7 @@ export class DeveloperService {
         const qb = this.listQueryBuilder.build(Developer, input, {
             ctx,
             relations,
+            where: { deletedAt: IsNull() },
         });
 
         const [items, itemsCount] = await qb.getManyAndCount();

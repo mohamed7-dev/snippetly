@@ -14,6 +14,7 @@ import { isApiError } from '../../common/errors/api-error';
 import { ForbiddenError } from '../../common/errors/errors';
 import { AppRouter } from '../../common/types/app-router.interface';
 import { Controller } from '../../infra/ioc-container/controller.decorator';
+import { DeveloperService } from '../../services/domain/developer.service';
 import { FriendshipService } from '../../services/domain/friendship.service';
 import { authGuard } from '../middlewares/auth.guard';
 import { defineRoutePipeline } from '../middlewares/define-router-pipeline.mw';
@@ -24,7 +25,10 @@ import { transactionInterceptor } from '../middlewares/transaction.interceptor';
     version: 1,
 })
 export class DeveloperFriendshipController implements AppRouter {
-    constructor(private readonly friendshipService: FriendshipService) {}
+    constructor(
+        private readonly friendshipService: FriendshipService,
+        private readonly developerService: DeveloperService,
+    ) {}
 
     friendshipWriteLimiter = rateLimit({
         windowMs: 15 * 60 * 1000,
@@ -49,15 +53,15 @@ export class DeveloperFriendshipController implements AppRouter {
                 response: sendFriendshipRequestDto.output,
                 interceptors: [transactionInterceptor()],
                 handler: async (req, res) => {
-                    const userId = req.getRequestContext().activeUserId;
-                    if (!userId) {
-                        throw new ForbiddenError();
-                    }
+                    const developer = await this.developerService.getActiveDeveloper(
+                        req.getRequestContext(),
+                        true,
+                    );
 
                     const result = await this.friendshipService.sendFriendshipRequest(
                         req.getRequestContext(),
                         {
-                            requesterId: userId,
+                            requesterId: developer.id,
                             addresseeId: req.params.friendId,
                         },
                     );
@@ -79,17 +83,17 @@ export class DeveloperFriendshipController implements AppRouter {
                 response: acceptFriendshipRequestDto.output,
                 interceptors: [transactionInterceptor()],
                 handler: async (req, res) => {
-                    const userId = req.getRequestContext().activeUserId;
-                    if (!userId) {
-                        throw new ForbiddenError();
-                    }
+                    const developer = await this.developerService.getActiveDeveloper(
+                        req.getRequestContext(),
+                        true,
+                    );
 
                     const result = await this.friendshipService.acceptFriendshipRequest(
                         req.getRequestContext(),
                         {
                             requesterId: req.params.friendId,
-                            addresseeId: userId,
-                            actorId: userId,
+                            addresseeId: developer.id,
+                            actorId: developer.id,
                         },
                     );
 
@@ -110,17 +114,17 @@ export class DeveloperFriendshipController implements AppRouter {
                 response: rejectFriendshipRequestDto.output,
                 interceptors: [transactionInterceptor()],
                 handler: async (req, res) => {
-                    const userId = req.getRequestContext().activeUserId;
-                    if (!userId) {
-                        throw new ForbiddenError();
-                    }
+                    const developer = await this.developerService.getActiveDeveloper(
+                        req.getRequestContext(),
+                        true,
+                    );
 
                     const result = await this.friendshipService.rejectFriendshipRequest(
                         req.getRequestContext(),
                         {
                             requesterId: req.params.friendId,
-                            addresseeId: userId,
-                            actorId: userId,
+                            addresseeId: developer.id,
+                            actorId: developer.id,
                         },
                     );
 
@@ -141,17 +145,17 @@ export class DeveloperFriendshipController implements AppRouter {
                 response: cancelFriendshipRequestDto.output,
                 interceptors: [transactionInterceptor()],
                 handler: async (req, res) => {
-                    const userId = req.getRequestContext().activeUserId;
-                    if (!userId) {
-                        throw new ForbiddenError();
-                    }
+                    const developer = await this.developerService.getActiveDeveloper(
+                        req.getRequestContext(),
+                        true,
+                    );
 
                     const result = await this.friendshipService.cancelFriendshipRequest(
                         req.getRequestContext(),
                         {
-                            requesterId: userId,
+                            requesterId: developer.id,
                             addresseeId: req.params.friendId,
-                            actorId: userId,
+                            actorId: developer.id,
                         },
                     );
 

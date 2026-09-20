@@ -9,12 +9,17 @@ import { ConfigService } from '../../config';
 import { AuthenticationStrategy } from '../../config/auth/authentication-strategy.interface';
 import {
     NATIVE_AUTH_STRATEGY_NAME,
+    NativeAuthenticationData,
     NativeAuthenticationStrategy,
 } from '../../config/auth/native-auth.strategy';
 import { ExternalAuthenticationMethod } from '../../entities/authentication-method/authentication-method.entity';
 import { Session } from '../../entities/session/session.entity';
 import { User } from '../../entities/users/user.entity';
 import { DatabaseService } from '../../infra/database/database.service';
+import { EventBus } from '../../infra/event-bus/event-bus.service';
+import { LoginAttemptEvent } from '../../infra/event-bus/events/login-attempt.event';
+import { LoginEvent } from '../../infra/event-bus/events/login.event';
+import { LogoutEvent } from '../../infra/event-bus/events/logout.event';
 import { Injectable } from '../../infra/ioc-container/injectable.decorator';
 import { SessionService } from './session.service';
 
@@ -24,6 +29,7 @@ export class AuthService {
         private readonly configService: ConfigService,
         private readonly databaseService: DatabaseService,
         private readonly sessionService: SessionService,
+        private readonly eventBus: EventBus,
     ) {}
 
     public async authenticate(
@@ -32,6 +38,15 @@ export class AuthService {
         authData: any,
         apiType: ApiType,
     ): Promise<Session | InvalidCredentialsError | NotVerifiedAccountError> {
+        await this.eventBus.publish(
+            new LoginAttemptEvent(
+                ctx,
+                authStrategyName,
+                authStrategyName === NATIVE_AUTH_STRATEGY_NAME
+                    ? (authData as NativeAuthenticationData).identifier
+                    : undefined,
+            ),
+        );
         const authStrategy = this.getAuthStrategy(apiType, authStrategyName);
         const result = await authStrategy.authenticate(ctx, authData);
         if (typeof result === 'string') {
@@ -75,7 +90,9 @@ export class AuthService {
         }
         user.lastAuthenticatedAt = new Date();
         await this.databaseService.getRepository(ctx, User).save(user);
-        return await this.sessionService.createSession(ctx, user, authStrategyName);
+        const session = await this.sessionService.createSession(ctx, user, authStrategyName);
+        await this.eventBus.publish(new LoginEvent(ctx, user));
+        return session;
     }
 
     public async endSession(ctx: RequestContext, sessionToken: string): Promise<void> {
@@ -89,6 +106,7 @@ export class AuthService {
         if (session) {
             const sessionAuthStrategy = this.getAuthStrategy(ctx.apiType, session.authenticationStrategy);
             await sessionAuthStrategy.onLogout?.(ctx, session.user);
+            await this.eventBus.publish(new LogoutEvent(ctx));
             await this.sessionService.deleteSessionsByUser(ctx, session.user);
         }
     }

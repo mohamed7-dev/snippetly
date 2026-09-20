@@ -19,13 +19,13 @@ export type PrimitiveFields<Entity extends AppEntity> = {
 }[keyof Entity];
 
 export type FilterParameter<Entity extends AppEntity> = {
-    [Key in PrimitiveFields<Entity>]?: Entity[Key] extends string
+    [Key in PrimitiveFields<Entity>]?: NonNullable<Entity[Key]> extends string
         ? StringFilterOperators
-        : Entity[Key] extends number
+        : NonNullable<Entity[Key]> extends number
           ? NumericFilterOperators
-          : Entity[Key] extends boolean
+          : NonNullable<Entity[Key]> extends boolean
             ? BooleanFilterOperators
-            : Entity[Key] extends Date
+            : NonNullable<Entity[Key]> extends Date
               ? DateTimeFilterOperators
               : StringFilterOperators;
 } & {

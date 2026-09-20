@@ -1,15 +1,19 @@
 import { DeepPartial } from '@snippetly/common/lib';
 import { Column, Entity, Index, JoinColumn, JoinTable, ManyToMany, ManyToOne, OneToMany } from 'typeorm';
+import { SoftDeletable } from '../../common/types/soft-deletable.interface';
 import { AppEntity } from '../../infra/database/app-entity';
 import { Developer } from '../developer/developer.entity';
 import { Snippet } from '../snippets/snippet.entity';
 import { Tag } from '../tags/tag.entity';
 
 @Entity()
-export class Collection extends AppEntity {
+export class Collection extends AppEntity implements SoftDeletable {
     constructor(input?: DeepPartial<Collection>) {
         super(input);
     }
+
+    @Column({ nullable: true, type: 'date' })
+    deletedAt: Date | null;
 
     @Column()
     name: string;

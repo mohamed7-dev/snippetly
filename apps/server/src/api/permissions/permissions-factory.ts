@@ -1,4 +1,4 @@
-import { Permission } from '../../../../../packages/common/dist/schema';
+import { Permission } from '@snippetly/common/dto';
 
 interface AppPermissionPayload {
     /**
@@ -31,7 +31,7 @@ interface AppPermissionPayload {
 
 export type NormalizedPermission = Required<
     Omit<AppPermissionPayload, 'options'> & Pick<AppPermissionPayload, 'options'>['options']
->;
+> & { key: Permission };
 
 /**
  * @description
@@ -43,7 +43,7 @@ export class AppPermission {
     public normalizePermission(): NormalizedPermission[] {
         return [
             {
-                key: this.config.key,
+                key: this.config.key as Permission,
                 description: this.config.description ?? `Grants permission on ${this.config.key} operations`,
                 internal: this.config.options?.internal ?? false,
                 assignable: this.config.options?.assignable ?? true,
@@ -71,7 +71,7 @@ export class CrudPermission extends AppPermission {
 
     public normalizePermission(): NormalizedPermission[] {
         return ['Create', 'Read', 'Update', 'Delete'].map(operation => ({
-            key: `${operation}${this.config.key}`,
+            key: `${operation}${this.config.key}` as Permission,
             description:
                 typeof this.descriptionFn === 'function'
                     ? this.descriptionFn(

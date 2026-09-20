@@ -1,4 +1,4 @@
-import { LoggerStrategy } from '../../config/system/logger/logger-strategy.interface';
+import type { LoggerStrategy } from '../../config/system/logger/logger-strategy.interface';
 
 /**
  * @description

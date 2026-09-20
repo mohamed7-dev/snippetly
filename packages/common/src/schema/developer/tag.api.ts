@@ -15,7 +15,6 @@ const popularTagsItem = tag.omit({ addedBy: true }).extend({
             id: true,
             firstName: true,
             lastName: true,
-            emailAddress: true,
             image: true,
         })
         .nullish(),

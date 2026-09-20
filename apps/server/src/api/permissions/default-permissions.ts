@@ -35,7 +35,26 @@ export const DEFAULT_APP_PERMISSIONS = [
         },
     }),
     new CrudPermission('Snippet'),
+    new AppPermission({
+        key: 'ForkSnippet',
+        description: 'Grants permissions to fork snippet',
+        options: {
+            internal: false,
+            assignable: true,
+        },
+    }),
     new CrudPermission('Collection'),
+    new AppPermission({
+        key: 'ForkCollection',
+        description: 'Grants permissions to fork collection',
+        options: {
+            internal: false,
+            assignable: true,
+        },
+    }),
+    new CrudPermission('Tag'),
+    new CrudPermission('Friendship'),
+    new CrudPermission('Developer'),
 ];
 
 export function getNormalizedAppPermissions(): NormalizedPermission[] {

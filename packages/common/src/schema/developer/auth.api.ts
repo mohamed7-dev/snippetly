@@ -33,12 +33,9 @@ const registerDeveloperAccountOutput = z.union([
     nativeAuthStrategyError,
     missingPasswordError,
     passwordValidationError,
+    emailAddressConflictError,
 ]);
 
-/**
- * @description
- * DTOs for developer registration endpoint
- */
 export const registerDeveloperAccountDto = {
     input: registerDeveloperAccountInput,
     output: registerDeveloperAccountOutput,
@@ -57,10 +54,6 @@ const authenticateDeveloperOutput = z.union([
     notVerifiedAccountError,
 ]);
 
-/**
- * @description
- * DTOs for developer authentication endpoint
- */
 export const authenticateDeveloperDto = {
     input: developerAuthInput,
     output: authenticateDeveloperOutput,

@@ -30,7 +30,7 @@ export class NativeAuthenticationStrategy implements AuthenticationStrategy {
     defineZodSchemaSource(): string {
         return `
             z.object({
-                identifier: z.string(),
+                identifier: z.string().nonempty(),
                 password: z.string().min(8).max(32),
                 rememberMe:z.boolean().optional(),
             })

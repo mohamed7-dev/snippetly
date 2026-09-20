@@ -9,6 +9,8 @@ import { isApiError } from '../../common/errors/api-error';
 import { InvalidFriendshipActionError } from '../../common/errors/generated-developer-errors';
 import { Friendship } from '../../entities/friendships/friendship.entity';
 import { DatabaseService } from '../../infra/database/database.service';
+import { EventBus } from '../../infra/event-bus/event-bus.service';
+import { FriendshipEvent } from '../../infra/event-bus/events/friendship.event';
 import { Injectable } from '../../infra/ioc-container/injectable.decorator';
 import { ListQueryBuilder } from '../helpers/list-query-builder/list-query-builder.service';
 
@@ -28,6 +30,7 @@ export class FriendshipService {
     constructor(
         private readonly databaseService: DatabaseService,
         private readonly listQueryBuilder: ListQueryBuilder,
+        private readonly eventBus: EventBus,
     ) {}
 
     public async sendFriendshipRequest(
@@ -74,7 +77,9 @@ export class FriendshipService {
             cancelledAt: null,
         });
 
-        return await repo.save(friendship);
+        await repo.save(friendship);
+        await this.eventBus.publish(new FriendshipEvent(ctx, friendship, 'sent', input));
+        return friendship;
     }
 
     public async acceptFriendshipRequest(
@@ -109,7 +114,11 @@ export class FriendshipService {
         friendship.rejectedAt = null;
         friendship.cancelledAt = null;
 
-        return await this.databaseService.getRepository(ctx, Friendship).save(friendship);
+        await this.databaseService.getRepository(ctx, Friendship).save(friendship);
+
+        await this.eventBus.publish(new FriendshipEvent(ctx, friendship, 'accepted', input));
+
+        return friendship;
     }
 
     public async rejectFriendshipRequest(
@@ -143,7 +152,9 @@ export class FriendshipService {
         friendship.rejectedAt = new Date();
         friendship.cancelledAt = null;
 
-        return await this.databaseService.getRepository(ctx, Friendship).save(friendship);
+        await this.databaseService.getRepository(ctx, Friendship).save(friendship);
+        await this.eventBus.publish(new FriendshipEvent(ctx, friendship, 'rejected', input));
+        return friendship;
     }
 
     public async cancelFriendshipRequest(
@@ -178,19 +189,21 @@ export class FriendshipService {
         friendship.acceptedAt = null;
         friendship.rejectedAt = null;
 
-        return await this.databaseService.getRepository(ctx, Friendship).save(friendship);
+        await this.databaseService.getRepository(ctx, Friendship).save(friendship);
+        await this.eventBus.publish(new FriendshipEvent(ctx, friendship, 'cancelled', input));
+        return friendship;
     }
 
     public async getCurrentUserFriends(
         ctx: RequestContext,
-        userId: string,
+        developerId: string,
         input: CurrentUserFriendsListDtoType['input'],
     ) {
         const qb = this.listQueryBuilder.build(Friendship, input, {
             ctx,
             where: [
-                { requester: { id: userId }, status: FriendshipStatus.Accepted },
-                { addressee: { id: userId }, status: FriendshipStatus.Accepted },
+                { requester: { id: developerId }, status: FriendshipStatus.Accepted },
+                { addressee: { id: developerId }, status: FriendshipStatus.Accepted },
             ],
             relations: {
                 requester: true,
@@ -206,13 +219,13 @@ export class FriendshipService {
 
     public async getCurrentUserInbox(
         ctx: RequestContext,
-        userId: string,
+        developerId: string,
         input: CurrentUserInboxListDtoType['input'],
     ) {
         const qb = this.listQueryBuilder.build(Friendship, input, {
             ctx,
             where: {
-                addressee: { id: userId },
+                addressee: { id: developerId },
                 status: FriendshipStatus.Pending,
             },
             relations: {
@@ -229,13 +242,13 @@ export class FriendshipService {
 
     public async getCurrentUserOutbox(
         ctx: RequestContext,
-        userId: string,
+        developerId: string,
         input: CurrentUserOutboxListDtoType['input'],
     ) {
         const qb = this.listQueryBuilder.build(Friendship, input, {
             ctx,
             where: {
-                requester: { id: userId },
+                requester: { id: developerId },
                 status: FriendshipStatus.Pending,
             },
             relations: {

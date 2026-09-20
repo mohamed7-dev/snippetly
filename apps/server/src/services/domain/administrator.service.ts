@@ -1,4 +1,4 @@
-import { IsNull } from 'typeorm';
+import { FindOptionsRelations, IsNull } from 'typeorm';
 import { RequestContext } from '../../api/request-context/request-context';
 import { ConfigService } from '../../config';
 import { Administrator } from '../../entities/administrator/administrator.entity';
@@ -66,7 +66,9 @@ export class AdministratorService {
                 plainPassword: superAdminCredentials.password,
             });
             const { id } = await this.databaseService.getRepository(Administrator).save(administrator);
-            const createdAdministrator = (await this.findOneById(ctx, id)) as Administrator;
+            const createdAdministrator = (await this.findOneById(ctx, id, {
+                user: { roles: true },
+            })) as Administrator;
             createdAdministrator?.user.roles.push(superAdminRole);
             await this.databaseService
                 .getRepository(User)
@@ -74,11 +76,15 @@ export class AdministratorService {
         }
     }
 
-    public async findOneById(ctx: RequestContext, id: string): Promise<Administrator | undefined> {
+    public async findOneById(
+        ctx: RequestContext,
+        id: string,
+        relations?: FindOptionsRelations<Administrator>,
+    ): Promise<Administrator | undefined> {
         return await this.databaseService
             .getRepository(ctx, Administrator)
             .findOne({
-                relations: { user: { roles: true } },
+                relations: { ...relations },
                 where: {
                     id,
                     deletedAt: IsNull(),
@@ -90,16 +96,18 @@ export class AdministratorService {
     public async findOneByUserId(
         ctx: RequestContext,
         userId: string,
-        relations?: any,
+        relations?: FindOptionsRelations<Administrator>,
     ): Promise<Administrator | undefined> {
-        return (
-            (await this.databaseService.getRepository(ctx, Administrator).findOne({
-                relations: { user: { roles: true } },
-                where: {
-                    user: { id: userId },
-                    deletedAt: IsNull(),
-                },
-            })) ?? undefined
-        );
+        const admin = await this.databaseService.getRepository(ctx, Administrator).findOne({
+            where: {
+                user: { id: userId },
+                deletedAt: IsNull(),
+            },
+            relations: {
+                ...relations,
+            },
+        });
+
+        return admin ?? undefined;
     }
 }

@@ -24,7 +24,6 @@ export interface WhereCondition {
     parameters: Record<string, string | number | string[]>;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
 type AllOperators = StringFilterOperators & NumericFilterOperators & DateTimeFilterOperators;
 
 type Operator = keyof AllOperators;
@@ -75,7 +74,6 @@ export function buildConditionFromFilterParams<Entity extends AppEntity>(
         for (const [operator, operand] of Object.entries(operation)) {
             const condition = buildWhereCondition(
                 columnPath,
-                // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
                 operator as Operator,
                 operand,
                 argIndex, // we need to mark each iteration with an index for distinction, because all these operation will end up executing in the same query

@@ -9,7 +9,7 @@ import {
 import { omit } from '@snippetly/common/lib';
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
-import { EntityNotFoundError, ForbiddenError, InternalServerError } from '../../common/errors/errors';
+import { EntityNotFoundError } from '../../common/errors/errors';
 import { AppRouter } from '../../common/types/app-router.interface';
 import { Developer } from '../../entities/developer/developer.entity';
 import { Controller } from '../../infra/ioc-container/controller.decorator';
@@ -44,19 +44,21 @@ export class DeveloperDeveloperController implements AppRouter {
         router.get(
             '/',
             ...defineRoutePipeline({
-                before: [this.developerReadLimiter],
+                before: [this.developerReadLimiter, authGuard({ permissions: [Permission.Public] })],
                 query: developerListDto.input,
                 response: developerListDto.output,
                 handler: async (req, res) => {
+                    // if there is a session,and developer account -> filter out current developer from the results
+                    // always display non private profiles
+                    const developer = await this.developerService.getActiveDeveloper(req.getRequestContext());
                     const result = await this.developerService.find(req.getRequestContext(), {
                         ...req.query,
                         filter: {
                             ...req.query.filter,
+                            ...(developer ? { id: { notEquals: developer.id } } : {}),
                             isPrivate: { equals: false },
                         },
                     });
-
-                    result.items = omit(result.items, ['isPrivate', 'updatedAt', 'deletedAt'], true);
 
                     res.status(200).json(result);
                 },
@@ -66,7 +68,12 @@ export class DeveloperDeveloperController implements AppRouter {
         router.get(
             '/me',
             ...defineRoutePipeline({
-                before: [this.developerReadLimiter, authGuard({ permissions: [Permission.Owner] })],
+                before: [
+                    this.developerReadLimiter,
+                    authGuard({
+                        permissions: [Permission.Owner, Permission.Authenticated, Permission.ReadDeveloper],
+                    }),
+                ],
                 response: activeDeveloperDto.output,
                 handler: async (req, res) => {
                     const userId = req.getRequestContext().activeUserId;
@@ -86,7 +93,7 @@ export class DeveloperDeveloperController implements AppRouter {
         router.get(
             '/:id',
             ...defineRoutePipeline({
-                before: [this.developerReadLimiter],
+                before: [this.developerReadLimiter, authGuard({ permissions: [Permission.Public] })],
                 params: findOneDeveloperDto.input,
                 response: findOneDeveloperDto.output,
                 handler: async (req, res) => {
@@ -106,7 +113,7 @@ export class DeveloperDeveloperController implements AppRouter {
                     if (result) {
                         finalResult = isOwner
                             ? result
-                            : omit(result, ['isPrivate', 'updatedAt', 'deletedAt']);
+                            : omit(result, ['isPrivate', 'updatedAt', 'deletedAt', 'user']);
                     }
 
                     res.status(200).json(finalResult);
@@ -119,7 +126,9 @@ export class DeveloperDeveloperController implements AppRouter {
             ...defineRoutePipeline({
                 before: [
                     this.developerWriteLimiter,
-                    authGuard({ permissions: [Permission.Authenticated, Permission.Owner] }),
+                    authGuard({
+                        permissions: [Permission.Authenticated, Permission.Owner, Permission.UpdateDeveloper],
+                    }),
                 ],
                 body: updateDeveloperAccountDto.input,
                 response: updateDeveloperAccountDto.output,
@@ -140,7 +149,9 @@ export class DeveloperDeveloperController implements AppRouter {
             ...defineRoutePipeline({
                 before: [
                     this.developerWriteLimiter,
-                    authGuard({ permissions: [Permission.Authenticated, Permission.Owner] }),
+                    authGuard({
+                        permissions: [Permission.Authenticated, Permission.Owner, Permission.DeleteDeveloper],
+                    }),
                 ],
                 response: deleteDeveloperAccountDto.output,
                 handler: async (req, res) => {
@@ -159,14 +170,6 @@ export class DeveloperDeveloperController implements AppRouter {
     }
 
     private async requireDeveloperForCurrentUser(ctx: RequestContext): Promise<Developer> {
-        const userId = ctx.activeUserId;
-        if (!userId) {
-            throw new ForbiddenError();
-        }
-        const developer = await this.developerService.getOneByUserId(ctx, userId);
-        if (!developer) {
-            throw new InternalServerError('errors.current_user_has_no_developer_account');
-        }
-        return developer;
+        return this.developerService.getActiveDeveloper(ctx, true);
     }
 }

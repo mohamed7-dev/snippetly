@@ -2,8 +2,10 @@ import z from 'zod';
 import {
     createPaginatedListInputSchema,
     createPaginatedListOutputSchema,
+    dateTimeFilterOperators,
     idSchema,
     sortDirection,
+    stringFilterOperators,
 } from '../shared/common-schemas.js';
 import { developer } from '../shared/developer.type.js';
 import { friendship } from '../shared/friendship.type.js';
@@ -13,7 +15,6 @@ const friendshipParticipant = developer.pick({
     id: true,
     firstName: true,
     lastName: true,
-    emailAddress: true,
     image: true,
 });
 
@@ -79,14 +80,26 @@ export interface CancelFriendshipRequestDtoType {
 }
 
 // ############################## Friends #############################
+const filterSchema = z.object({
+    acceptedAt: dateTimeFilterOperators,
+    rejectedAt: dateTimeFilterOperators,
+    cancelledAt: dateTimeFilterOperators,
+    status: stringFilterOperators,
+});
+
+const sortSchema = z.object({
+    acceptedAt: sortDirection,
+    rejectedAt: sortDirection,
+    cancelledAt: sortDirection,
+    status: sortDirection,
+});
+
 const currentUserFriendsListInput = createPaginatedListInputSchema(
-    z.object({}),
-    z.object({
-        acceptedAt: sortDirection,
-    }),
+    filterSchema.pick({ acceptedAt: true }),
+    sortSchema.pick({ acceptedAt: true }),
 )
     .unwrap()
-    .omit({ filter: true });
+    .partial();
 
 const currentUserFriendsListOutput = createPaginatedListOutputSchema(friendshipItem);
 
@@ -103,7 +116,7 @@ export interface CurrentUserFriendsListDtoType {
 // ############################## Inbox #############################
 const currentUserInboxListInput = createPaginatedListInputSchema(z.object({}), z.object({}))
     .unwrap()
-    .omit({ filter: true, sort: true });
+    .partial();
 
 const currentUserInboxListOutput = createPaginatedListOutputSchema(friendshipItem);
 
@@ -120,7 +133,7 @@ export interface CurrentUserInboxListDtoType {
 // ############################## Outbox #############################
 const currentUserOutboxListInput = createPaginatedListInputSchema(z.object({}), z.object({}))
     .unwrap()
-    .omit({ filter: true, sort: true });
+    .partial();
 
 const currentUserOutboxListOutput = createPaginatedListOutputSchema(friendshipItem);
 

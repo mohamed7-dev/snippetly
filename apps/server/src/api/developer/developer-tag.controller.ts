@@ -1,9 +1,10 @@
-import { popularTagsDto } from '@snippetly/common/dto';
+import { Permission, popularTagsDto } from '@snippetly/common/dto';
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import { AppRouter } from '../../common/types/app-router.interface';
 import { Controller } from '../../infra/ioc-container/controller.decorator';
 import { TagService } from '../../services/domain/tag.service';
+import { authGuard } from '../middlewares/auth.guard';
 import { defineRoutePipeline } from '../middlewares/define-router-pipeline.mw';
 
 @Controller({
@@ -24,7 +25,10 @@ export class DeveloperTagController implements AppRouter {
         router.get(
             '/popular',
             ...defineRoutePipeline({
-                before: [this.tagReadLimiter],
+                before: [
+                    this.tagReadLimiter,
+                    authGuard({ permissions: [Permission.Authenticated, Permission.ReadTag] }),
+                ],
                 query: popularTagsDto.input,
                 response: popularTagsDto.output,
                 handler: async (req, res) => {

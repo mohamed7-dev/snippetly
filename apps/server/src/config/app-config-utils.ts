@@ -1,6 +1,8 @@
 import { isConstructorInstance, isObject } from '@snippetly/common/lib';
 import path from 'node:path';
-import { assignPropToObject, prototypeObjectPropNames } from '../common/helpers/utils';
+import { OBJECT_PROTOTYPE_KEYS } from '../common/constants/common';
+import { simpleDeepClone } from '../common/helpers/simple-deep-clone';
+import { assignToObject } from '../common/helpers/utils';
 import { AppConfig, PartialAppConfig, RuntimeAppConfig } from './app-config.interface';
 
 /**
@@ -52,52 +54,57 @@ export class AppConfigUtils {
         return appConfig;
     }
 
-    private static mergeConfig<Dest extends AppConfig>(
-        source: PartialAppConfig,
-        dest: Dest,
-        depth = 0,
-    ): Dest {
-        if (!source) return dest;
+    private static getDefaultAppConfig(): RuntimeAppConfig {
+        return require(AppConfigUtils.defaultConfigPath).defaultAppConfig as RuntimeAppConfig;
+    }
 
-        if (isObject(source) && isObject(dest)) {
-            for (const key in source) {
-                const typedKey = key as keyof typeof source;
-                if (prototypeObjectPropNames.includes(typedKey)) continue;
+    private static mergeConfig<Target extends AppConfig>(
+        src: PartialAppConfig,
+        dest: Target,
+        depth: number = 0,
+    ): Target {
+        if (!src) return dest;
 
-                const sourceValue = source[typedKey];
-                const destValue = dest[typedKey];
+        if (depth === 0) {
+            // clone dest to keep original dest object un-mutated
+            dest = simpleDeepClone(dest);
+        }
 
-                if (isObject(sourceValue)) {
-                    // if the dest object doesn't have this key -> initialize
-                    if (!dest[typedKey]) {
-                        this.assign(typedKey, {}, dest);
+        if (isObject(src) && isObject(dest)) {
+            for (const key in src) {
+                if (OBJECT_PROTOTYPE_KEYS.includes(key)) {
+                    continue;
+                }
+                const srcTypedKey = key as keyof typeof src;
+                const srcValue = src[srcTypedKey];
+                if (isObject(srcValue)) {
+                    // object has three possibilities:
+                    // 1. class constructor
+                    // 2. plain object
+                    // 3. value exists in src, but not in dest
+                    const destValue = dest[srcTypedKey];
+                    if (!destValue) {
+                        // value doesn't exist in dest -> init
+                        assignToObject(dest, srcTypedKey, {});
                     }
-                    if (isConstructorInstance(sourceValue)) {
-                        // if it's a constructor -> assign instance directly to dest
-                        this.assign(typedKey, sourceValue, dest);
+                    if (isConstructorInstance(srcValue)) {
+                        // constructor -> assign directly to dest
+                        assignToObject(dest, srcTypedKey, srcValue);
                     } else {
-                        // if not a constructor instance -> recurse Into nested objects
+                        // plain object -> run recursively
                         this.mergeConfig(
-                            sourceValue as unknown as PartialAppConfig,
-                            destValue as unknown as Dest,
+                            srcValue as unknown as PartialAppConfig,
+                            dest[srcTypedKey] as unknown as RuntimeAppConfig,
                             depth + 1,
                         );
                     }
                 } else {
                     // primitive -> assign directly to dest
-                    this.assign(typedKey, sourceValue, dest);
+                    assignToObject(dest, srcTypedKey, srcValue);
                 }
             }
         }
 
         return dest;
-    }
-
-    private static assign(key: string, value: any, dest: any): void {
-        assignPropToObject(dest, key, value);
-    }
-
-    private static getDefaultAppConfig(): RuntimeAppConfig {
-        return require(AppConfigUtils.defaultConfigPath).defaultAppConfig as RuntimeAppConfig;
     }
 }

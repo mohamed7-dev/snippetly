@@ -10,6 +10,7 @@ export const collection = node.extend({
     description: z.string().nullable(),
     isPrivate: z.boolean(),
     allowForking: z.boolean(),
+    deletedAt: z.date().nullable(),
     creator: developer,
     tags: z.array(tag),
 });

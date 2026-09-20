@@ -1,6 +1,7 @@
 import {
     collectionListDto,
     createCollectionDto,
+    currentUserCollectionListDto,
     deleteCollectionDto,
     findOneCollectionDto,
     forkCollectionDto,
@@ -10,7 +11,7 @@ import {
 import { omit } from '@snippetly/common/lib';
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
-import { EntityNotFoundError, ForbiddenError } from '../../common/errors/errors';
+import { EntityNotFoundError } from '../../common/errors/errors';
 import { AppRouter } from '../../common/types/app-router.interface';
 import { Controller } from '../../infra/ioc-container/controller.decorator';
 import { CollectionService } from '../../services/domain/collection.service';
@@ -47,7 +48,10 @@ export class DeveloperCollectionController implements AppRouter {
         router.post(
             '/',
             ...defineRoutePipeline({
-                before: [this.collectionWriteLimiter, authGuard({ permissions: [Permission.Authenticated] })],
+                before: [
+                    this.collectionWriteLimiter,
+                    authGuard({ permissions: [Permission.Authenticated, Permission.CreateCollection] }),
+                ],
                 body: createCollectionDto.input,
                 response: createCollectionDto.output,
                 interceptors: [transactionInterceptor()],
@@ -63,7 +67,13 @@ export class DeveloperCollectionController implements AppRouter {
             ...defineRoutePipeline({
                 before: [
                     this.collectionWriteLimiter,
-                    authGuard({ permissions: [Permission.Authenticated, Permission.Owner] }),
+                    authGuard({
+                        permissions: [
+                            Permission.Authenticated,
+                            Permission.Owner,
+                            Permission.DeleteCollection,
+                        ],
+                    }),
                 ],
                 params: deleteCollectionDto.input,
                 response: deleteCollectionDto.output,
@@ -78,7 +88,10 @@ export class DeveloperCollectionController implements AppRouter {
         router.post(
             '/:id/forks',
             ...defineRoutePipeline({
-                before: [this.collectionWriteLimiter, authGuard({ permissions: [Permission.Authenticated] })],
+                before: [
+                    this.collectionWriteLimiter,
+                    authGuard({ permissions: [Permission.Authenticated, Permission.ForkCollection] }),
+                ],
                 params: forkCollectionDto.input,
                 response: forkCollectionDto.output,
                 interceptors: [transactionInterceptor()],
@@ -94,7 +107,13 @@ export class DeveloperCollectionController implements AppRouter {
             ...defineRoutePipeline({
                 before: [
                     this.collectionWriteLimiter,
-                    authGuard({ permissions: [Permission.Authenticated, Permission.Owner] }),
+                    authGuard({
+                        permissions: [
+                            Permission.Authenticated,
+                            Permission.Owner,
+                            Permission.UpdateCollection,
+                        ],
+                    }),
                 ],
                 body: updateCollectionDto.input.omit({ id: true }),
                 params: updateCollectionDto.input.pick({ id: true }),
@@ -114,22 +133,36 @@ export class DeveloperCollectionController implements AppRouter {
         router.get(
             '/',
             ...defineRoutePipeline({
-                before: [this.collectionReadLimiter],
+                before: [this.collectionReadLimiter, authGuard({ permissions: [Permission.Public] })],
                 query: collectionListDto.input,
                 response: collectionListDto.output,
                 handler: async (req, res) => {
                     const developer = await this.developerService.getActiveDeveloper(req.getRequestContext());
                     const shouldRestrictToPublic =
                         !req.query.creator || !developer || req.query.creator !== developer.id;
+
                     const result = await this.collectionService.find(req.getRequestContext(), {
                         ...req.query,
                         filter: {
                             ...req.query.filter,
-                            ...(shouldRestrictToPublic ? { isPrivate: { equals: false } } : {}),
+                            ...(shouldRestrictToPublic
+                                ? {
+                                      _and: [
+                                          ...(req.query.filter?._and ?? []),
+                                          { isPrivate: { equals: false } },
+                                          { deletedAt: { isNull: true } },
+                                      ],
+                                  }
+                                : {
+                                      _and: [
+                                          ...(req.query.filter?._and ?? []),
+                                          { deletedAt: { isNull: true } },
+                                      ],
+                                  }),
                         },
                     });
                     if (shouldRestrictToPublic) {
-                        result.items = omit(result.items, ['isPrivate', 'updatedAt'], true);
+                        result.items = omit(result.items, ['isPrivate', 'updatedAt', 'deletedAt'], true);
                     }
                     res.status(200).json(result);
                 },
@@ -139,17 +172,26 @@ export class DeveloperCollectionController implements AppRouter {
         router.get(
             '/me',
             ...defineRoutePipeline({
-                before: [this.collectionReadLimiter, authGuard({ permissions: [Permission.Authenticated] })],
-                query: collectionListDto.input.omit({ creator: true }),
-                response: collectionListDto.output,
+                before: [
+                    this.collectionReadLimiter,
+                    authGuard({ permissions: [Permission.Authenticated, Permission.ReadCollection] }),
+                ],
+                query: currentUserCollectionListDto.input,
+                response: currentUserCollectionListDto.output,
                 handler: async (req, res) => {
-                    const developer = await this.developerService.getActiveDeveloper(req.getRequestContext());
-                    if (!developer) {
-                        throw new ForbiddenError();
-                    }
+                    const developer = await this.developerService.getActiveDeveloper(
+                        req.getRequestContext(),
+                        true,
+                    );
 
+                    //if the user passes deletedAt, or isMaintained filters -> use them
+                    // otherwise, use defaults which only returns active collections
                     const result = await this.collectionService.find(req.getRequestContext(), {
                         ...req.query,
+                        filter: {
+                            ...req.query.filter,
+                            deletedAt: req.query.filter?.deletedAt ?? { isNull: true },
+                        },
                         creator: developer.id,
                     });
 
@@ -161,7 +203,7 @@ export class DeveloperCollectionController implements AppRouter {
         router.get(
             `/:id`,
             ...defineRoutePipeline({
-                before: [this.collectionReadLimiter],
+                before: [this.collectionReadLimiter, authGuard({ permissions: [Permission.Public] })],
                 params: findOneCollectionDto.input,
                 response: findOneCollectionDto.output,
                 handler: async (req, res) => {
@@ -180,7 +222,9 @@ export class DeveloperCollectionController implements AppRouter {
                     let finalResult;
 
                     if (result) {
-                        finalResult = isOwner ? result : omit(result, ['isPrivate', 'updatedAt']);
+                        finalResult = isOwner
+                            ? result
+                            : omit(result, ['isPrivate', 'updatedAt', 'deletedAt']);
                     }
                     res.status(200).json(finalResult);
                 },

@@ -12,7 +12,9 @@ import { SessionService } from './domain/session.service';
 import { SnippetService } from './domain/snippet.service';
 import { TagService } from './domain/tag.service';
 import { UserService } from './domain/user.service';
+import { DefaultRolesBuilder } from './helpers/default-roles-builder.service';
 import { EmailClient } from './helpers/email-client.service';
+import { ExternalAuthService } from './helpers/external-auth.service';
 import { InitializerService } from './helpers/initializer.service';
 import { ListQueryBuilder } from './helpers/list-query-builder/list-query-builder.service';
 import { PasswordHashingService } from './helpers/password-hashing.service';
@@ -29,6 +31,8 @@ const helpers = [
     SlugValidator,
     ListQueryBuilder,
     EmailClient,
+    DefaultRolesBuilder,
+    ExternalAuthService,
 ];
 
 const services = [

@@ -1,7 +1,7 @@
 import { RequestContext } from '../../api/request-context/request-context';
 import { AppEvent } from './app-event';
 
-export type AppEntityEventType = 'created' | 'updated' | 'deleted';
+export type AppEntityEventType = 'created' | 'updated' | 'deleted' | string;
 
 /**
  * @description

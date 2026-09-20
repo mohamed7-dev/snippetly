@@ -103,3 +103,15 @@ export class RateLimiterError extends I18nError {
         super(message, variables, 429, 'RATE_LIMITER_ERROR', LogLevel.warn);
     }
 }
+
+/**
+ * @description
+ * Represents an error that gets thrown when the emailAddress
+ * of an authenticating user via external provider is not verified
+ * in this case the external provider hasn't verified that the authenticating user owns that email address.
+ */
+export class UnverifiedExternalEmailError extends I18nError {
+    constructor(message = 'errors.unverified_external_email') {
+        super(message, {}, 409, 'UNVERIFIED_EXTERNAL_EMAIL_ERROR', LogLevel.warn);
+    }
+}

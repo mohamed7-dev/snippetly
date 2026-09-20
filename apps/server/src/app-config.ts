@@ -3,6 +3,7 @@ import { config } from 'dotenv';
 import path from 'node:path';
 import { isDevelopment, isProduction } from './common/helpers/utils';
 import { AppConfig } from './config/app-config.interface';
+import { GoogleAuthenticationStrategy } from './config/auth/google-auth.strategy';
 import { NodemailerStrategy } from './config/system/email/nodemailer.strategy';
 
 const envPaths = ['.env'];
@@ -27,6 +28,9 @@ export const appConfig: AppConfig = {
     },
     auth: {
         requireVerification: false,
+        developerAuthenticationStrategies: [
+            new GoogleAuthenticationStrategy({ googleClientId: process.env.GOOGLE_CLIENT_ID! }),
+        ],
     },
     database: {
         type: 'postgres',

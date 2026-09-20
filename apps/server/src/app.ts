@@ -1,6 +1,7 @@
 import cookieParser from 'cookie-parser';
 import express, { Application } from 'express';
 import { Server } from 'http';
+import swaggerUi from 'swagger-ui-express';
 import { createRouteHandler } from 'uploadthing/express';
 import { cookieSession } from './api/middlewares/cookie-session.mw';
 import { cors } from './api/middlewares/cors.mw';
@@ -21,6 +22,7 @@ import { ModuleClass, Token } from './infra/ioc-container/types';
 import { Logger } from './infra/logger/logger';
 import { InitializerService } from './services/helpers/initializer.service';
 import { uploadRouter } from './services/helpers/uploadthing.service';
+import { openApiDocument } from './openapi/openapi';
 
 export class App {
     private app: Application = express();
@@ -34,6 +36,10 @@ export class App {
         // initialize ioc container
         iocContainer.loadModule(entryModule);
         this.initializeMiddlewares();
+        this.app.get('/api/openapi.json', (_req, res) => {
+            res.json(openApiDocument);
+        });
+        this.app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(openApiDocument));
         iocContainer.initRoutes(this.app);
         this.app.use(
             '/api/upload',
