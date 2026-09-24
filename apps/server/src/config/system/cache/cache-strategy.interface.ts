@@ -1,11 +1,12 @@
 import { JSONCompatible } from '@snippetly/common/lib';
+import { LifecycleStrategy } from '../../../common/types/lifecycle-strategy.interface';
 
 export interface CacheEntryOptions {
     ttl?: number;
     tags?: string[];
 }
 
-export interface CacheStrategy {
+export interface CacheStrategy extends LifecycleStrategy {
     set<Value extends JSONCompatible<Value>>(
         key: string,
         value: Value,

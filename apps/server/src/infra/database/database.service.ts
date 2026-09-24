@@ -1,4 +1,3 @@
-import path from 'node:path';
 import {
     DataSource,
     DataSourceOptions,
@@ -11,15 +10,14 @@ import {
 import { RequestContext } from '../../api/request-context/request-context';
 import { DB_TRANSACTION_MANAGER_KEY } from '../../common/constants/keys';
 import { ConfigService } from '../../config/config.service';
-import { entitiesMap } from '../../entities/entities-map';
 import { Injectable } from '../ioc-container/injectable.decorator';
 
 @Injectable()
 export class DatabaseService {
+    private static sharedDataSource?: DataSource;
+    private static connectionPromise?: Promise<DataSource>;
     private _dataSource: DataSource;
     private _dataSourceOptions: DataSourceOptions;
-    defaultEntities = [path.join(__dirname, '..', '..', '**', '*.entity.{ts,js}')];
-    defaultMigrations = [path.join(__dirname, '..', '..', '**', '*migration*.{ts,js}')];
 
     constructor(private readonly configService: ConfigService) {
         this._dataSourceOptions = this.configService.databaseOptions;
@@ -33,19 +31,43 @@ export class DatabaseService {
         return this._dataSource;
     }
 
-    public async connect() {
-        this._dataSource = new DataSource({
-            ...this._dataSourceOptions,
-            entities: Object.values(entitiesMap),
-            migrations: this._dataSourceOptions.migrations?.length
-                ? this._dataSourceOptions.migrations
-                : this.defaultMigrations,
-        });
-        return await this._dataSource.initialize();
+    public async connect(): Promise<DataSource> {
+        if (DatabaseService.sharedDataSource?.isInitialized) {
+            this._dataSource = DatabaseService.sharedDataSource;
+            return this._dataSource;
+        }
+
+        if (!DatabaseService.connectionPromise) {
+            const dataSource = new DataSource({
+                ...this._dataSourceOptions,
+            });
+
+            DatabaseService.connectionPromise = dataSource
+                .initialize()
+                .then(initializedDataSource => {
+                    DatabaseService.sharedDataSource = initializedDataSource;
+                    return initializedDataSource;
+                })
+                .catch(error => {
+                    DatabaseService.connectionPromise = undefined;
+                    throw error;
+                });
+        }
+
+        this._dataSource = await DatabaseService.connectionPromise;
+        return this._dataSource;
     }
 
     public async disconnect() {
-        await this._dataSource.destroy();
+        const dataSource = DatabaseService.sharedDataSource ?? this._dataSource;
+        if (!dataSource?.isInitialized) return;
+
+        await dataSource.destroy();
+        if (DatabaseService.sharedDataSource === dataSource) {
+            DatabaseService.sharedDataSource = undefined;
+        }
+        DatabaseService.connectionPromise = undefined;
+        this._dataSource = undefined as never;
     }
 
     /**

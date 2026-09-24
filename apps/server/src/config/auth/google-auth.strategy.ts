@@ -1,7 +1,7 @@
 import { OAuth2Client } from 'google-auth-library';
 import { RequestContext } from '../../api/request-context/request-context';
 import { User } from '../../entities/users/user.entity';
-import { ModuleRef } from '../../infra/ioc-container/module-ref.service';
+import { ModuleRef } from '../../infra/ioc-container/module-ref';
 import { Logger } from '../../infra/logger/logger';
 import { ExternalAuthService } from '../../services/helpers/external-auth.service';
 import { AuthenticationStrategy } from './authentication-strategy.interface';

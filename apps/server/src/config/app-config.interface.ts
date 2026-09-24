@@ -15,17 +15,22 @@ interface ApiActorOptions {
     listingLimit?: number;
 }
 
+export type TrustProxyConfigOptions = boolean | number | string | string[] | ((ip: string) => boolean);
+
 export interface ApiConfigOptions {
     host?: string;
     port?: number;
+    disableRateLimiting?: boolean;
     admin?: ApiActorOptions;
     developer?: ApiActorOptions;
     cors?: CorsOptions;
+    trustProxy?: TrustProxyConfigOptions;
 }
 
 export type DatabaseConfigOptions = DataSourceOptions;
 
 export interface SystemConfigOptions {
+    shouldRunInitialization?: boolean;
     email?: {
         emailTransporterStrategy?: EmailTransporterStrategy;
         accountVerificationCallbackUrl?: string;
@@ -38,6 +43,7 @@ export interface SystemConfigOptions {
 }
 
 export interface AuthConfigOptions {
+    authTokenHeaderKey?: string;
     requireVerification?: boolean;
     /**
      * @description

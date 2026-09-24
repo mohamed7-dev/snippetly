@@ -1,3 +1,4 @@
+import { ConfigModule } from '../config/config.module';
 import { Module } from '../infra/ioc-container/module.decorator';
 import { ServiceModule } from '../services/service.module';
 import { DeveloperAuthController } from './developer/developer-auth.controller';
@@ -8,8 +9,8 @@ import { DeveloperSnippetController } from './developer/developer-snippet.contro
 import { DeveloperTagController } from './developer/developer-tag.controller';
 
 @Module({
-    imports: [ServiceModule],
-    exports: [ServiceModule],
+    imports: [ServiceModule, ConfigModule],
+    exports: [ServiceModule, ConfigModule],
 })
 class CommonApiModule {}
 

@@ -1,8 +1,8 @@
 import baseCors from 'cors';
 import { ConfigService } from '../../config/config.service';
-import { iocContainer } from '../../infra/ioc-container/ioc-container';
+import { moduleRef } from '../../infra/ioc-container/module-ref';
 
 export function cors() {
-    const configService = iocContainer.resolve<ConfigService>(ConfigService);
+    const configService = moduleRef.getProvider<ConfigService>(ConfigService);
     return baseCors(configService.apiOptions.cors);
 }

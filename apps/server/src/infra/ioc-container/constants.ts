@@ -1,4 +1,4 @@
-import { ModuleRef } from './module-ref.service';
+import { ModuleRef } from './module-ref';
 
 export const internalProvidersMap = {
     ModuleRef,

@@ -5,18 +5,27 @@ import { AppConfigUtils } from './config/app-config-utils';
 import { PartialAppConfig, RuntimeAppConfig } from './config/app-config.interface';
 import { Logger } from './infra/logger/logger';
 
-export async function bootstrap(userConfig?: PartialAppConfig): Promise<App> {
+export async function bootstrap(
+    userConfig?: PartialAppConfig,
+    options: { listen?: boolean } = { listen: true },
+): Promise<App> {
     const finalConfig = runPreConfig(userConfig);
     Logger.useLogger(finalConfig.system.loggerStrategy);
 
     const app = new App(AppModule);
-    await app.listen(finalConfig.api.port, finalConfig.api.host, () => {
-        Logger.info(`Server running on http://${finalConfig.api.host}:${finalConfig.api.port}`);
-    });
+    app.expressApp.set('trust proxy', finalConfig.api.trustProxy);
+
+    if (options.listen === false) {
+        await app.initialize();
+    } else {
+        await app.listen(finalConfig.api.port, finalConfig.api.host, () => {
+            Logger.info(`Server running on ${finalConfig.api.host}:${finalConfig.api.port}`);
+        });
+    }
     return app;
 }
 
-function runPreConfig(config?: PartialAppConfig): RuntimeAppConfig {
+export function runPreConfig(config?: PartialAppConfig): RuntimeAppConfig {
     if (config) {
         AppConfigUtils.setConfig(config);
     }

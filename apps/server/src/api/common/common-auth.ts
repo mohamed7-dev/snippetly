@@ -11,6 +11,7 @@ import {
     InvalidCredentialsError,
     NotVerifiedAccountError,
 } from '../../common/errors/generated-developer-errors';
+import { ConfigService } from '../../config/config.service';
 import { User } from '../../entities/users/user.entity';
 import { AdministratorService } from '../../services/domain/administrator.service';
 import { AuthService } from '../../services/domain/auth.service';
@@ -23,6 +24,7 @@ export class CommonAuth {
         protected readonly authService: AuthService,
         protected readonly administratorService: AdministratorService,
         protected readonly userService: UserService,
+        protected readonly configService: ConfigService,
     ) {}
 
     public async sharedAuthenticate(
@@ -48,6 +50,7 @@ export class CommonAuth {
             req,
             rememberMe: (authInfo?.[1] as any)?.rememberMe || false,
             sessionToken: sessionResult.token,
+            authOptions: this.configService.authOptions,
         });
         return this.clientSafeUser(sessionResult.user);
     }
@@ -61,6 +64,7 @@ export class CommonAuth {
             res,
             sessionToken: '',
             rememberMe: false,
+            authOptions: this.configService.authOptions,
         });
         return { success: true };
     }

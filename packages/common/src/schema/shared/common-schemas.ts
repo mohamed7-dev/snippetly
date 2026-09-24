@@ -2,8 +2,7 @@ import z, { ZodObject, ZodType } from 'zod';
 
 //############################ Password Schema ##########################
 
-export const passwordSchema = z.string().min(8).max(32);
-
+export const passwordSchema = z.string().nonempty();
 //############################ Success Response ##########################
 
 export const successResponse = z.object({

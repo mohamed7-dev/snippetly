@@ -15,6 +15,7 @@ import {
 import { ExternalAuthenticationMethod } from '../../entities/authentication-method/authentication-method.entity';
 import { Session } from '../../entities/session/session.entity';
 import { User } from '../../entities/users/user.entity';
+import { Logger } from '../../infra';
 import { DatabaseService } from '../../infra/database/database.service';
 import { EventBus } from '../../infra/event-bus/event-bus.service';
 import { LoginAttemptEvent } from '../../infra/event-bus/events/login-attempt.event';
@@ -78,11 +79,21 @@ export class AuthService {
             user.roles = extendedUser?.roles || [];
         }
 
+        const isUsingNativeMethod = authStrategyName === NATIVE_AUTH_STRATEGY_NAME;
+        Logger.debug(`${JSON.stringify({ isUsingNativeMethod, isUserVerified: user.isVerified })}`);
+        if (isUsingNativeMethod && !user.isVerified) {
+            const nativeAuthMethod = user.getNativeAuthenticationMethod({ throwError: false });
+            Logger.debug(`${JSON.stringify({ nativeAuthMethod })}`);
+            if (nativeAuthMethod && nativeAuthMethod.verificationToken != null) {
+                return new NotVerifiedAccountError();
+            }
+        }
+
         const providerAuthMethods = (user.authenticationMethods ?? []).filter(
             am => am instanceof ExternalAuthenticationMethod,
         );
         if (
-            !providerAuthMethods.length &&
+            (!isUsingNativeMethod || !providerAuthMethods.length) &&
             this.configService.authOptions.requireVerification &&
             !user.isVerified
         ) {

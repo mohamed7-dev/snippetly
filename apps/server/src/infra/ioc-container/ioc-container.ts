@@ -1,6 +1,5 @@
 import { Application, Router } from 'express';
 import { AppRouter } from '../../common/types/app-router.interface';
-import { internalProvidersMap } from './constants';
 import { CONTROLLER_DECORATOR_METADATA_KEY } from './controller.decorator';
 import { INJECT_DECORATOR_METADATA_KEY } from './inject.decorator';
 import { INJECTABLE_DECORATOR_METADATA_KEY, InjectableMeta } from './injectable.decorator';
@@ -15,12 +14,6 @@ export class IocContainer {
     private processedModules = new Set<ModuleClass>();
     private controllers = new Map<ModuleClass, any[]>();
     private routes: Array<{ basePath: string; targetName?: string }> = [];
-
-    constructor() {
-        Object.values(internalProvidersMap).forEach(provider => {
-            this.register(provider);
-        });
-    }
 
     public register(provider: any, module?: ModuleClass) {
         if (typeof provider === 'function') {
@@ -265,6 +258,4 @@ export class IocContainer {
     }
 }
 
-const ioc = new IocContainer();
-
-export const iocContainer = Object.freeze(ioc);
+export const iocContainer = new IocContainer();

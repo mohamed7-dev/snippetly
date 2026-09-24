@@ -1,5 +1,6 @@
 import {
     ChangeEmailAddressDtoType,
+    CreateDeveloperDtoType,
     DeleteDeveloperAccountDtoType,
     DeveloperListDtoType,
     RefreshVerificationTokenDtoType,
@@ -13,7 +14,7 @@ import {
 } from '@snippetly/common/dto';
 import { FindOptionsRelations, IsNull } from 'typeorm';
 import { RequestContext } from '../../api/request-context/request-context';
-import { isApiError } from '../../common/errors/api-error';
+import { ErrorResultUnion, isApiError } from '../../common/errors/api-error';
 import {
     EntityNotFoundError,
     ForbiddenError,
@@ -32,6 +33,7 @@ import {
     VerificationTokenInvalidError,
 } from '../../common/errors/generated-developer-errors';
 import { normalizeInput } from '../../common/helpers/validation';
+import { OnApplicationBootstrap } from '../../common/types/lifecycle-hooks';
 import { ConfigService } from '../../config';
 import { Developer } from '../../entities/developer/developer.entity';
 import { User } from '../../entities/users/user.entity';
@@ -52,7 +54,7 @@ import { ListQueryBuilder } from '../helpers/list-query-builder/list-query-build
 import { UserService } from './user.service';
 
 @Injectable()
-export class DeveloperService {
+export class DeveloperService implements OnApplicationBootstrap {
     constructor(
         private readonly userService: UserService,
         private readonly databaseService: DatabaseService,
@@ -71,9 +73,10 @@ export class DeveloperService {
 
     private subscribeToAccountRegistrationEvent() {
         this.eventBus.ofType(AccountRegistrationEvent).subscribe(event => {
-            Logger.debug(`Handling event `);
+            Logger.debug(`Handling event 'AccountRegistrationEvent'`);
             const callbackUrl = `${this.configService.systemOptions.email.accountVerificationCallbackUrl}?token=${event.user.getNativeAuthenticationMethod().verificationToken}`;
             void this.emailClient.sendEmail({
+                event,
                 to: event.user.identifier,
                 subject: 'Account Verification',
                 html: `
@@ -91,9 +94,10 @@ export class DeveloperService {
 
     private subscribeToPasswordResetRequestedEvent() {
         this.eventBus.ofType(PasswordResetRequestedEvent).subscribe(event => {
-            Logger.debug(`Handling event ...`);
+            Logger.debug(`Handling event 'PasswordResetRequestedEvent'`);
             const callbackUrl = `${this.configService.systemOptions.email.passwordResetCallbackUrl}?token=${event.user.getNativeAuthenticationMethod().passwordResetToken}`;
             void this.emailClient.sendEmail({
+                event,
                 to: event.user.identifier,
                 subject: 'Password Reset Request',
                 html: `
@@ -111,9 +115,10 @@ export class DeveloperService {
 
     private subscribeToIdentifierChangeRequestedEvent() {
         this.eventBus.ofType(IdentifierChangeRequestedEvent).subscribe(event => {
-            Logger.debug(`Handling event ...`);
+            Logger.debug(`Handling event 'IdentifierChangeRequestedEvent'`);
             const callbackUrl = `${this.configService.systemOptions.email.identifierChangeCallbackUrl}?token=${event.user.getNativeAuthenticationMethod().identifierChangeToken}`;
             void this.emailClient.sendEmail({
+                event,
                 to: event.user.identifier,
                 subject: 'Email-address Change Request',
                 html: `
@@ -153,6 +158,9 @@ export class DeveloperService {
         if (foundDeveloper) {
             return new EmailAddressConflictError();
         }
+
+        const passwordValidationResult = await this.userService.validatePassword(ctx, input.password);
+        if (passwordValidationResult !== true) return passwordValidationResult;
 
         const developer = await this.databaseService.getRepository(ctx, Developer).save(
             new Developer({
@@ -372,6 +380,26 @@ export class DeveloperService {
         return { result: 'DELETED', message: '' };
     }
 
+    public async restoreAccount(ctx: RequestContext, userId: string): Promise<boolean> {
+        const developer = await this.databaseService.getRepository(ctx, Developer).findOne({
+            where: {
+                user: {
+                    id: userId,
+                },
+            },
+            withDeleted: true,
+        });
+
+        if (!developer) return false;
+
+        await this.databaseService.getRepository(ctx, User).update({ id: userId }, { deletedAt: null });
+        await this.databaseService
+            .getRepository(ctx, Developer)
+            .update({ id: developer.id }, { deletedAt: null });
+
+        return true;
+    }
+
     public async getActiveDeveloper(ctx: RequestContext, strict: boolean): Promise<Developer>;
     public async getActiveDeveloper(ctx: RequestContext, strict?: boolean): Promise<Developer | undefined>;
     public async getActiveDeveloper(
@@ -475,5 +503,54 @@ export class DeveloperService {
         });
 
         return developer ?? undefined;
+    }
+
+    public async create(
+        ctx: RequestContext,
+        input: CreateDeveloperDtoType['input'],
+        password?: string,
+    ): Promise<ErrorResultUnion<CreateDeveloperDtoType['output'], Developer>> {
+        input.emailAddress = normalizeInput(input.emailAddress);
+        const developer = new Developer(input);
+
+        const existingDeveloper = await this.databaseService.getRepository(ctx, Developer).findOne({
+            where: {
+                emailAddress: input.emailAddress,
+                deletedAt: IsNull(),
+            },
+        });
+
+        if (existingDeveloper) {
+            return new EmailAddressConflictError();
+        }
+
+        const developerUser = await this.userService.createDeveloperUser(ctx, {
+            password,
+            identifier: input.emailAddress,
+        });
+
+        if (isApiError(developerUser)) {
+            // eslint-disable-next-line @typescript-eslint/only-throw-error
+            throw developerUser;
+        }
+        developer.user = developerUser;
+        if (password && password !== '') {
+            const verificationToken = developer.user.getNativeAuthenticationMethod().verificationToken;
+            if (verificationToken) {
+                const result = await this.userService.verifyDeveloperAccount(ctx, verificationToken);
+                if (isApiError(result)) {
+                    // In theory this should never be reached, so we will just
+                    // throw the result
+                    // eslint-disable-next-line @typescript-eslint/only-throw-error
+                    throw result;
+                } else {
+                    developer.user = result;
+                }
+            }
+        }
+        await this.eventBus.publish(new AccountRegistrationEvent(ctx, developer.user));
+        const createdDeveloper = await this.databaseService.getRepository(ctx, Developer).save(developer);
+        await this.eventBus.publish(new DeveloperEvent(ctx, createdDeveloper, 'created', input));
+        return createdDeveloper;
     }
 }

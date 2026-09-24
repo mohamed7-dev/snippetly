@@ -1,14 +1,14 @@
 import ms from 'ms';
 import { RequestContext } from '../../api/request-context/request-context';
 import { generatePublicId } from '../../common/helpers/generate-public-id';
-import { ModuleRef } from '../../infra/ioc-container/module-ref.service';
+import { ModuleRef } from '../../infra/ioc-container/module-ref';
 import { ConfigService } from '../config.service';
 import { VerificationTokenStrategy } from './verification-token-strategy.interface';
 
 export class DefaultVerificationTokenStrategy implements VerificationTokenStrategy {
     private configService: ConfigService;
 
-    init(moduleRef: ModuleRef) {
+    onInit(moduleRef: ModuleRef) {
         this.configService = moduleRef.getProvider(ConfigService);
     }
 

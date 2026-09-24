@@ -15,10 +15,10 @@ import {
     verifyAccountDto,
 } from '@snippetly/common/dto';
 import { Router } from 'express';
-import rateLimit from 'express-rate-limit';
 import { isApiError } from '../../common/errors/api-error';
 import { ForbiddenError } from '../../common/errors/errors';
 import { NativeAuthStrategyError } from '../../common/errors/generated-developer-errors';
+import { defineRateLimiter } from '../../common/helpers/define-rate-limiter';
 import { AppRouter } from '../../common/types/app-router.interface';
 import { ConfigService } from '../../config';
 import { NATIVE_AUTH_STRATEGY_NAME } from '../../config/auth/native-auth.strategy';
@@ -44,59 +44,66 @@ export class DeveloperAuthController extends CommonAuth implements AppRouter {
         protected readonly administratorService: AdministratorService,
         private readonly developerService: DeveloperService,
         protected readonly userService: UserService,
-        private readonly configService: ConfigService,
+        protected readonly configService: ConfigService,
     ) {
-        super(authService, administratorService, userService);
+        super(authService, administratorService, userService, configService);
     }
 
-    signupLimiter = rateLimit({
-        windowMs: 60 * 60 * 1000,
-        max: 20,
-        standardHeaders: true,
-        legacyHeaders: false,
-    });
+    signupLimiter = defineRateLimiter(
+        {
+            windowMs: 60 * 60 * 1000,
+            max: 20,
+        },
+        this.configService.apiOptions,
+    );
 
-    loginLimiter = rateLimit({
-        windowMs: 15 * 60 * 1000,
-        max: 10,
-        standardHeaders: true,
-        legacyHeaders: false,
-    });
+    loginLimiter = defineRateLimiter(
+        {
+            windowMs: 15 * 60 * 1000,
+            max: 10,
+        },
+        this.configService.apiOptions,
+    );
 
-    sessionLimiter = rateLimit({
-        windowMs: 15 * 60 * 1000,
-        max: 30,
-        standardHeaders: true,
-        legacyHeaders: false,
-    });
+    sessionLimiter = defineRateLimiter(
+        {
+            windowMs: 15 * 60 * 1000,
+            max: 30,
+        },
+        this.configService.apiOptions,
+    );
 
-    passwordChangeLimiter = rateLimit({
-        windowMs: 15 * 60 * 1000,
-        max: 10,
-        standardHeaders: true,
-        legacyHeaders: false,
-    });
+    passwordChangeLimiter = defineRateLimiter(
+        {
+            windowMs: 15 * 60 * 1000,
+            max: 10,
+        },
+        this.configService.apiOptions,
+    );
 
-    emailFlowLimiter = rateLimit({
-        windowMs: 60 * 60 * 1000,
-        max: 10,
-        standardHeaders: true,
-        legacyHeaders: false,
-    });
+    emailFlowLimiter = defineRateLimiter(
+        {
+            windowMs: 60 * 60 * 1000,
+            max: 10,
+        },
+        this.configService.apiOptions,
+    );
 
-    emailChangeRequestLimiter = rateLimit({
-        windowMs: 60 * 60 * 1000,
-        max: 5,
-        standardHeaders: true,
-        legacyHeaders: false,
-    });
+    emailChangeRequestLimiter = defineRateLimiter(
+        {
+            windowMs: 60 * 60 * 1000,
+            max: 5,
+        },
+        this.configService.apiOptions,
+    );
 
-    accountReadLimiter = rateLimit({
-        windowMs: 60 * 1000,
-        max: 120,
-        standardHeaders: true,
-        legacyHeaders: false,
-    });
+    accountReadLimiter = defineRateLimiter(
+        {
+            windowMs: 60 * 1000,
+            max: 120,
+        },
+        this.configService.apiOptions,
+    );
 
     initRoutes(router: Router): Router {
         router.post(
@@ -119,7 +126,10 @@ export class DeveloperAuthController extends CommonAuth implements AppRouter {
         router.patch(
             '/accounts/me',
             ...defineRoutePipeline({
-                before: [this.passwordChangeLimiter, authGuard({ permissions: [Permission.Owner] })],
+                before: [
+                    this.passwordChangeLimiter,
+                    authGuard({ permissions: [Permission.Authenticated, Permission.Owner] }),
+                ],
                 body: updatePasswordDto.input,
                 response: updatePasswordDto.output,
                 interceptors: [transactionInterceptor()],
@@ -219,6 +229,7 @@ export class DeveloperAuthController extends CommonAuth implements AppRouter {
                         req.getRequestContext(),
                         req.body,
                     );
+
                     if (isApiError(result)) {
                         return res.status(result.httpStatusCode).json(result);
                     }
@@ -227,6 +238,7 @@ export class DeveloperAuthController extends CommonAuth implements AppRouter {
                         result.user,
                         NATIVE_AUTH_STRATEGY_NAME,
                     );
+
                     if (isApiError(session)) {
                         // eslint-disable-next-line @typescript-eslint/only-throw-error
                         throw session;
@@ -236,6 +248,7 @@ export class DeveloperAuthController extends CommonAuth implements AppRouter {
                         res,
                         rememberMe: true,
                         sessionToken: session.token,
+                        authOptions: this.configService.authOptions,
                     });
                     res.status(200).json(this.clientSafeUser(session.user));
                 },
@@ -245,7 +258,10 @@ export class DeveloperAuthController extends CommonAuth implements AppRouter {
         router.post(
             '/account-email-address-change',
             ...defineRoutePipeline({
-                before: [this.emailChangeRequestLimiter, authGuard({ permissions: [Permission.Owner] })],
+                before: [
+                    this.emailChangeRequestLimiter,
+                    authGuard({ permissions: [Permission.Authenticated, Permission.Owner] }),
+                ],
                 body: requestEmailAddressChangeDto.input,
                 response: requestEmailAddressChangeDto.output,
                 interceptors: [transactionInterceptor()],
@@ -286,7 +302,10 @@ export class DeveloperAuthController extends CommonAuth implements AppRouter {
         router.patch(
             '/account-email-address-change',
             ...defineRoutePipeline({
-                before: [this.emailFlowLimiter, authGuard({ permissions: [Permission.Owner] })],
+                before: [
+                    this.emailFlowLimiter,
+                    authGuard({ permissions: [Permission.Authenticated, Permission.Owner] }),
+                ],
                 body: changeEmailAddressDto.input,
                 response: changeEmailAddressDto.output,
                 interceptors: [transactionInterceptor()],

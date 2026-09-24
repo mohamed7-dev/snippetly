@@ -13,19 +13,23 @@
     },
     "dependencies": {
         "concurrently": "catalog:tooling",
-        "zod": "catalog:",
-        "sql.js": "^1.14.1"
+        "sql.js": "^1.14.1",
+        "zod": "catalog:"
     },
     "devDependencies": {
         "@snippetly/common": "workspace:*",
         "@snippetly/server": "workspace:*",
         "@snippetly/tsconfig": "workspace:*",
+        "@snippetly/testing": "workspace:*",
+        "@types/fs-extra": "^11.0.4",
         "@types/node": "catalog:tooling",
+        "concurrently": "catalog:tooling",
+        "fs-extra": "^11.4.1",
         "prettier": "catalog:tooling",
         "prettier-plugin-organize-imports": "^4.1.0",
         "ts-node": "catalog:tooling",
         "tsconfig-paths": "catalog:tooling",
         "typescript": "catalog:tooling",
-        "concurrently": "catalog:tooling"
+        "vitest": "catalog:testing"
     }
 }

@@ -1,4 +1,4 @@
-import { iocContainer as baseIocContainer, IocContainer } from '../../infra/ioc-container/ioc-container';
+import { iocContainer as baseIocContainer, IocContainer } from './ioc-container';
 import { Token } from './types';
 
 export class ModuleRef {
@@ -12,3 +12,5 @@ export class ModuleRef {
         return this.iocContainer.resolve<Provider>(token);
     }
 }
+
+export const moduleRef = new ModuleRef();

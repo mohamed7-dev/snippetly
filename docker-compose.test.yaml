@@ -1,0 +1,21 @@
+name: snippetly-test
+
+services:
+  postgres_db:
+    image: postgres:16-alpine
+    volumes:
+      - snippetly_test_postgres_db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: snippetly-test
+      POSTGRES_USER: snippetly-test
+      POSTGRES_PASSWORD: snippetly-test
+    labels:
+      - "io.snippetly_test.create.name=snippetly-test"
+
+volumes:
+  snippetly_test_postgres_db_data:
+    driver: local
+    labels:
+      - "io.snippetly_test.create.name=snippetly-test"

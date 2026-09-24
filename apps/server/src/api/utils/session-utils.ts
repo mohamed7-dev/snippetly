@@ -1,28 +1,26 @@
 import { Request, Response } from 'express';
+import { AuthConfigOptions } from '../../config/app-config.interface';
 
 interface SetSessionTokenOptions {
     sessionToken: string;
     rememberMe: boolean;
     res: Response;
     req: Request;
+    authOptions: Required<AuthConfigOptions>;
 }
 
 export function setSessionToken(options: SetSessionTokenOptions): void {
-    const { sessionToken, rememberMe, req } = options;
-    const year = 365 * 24 * 60 * 60 * 1000;
-    // const day = 24 * 60 * 60 * 1000;
-
-    if (req.session) {
-        if (rememberMe) {
-            req.sessionOptions.maxAge = year;
-        }
-        req.session.token = sessionToken;
-    }
+    const { sessionToken, res, authOptions } = options;
+    res.set(authOptions.authTokenHeaderKey, sessionToken);
 }
 
 export function getSessionToken(req: Request): string | undefined {
-    if (req.session && req.session.token) {
-        return req.session.token as string;
+    const authHeader = req.get('Authorization')?.trim();
+    if (authHeader) {
+        const matchesBearer = authHeader.match(/^bearer\s(.+)$/i);
+        if (matchesBearer) {
+            return matchesBearer[1];
+        }
     }
     return undefined;
 }

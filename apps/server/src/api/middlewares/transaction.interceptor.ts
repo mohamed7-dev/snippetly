@@ -1,7 +1,7 @@
 import { RequestHandler } from 'express';
 import { DatabaseService } from '../../infra/database/database.service';
 import { TransactionManagerService } from '../../infra/database/transaction-manager.service';
-import { iocContainer } from '../../infra/ioc-container/ioc-container';
+import { moduleRef } from '../../infra/ioc-container/module-ref';
 import { attachRequestContext, resolveRequestContext } from '../request-context/utils';
 import { Interceptor } from './define-router-pipeline.mw';
 
@@ -48,9 +48,9 @@ export function withTransaction(options?: TransactionOptions): RequestHandler {
             if (!requestContext) return next();
 
             const txManagerService =
-                iocContainer.resolve<TransactionManagerService>(TransactionManagerService);
+                moduleRef.getProvider<TransactionManagerService>(TransactionManagerService);
 
-            const databaseService = iocContainer.resolve<DatabaseService>(DatabaseService);
+            const databaseService = moduleRef.getProvider<DatabaseService>(DatabaseService);
 
             await txManagerService.runInTransaction(
                 requestContext,

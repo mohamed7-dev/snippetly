@@ -1,11 +1,13 @@
+import { LanguageCode } from '@snippetly/common/dto';
 import {
     API_PORT,
+    AUTH_TOKEN_HEADER_KEY,
     DEFAULT_ADMIN_API_PATH_PREFIX,
     DEFAULT_DEVELOPER_API_PATH_PREFIX,
     SUPER_ADMIN_IDENTIFIER,
     SUPER_ADMIN_PASSWORD,
 } from '@snippetly/common/lib';
-import { LanguageCode } from '../../../../packages/common/dist/schema';
+import { entitiesMap } from '../entities/entities-map';
 import { RuntimeAppConfig } from './app-config.interface';
 import { BcryptPasswordHashingStrategy } from './auth/bcrypt-hashing.strategy';
 import { DefaultPasswordValidationStrategy } from './auth/default-password-validation.strategy';
@@ -19,8 +21,10 @@ import { StdoutLoggerStrategy } from './system/logger/stdout-logger.strategy';
 export const defaultAppConfig: RuntimeAppConfig = {
     defaultLanguageCode: LanguageCode.English,
     api: {
+        trustProxy: false,
         host: 'localhost',
         port: API_PORT,
+        disableRateLimiting: false,
         cors: { origin: true, credentials: true },
         admin: {
             listingLimit: 1000,
@@ -33,8 +37,10 @@ export const defaultAppConfig: RuntimeAppConfig = {
     },
     database: {
         type: 'postgres',
+        entities: Object.values(entitiesMap),
     },
     system: {
+        shouldRunInitialization: true,
         email: {
             emailTransporterStrategy: new NodemailerStrategy({ email: '', password: '' }),
             accountVerificationCallbackUrl: '',
@@ -46,6 +52,7 @@ export const defaultAppConfig: RuntimeAppConfig = {
         cacheStrategy: new InMemoryCacheStrategy(),
     },
     auth: {
+        authTokenHeaderKey: AUTH_TOKEN_HEADER_KEY,
         requireVerification: true,
         verificationTokenDuration: '7d',
         sessionDuration: '1y',

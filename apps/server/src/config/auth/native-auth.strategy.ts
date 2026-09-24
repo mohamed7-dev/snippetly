@@ -1,7 +1,7 @@
 import { RequestContext } from '../../api/request-context/request-context';
 import { NativeAuthenticationMethod } from '../../entities/authentication-method/authentication-method.entity';
 import { User } from '../../entities/users/user.entity';
-import { ModuleRef } from '../../infra/ioc-container/module-ref.service';
+import { ModuleRef } from '../../infra/ioc-container/module-ref';
 import { AuthenticationStrategy } from './authentication-strategy.interface';
 
 export const NATIVE_AUTH_STRATEGY_NAME = 'native';
@@ -13,6 +13,7 @@ export interface NativeAuthenticationData {
 
 export class NativeAuthenticationStrategy implements AuthenticationStrategy {
     private userService: import('../../services/domain/user.service').UserService;
+    private developerService: import('../../services/domain/developer.service').DeveloperService;
     private passwordHashingService: import('../../services/helpers/password-hashing.service').PasswordHashingService;
     private databaseService: import('../../infra/database/database.service').DatabaseService;
 
@@ -20,9 +21,11 @@ export class NativeAuthenticationStrategy implements AuthenticationStrategy {
 
     onInit?(moduleRef: ModuleRef): void {
         const { UserService } = require('../../services/domain/user.service.js');
+        const { DeveloperService } = require('../../services/domain/developer.service.js');
         const { PasswordHashingService } = require('../../services/helpers/password-hashing.service.js');
         const { DatabaseService } = require('../../infra/database/database.service.js');
         this.userService = moduleRef.getProvider(UserService);
+        this.developerService = moduleRef.getProvider(DeveloperService);
         this.passwordHashingService = moduleRef.getProvider(PasswordHashingService);
         this.databaseService = moduleRef.getProvider(DatabaseService);
     }
@@ -31,17 +34,24 @@ export class NativeAuthenticationStrategy implements AuthenticationStrategy {
         return `
             z.object({
                 identifier: z.string().nonempty(),
-                password: z.string().min(8).max(32),
+                password: z.string().nonempty(),
                 rememberMe:z.boolean().optional(),
             })
         `;
     }
 
     async authenticate(ctx: RequestContext, data: NativeAuthenticationData): Promise<User | string | false> {
-        const user = await this.userService.getUserByIdentifier(ctx, data.identifier);
+        const user = await this.userService.getUserByIdentifierForAuthentication(ctx, data.identifier);
         if (!user) return false;
         const passwordVerificationResult = await this.verifyUserPassword(ctx, user.id, data.password);
         if (!passwordVerificationResult) return false;
+
+        if (ctx.apiType === 'developer' && user.deletedAt) {
+            const restored = await this.developerService.restoreAccount(ctx, user.id);
+            if (!restored) return false;
+            user.deletedAt = null;
+        }
+
         return user;
     }
 

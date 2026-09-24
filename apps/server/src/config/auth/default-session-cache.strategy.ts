@@ -1,5 +1,5 @@
 import { JSONCompatible } from '@snippetly/common/lib';
-import { ModuleRef } from '../../infra/ioc-container/module-ref.service';
+import { ModuleRef } from '../../infra/ioc-container/module-ref';
 import { SessionCacheEntry, SessionCacheStrategy } from './session-cache-strategy.interface';
 
 interface DefaultSessionCacheStrategyConfig {

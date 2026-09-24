@@ -1,4 +1,6 @@
+import { OnApplicationBootstrap } from '../common/types/lifecycle-hooks';
 import { ConfigModule } from '../config/config.module';
+import { ConfigService } from '../config/config.service';
 import { DatabaseModule } from '../infra/database/database.module';
 import { EventBusModule } from '../infra/event-bus/even-bus.module';
 import { Module } from '../infra/ioc-container/module.decorator';
@@ -19,6 +21,7 @@ import { InitializerService } from './helpers/initializer.service';
 import { ListQueryBuilder } from './helpers/list-query-builder/list-query-builder.service';
 import { PasswordHashingService } from './helpers/password-hashing.service';
 import { PasswordValidationService } from './helpers/password-validation.service';
+import { Populator } from './helpers/populator.service';
 import { RequestContextService } from './helpers/request-context.service';
 import { SlugValidator } from './helpers/slug-validator.service';
 import { VerificationTokenGenerator } from './helpers/verification-token-generator.service';
@@ -33,6 +36,7 @@ const helpers = [
     EmailClient,
     DefaultRolesBuilder,
     ExternalAuthService,
+    Populator,
 ];
 
 const services = [
@@ -53,4 +57,17 @@ const services = [
     providers: [...helpers, ...services, InitializerService],
     exports: [...helpers, ...services],
 })
-export class ServiceModule {}
+export class ServiceModule implements OnApplicationBootstrap {
+    constructor(
+        private readonly initializerService: InitializerService,
+        private readonly configService: ConfigService,
+        private readonly developerService: DeveloperService,
+    ) {}
+
+    async onApplicationBootstrap(): Promise<void> {
+        if (this.configService.systemOptions.shouldRunInitialization) {
+            void (await this.initializerService.initialize());
+        }
+        this.developerService.onApplicationBootstrap();
+    }
+}

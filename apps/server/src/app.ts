@@ -3,7 +3,6 @@ import express, { Application } from 'express';
 import { Server } from 'http';
 import swaggerUi from 'swagger-ui-express';
 import { createRouteHandler } from 'uploadthing/express';
-import { cookieSession } from './api/middlewares/cookie-session.mw';
 import { cors } from './api/middlewares/cors.mw';
 import { exceptionFilter } from './api/middlewares/exception.filter';
 import { i18n } from './api/middlewares/i18n.mw';
@@ -12,17 +11,17 @@ import { notFound } from './api/middlewares/not-found.mw';
 import { parseSearchParams } from './api/middlewares/parse-search-params.mw';
 import { attachGetRequestContextUtility } from './api/middlewares/request-context.mw';
 import { logExpressRoutes } from './api/utils/log-express-routes';
-import { ConfigService } from './config/config.service';
+import { ConfigModule } from './config/config.module';
 import { DatabaseService } from './infra/database/database.service';
 import { EventBus } from './infra/event-bus/event-bus.service';
-import { I18nService } from './infra/i18n/i18n.service';
+import { I18nModule } from './infra/i18n/i18n.module';
 import { iocContainer } from './infra/ioc-container/ioc-container';
-import { ModuleRef } from './infra/ioc-container/module-ref.service';
+import { moduleRef } from './infra/ioc-container/module-ref';
 import { ModuleClass, Token } from './infra/ioc-container/types';
 import { Logger } from './infra/logger/logger';
-import { InitializerService } from './services/helpers/initializer.service';
-import { uploadRouter } from './services/helpers/uploadthing.service';
 import { openApiDocument } from './openapi/openapi';
+import { uploadRouter } from './services/helpers/uploadthing.service';
+import { ServiceModule } from './services/service.module';
 
 export class App {
     private app: Application = express();
@@ -31,6 +30,7 @@ export class App {
     // Prevent concurrent startup and repeated signal handling from running cleanup more than once.
     private isStarting = false;
     private isShuttingDown = false;
+    private isInitialized = false;
 
     constructor(entryModule: ModuleClass) {
         // initialize ioc container
@@ -53,6 +53,47 @@ export class App {
         return this.app;
     }
 
+    public async initialize(): Promise<void> {
+        if (this.isShuttingDown) {
+            throw new Error('The application is shutting down');
+        }
+
+        if (this.isInitialized) return;
+
+        await this.connectToDatabase();
+        await this.onApplicationBootstrap();
+        this.initializeApp();
+        this.onApplicationShutdown();
+        this.isInitialized = true;
+    }
+
+    public async close(): Promise<void> {
+        if (this.isShuttingDown) return;
+
+        this.isShuttingDown = true;
+        Logger.info('Closing application gracefully...');
+
+        try {
+            await Promise.race([
+                this.closeServer(),
+                new Promise<void>(resolve => {
+                    setTimeout(() => {
+                        Logger.warn('Timed out waiting for HTTP connections to close');
+                        resolve();
+                    }, 10_000).unref();
+                }),
+            ]);
+
+            await this.runShutdownHooks();
+        } finally {
+            this.server = null;
+            this.shutdownHooks = [];
+            this.isStarting = false;
+            this.isInitialized = false;
+            this.isShuttingDown = false;
+        }
+    }
+
     public async listen(port: number, host: string, callback?: () => void): Promise<void> {
         // Reject invalid repeated startup calls before they can create multiple HTTP servers.
         if (this.isStarting || this.server) {
@@ -61,16 +102,8 @@ export class App {
 
         this.isStarting = true;
         try {
-            // 1. DB first
-            await this.connectToDatabase();
+            await this.initialize();
 
-            // 2. initialize domain BEFORE starting express app
-            await this.onApplicationBootstrap();
-
-            // 3. create express app
-            this.initializeApp();
-
-            // 4. start server
             // Wait for the listening event so startup failures are reported to the caller.
             this.server = await new Promise<Server>((resolve, reject) => {
                 const server = this.app.listen(port, host, () => {
@@ -80,88 +113,39 @@ export class App {
                 server.once('error', reject);
             });
 
-            // 2. destroy domain before shutting down the app
-            this.onApplicationShutdown();
-
             this.handleShutdown();
         } catch (error) {
             Logger.error('Failed to start server', undefined, (error as Error).message);
             // Release resources acquired before a later startup step failed.
             await this.runShutdownHooks();
-            process.exit(1);
+            throw error;
         } finally {
             this.isStarting = false;
         }
     }
 
-    public onShutdown(hook: () => void | Promise<void>): void {
-        this.shutdownHooks.push(hook);
-    }
-
     public getProvider<Provider = unknown>(token: Token): Provider {
-        return iocContainer.resolve<Provider>(token);
+        return moduleRef.getProvider<Provider>(token);
     }
 
     private async onApplicationBootstrap() {
-        await this.initializeI18n();
-        await this.initializeInjectableStrategies();
-        await this.initializeData();
+        const i18nModule = this.getProvider<I18nModule>(I18nModule);
+        await i18nModule.onApplicationBootstrap();
+        const configModule = this.getProvider<ConfigModule>(ConfigModule);
+        await configModule.onApplicationBootstrap();
+        const serviceModule = this.getProvider<ServiceModule>(ServiceModule);
+        await serviceModule.onApplicationBootstrap();
     }
 
     private onApplicationShutdown() {
-        this.onShutdown(async () => {
-            await this.destroyInjectableStrategies();
+        this.shutdownHooks.push(async () => {
+            const configModule = this.getProvider<ConfigModule>(ConfigModule);
+            await configModule.onApplicationShutdown();
         });
-        this.onShutdown(() => {
+        this.shutdownHooks.push(() => {
             const eventBus = this.getProvider<EventBus>(EventBus);
-            eventBus.onModuleDestroy();
+            eventBus.onApplicationShutdown();
         });
-    }
-
-    private async initializeData() {
-        const initializerService = this.getProvider<InitializerService>(InitializerService);
-        await initializerService.initialize();
-    }
-
-    private async initializeI18n() {
-        const i18nService = this.getProvider<I18nService>(I18nService);
-        await i18nService.initialize();
-    }
-
-    private async initializeInjectableStrategies() {
-        for (const configItem of this.getInjectableConfigStrategies()) {
-            if (typeof configItem.onInit === 'function') {
-                await configItem.onInit(new ModuleRef());
-            }
-        }
-    }
-
-    private async destroyInjectableStrategies() {
-        for (const configItem of this.getInjectableConfigStrategies()) {
-            if (typeof configItem.onDestroy === 'function') {
-                await configItem.onDestroy();
-            }
-        }
-    }
-
-    private getInjectableConfigStrategies() {
-        const configService = this.getProvider<ConfigService>(ConfigService);
-        const {
-            passwordHashingStrategy,
-            adminAuthenticationStrategies,
-            developerAuthenticationStrategies,
-            sessionCacheStrategy,
-            verificationTokenStrategy,
-        } = configService.authOptions;
-        const { email } = configService.systemOptions;
-        return [
-            passwordHashingStrategy,
-            sessionCacheStrategy,
-            verificationTokenStrategy,
-            ...adminAuthenticationStrategies,
-            ...developerAuthenticationStrategies,
-            email.emailTransporterStrategy,
-        ];
     }
 
     private async connectToDatabase() {
@@ -181,7 +165,6 @@ export class App {
         this.app.use(express.urlencoded({ extended: true }));
         this.app.use(parseSearchParams);
         this.app.use(cookieParser());
-        this.app.use(cookieSession());
         this.app.use(cors());
         this.app.use(i18n());
         this.app.use(morgan);
@@ -197,22 +180,8 @@ export class App {
         // Make shutdown idempotent so SIGINT and SIGTERM cannot execute cleanup concurrently.
         const shutdown = async (signal: 'SIGINT' | 'SIGTERM') => {
             if (this.isShuttingDown) return;
-            this.isShuttingDown = true;
             Logger.info(`Received ${signal}, shutting down gracefully...`);
-
-            // Stop accepting new connections and wait briefly for existing requests to finish.
-            await Promise.race([
-                this.closeServer(),
-                new Promise<void>(resolve => {
-                    setTimeout(() => {
-                        Logger.warn('Timed out waiting for HTTP connections to close');
-                        resolve();
-                    }, 10_000).unref();
-                }),
-            ]);
-
-            // Run cleanup in reverse registration order and continue after individual failures.
-            await this.runShutdownHooks();
+            await this.close();
             process.exit(0);
         };
 

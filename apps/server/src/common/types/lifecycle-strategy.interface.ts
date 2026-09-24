@@ -1,4 +1,4 @@
-import { ModuleRef } from '../../infra/ioc-container/module-ref.service';
+import { ModuleRef } from '../../infra/ioc-container/module-ref';
 
 /**
  * @description

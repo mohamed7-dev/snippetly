@@ -1,8 +1,10 @@
+import { Permission } from '@snippetly/common/dto';
 import { Handler, NextFunction, Request, Response } from 'express';
-import { Permission } from '../../../../../packages/common/dist/schema';
 import { ForbiddenError } from '../../common/errors/errors';
+import { AuthConfigOptions } from '../../config/app-config.interface';
 import { SessionCacheEntry } from '../../config/auth/session-cache-strategy.interface';
-import { iocContainer } from '../../infra/ioc-container/ioc-container';
+import { ConfigService } from '../../config/config.service';
+import { moduleRef } from '../../infra/ioc-container/module-ref';
 import { SessionService } from '../../services/domain/session.service';
 import { RequestContextService } from '../../services/helpers/request-context.service';
 import { RequestContext } from '../request-context/request-context';
@@ -19,8 +21,9 @@ export function authGuard(options?: AuthGuardOptions): Handler {
         const isPublic = !!permissions && permissions.includes(Permission.Public);
         let requestContext: RequestContext;
 
-        const requestContextService = iocContainer.resolve<RequestContextService>(RequestContextService);
-        const session = await getSession(req, res);
+        const requestContextService = moduleRef.getProvider<RequestContextService>(RequestContextService);
+        const configService = moduleRef.getProvider<ConfigService>(ConfigService);
+        const session = await getSession(req, res, configService.authOptions);
         // eslint-disable-next-line prefer-const
         requestContext = await requestContextService.buildFromRequest({
             req,
@@ -44,15 +47,19 @@ export function authGuard(options?: AuthGuardOptions): Handler {
     };
 }
 
-async function getSession(req: Request, res: Response): Promise<SessionCacheEntry | undefined> {
+async function getSession(
+    req: Request,
+    res: Response,
+    authOptions: Required<AuthConfigOptions>,
+): Promise<SessionCacheEntry | undefined> {
     const token = getSessionToken(req);
     let sessionCacheEntry: SessionCacheEntry | undefined;
     if (token) {
-        const sessionService = iocContainer.resolve<SessionService>(SessionService);
+        const sessionService = moduleRef.getProvider<SessionService>(SessionService);
         sessionCacheEntry = await sessionService.getSessionByToken(token);
         if (sessionCacheEntry) return sessionCacheEntry;
         // if token exists, but not in cache, it means it's expired or invalid
-        setSessionToken({ req, res, sessionToken: '', rememberMe: false });
+        setSessionToken({ req, res, sessionToken: '', rememberMe: false, authOptions });
     }
     return sessionCacheEntry;
 }

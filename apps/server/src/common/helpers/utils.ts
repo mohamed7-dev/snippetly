@@ -24,6 +24,10 @@ export function isProduction() {
     return process.env.NODE_ENV === 'production';
 }
 
+export function isTesting() {
+    return process.env.NODE_ENV === 'test';
+}
+
 export function assignToObject(target: object, key: string, value: any): void {
     if (['__proto__', 'prototype', 'constructor'].includes(key)) {
         return;

@@ -1,11 +1,7 @@
-import { LANGUAGE_CODE_QUERY_NAME } from '@snippetly/common/lib';
 import { Handler, Request } from 'express';
 import i18next from 'i18next';
-import BackendFS from 'i18next-fs-backend';
 import i18nextMiddleware from 'i18next-http-middleware';
-import ICU from 'i18next-icu';
-import path from 'node:path';
-import { ApiError } from '../../common/errors/api-error';
+import { AppApiError } from '../../common/errors/api-error';
 import { Injectable } from '../ioc-container/injectable.decorator';
 import { I18nError } from './i18n-error';
 
@@ -13,25 +9,6 @@ import { I18nError } from './i18n-error';
 export class I18nService {
     public getMiddleware(): Handler {
         return i18nextMiddleware.handle(i18next) as Handler;
-    }
-
-    public async initialize(): Promise<void> {
-        await i18next
-            .use(i18nextMiddleware.LanguageDetector)
-            .use(BackendFS)
-            .use(ICU)
-            .init({
-                preload: ['en', 'ar'],
-                fallbackLng: 'en',
-                detection: {
-                    lookupQuerystring: LANGUAGE_CODE_QUERY_NAME,
-                },
-                backend: {
-                    loadPath: path.join(__dirname, 'dictionaries/{{lng}}.json'),
-                    jsonIndent: 2,
-                },
-                nsSeparator: false,
-            });
     }
 
     /**
@@ -57,9 +34,9 @@ export class I18nService {
 
     /**
      * @description
-     * Translates the message of any error type that implements the {@link ApiError} interface of the API.
+     * Translates the message of any error type that implements the {@link AppApiError} interface of the API.
      */
-    public translateApiError(apiError: ApiError, req: Request) {
+    public translateApiError(apiError: AppApiError, req: Request) {
         let translatedMessage = apiError.message;
         try {
             const key = `apiErrors.${apiError.message}`;

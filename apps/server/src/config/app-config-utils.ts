@@ -1,9 +1,6 @@
-import { isConstructorInstance, isObject } from '@snippetly/common/lib';
 import path from 'node:path';
-import { OBJECT_PROTOTYPE_KEYS } from '../common/constants/common';
-import { simpleDeepClone } from '../common/helpers/simple-deep-clone';
-import { assignToObject } from '../common/helpers/utils';
-import { AppConfig, PartialAppConfig, RuntimeAppConfig } from './app-config.interface';
+import { PartialAppConfig, RuntimeAppConfig } from './app-config.interface';
+import { mergeConfig } from './merge-config';
 
 /**
  * @description
@@ -22,7 +19,7 @@ export class AppConfigUtils {
         if (!this._appConfig) {
             this._appConfig = this.getDefaultAppConfig();
         }
-        this._appConfig = this.mergeConfig(userConfig, this._appConfig);
+        this._appConfig = mergeConfig(userConfig, this._appConfig);
     }
 
     /**
@@ -56,55 +53,5 @@ export class AppConfigUtils {
 
     private static getDefaultAppConfig(): RuntimeAppConfig {
         return require(AppConfigUtils.defaultConfigPath).defaultAppConfig as RuntimeAppConfig;
-    }
-
-    private static mergeConfig<Target extends AppConfig>(
-        src: PartialAppConfig,
-        dest: Target,
-        depth: number = 0,
-    ): Target {
-        if (!src) return dest;
-
-        if (depth === 0) {
-            // clone dest to keep original dest object un-mutated
-            dest = simpleDeepClone(dest);
-        }
-
-        if (isObject(src) && isObject(dest)) {
-            for (const key in src) {
-                if (OBJECT_PROTOTYPE_KEYS.includes(key)) {
-                    continue;
-                }
-                const srcTypedKey = key as keyof typeof src;
-                const srcValue = src[srcTypedKey];
-                if (isObject(srcValue)) {
-                    // object has three possibilities:
-                    // 1. class constructor
-                    // 2. plain object
-                    // 3. value exists in src, but not in dest
-                    const destValue = dest[srcTypedKey];
-                    if (!destValue) {
-                        // value doesn't exist in dest -> init
-                        assignToObject(dest, srcTypedKey, {});
-                    }
-                    if (isConstructorInstance(srcValue)) {
-                        // constructor -> assign directly to dest
-                        assignToObject(dest, srcTypedKey, srcValue);
-                    } else {
-                        // plain object -> run recursively
-                        this.mergeConfig(
-                            srcValue as unknown as PartialAppConfig,
-                            dest[srcTypedKey] as unknown as RuntimeAppConfig,
-                            depth + 1,
-                        );
-                    }
-                } else {
-                    // primitive -> assign directly to dest
-                    assignToObject(dest, srcTypedKey, srcValue);
-                }
-            }
-        }
-
-        return dest;
     }
 }

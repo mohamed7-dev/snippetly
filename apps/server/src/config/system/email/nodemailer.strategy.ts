@@ -24,7 +24,7 @@ export class NodemailerStrategy implements EmailTransporterStrategy {
         });
     }
 
-    public async sendEmail<Result = unknown>(options: SendEmailOptions): Promise<Result> {
+    public async sendEmail<Result = unknown>({ event: _event, ...options }: SendEmailOptions): Promise<Result> {
         // we know the response is coming from gmail so we can strongly type the Result
         // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         return await this.transporter.sendMail(options);

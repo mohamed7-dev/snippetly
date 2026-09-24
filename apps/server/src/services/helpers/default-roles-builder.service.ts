@@ -8,7 +8,7 @@ import {
 import { getNormalizedAppPermissions } from '../../api';
 import { Injectable } from '../../infra/ioc-container/injectable.decorator';
 
-interface RoleDefinition {
+export interface RoleDefinition {
     permissions: Permission[];
     description: string;
     name: string;
@@ -62,7 +62,7 @@ export class DefaultRolesBuilder {
         return this.getAllDefaultRolesFlattened().find(item => item.name === DEVELOPER_ROLE_NAME);
     }
 
-    private getAllAssignablePermissions(): Permission[] {
+    public getAllAssignablePermissions(): Permission[] {
         const allPermissions = getNormalizedAppPermissions();
         return allPermissions.filter(p => p.assignable).map(p => p.key);
     }

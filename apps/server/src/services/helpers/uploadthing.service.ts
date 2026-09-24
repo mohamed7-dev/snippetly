@@ -1,6 +1,6 @@
 import { createUploadthing, FileRouter } from 'uploadthing/express';
 import { ForbiddenError } from '../../common/errors/errors';
-import { iocContainer } from '../../infra/ioc-container/ioc-container';
+import { moduleRef } from '../../infra/ioc-container/module-ref';
 
 export class UploadthingService {
     private f = createUploadthing();
@@ -29,7 +29,7 @@ export class UploadthingService {
                     if (metadata.userId) {
                         const { DeveloperService } = await import('../domain/developer.service.js');
                         const developerService =
-                            iocContainer.resolve<import('../domain/developer.service').DeveloperService>(
+                            moduleRef.getProvider<import('../domain/developer.service').DeveloperService>(
                                 DeveloperService,
                             );
                         const developer = await developerService.getOneByUserId(metadata.userId);
@@ -38,7 +38,7 @@ export class UploadthingService {
                         }
                         const { RequestContextService } = await import('./request-context.service.js');
                         const requestContextService =
-                            iocContainer.resolve<import('./request-context.service').RequestContextService>(
+                            moduleRef.getProvider<import('./request-context.service').RequestContextService>(
                                 RequestContextService,
                             );
                         const ctx = await requestContextService.create({ apiType: 'developer' });

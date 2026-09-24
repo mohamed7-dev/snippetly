@@ -1,5 +1,6 @@
 import { notNullOrUndefined } from '@snippetly/common/lib';
 import { filter, Observable, Subject, takeUntil } from 'rxjs';
+import { OnApplicationShutdown } from '../../common/types/lifecycle-hooks';
 import { ClassType } from '../../common/types/utils';
 import { Injectable } from '../ioc-container/injectable.decorator';
 import { Logger } from '../logger/logger';
@@ -9,14 +10,14 @@ import { BlockingHandlerOptions } from './types/blocking-event-handler';
 const ContextName = 'EventBus';
 
 @Injectable()
-export class EventBus {
+export class EventBus implements OnApplicationShutdown {
     private readonly stream = new Subject<AppEvent>();
     private destroy$ = new Subject<void>();
 
     private readonly handlers = new Map<ClassType<AppEvent>, Array<BlockingHandlerOptions<any>>>();
 
     /** @internal */
-    onModuleDestroy(): any {
+    onApplicationShutdown(): void {
         this.destroy$.next();
     }
 
@@ -25,10 +26,9 @@ export class EventBus {
      * Returns a stream of events of the given event type
      */
     public ofType<Event extends AppEvent>(event: ClassType<Event>): Observable<Event> {
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
         return this.stream.asObservable().pipe(
             takeUntil(this.destroy$),
-            filter(e => e.constructor === event),
+            filter(e => e.constructor === event || e.constructor.name === event.name),
             // TODO: we should await any active transaction
             filter(notNullOrUndefined),
         ) as Observable<Event>;

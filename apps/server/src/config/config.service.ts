@@ -4,28 +4,23 @@ import { RuntimeAppConfig } from './app-config.interface';
 
 @Injectable()
 export class ConfigService {
-    private appConfig: RuntimeAppConfig;
-    constructor() {
-        this.appConfig = AppConfigUtils.getConfig();
-    }
-
     get apiOptions(): RuntimeAppConfig['api'] {
-        return this.appConfig.api;
+        return AppConfigUtils.getConfig().api;
     }
 
     get databaseOptions(): RuntimeAppConfig['database'] {
-        return this.appConfig.database;
+        return AppConfigUtils.getConfig().database;
     }
 
     get systemOptions(): RuntimeAppConfig['system'] {
-        return this.appConfig.system;
+        return AppConfigUtils.getConfig().system;
     }
 
     get authOptions(): RuntimeAppConfig['auth'] {
-        return this.appConfig.auth;
+        return AppConfigUtils.getConfig().auth;
     }
 
     get defaultLanguageCode(): RuntimeAppConfig['defaultLanguageCode'] {
-        return this.appConfig.defaultLanguageCode;
+        return AppConfigUtils.getConfig().defaultLanguageCode;
     }
 }

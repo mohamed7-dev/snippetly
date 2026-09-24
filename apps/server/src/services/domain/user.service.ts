@@ -18,7 +18,7 @@ import { NativeAuthenticationMethod } from '../../entities/authentication-method
 import { User } from '../../entities/users/user.entity';
 import { DatabaseService } from '../../infra/database/database.service';
 import { Injectable } from '../../infra/ioc-container/injectable.decorator';
-import { iocContainer } from '../../infra/ioc-container/ioc-container';
+import { moduleRef } from '../../infra/ioc-container/module-ref';
 import { PasswordHashingService } from '../helpers/password-hashing.service';
 import { PasswordValidationService } from '../helpers/password-validation.service';
 import { VerificationTokenGenerator } from '../helpers/verification-token-generator.service';
@@ -44,6 +44,24 @@ export class UserService {
             .leftJoinAndSelect('user.roles', 'roles')
             .where('user.deletedAt IS NULL')
             .andWhere(
+                isEmailIdentifier ? 'LOWER(user.identifier) = :identifier' : 'user.identifier = :identifier',
+                { identifier: isEmailIdentifier ? normalizeInput(identifier) : identifier },
+            );
+        return await query.getOne().then(result => result ?? undefined);
+    }
+
+    public async getUserByIdentifierForAuthentication(
+        ctx: RequestContext,
+        identifier: string,
+    ): Promise<User | undefined> {
+        const isEmailIdentifier = isEmailAddressLike(identifier);
+        const query = this.databaseService
+            .getRepository(ctx, User)
+            .createQueryBuilder('user')
+            .withDeleted()
+            .leftJoinAndSelect('user.authenticationMethods', 'authMethods')
+            .leftJoinAndSelect('user.roles', 'roles')
+            .where(
                 isEmailIdentifier ? 'LOWER(user.identifier) = :identifier' : 'user.identifier = :identifier',
                 { identifier: isEmailIdentifier ? normalizeInput(identifier) : identifier },
             );
@@ -135,7 +153,7 @@ export class UserService {
             .createQueryBuilder('user')
             .leftJoinAndSelect('user.authenticationMethods', 'authMethods')
             .leftJoin('user.authenticationMethods', 'authenticationMethod')
-            .addSelect('authMethods.passwordHash')
+            .addSelect('authMethods.password')
             .where('authenticationMethod.passwordResetToken = :passwordResetToken', { passwordResetToken })
             .getOne();
 
@@ -190,7 +208,7 @@ export class UserService {
             .createQueryBuilder('user')
             .leftJoinAndSelect('user.authenticationMethods', 'authMethods')
             .leftJoin('user.authenticationMethods', 'authenticationMethod')
-            .addSelect('authMethods.passwordHash')
+            .addSelect('authMethods.password')
             .where('authenticationMethod.identifierChangeToken = :identifierChangeToken', {
                 identifierChangeToken,
             })
@@ -291,7 +309,7 @@ export class UserService {
     public async createDeveloperUser(
         ctx: RequestContext,
         credentials: {
-            password: string;
+            password?: string;
             identifier: string;
         },
     ): Promise<User | PasswordValidationError> {
@@ -312,7 +330,7 @@ export class UserService {
         ctx: RequestContext,
         user: User,
         credentials: {
-            password: string;
+            password?: string;
             identifier: string;
         },
     ): Promise<User | PasswordValidationError> {
@@ -330,11 +348,15 @@ export class UserService {
             user.isVerified = true;
         }
 
-        const passwordValidationResult = await this.validatePassword(ctx, credentials.password);
-        if (passwordValidationResult !== true) {
-            return passwordValidationResult;
+        if (credentials.password) {
+            const passwordValidationResult = await this.validatePassword(ctx, credentials.password);
+            if (passwordValidationResult !== true) {
+                return passwordValidationResult;
+            }
+            credentialsAuthMethod.password = await this.passwordHashingService.hash(credentials.password);
+        } else {
+            credentialsAuthMethod.password = '';
         }
-        credentialsAuthMethod.password = await this.passwordHashingService.hash(credentials.password);
         credentialsAuthMethod.identifier = normalizeInput(credentials.identifier);
         credentialsAuthMethod.user = user;
         await this.databaseService.getRepository(ctx, NativeAuthenticationMethod).save(credentialsAuthMethod);
@@ -356,7 +378,7 @@ export class UserService {
         // since SessionService depends on UserService
         const { SessionService } = await import('./session.service.js');
         const sessionService =
-            iocContainer.resolve<import('./session.service').SessionService>(SessionService);
+            moduleRef.getProvider<import('./session.service').SessionService>(SessionService);
         await sessionService.deleteSessionsByUser(ctx, new User({ id }));
 
         const user = await this.getUserById(ctx, id, { roles: false, authenticationMethods: false });
@@ -372,7 +394,7 @@ export class UserService {
         return !!user?.authenticationMethods.find(m => m instanceof NativeAuthenticationMethod);
     }
 
-    private async validatePassword(
+    public async validatePassword(
         ctx: RequestContext,
         plainPassword: string,
     ): Promise<true | PasswordValidationError> {
