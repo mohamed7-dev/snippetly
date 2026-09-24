@@ -11,6 +11,14 @@
     "editor.codeActionsOnSave": {
         "source.organizeImports": "explicit"
     },
-    "conventionalCommits.scopes": ["server", "client", "common", "eslint-config", "tsconfig"],
+    "conventionalCommits.scopes": [
+        "server",
+        "client",
+        "common",
+        "eslint-config",
+        "tsconfig",
+        "testing",
+        "repo"
+    ],
     "cSpell.words": ["JWTOKEN", "snippetly", "Unstar", "virtuals"]
 }
