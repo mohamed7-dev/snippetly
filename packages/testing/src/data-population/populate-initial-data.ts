@@ -1,11 +1,14 @@
 import { App } from '@snippetly/server';
 import { POPULATE_CONTEXT_NAME } from './populate';
 
-export async function populateInitialData(app: App, initialData: import('@snippetly/server').InitialData) {
+export async function populateInitialData(
+    app: App,
+    initialData: import('@snippetly/server').InitialDataInput,
+) {
     const { Populator, Logger } = await import('@snippetly/server');
     const populator = app.getProvider<import('@snippetly/server').Populator>(Populator);
     try {
-        await populator.populateInitialData(initialData);
+        await populator.populateInitialData(initialData as import('@snippetly/server').InitialData);
         Logger.info('Populated initial data', POPULATE_CONTEXT_NAME);
     } catch (err: any) {
         Logger.error(err.message, POPULATE_CONTEXT_NAME);

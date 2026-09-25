@@ -45,6 +45,13 @@ export interface InitialData {
     snippets: SnippetDef[];
 }
 
+export interface InitialDataInput {
+    defaultLanguageCode: LanguageCode;
+    roles: RoleDefinition[];
+    collections: Array<Omit<CollectionDef, 'creatorUserId'> & { creatorUserId?: string }>;
+    snippets: Array<Omit<SnippetDef, 'creatorUserId'> & { creatorUserId?: string }>;
+}
+
 @Injectable()
 export class Populator {
     constructor(
@@ -132,10 +139,10 @@ export class Populator {
         return ctx;
     }
 
-    private async createDeveloperRequestContext(data: InitialData, identifier: string) {
+    private async createDeveloperRequestContext(data: InitialData, userId: string) {
         const developerUser = await this.databaseService.getRepository(User).findOne({
             where: {
-                identifier,
+                id: userId,
             },
         });
         const ctx = await this.requestContextService.create({

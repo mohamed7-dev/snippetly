@@ -11,7 +11,7 @@ import {
 import { omit } from '@snippetly/common/lib';
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
-import { EntityNotFoundError } from '../../common/errors/errors';
+import { EntityNotFoundError, ForbiddenError } from '../../common/errors/errors';
 import { AppRouter } from '../../common/types/app-router.interface';
 import { Controller } from '../../infra/ioc-container/controller.decorator';
 import { CollectionService } from '../../services/domain/collection.service';
@@ -68,17 +68,16 @@ export class DeveloperCollectionController implements AppRouter {
                 before: [
                     this.collectionWriteLimiter,
                     authGuard({
-                        permissions: [
-                            Permission.Authenticated,
-                            Permission.Owner,
-                            Permission.DeleteCollection,
-                        ],
+                        permissions: [Permission.Owner],
                     }),
                 ],
                 params: deleteCollectionDto.input,
                 response: deleteCollectionDto.output,
                 interceptors: [transactionInterceptor()],
                 handler: async (req, res) => {
+                    if (!req.getRequestContext().activeUserId) {
+                        throw new ForbiddenError();
+                    }
                     const result = await this.collectionService.delete(req.getRequestContext(), req.params);
                     res.status(200).json(result);
                 },
@@ -108,11 +107,7 @@ export class DeveloperCollectionController implements AppRouter {
                 before: [
                     this.collectionWriteLimiter,
                     authGuard({
-                        permissions: [
-                            Permission.Authenticated,
-                            Permission.Owner,
-                            Permission.UpdateCollection,
-                        ],
+                        permissions: [Permission.Owner],
                     }),
                 ],
                 body: updateCollectionDto.input.omit({ id: true }),
@@ -120,6 +115,9 @@ export class DeveloperCollectionController implements AppRouter {
                 response: updateCollectionDto.output,
                 interceptors: [transactionInterceptor()],
                 handler: async (req, res) => {
+                    if (!req.getRequestContext().activeUserId) {
+                        throw new ForbiddenError();
+                    }
                     const result = await this.collectionService.update(req.getRequestContext(), {
                         ...req.params,
                         ...req.body,
@@ -141,26 +139,30 @@ export class DeveloperCollectionController implements AppRouter {
                     const shouldRestrictToPublic =
                         !req.query.creator || !developer || req.query.creator !== developer.id;
 
-                    const result = await this.collectionService.find(req.getRequestContext(), {
-                        ...req.query,
-                        filter: {
-                            ...req.query.filter,
-                            ...(shouldRestrictToPublic
-                                ? {
-                                      _and: [
-                                          ...(req.query.filter?._and ?? []),
-                                          { isPrivate: { equals: false } },
-                                          { deletedAt: { isNull: true } },
-                                      ],
-                                  }
-                                : {
-                                      _and: [
-                                          ...(req.query.filter?._and ?? []),
-                                          { deletedAt: { isNull: true } },
-                                      ],
-                                  }),
+                    const result = await this.collectionService.find(
+                        req.getRequestContext(),
+                        {
+                            ...req.query,
+                            filter: {
+                                ...req.query.filter,
+                                ...(shouldRestrictToPublic
+                                    ? {
+                                          _and: [
+                                              ...(req.query.filter?._and ?? []),
+                                              { isPrivate: { equals: false } },
+                                              { deletedAt: { isNull: true } },
+                                          ],
+                                      }
+                                    : {
+                                          _and: [
+                                              ...(req.query.filter?._and ?? []),
+                                              { deletedAt: { isNull: true } },
+                                          ],
+                                      }),
+                            },
                         },
-                    });
+                        { creator: true },
+                    );
                     if (shouldRestrictToPublic) {
                         result.items = omit(result.items, ['isPrivate', 'updatedAt', 'deletedAt'], true);
                     }
@@ -186,14 +188,18 @@ export class DeveloperCollectionController implements AppRouter {
 
                     //if the user passes deletedAt, or isMaintained filters -> use them
                     // otherwise, use defaults which only returns active collections
-                    const result = await this.collectionService.find(req.getRequestContext(), {
-                        ...req.query,
-                        filter: {
-                            ...req.query.filter,
-                            deletedAt: req.query.filter?.deletedAt ?? { isNull: true },
+                    const result = await this.collectionService.find(
+                        req.getRequestContext(),
+                        {
+                            ...req.query,
+                            filter: {
+                                ...req.query.filter,
+                                deletedAt: req.query.filter?.deletedAt ?? { isNull: true },
+                            },
+                            creator: developer.id,
                         },
-                        creator: developer.id,
-                    });
+                        { creator: true },
+                    );
 
                     res.status(200).json(result);
                 },

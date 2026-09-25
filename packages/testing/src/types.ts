@@ -1,4 +1,4 @@
-import { InitialData, type Collection, type Developer, type Snippet } from '@snippetly/server';
+import { InitialDataInput, type Collection, type Developer, type Snippet } from '@snippetly/server';
 
 export interface TestServerState {
     developers: Developer[];
@@ -11,7 +11,7 @@ export interface TestServerOptions {
      * @description
      * An object containing non-product data which is used to populate the database.
      */
-    initialData: InitialData;
+    initialData: InitialDataInput;
     /**
      * @description
      * The number of fake Customers to populate into the database.

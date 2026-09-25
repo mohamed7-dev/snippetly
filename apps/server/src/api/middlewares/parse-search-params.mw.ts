@@ -17,13 +17,16 @@ function parseValue(value: unknown): unknown {
 }
 
 export const parseSearchParams: RequestHandler = (req, _res, next) => {
+    Object.defineProperty(req, 'query', { configurable: true, writable: true, value: req.query });
+
+    const parsedQuery: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(req.query)) {
         if (Array.isArray(value)) {
-            req.query[key] = value.map(parseValue) as never;
+            parsedQuery[key] = value.map(parseValue);
         } else {
-            req.query[key] = parseValue(value) as never;
+            parsedQuery[key] = parseValue(value);
         }
     }
-
+    req.query = parsedQuery as any;
     next();
 };

@@ -59,6 +59,7 @@ export class ListQueryBuilder {
         const alias = extraOptions?.alias ? extraOptions.alias : entityType.name.toLowerCase();
 
         const qb = repo.createQueryBuilder(alias);
+
         qb.setFindOptions({
             relations: extraOptions.relations,
             take,

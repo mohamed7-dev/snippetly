@@ -167,7 +167,7 @@ const collectionListInput = createPaginatedListInputSchema(filterSchema, sortSch
     .partial();
 
 const collectionListItem = collection.omit({ tags: true, creator: true }).extend({
-    tags: z.array(tag.pick({ value: true })),
+    tags: z.array(tag.pick({ value: true })).optional(),
     creator: developer.pick({
         id: true,
         firstName: true,

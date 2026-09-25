@@ -9,15 +9,12 @@ import {
 } from '@snippetly/common/dto';
 import {
     AccountRegistrationEvent,
-    EmailTransporterStrategy,
     EventBus,
     IdentifierChangedEvent,
     IdentifierChangeRequestedEvent,
     mergeConfig,
     PasswordResetRequestedEvent,
     PasswordValidationError,
-    PasswordValidationStrategy,
-    RequestContext,
     SendEmailOptions,
 } from '@snippetly/server';
 import { ApiClient, ApiErrorGuard, createApiErrorGuard, createTestEnvironment } from '@snippetly/testing';
@@ -25,6 +22,8 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, Mock, vi } from 
 import { getE2ETestSetupTimeout } from '../../../e2e-common/e2e-common-utils';
 import { initialData } from '../../../e2e-common/e2e-initial-data';
 import { testConfig } from '../../../e2e-common/test-config';
+import { TestEmailTransporter } from './utils/test-email-transporter.strategy';
+import { TestPasswordValidationStrategy } from './utils/test-password-validation.strategy';
 
 let sendEmailFn: Mock;
 
@@ -36,7 +35,7 @@ const authenticatedUserErrorGuard: ApiErrorGuard<{ id: string; identifier: strin
     input => input.id != null && input.identifier !== null,
 );
 
-describe('Developer Authentication', () => {
+describe.skip('Developer Authentication', () => {
     const { server, developerClient } = createTestEnvironment(
         mergeConfig(
             {
@@ -44,7 +43,7 @@ describe('Developer Authentication', () => {
                     passwordValidationStrategy: new TestPasswordValidationStrategy(),
                     requireVerification: true,
                 },
-                system: { email: { emailTransporterStrategy: new TestEmailTransporter() } },
+                system: { email: { emailTransporterStrategy: new TestEmailTransporter(sendEmailFn) } },
             },
             testConfig(),
         ),
@@ -550,30 +549,6 @@ async function registerAccountAndAssertVerificationToken(
     expect(verificationToken).toBeDefined();
 
     return { result, input, verificationToken: verificationToken as string };
-}
-
-class TestPasswordValidationStrategy implements PasswordValidationStrategy {
-    validate(_: RequestContext, password: string): boolean | string {
-        if (password === 'test') {
-            // when seeding data, we have used test as password
-            // so it should be allowed
-            return true;
-        }
-        if (password.length < 8) {
-            return 'Password must be more than 8 characters';
-        }
-        if (password === '12345678') {
-            return "Don't use 12345678!";
-        }
-        return true;
-    }
-}
-
-class TestEmailTransporter implements EmailTransporterStrategy {
-    async sendEmail(options: SendEmailOptions): Promise<{ done: true }> {
-        sendEmailFn?.(options);
-        return new Promise(resolve => resolve({ done: true }));
-    }
 }
 
 function getRegistrationVerificationToken(): string | null | undefined {

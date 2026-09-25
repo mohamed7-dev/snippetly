@@ -4,6 +4,7 @@ declare global {
     namespace Express {
         export interface Request {
             getRequestContext(): RequestContext;
+            parsedQuery: Record<string, unknown>;
         }
     }
 }

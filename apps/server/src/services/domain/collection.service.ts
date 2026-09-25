@@ -180,19 +180,21 @@ export class CollectionService {
     }
 
     public async update(ctx: RequestContext, input: UpdateCollectionDtoType['input']) {
-        await this.slugValidator.validateSlug(ctx, input, Collection);
-
         const repo = this.databaseService.getRepository(ctx, Collection);
 
         let collection = await repo.findOne({
             where: {
                 id: input.id,
             },
+            relations: {
+                creator: true,
+            },
         });
 
-        if (!collection || collection.creator.user.id !== ctx.activeUserId) {
+        if (!collection || (ctx.isAuthorizedAsOwnerOnly && collection.creator.user.id !== ctx.activeUserId)) {
             throw new EntityNotFoundError({ entityName: 'Collection', entityId: input.id });
         }
+        await this.slugValidator.validateSlug(ctx, input, Collection);
 
         collection = patchEntity(collection, omit(input, ['tags']));
 
@@ -220,7 +222,7 @@ export class CollectionService {
             },
         });
 
-        if (!collection || collection.creator.user.id !== ctx.activeUserId) {
+        if (!collection || (ctx.isAuthorizedAsOwnerOnly && collection.creator.user.id !== ctx.activeUserId)) {
             return {
                 result: 'NOT_DELETED',
                 message: 'Collection not found',

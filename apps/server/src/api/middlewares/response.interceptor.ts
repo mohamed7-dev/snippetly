@@ -1,6 +1,7 @@
 import { RequestHandler } from 'express';
 import z, { ZodType } from 'zod';
 import { ApiError } from '../../common/errors/generated-developer-errors';
+import { I18nError } from '../../infra/i18n/i18n-error';
 import { I18nService } from '../../infra/i18n/i18n.service';
 import { moduleRef } from '../../infra/ioc-container/module-ref';
 
@@ -13,12 +14,17 @@ export function responseInterceptor(responseSchema?: ZodType): RequestHandler {
         const originalJson = res.json.bind(res);
 
         res.json = (body: any) => {
+            const i18nService = moduleRef.getProvider<I18nService>(I18nService);
             if (body instanceof ApiError) {
-                const i18nService = moduleRef.getProvider<I18nService>(I18nService);
                 const translated = i18nService.translateApiError(body, req);
                 body = { ...body, message: translated.message };
+            } else if (body instanceof I18nError) {
+                const translated = i18nService.translateError(body, req);
+                body = { ...body, message: translated.message };
             }
+
             let parsed = responseSchema.safeParse(body);
+
             if (!parsed.success) {
                 const serverErrorSchema = z.object({
                     message: z.string().nonempty(),

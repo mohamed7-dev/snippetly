@@ -57,8 +57,8 @@
     },
     "devDependencies": {
         "@snippetly/eslint-config": "workspace:*",
-        "@snippetly/tsconfig": "workspace:*",
         "@snippetly/testing": "workspace:*",
+        "@snippetly/tsconfig": "workspace:*",
         "@testcontainers/postgresql": "^11.10.0",
         "@types/cookie-parser": "^1.4.9",
         "@types/cookie-session": "^2.0.49",
@@ -79,9 +79,9 @@
         "nodemon": "^3.1.14",
         "supertest": "^7.1.4",
         "testcontainers": "^11.10.0",
-        "typescript": "catalog:tooling",
-        "vitest": "catalog:testing",
         "ts-node": "catalog:tooling",
-        "tsconfig-paths": "catalog:tooling"
+        "tsconfig-paths": "catalog:tooling",
+        "typescript": "catalog:tooling",
+        "vitest": "catalog:testing"
     }
 }

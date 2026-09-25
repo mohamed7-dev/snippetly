@@ -35,5 +35,5 @@ export function omit<T, K extends keyof T>(obj: T, keysToOmit: string[], recursi
 }
 
 function isObject(input: any): input is object {
-    return typeof input === 'object' && input !== null;
+    return typeof input === 'object' && input !== null && !(input instanceof Date);
 }

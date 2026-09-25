@@ -7,11 +7,12 @@ export async function getSuperAdminContext(app: App) {
     const configService = app.getProvider<import('@snippetly/server').ConfigService>(ConfigService);
     const { superAdminCredentials } = configService.authOptions;
     const { User } = await import('@snippetly/server');
+
     const superAdminUser = await databaseService
         .getRepository(User)
         .findOneOrFail({ where: { identifier: superAdminCredentials.identifier } });
 
-    return new RequestContext({
+    const ctx = new RequestContext({
         apiType: 'admin',
         isAuthorized: true,
         isAuthorizedAsOwnerOnly: false,
@@ -28,4 +29,6 @@ export async function getSuperAdminContext(app: App) {
             },
         },
     });
+
+    return ctx;
 }
