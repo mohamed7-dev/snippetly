@@ -1,4 +1,5 @@
 import {
+    AuthenticateAdminDtoType,
     AuthenticateDeveloperDtoType,
     authenticatedUser,
     AuthenticatedUser,
@@ -29,7 +30,7 @@ export class CommonAuth {
 
     public async sharedAuthenticate(
         ctx: RequestContext,
-        input: AuthenticateDeveloperDtoType['input'],
+        input: AuthenticateDeveloperDtoType['input'] | AuthenticateAdminDtoType['input'],
         req: Request,
         res: Response,
     ): Promise<AuthenticatedUser | InvalidCredentialsError | NotVerifiedAccountError> {

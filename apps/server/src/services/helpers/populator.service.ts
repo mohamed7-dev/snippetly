@@ -1,4 +1,4 @@
-import { LanguageCode } from '@snippetly/common/dto';
+import { FriendshipStatus, LanguageCode } from '@snippetly/common/dto';
 import { RequestContext } from '../../api/request-context/request-context';
 import { ConfigService } from '../../config/config.service';
 import { User } from '../../entities/users/user.entity';
@@ -6,6 +6,7 @@ import { DatabaseService } from '../../infra/database/database.service';
 import { Injectable } from '../../infra/ioc-container/injectable.decorator';
 import { Logger } from '../../infra/logger/logger';
 import { CollectionService } from '../domain/collection.service';
+import { FriendshipService } from '../domain/friendship.service';
 import { RoleService } from '../domain/role.service';
 import { SnippetService } from '../domain/snippet.service';
 import { RoleDefinition } from './default-roles-builder.service';
@@ -38,18 +39,27 @@ interface SnippetDef {
     collectionId: string;
 }
 
+interface FriendshipDef {
+    requesterId: string;
+    addresseeId: string;
+    status: FriendshipStatus;
+}
+
 export interface InitialData {
     defaultLanguageCode: LanguageCode;
     roles: RoleDefinition[];
     collections: CollectionDef[];
     snippets: SnippetDef[];
+    friendships: FriendshipDef[];
 }
 
 export interface InitialDataInput {
     defaultLanguageCode: LanguageCode;
     roles: RoleDefinition[];
     collections: Array<Omit<CollectionDef, 'creatorUserId'> & { creatorUserId?: string }>;
-    snippets: Array<Omit<SnippetDef, 'creatorUserId'> & { creatorUserId?: string }>;
+    snippets: Array<
+        Omit<SnippetDef, 'creatorUserId' | 'collectionId'> & { creatorUserId?: string; collectionId?: string }
+    >;
 }
 
 @Injectable()
@@ -61,6 +71,7 @@ export class Populator {
         private readonly roleService: RoleService,
         private readonly collectionService: CollectionService,
         private readonly snippetService: SnippetService,
+        private readonly friendshipService: FriendshipService,
     ) {}
 
     public async populateInitialData(data: InitialData) {
@@ -119,6 +130,19 @@ export class Populator {
         );
     }
 
+    public async populateFriendships(data: InitialData) {
+        return Promise.all(
+            data.friendships.map(async def => {
+                const ctx = await this.createSuperAdminRequestContext(data);
+                return await this.friendshipService.create(ctx, {
+                    requesterId: def.requesterId,
+                    addresseeId: def.addresseeId,
+                    status: def.status,
+                });
+            }),
+        );
+    }
+
     private async populateRoles(ctx: RequestContext, roles: RoleDefinition[]) {
         if (!roles) return;
         return await Promise.all(roles.map(role => this.roleService.create(ctx, role)));
@@ -131,7 +155,7 @@ export class Populator {
                 identifier: superAdminCredentials.identifier,
             },
         });
-        const ctx = await this.requestContextService.create({
+        const ctx = this.requestContextService.create({
             user: superAdminUser ?? undefined,
             apiType: 'admin',
             languageCode: data.defaultLanguageCode,
@@ -145,7 +169,7 @@ export class Populator {
                 id: userId,
             },
         });
-        const ctx = await this.requestContextService.create({
+        const ctx = this.requestContextService.create({
             user: developerUser ?? undefined,
             apiType: 'developer',
             languageCode: data.defaultLanguageCode,

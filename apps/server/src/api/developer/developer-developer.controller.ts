@@ -19,7 +19,7 @@ import { defineRoutePipeline } from '../middlewares/define-router-pipeline.mw';
 import { RequestContext } from '../request-context/request-context';
 
 @Controller({
-    path: '/developer/developers',
+    path: 'developers',
     version: 1,
 })
 export class DeveloperDeveloperController implements AppRouter {
@@ -71,7 +71,7 @@ export class DeveloperDeveloperController implements AppRouter {
                 before: [
                     this.developerReadLimiter,
                     authGuard({
-                        permissions: [Permission.Owner, Permission.Authenticated, Permission.ReadDeveloper],
+                        permissions: [Permission.Owner],
                     }),
                 ],
                 response: activeDeveloperDto.output,
@@ -81,6 +81,12 @@ export class DeveloperDeveloperController implements AppRouter {
                         const developer = await this.developerService.getOneByUserId(
                             req.getRequestContext(),
                             userId,
+                            {
+                                user: {
+                                    roles: true,
+                                    authenticationMethods: true,
+                                },
+                            },
                         );
                         res.status(200).json(developer);
                     } else {
@@ -100,6 +106,7 @@ export class DeveloperDeveloperController implements AppRouter {
                     const result = await this.developerService.findOne(
                         req.getRequestContext(),
                         req.params.id,
+                        { user: { roles: true, authenticationMethods: true } },
                     );
 
                     const isOwner = req.getRequestContext().activeUserId === result?.user.id ? true : false;
@@ -127,7 +134,7 @@ export class DeveloperDeveloperController implements AppRouter {
                 before: [
                     this.developerWriteLimiter,
                     authGuard({
-                        permissions: [Permission.Authenticated, Permission.Owner, Permission.UpdateDeveloper],
+                        permissions: [Permission.Owner],
                     }),
                 ],
                 body: updateDeveloperAccountDto.input,
@@ -150,7 +157,7 @@ export class DeveloperDeveloperController implements AppRouter {
                 before: [
                     this.developerWriteLimiter,
                     authGuard({
-                        permissions: [Permission.Authenticated, Permission.Owner, Permission.DeleteDeveloper],
+                        permissions: [Permission.Owner],
                     }),
                 ],
                 response: deleteDeveloperAccountDto.output,

@@ -19,7 +19,9 @@ export async function generateErrorClasses(schemasDirPaths: string[], outputPath
 
         // write global imports
         const globalImports = [
-            `/* eslint-disable */
+            '/* eslint-disable */',
+            '// prettier-ignore',
+            `
 /**
  * ---------------------------------------------------------
  * ⚠️ AUTO-GENERATED FILE — DO NOT EDIT
@@ -28,6 +30,12 @@ export async function generateErrorClasses(schemasDirPaths: string[], outputPath
 
             'import { z } from "zod"',
             `import { ${schemas.map(schema => schema.exportName).join(',')} } from "@snippetly/common/dto"`,
+            '',
+            'export enum ErrorCode {',
+            ...Array.from(new Set(schemas.map(schema => schema.schema.shape.code.def.values[0]))).map(
+                code => `  ${code} = "${code}",`,
+            ),
+            '}',
             ' ',
         ].join('\n');
 

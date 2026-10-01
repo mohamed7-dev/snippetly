@@ -1,7 +1,7 @@
+import { Permission } from '@snippetly/common/dto';
 import { LANGUAGE_CODE_QUERY_NAME } from '@snippetly/common/lib';
 import { Request } from 'express';
 import ms from 'ms';
-import { Permission } from '../../../../../packages/common/dist/schema';
 import { RequestContext } from '../../api/request-context/request-context';
 import { ApiType, getApiType } from '../../api/utils/get-api-type';
 import { getUserPermissions } from '../../api/utils/get-user-permissions';
@@ -15,7 +15,7 @@ import { Injectable } from '../../infra/ioc-container/injectable.decorator';
 export class RequestContextService {
     constructor(private readonly configService: ConfigService) {}
 
-    public async create(config: { req?: Request; apiType: ApiType; languageCode?: string; user?: User }) {
+    public create(config: { req?: Request; apiType: ApiType; languageCode?: string; user?: User }) {
         const { req, languageCode, user, apiType } = config;
         let session: SessionCacheEntry | undefined;
         if (user) {
@@ -47,7 +47,7 @@ export class RequestContextService {
      * @description
      * Builds a RequestContext from an incoming HTTP request.
      */
-    public async buildFromRequest(options: {
+    public buildFromRequest(options: {
         req: Request;
         session?: SessionCacheEntry;
         requiredPermissions?: Permission[];

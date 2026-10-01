@@ -4,9 +4,11 @@ import {
     CurrentUserOutboxListDtoType,
     FriendshipStatus,
 } from '@snippetly/common/dto';
+import { In } from 'typeorm';
 import { RequestContext } from '../../api/request-context/request-context';
 import { isApiError } from '../../common/errors/api-error';
 import { InvalidFriendshipActionError } from '../../common/errors/generated-developer-errors';
+import { Developer } from '../../entities/developer/developer.entity';
 import { Friendship } from '../../entities/friendships/friendship.entity';
 import { DatabaseService } from '../../infra/database/database.service';
 import { EventBus } from '../../infra/event-bus/event-bus.service';
@@ -32,6 +34,56 @@ export class FriendshipService {
         private readonly listQueryBuilder: ListQueryBuilder,
         private readonly eventBus: EventBus,
     ) {}
+
+    public async create(
+        ctx: RequestContext,
+        input: Pick<FriendshipActionInput, 'addresseeId' | 'requesterId'> & { status: FriendshipStatus },
+    ) {
+        const existingFriendship = await this.findFriendshipBetween(
+            ctx,
+            input.requesterId,
+            input.addresseeId,
+        );
+
+        const repo = this.databaseService.getRepository(ctx, Friendship);
+
+        if (existingFriendship) {
+            if (existingFriendship.status === FriendshipStatus.Pending) {
+                return new InvalidFriendshipActionError({
+                    reason: 'A pending friendship request already exists between these developers.',
+                });
+            }
+
+            if (existingFriendship.status === FriendshipStatus.Accepted) {
+                return new InvalidFriendshipActionError({
+                    reason: 'This friendship has already been accepted.',
+                });
+            }
+
+            existingFriendship.status = FriendshipStatus.Pending;
+            existingFriendship.acceptedAt = null;
+            existingFriendship.rejectedAt = null;
+            existingFriendship.cancelledAt = null;
+
+            return await repo.save(existingFriendship);
+        }
+
+        const friendshipSides = await this.getFriendshipSides(ctx, input);
+        if (isApiError(friendshipSides)) return friendshipSides;
+
+        const friendship = new Friendship({
+            requester: friendshipSides.requester,
+            addressee: friendshipSides.addressee,
+            status: input.status,
+            acceptedAt: new Date(),
+            rejectedAt: null,
+            cancelledAt: null,
+        });
+
+        await repo.save(friendship);
+        await this.eventBus.publish(new FriendshipEvent(ctx, friendship, 'created', input));
+        return friendship;
+    }
 
     public async sendFriendshipRequest(
         ctx: RequestContext,
@@ -67,10 +119,13 @@ export class FriendshipService {
             return await this.databaseService.getRepository(ctx, Friendship).save(existingFriendship);
         }
 
+        const friendshipSides = await this.getFriendshipSides(ctx, input);
+        if (isApiError(friendshipSides)) return friendshipSides;
+
         const repo = this.databaseService.getRepository(ctx, Friendship);
         const friendship = new Friendship({
-            requester: { id: input.requesterId },
-            addressee: { id: input.addresseeId },
+            requester: friendshipSides.requester,
+            addressee: friendshipSides.addressee,
             status: FriendshipStatus.Pending,
             acceptedAt: null,
             rejectedAt: null,
@@ -286,6 +341,28 @@ export class FriendshipService {
                 addressee: true,
             },
         });
+    }
+
+    private async getFriendshipSides(
+        ctx: RequestContext,
+        input: Pick<FriendshipActionInput, 'addresseeId' | 'requesterId'>,
+    ) {
+        const developers = await this.databaseService.getRepository(ctx, Developer).find({
+            where: {
+                id: In([input.addresseeId, input.requesterId]),
+            },
+        });
+
+        if (developers.length < 2) {
+            return new InvalidFriendshipActionError({
+                reason: 'Developers can not be located.',
+            });
+        }
+
+        return {
+            addressee: developers.find(d => d.id === input.addresseeId),
+            requester: developers.find(d => d.id === input.requesterId),
+        };
     }
 
     private assertNotSelfRequest(requesterId: string, addresseeId: string) {

@@ -158,12 +158,10 @@ export class TransactionManagerService {
      *
      * @remarks
      * Currently supports:
-     * - MySQL deadlocks (`ER_LOCK_DEADLOCK`)
      * - PostgreSQL deadlocks (`deadlock_detected`)
      */
     private isRetriableError(err: any): boolean {
-        const mysqlDeadlock = err.code === 'ER_LOCK_DEADLOCK';
         const postgresDeadlock = err.code === 'deadlock_detected';
-        return mysqlDeadlock || postgresDeadlock;
+        return postgresDeadlock;
     }
 }

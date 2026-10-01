@@ -19,6 +19,7 @@ export class Session extends AppEntity {
     invalidated: boolean;
 
     /**
+     * @description
      * The authentication strategy used to create this session (e.g., 'credentials', 'oauth', 'saml').
      */
     @Column()

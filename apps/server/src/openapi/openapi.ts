@@ -44,7 +44,7 @@ import z, { type ZodType } from 'zod';
 
 const registry = new OpenAPIRegistry();
 
-const cookieAuth = 'cookieAuth';
+const bearerAuth = 'bearerAuth';
 type RouteParameterSchema = NonNullable<NonNullable<RouteConfig['request']>['params']>;
 
 type ResponseSchema = ZodType;
@@ -132,6 +132,8 @@ function registerRoute(options: {
     query?: RouteParameterSchema;
     response: ZodType;
     authenticated?: boolean;
+    optionalAuthentication?: boolean;
+    sessionTokenHeaderDescription?: string;
 }) {
     const request: NonNullable<RouteConfig['request']> = {};
 
@@ -152,6 +154,16 @@ function registerRoute(options: {
             statusCode,
             {
                 description: statusCode === 200 ? 'Successful response' : 'Error response',
+                ...(statusCode === 200 && options.sessionTokenHeaderDescription
+                    ? {
+                          headers: {
+                              'x-session-token': {
+                                  description: options.sessionTokenHeaderDescription,
+                                  schema: { type: 'string' },
+                              },
+                          },
+                      }
+                    : {}),
                 content: {
                     'application/json': {
                         schema:
@@ -179,15 +191,18 @@ function registerRoute(options: {
         tags: [options.tag],
         summary: options.summary,
         request,
-        security: options.authenticated ? [{ [cookieAuth]: [] }] : undefined,
-        responses,
+        security: options.authenticated
+            ? [{ [bearerAuth]: [] }]
+            : options.optionalAuthentication
+              ? [{ [bearerAuth]: [] }, {}]
+              : undefined,
+        responses: responses as any,
     });
 }
 
-registry.registerComponent('securitySchemes', cookieAuth, {
-    type: 'apiKey',
-    in: 'cookie',
-    name: 'session',
+registry.registerComponent('securitySchemes', bearerAuth, {
+    type: 'http',
+    scheme: 'bearer',
 });
 
 registerRoute({
@@ -222,6 +237,7 @@ registerRoute({
     summary: 'Authenticate a developer',
     body: authenticateDeveloperDto.input,
     response: authenticateDeveloperDto.output,
+    sessionTokenHeaderDescription: 'The session token to use in the Authorization Bearer header.',
 });
 registerRoute({
     method: 'delete',
@@ -229,6 +245,8 @@ registerRoute({
     tag: 'Authentication',
     summary: 'Log out the current session',
     response: logoutDeveloperDto.output,
+    optionalAuthentication: true,
+    sessionTokenHeaderDescription: 'An empty value indicates that the session token was cleared.',
 });
 registerRoute({
     method: 'post',
@@ -245,6 +263,7 @@ registerRoute({
     summary: 'Verify a developer account',
     body: verifyAccountDto.input,
     response: verifyAccountDto.output,
+    sessionTokenHeaderDescription: 'The session token to use in the Authorization Bearer header.',
 });
 registerRoute({
     method: 'post',

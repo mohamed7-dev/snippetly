@@ -1,37 +1,30 @@
-import { api } from '@/lib/api'
-import { serverEndpoints } from '@/lib/routes'
+import { api } from '@/lib/api-client';
+import { serverEndpoints } from '@/lib/routes';
 import type {
-  ManageFriendshipRequestParamDtoType,
-  SendFriendshipRequestResDtoType,
-} from '@snippetly/common/dto'
-import { useMutation, type MutationOptions } from '@tanstack/react-query'
-import type { AxiosError } from 'axios'
+    ManageFriendshipRequestParamDtoType,
+    SendFriendshipRequestResDtoType,
+} from '@snippetly/common/dto';
+import { useMutation, type MutationOptions } from '@tanstack/react-query';
+import type { AxiosError } from 'axios';
 
-type Input = ManageFriendshipRequestParamDtoType
+type Input = ManageFriendshipRequestParamDtoType;
 
-type SendFriendshipRequestSuccessRes =
-  SendFriendshipRequestResDtoType['success']
+type SendFriendshipRequestSuccessRes = SendFriendshipRequestResDtoType['success'];
 
-type SendFriendshipRequestErrorRes = AxiosError<
-  SendFriendshipRequestResDtoType['error']
->
+type SendFriendshipRequestErrorRes = AxiosError<SendFriendshipRequestResDtoType['error']>;
 export function useSendFriendshipRequest(
-  options?: Omit<
-    MutationOptions<
-      SendFriendshipRequestSuccessRes,
-      SendFriendshipRequestErrorRes,
-      Input
+    options?: Omit<
+        MutationOptions<SendFriendshipRequestSuccessRes, SendFriendshipRequestErrorRes, Input>,
+        'mutationFn'
     >,
-    'mutationFn'
-  >,
 ) {
-  return useMutation({
-    ...options,
-    mutationFn: async ({ friend_name }) => {
-      const res = await api.put<SendFriendshipRequestSuccessRes>(
-        serverEndpoints.sendFriendshipRequest(friend_name),
-      )
-      return res.data
-    },
-  })
+    return useMutation({
+        ...options,
+        mutationFn: async ({ friend_name }) => {
+            const res = await api.put<SendFriendshipRequestSuccessRes>(
+                serverEndpoints.sendFriendshipRequest(friend_name),
+            );
+            return res.data;
+        },
+    });
 }

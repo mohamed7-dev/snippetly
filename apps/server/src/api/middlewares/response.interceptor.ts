@@ -1,5 +1,6 @@
 import { RequestHandler } from 'express';
 import z, { ZodType } from 'zod';
+import { InternalServerError } from '../../common/errors/errors';
 import { ApiError } from '../../common/errors/generated-developer-errors';
 import { I18nError } from '../../infra/i18n/i18n-error';
 import { I18nService } from '../../infra/i18n/i18n.service';
@@ -24,7 +25,6 @@ export function responseInterceptor(responseSchema?: ZodType): RequestHandler {
             }
 
             let parsed = responseSchema.safeParse(body);
-
             if (!parsed.success) {
                 const serverErrorSchema = z.object({
                     message: z.string().nonempty(),
@@ -36,7 +36,7 @@ export function responseInterceptor(responseSchema?: ZodType): RequestHandler {
                     // This should NEVER reach client as validation error
                     // because this is a developer bug.
 
-                    throw new Error(`Response validation failed:\n${parsed.error.message}`);
+                    throw new InternalServerError(`Response validation failed:\n${parsed.error.message}`);
                 }
             }
 

@@ -14,8 +14,8 @@ const friendshipStatusSchema = z.enum(FriendshipStatus);
 export const friendship = node.extend({
     requester: developer,
     addressee: developer,
-    acceptedAt: z.date().nullable(),
-    rejectedAt: z.date().nullable(),
-    cancelledAt: z.date().nullable(),
+    acceptedAt: z.coerce.date().nullable(),
+    rejectedAt: z.coerce.date().nullable(),
+    cancelledAt: z.coerce.date().nullable(),
     status: friendshipStatusSchema,
 });

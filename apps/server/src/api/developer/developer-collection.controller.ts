@@ -21,7 +21,7 @@ import { defineRoutePipeline } from '../middlewares/define-router-pipeline.mw';
 import { transactionInterceptor } from '../middlewares/transaction.interceptor';
 
 @Controller({
-    path: 'developer/collections',
+    path: 'collections',
     version: 1,
 })
 export class DeveloperCollectionController implements AppRouter {
@@ -147,17 +147,11 @@ export class DeveloperCollectionController implements AppRouter {
                                 ...req.query.filter,
                                 ...(shouldRestrictToPublic
                                     ? {
-                                          _and: [
-                                              ...(req.query.filter?._and ?? []),
-                                              { isPrivate: { equals: false } },
-                                              { deletedAt: { isNull: true } },
-                                          ],
+                                          isPrivate: { equals: false },
+                                          deletedAt: { isNull: true },
                                       }
                                     : {
-                                          _and: [
-                                              ...(req.query.filter?._and ?? []),
-                                              { deletedAt: { isNull: true } },
-                                          ],
+                                          deletedAt: { isNull: true },
                                       }),
                             },
                         },

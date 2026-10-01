@@ -1,7 +1,8 @@
 import path from 'node:path';
 import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
+import { DBInitializer } from './db-initializer.interface';
 
-export class DatabaseInitializer {
+export class PostgresqlDBInitializer implements DBInitializer<PostgresConnectionOptions> {
     private client: import('pg').Client;
 
     public async init(testFilename: string, connectionOptions: PostgresConnectionOptions) {

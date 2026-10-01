@@ -1,6 +1,7 @@
 /**
  * @description
  * Abstract class extended by all Events used by the EventBus system
+ *
  */
 export abstract class AppEvent {
     public readonly createdAt: Date;

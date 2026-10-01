@@ -183,8 +183,6 @@ export class SnippetService {
     }
 
     public async update(ctx: RequestContext, input: UpdateSnippetDtoType['input']) {
-        const developer = await this.developerService.getActiveDeveloper(ctx, true);
-
         await this.slugValidator.validateSlug(ctx, input, Snippet);
 
         const repo = this.databaseService.getRepository(ctx, Snippet);
@@ -193,7 +191,7 @@ export class SnippetService {
             relations: { creator: true, collection: true, tags: true },
         });
 
-        if (!snippet || snippet.creator.id !== developer.id) {
+        if (!snippet || (ctx.isAuthorizedAsOwnerOnly && snippet.creator.user.id !== ctx.activeUserId)) {
             throw new EntityNotFoundError({ entityName: 'Snippet', entityId: input.id });
         }
 
@@ -223,18 +221,13 @@ export class SnippetService {
         ctx: RequestContext,
         input: DeleteSnippetDtoType['input'],
     ): Promise<{ result: 'DELETED' | 'NOT_DELETED'; message: string }> {
-        const developer = await this.developerService.getActiveDeveloper(ctx);
-        if (!developer) {
-            return { result: 'NOT_DELETED', message: 'Snippet not found' };
-        }
-
         const repo = this.databaseService.getRepository(ctx, Snippet);
         const snippet = await repo.findOne({
             where: { id: input.id },
             relations: { creator: true },
         });
 
-        if (!snippet || snippet.creator.id !== developer.id) {
+        if (!snippet || (ctx.isAuthorizedAsOwnerOnly && snippet.creator.user.id !== ctx.activeUserId)) {
             return { result: 'NOT_DELETED', message: 'Snippet not found' };
         }
 

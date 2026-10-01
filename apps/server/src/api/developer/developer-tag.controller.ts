@@ -8,7 +8,7 @@ import { authGuard } from '../middlewares/auth.guard';
 import { defineRoutePipeline } from '../middlewares/define-router-pipeline.mw';
 
 @Controller({
-    path: 'developer/tags',
+    path: 'tags',
     version: 1,
 })
 export class DeveloperTagController implements AppRouter {

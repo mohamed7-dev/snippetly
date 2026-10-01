@@ -58,7 +58,7 @@ export class AdministratorService {
                 firstName: 'Super',
                 lastName: 'Admin',
             });
-            const ctx = await this.requestContextService.create({
+            const ctx = this.requestContextService.create({
                 apiType: 'admin',
             });
             administrator.user = await this.userService.createAdminUser(ctx, {

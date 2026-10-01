@@ -1,9 +1,16 @@
-import { InitialDataInput, type Collection, type Developer, type Snippet } from '@snippetly/server';
+import {
+    Friendship,
+    InitialDataInput,
+    type Collection,
+    type Developer,
+    type Snippet,
+} from '@snippetly/server';
 
 export interface TestServerState {
     developers: Developer[];
     collections: Collection[];
     snippets: Snippet[];
+    friendships: Friendship[];
 }
 
 export interface TestServerOptions {

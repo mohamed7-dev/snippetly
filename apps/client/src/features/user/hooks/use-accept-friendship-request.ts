@@ -1,37 +1,30 @@
-import { api } from '@/lib/api'
-import { serverEndpoints } from '@/lib/routes'
+import { api } from '@/lib/api-client';
+import { serverEndpoints } from '@/lib/routes';
 import type {
-  AcceptFriendshipRequestResDtoType,
-  ManageFriendshipRequestParamDtoType,
-} from '@snippetly/common/dto'
-import { useMutation, type MutationOptions } from '@tanstack/react-query'
-import type { AxiosError } from 'axios'
+    AcceptFriendshipRequestResDtoType,
+    ManageFriendshipRequestParamDtoType,
+} from '@snippetly/common/dto';
+import { useMutation, type MutationOptions } from '@tanstack/react-query';
+import type { AxiosError } from 'axios';
 
-type Input = ManageFriendshipRequestParamDtoType
+type Input = ManageFriendshipRequestParamDtoType;
 
-type AcceptFriendshipRequestSuccessRes =
-  AcceptFriendshipRequestResDtoType['success']
+type AcceptFriendshipRequestSuccessRes = AcceptFriendshipRequestResDtoType['success'];
 
-type AcceptFriendshipRequestErrorRes = AxiosError<
-  AcceptFriendshipRequestResDtoType['error']
->
+type AcceptFriendshipRequestErrorRes = AxiosError<AcceptFriendshipRequestResDtoType['error']>;
 export function useAcceptFriendshipRequest(
-  options?: Omit<
-    MutationOptions<
-      AcceptFriendshipRequestSuccessRes,
-      AcceptFriendshipRequestErrorRes,
-      Input
+    options?: Omit<
+        MutationOptions<AcceptFriendshipRequestSuccessRes, AcceptFriendshipRequestErrorRes, Input>,
+        'mutationFn'
     >,
-    'mutationFn'
-  >,
 ) {
-  return useMutation({
-    ...options,
-    mutationFn: async ({ friend_name }) => {
-      const res = await api.put<AcceptFriendshipRequestSuccessRes>(
-        serverEndpoints.acceptFriendshipRequest(friend_name),
-      )
-      return res.data
-    },
-  })
+    return useMutation({
+        ...options,
+        mutationFn: async ({ friend_name }) => {
+            const res = await api.put<AcceptFriendshipRequestSuccessRes>(
+                serverEndpoints.acceptFriendshipRequest(friend_name),
+            );
+            return res.data;
+        },
+    });
 }

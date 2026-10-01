@@ -11,7 +11,6 @@ import {
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import { isApiError } from '../../common/errors/api-error';
-import { ForbiddenError } from '../../common/errors/errors';
 import { AppRouter } from '../../common/types/app-router.interface';
 import { Controller } from '../../infra/ioc-container/controller.decorator';
 import { DeveloperService } from '../../services/domain/developer.service';
@@ -21,7 +20,7 @@ import { defineRoutePipeline } from '../middlewares/define-router-pipeline.mw';
 import { transactionInterceptor } from '../middlewares/transaction.interceptor';
 
 @Controller({
-    path: 'developer/friendships',
+    path: 'friendships',
     version: 1,
 })
 export class DeveloperFriendshipController implements AppRouter {
@@ -169,20 +168,20 @@ export class DeveloperFriendshipController implements AppRouter {
         );
 
         router.get(
-            '/friends',
+            '/current',
             ...defineRoutePipeline({
                 before: [this.friendshipReadLimiter, authGuard({ permissions: [Permission.Authenticated] })],
                 query: currentUserFriendsListDto.input,
                 response: currentUserFriendsListDto.output,
                 handler: async (req, res) => {
-                    const userId = req.getRequestContext().activeUserId;
-                    if (!userId) {
-                        throw new ForbiddenError();
-                    }
+                    const developer = await this.developerService.getActiveDeveloper(
+                        req.getRequestContext(),
+                        true,
+                    );
 
                     const result = await this.friendshipService.getCurrentUserFriends(
                         req.getRequestContext(),
-                        userId,
+                        developer.id,
                         req.query,
                     );
 
@@ -198,14 +197,14 @@ export class DeveloperFriendshipController implements AppRouter {
                 query: currentUserInboxListDto.input,
                 response: currentUserInboxListDto.output,
                 handler: async (req, res) => {
-                    const userId = req.getRequestContext().activeUserId;
-                    if (!userId) {
-                        throw new ForbiddenError();
-                    }
+                    const developer = await this.developerService.getActiveDeveloper(
+                        req.getRequestContext(),
+                        true,
+                    );
 
                     const result = await this.friendshipService.getCurrentUserInbox(
                         req.getRequestContext(),
-                        userId,
+                        developer.id,
                         req.query,
                     );
 
@@ -221,14 +220,14 @@ export class DeveloperFriendshipController implements AppRouter {
                 query: currentUserOutboxListDto.input,
                 response: currentUserOutboxListDto.output,
                 handler: async (req, res) => {
-                    const userId = req.getRequestContext().activeUserId;
-                    if (!userId) {
-                        throw new ForbiddenError();
-                    }
+                    const developer = await this.developerService.getActiveDeveloper(
+                        req.getRequestContext(),
+                        true,
+                    );
 
                     const result = await this.friendshipService.getCurrentUserOutbox(
                         req.getRequestContext(),
-                        userId,
+                        developer.id,
                         req.query,
                     );
 

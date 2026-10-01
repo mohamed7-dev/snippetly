@@ -1,7 +1,6 @@
 import { App, AppConfig, AppModule, Logger, runPreConfig } from '@snippetly/server';
-import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions.js';
 import { populate } from './data-population/populate';
-import { DatabaseInitializer } from './database-initializer';
+import { resolveInitializer } from './db-initializers/db-initializers-registry';
 import { TestServerOptions, TestServerState } from './types';
 import { getCallerFilename } from './utils/get-caller-filename';
 
@@ -11,18 +10,16 @@ export class TestServer {
         developers: [],
         collections: [],
         snippets: [],
+        friendships: [],
     };
 
     constructor(private appConfig: Required<AppConfig>) {}
 
     async init(options: TestServerOptions): Promise<TestServerState> {
-        const databaseInitializer = new DatabaseInitializer();
+        const databaseInitializer = resolveInitializer(this.appConfig.database.type);
         const testFilename = getCallerFilename(1);
         try {
-            await databaseInitializer.init(
-                testFilename,
-                this.appConfig.database as PostgresConnectionOptions,
-            );
+            await databaseInitializer.init(testFilename, this.appConfig.database);
             const populateFn = () => this.populateInitialData(this.appConfig, options);
             await databaseInitializer.populate(populateFn);
             await databaseInitializer.destroy();

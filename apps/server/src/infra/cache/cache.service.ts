@@ -4,6 +4,8 @@ import { CacheEntryOptions, CacheStrategy } from '../../config/system/cache/cach
 import { Injectable } from '../ioc-container/injectable.decorator';
 import { Logger } from '../logger/logger';
 
+const ContextName = 'CacheService';
+
 interface CacheServiceConfiguration {
     /**
      * @description
@@ -38,9 +40,9 @@ export class CacheService {
     ): Promise<void> {
         try {
             await this.cacheEngine.set(key, value, options);
-            Logger.debug(`[CacheService]: stored key "${key}"`);
+            Logger.debug(`Stored key "${key}"`, ContextName);
         } catch (err: any) {
-            Logger.error(`[CacheService]: failed to store key "${key}"`, undefined, (err as Error).stack);
+            Logger.error(`Failed to store key "${key}"`, ContextName, (err as Error).stack);
         }
     }
 
@@ -48,33 +50,29 @@ export class CacheService {
         try {
             const value = await this.cacheEngine.get(key);
             if (value !== undefined) {
-                Logger.debug(`[CacheService]: hit on key "${key}"`);
+                Logger.debug(`Hit on key "${key}"`, ContextName);
             }
             return value as Value;
         } catch (err: any) {
-            Logger.error(`[CacheService]: failed to read key "${key}"`, undefined, (err as Error).stack);
+            Logger.error(`Failed to read key "${key}"`, ContextName, (err as Error).stack);
         }
     }
 
     public async remove(key: string): Promise<void> {
         try {
             await this.cacheEngine.delete(key);
-            Logger.debug(`[CacheService]: removed key "${key}"`);
+            Logger.debug(`Removed key "${key}"`, ContextName);
         } catch (err: any) {
-            Logger.error(`[CacheService]: failed to remove key "${key}"`, undefined, (err as Error).stack);
+            Logger.error(`Failed to remove key "${key}"`, ContextName, (err as Error).stack);
         }
     }
 
     public async purgeByTags(tags: string[]): Promise<void> {
         try {
             await this.cacheEngine.invalidateTags(tags);
-            Logger.debug(`[CacheService]: purged tags [${tags.join(', ')}]`);
+            Logger.debug(`Purged tags [${tags.join(', ')}]`, ContextName);
         } catch (err: any) {
-            Logger.error(
-                `[CacheService]: failed to purge tags [${tags.join(', ')}]`,
-                undefined,
-                (err as Error).stack,
-            );
+            Logger.error(`Failed to purge tags [${tags.join(', ')}]`, ContextName, (err as Error).stack);
         }
     }
 

@@ -25,7 +25,7 @@ export function authGuard(options?: AuthGuardOptions): Handler {
         const configService = moduleRef.getProvider<ConfigService>(ConfigService);
         const session = await getSession(req, res, configService.authOptions);
         // eslint-disable-next-line prefer-const
-        requestContext = await requestContextService.buildFromRequest({
+        requestContext = requestContextService.buildFromRequest({
             req,
             requiredPermissions: permissions,
             session,

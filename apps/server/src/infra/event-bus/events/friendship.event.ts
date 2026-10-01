@@ -2,7 +2,7 @@ import { RequestContext } from '../../../api/request-context/request-context';
 import { Friendship } from '../../../entities/friendships/friendship.entity';
 import { AppEntityEvent } from '../app-entity-event';
 
-type EventType = 'sent' | 'accepted' | 'cancelled' | 'rejected';
+type EventType = 'sent' | 'accepted' | 'cancelled' | 'rejected' | 'created';
 
 type Input = {
     requesterId: string;

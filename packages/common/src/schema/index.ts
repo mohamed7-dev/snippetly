@@ -15,6 +15,7 @@ export * from './developer/snippet.api.js';
 export * from './developer/tag.api.js';
 
 // admin API
+export * from './admin/auth.api.js';
 export * from './admin/developer.api.js';
 
 // entities

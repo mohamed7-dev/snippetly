@@ -21,4 +21,5 @@ export interface ModuleMeta {
     exports?: any[];
     global?: boolean;
     controllers?: any[];
+    prefix?: string;
 }

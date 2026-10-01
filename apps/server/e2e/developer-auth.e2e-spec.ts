@@ -9,6 +9,7 @@ import {
 } from '@snippetly/common/dto';
 import {
     AccountRegistrationEvent,
+    EmailTransporterStrategy,
     EventBus,
     IdentifierChangedEvent,
     IdentifierChangeRequestedEvent,
@@ -17,25 +18,24 @@ import {
     PasswordValidationError,
     SendEmailOptions,
 } from '@snippetly/server';
-import { ApiClient, ApiErrorGuard, createApiErrorGuard, createTestEnvironment } from '@snippetly/testing';
+import { ApiClient, createTestEnvironment } from '@snippetly/testing';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 import { getE2ETestSetupTimeout } from '../../../e2e-common/e2e-common-utils';
 import { initialData } from '../../../e2e-common/e2e-initial-data';
 import { testConfig } from '../../../e2e-common/test-config';
-import { TestEmailTransporter } from './utils/test-email-transporter.strategy';
+import { authenticatedUserErrorGuard, successErrorGuard } from './utils/error-guards';
 import { TestPasswordValidationStrategy } from './utils/test-password-validation.strategy';
+
+class TestEmailTransporter implements EmailTransporterStrategy {
+    async sendEmail(options: SendEmailOptions): Promise<{ done: true }> {
+        await sendEmailFn?.(options);
+        return new Promise(resolve => resolve({ done: true }));
+    }
+}
 
 let sendEmailFn: Mock;
 
-const successErrorGuard: ApiErrorGuard<{ success: boolean }> = createApiErrorGuard(
-    input => input.success != null,
-);
-
-const authenticatedUserErrorGuard: ApiErrorGuard<{ id: string; identifier: string }> = createApiErrorGuard(
-    input => input.id != null && input.identifier !== null,
-);
-
-describe.skip('Developer Authentication', () => {
+describe('Developer Authentication', () => {
     const { server, developerClient } = createTestEnvironment(
         mergeConfig(
             {
@@ -43,15 +43,20 @@ describe.skip('Developer Authentication', () => {
                     passwordValidationStrategy: new TestPasswordValidationStrategy(),
                     requireVerification: true,
                 },
-                system: { email: { emailTransporterStrategy: new TestEmailTransporter(sendEmailFn) } },
+                system: { email: { emailTransporterStrategy: new TestEmailTransporter() } },
             },
             testConfig(),
         ),
     );
 
     beforeAll(async () => {
+        sendEmailFn = vi.fn();
         await server.init({
-            initialData,
+            initialData: {
+                ...initialData,
+                snippets: [],
+                collections: [],
+            },
             developerCount: 1,
         });
     }, getE2ETestSetupTimeout());
@@ -60,12 +65,43 @@ describe.skip('Developer Authentication', () => {
         await server.destroy();
     });
 
-    beforeEach(() => {
-        sendEmailFn = vi.fn();
+    describe('Protected Workflows', () => {
+        const password = 'test';
+        const emailAddress = 'test_protected@test.com';
+
+        beforeAll(async () => {
+            sendEmailFn = vi.fn();
+            await registerAccountAndAssertVerificationToken({ emailAddress, password }, developerClient);
+            await developerClient.asAnonymousUser();
+        });
+
+        it('fails when updating password and there is no active session', async () => {
+            const res = await developerClient.fetch('/auth/accounts/me', {
+                method: 'PATCH',
+                body: JSON.stringify({
+                    currentPassword: password,
+                    newPassword: 'new-password123',
+                } satisfies UpdatePasswordDtoType['input']),
+            });
+            const result = (await res.json()) as UpdatePasswordDtoType['output'];
+            expect((result as any).code).toBe('FORBIDDEN_ERROR');
+        });
+
+        it('fails when changing email address and there is no active session ', async () => {
+            const res = await developerClient.fetch('/auth/account-email-address-change', {
+                method: 'POST',
+                body: JSON.stringify({
+                    newEmailAddress: 'new_email@example.com',
+                    password: 'password',
+                } satisfies RequestEmailAddressChangeDtoType['input']),
+            });
+            const result = (await res.json()) as RequestEmailAddressChangeDtoType['output'];
+            expect((result as any).code).toBe('FORBIDDEN_ERROR');
+        });
     });
 
     describe('Account Registration Workflow', () => {
-        const password = 'password';
+        const password = 'test';
 
         it('fails on providing an invalid password', async () => {
             const input: RegisterDeveloperAccountDtoType['input'] = {
@@ -128,14 +164,11 @@ describe.skip('Developer Authentication', () => {
 
     describe('Authentication Workflow', () => {
         const emailAddress = 'auth_req@test.com';
-        const password = 'password';
+        const password = 'test';
         let verificationToken = '';
 
-        beforeAll(() => {
-            sendEmailFn = vi.fn();
-        });
-
         beforeAll(async () => {
+            sendEmailFn = vi.fn();
             await developerClient.asAnonymousUser();
             verificationToken = (
                 await registerAccountAndAssertVerificationToken({ emailAddress, password }, developerClient)
@@ -170,18 +203,11 @@ describe.skip('Developer Authentication', () => {
 
     describe('Account Verification Workflow', () => {
         const emailAddress = 'account_v_req@test.com';
-        const password = 'password';
+        const password = 'test';
         let verificationToken = '';
 
-        beforeEach(() => {
-            sendEmailFn = vi.fn();
-        });
-
-        beforeAll(() => {
-            sendEmailFn = vi.fn();
-        });
-
         beforeAll(async () => {
+            sendEmailFn = vi.fn();
             await developerClient.asAnonymousUser();
             verificationToken = (
                 await registerAccountAndAssertVerificationToken({ emailAddress, password }, developerClient)
@@ -218,11 +244,8 @@ describe.skip('Developer Authentication', () => {
             sendEmailFn = vi.fn();
         });
 
-        beforeAll(() => {
-            sendEmailFn = vi.fn();
-        });
-
         beforeAll(async () => {
+            sendEmailFn = vi.fn();
             await developerClient.asAnonymousUser();
             await registerAccountAndAssertVerificationToken({ emailAddress, password }, developerClient);
         });
@@ -287,7 +310,7 @@ describe.skip('Developer Authentication', () => {
             expect(result.code).toBe('PASSWORD_VALIDATION_ERROR');
         });
 
-        it('passes validation if the provided password,and token are valid', async () => {
+        it('passes validation if the provided password, and token are valid', async () => {
             const res = await developerClient.fetch(`/auth/account-password-change`, {
                 method: 'PATCH',
                 body: JSON.stringify({
@@ -307,15 +330,12 @@ describe.skip('Developer Authentication', () => {
         const newEmailAddress = 'email_change_req_new@test.com';
         let identifierChangeToken = '';
 
-        beforeAll(() => {
-            sendEmailFn = vi.fn();
-        });
-
         beforeEach(() => {
             sendEmailFn = vi.fn();
         });
 
         beforeAll(async () => {
+            sendEmailFn = vi.fn();
             const { input, verificationToken } = await registerAccountAndAssertVerificationToken(
                 { emailAddress, password },
                 developerClient,
@@ -327,22 +347,7 @@ describe.skip('Developer Authentication', () => {
             await developerClient.asUserWithCredentials(input.emailAddress, input.password);
         });
 
-        it('fails when there is no active session ', async () => {
-            await developerClient.asAnonymousUser();
-            const res = await developerClient.fetch('/auth/account-email-address-change', {
-                method: 'POST',
-                body: JSON.stringify({
-                    newEmailAddress: newEmailAddress,
-                    password: 'password',
-                } satisfies RequestEmailAddressChangeDtoType['input']),
-            });
-            const result = (await res.json()) as RequestEmailAddressChangeDtoType['output'];
-            expect((result as any).code).toBe('FORBIDDEN_ERROR');
-        });
-
         it('fails on providing invalid password', async () => {
-            await developerClient.asUserWithCredentials(emailAddress, password);
-
             const res = await developerClient.fetch('/auth/account-email-address-change', {
                 method: 'POST',
                 body: JSON.stringify({
@@ -356,8 +361,6 @@ describe.skip('Developer Authentication', () => {
         });
 
         it('fails on providing conflicting email address', async () => {
-            await developerClient.asUserWithCredentials(emailAddress, password);
-
             const { input: user2Input } = await registerAccountAndAssertVerificationToken(
                 { emailAddress: 'email_change_req_ec_failure_2@test.com', password: 'password' },
                 developerClient,
@@ -375,8 +378,6 @@ describe.skip('Developer Authentication', () => {
         });
 
         it('succeeds, issues a new token, and sends this token to the email', async () => {
-            await developerClient.asUserWithCredentials(emailAddress, password);
-
             const res = await developerClient.fetch('/auth/account-email-address-change', {
                 method: 'POST',
                 body: JSON.stringify({
@@ -451,11 +452,8 @@ describe.skip('Developer Authentication', () => {
         const newPassword = 'newPassword';
         const emailAddress = 'passwd_update_req@test.com';
 
-        beforeAll(() => {
-            sendEmailFn = vi.fn();
-        });
-
         beforeAll(async () => {
+            sendEmailFn = vi.fn();
             const { input, verificationToken } = await registerAccountAndAssertVerificationToken(
                 { emailAddress, password: currentPassword },
                 developerClient,
@@ -467,23 +465,7 @@ describe.skip('Developer Authentication', () => {
             await developerClient.asUserWithCredentials(input.emailAddress, input.password);
         });
 
-        it('fails if there is not active session', async () => {
-            await developerClient.asAnonymousUser();
-            const res = await developerClient.fetch('/auth/accounts/me', {
-                method: 'PATCH',
-                body: JSON.stringify({
-                    currentPassword,
-                    newPassword,
-                } satisfies UpdatePasswordDtoType['input']),
-            });
-            const result = (await res.json()) as UpdatePasswordDtoType['output'];
-            expect((result as any).code).toBe('FORBIDDEN_ERROR');
-        });
-
         it('fails on providing an invalid new password', async () => {
-            const loginResult = await developerClient.asUserWithCredentials(emailAddress, currentPassword);
-            authenticatedUserErrorGuard.assertSuccess(loginResult);
-
             const res = await developerClient.fetch('/auth/accounts/me', {
                 method: 'PATCH',
                 body: JSON.stringify({
@@ -527,7 +509,7 @@ describe.skip('Developer Authentication', () => {
 async function registerAccountAndAssertVerificationToken(
     credentials: { emailAddress: string; password: string } = {
         emailAddress: 'test@test.com',
-        password: 'password',
+        password: 'test',
     },
     developerClient: ApiClient,
 ) {
@@ -545,6 +527,7 @@ async function registerAccountAndAssertVerificationToken(
 
     expect(result.success).toBe(true);
     await vi.waitFor(() => expect(sendEmailFn).toHaveBeenCalled());
+
     const verificationToken = getRegistrationVerificationToken();
     expect(verificationToken).toBeDefined();
 

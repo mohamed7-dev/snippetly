@@ -5,7 +5,7 @@ import {
     SUPER_ADMIN_ROLE_DESCRIPTION,
     SUPER_ADMIN_ROLE_NAME,
 } from '@snippetly/common/lib';
-import { getNormalizedAppPermissions } from '../../api';
+import { getNormalizedAppPermissions } from '../../api/permissions/default-permissions';
 import { Injectable } from '../../infra/ioc-container/injectable.decorator';
 
 export interface RoleDefinition {

@@ -1,6 +1,9 @@
+import { DEFAULT_ADMIN_API_PATH_PREFIX, DEFAULT_DEVELOPER_API_PATH_PREFIX } from '@snippetly/common/lib';
 import { ConfigModule } from '../config/config.module';
 import { Module } from '../infra/ioc-container/module.decorator';
 import { ServiceModule } from '../services/service.module';
+import { AdminAuthController } from './admin/admin-auth.controller';
+import { AdminDeveloperController } from './admin/admin-developer.controller';
 import { DeveloperAuthController } from './developer/developer-auth.controller';
 import { DeveloperCollectionController } from './developer/developer-collection.controller';
 import { DeveloperDeveloperController } from './developer/developer-developer.controller';
@@ -16,7 +19,8 @@ class CommonApiModule {}
 
 @Module({
     imports: [CommonApiModule],
-    controllers: [],
+    controllers: [AdminDeveloperController, AdminAuthController],
+    prefix: DEFAULT_ADMIN_API_PATH_PREFIX,
 })
 class AdminApiModule {}
 
@@ -30,6 +34,7 @@ class AdminApiModule {}
         DeveloperTagController,
         DeveloperDeveloperController,
     ],
+    prefix: DEFAULT_DEVELOPER_API_PATH_PREFIX,
 })
 class DeveloperApiModule {}
 

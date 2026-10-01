@@ -18,21 +18,21 @@ export function inputValidationPipe(body?: ZodType, query?: ZodType, params?: Zo
         if (body) {
             const r = body.safeParse(req.body);
             if (!r.success)
-                return next(new UserInputError('errors.user-input-error', undefined, mapZodError(r.error)));
+                return next(new UserInputError('errors.user_input_error', undefined, mapZodError(r.error)));
             req.body = r.data as Request['body'];
         }
 
         if (query) {
             const r = query.safeParse(req.query);
             if (!r.success)
-                return next(new UserInputError('errors.user-input-error', undefined, mapZodError(r.error)));
+                return next(new UserInputError('errors.user_input_error', undefined, mapZodError(r.error)));
             req.query = r.data as Request['query'];
         }
 
         if (params) {
             const r = params.safeParse(req.params);
             if (!r.success)
-                return next(new UserInputError('errors.user-input-error', undefined, mapZodError(r.error)));
+                return next(new UserInputError('errors.user_input_error', undefined, mapZodError(r.error)));
             req.params = r.data as Request['params'];
         }
 

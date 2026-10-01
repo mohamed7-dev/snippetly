@@ -1,122 +1,90 @@
-import type { Collection } from '@/features/collections/lib/types'
-import type { Snippet } from '@/features/snippets/lib/types'
-import type { Tag } from '@/features/tags/lib/types'
-import type { User } from '@/features/user/lib/types'
-import { api } from '@/lib/api'
-import { serverEndpoints } from '@/lib/routes'
-import type { SharedPaginatedSuccessRes } from '@/lib/types'
-import type {
-  DiscoverUsersRequestQueryDtoType,
-  DiscoverUsersResponseDtoType,
-} from '@snippetly/common/dto'
-import { infiniteQueryOptions } from '@tanstack/react-query'
+import type { Collection } from '@/features/collections/lib/types';
+import type { Snippet } from '@/features/snippets/lib/types';
+import type { Tag } from '@/features/tags/lib/types';
+import type { User } from '@/features/user/lib/types';
+import { api } from '@/lib/api-client';
+import { serverEndpoints } from '@/lib/routes';
+import type { SharedPaginatedSuccessRes } from '@/lib/types';
+import type { DiscoverUsersRequestQueryDtoType, DiscoverUsersResponseDtoType } from '@snippetly/common/dto';
+import { infiniteQueryOptions } from '@tanstack/react-query';
 
-type DiscoverUsersSuccessRes = DiscoverUsersResponseDtoType['success']
+type DiscoverUsersSuccessRes = DiscoverUsersResponseDtoType['success'];
 
 export const discoverUsersQueryOptions = infiniteQueryOptions({
-  queryKey: ['discover', 'users'],
-  queryFn: async ({
-    pageParam,
-  }: {
-    pageParam: DiscoverUsersRequestQueryDtoType['cursor']
-  }) => {
-    const searchParams = new URLSearchParams()
-    if (pageParam) {
-      searchParams.set('cursor', JSON.stringify(pageParam))
-    }
-    const res = await api.get<DiscoverUsersSuccessRes>(
-      `${serverEndpoints.discoverUsers}?${searchParams}`,
-    )
-    return res.data
-  },
-  initialPageParam: undefined,
-  getNextPageParam: (lastPage) => lastPage.data.nextCursor,
-})
+    queryKey: ['discover', 'users'],
+    queryFn: async ({ pageParam }: { pageParam: DiscoverUsersRequestQueryDtoType['cursor'] }) => {
+        const searchParams = new URLSearchParams();
+        if (pageParam) {
+            searchParams.set('cursor', JSON.stringify(pageParam));
+        }
+        const res = await api.get<DiscoverUsersSuccessRes>(
+            `${serverEndpoints.discoverUsers}?${searchParams}`,
+        );
+        return res.data;
+    },
+    initialPageParam: undefined,
+    getNextPageParam: lastPage => lastPage.data.nextCursor,
+});
 
 // Discover snippets
 type SnippetsCursor = {
-  updatedAt: Date
-}
+    updatedAt: Date;
+};
 type SnippetItem = Pick<
-  Snippet,
-  | 'publicId'
-  | 'title'
-  | 'language'
-  | 'code'
-  | 'addedAt'
-  | 'description'
-  | 'allowForking'
-  | 'isPrivate'
+    Snippet,
+    'publicId' | 'title' | 'language' | 'code' | 'addedAt' | 'description' | 'allowForking' | 'isPrivate'
 > & {
-  forkedCount: number
-  creator: Pick<
-    User,
-    'username' | 'firstName' | 'lastName' | 'fullName' | 'image'
-  >
-  collection: Pick<Collection, 'title' | 'publicId' | 'color'>
-  tags: Pick<Tag, 'name'>[]
-}
-type DiscoverSnippetsSuccessRes = SharedPaginatedSuccessRes<
-  SnippetItem[],
-  SnippetsCursor
->
+    forkedCount: number;
+    creator: Pick<User, 'username' | 'firstName' | 'lastName' | 'fullName' | 'image'>;
+    collection: Pick<Collection, 'title' | 'publicId' | 'color'>;
+    tags: Pick<Tag, 'name'>[];
+};
+type DiscoverSnippetsSuccessRes = SharedPaginatedSuccessRes<SnippetItem[], SnippetsCursor>;
 
 export const discoverSnippetsInfiniteQueryOptions = infiniteQueryOptions({
-  queryKey: ['discover', 'snippets'],
-  queryFn: async ({ pageParam }: { pageParam: SnippetsCursor | null }) => {
-    const searchParams = new URLSearchParams()
-    if (pageParam) {
-      searchParams.set('cursor', JSON.stringify(pageParam))
-    }
-    const res = await api.get<DiscoverSnippetsSuccessRes>(
-      `${serverEndpoints.discoverSnippets}?${searchParams}`,
-    )
-    return res.data
-  },
-  initialPageParam: null,
-  getNextPageParam: (lastPage) => lastPage.nextCursor,
-})
+    queryKey: ['discover', 'snippets'],
+    queryFn: async ({ pageParam }: { pageParam: SnippetsCursor | null }) => {
+        const searchParams = new URLSearchParams();
+        if (pageParam) {
+            searchParams.set('cursor', JSON.stringify(pageParam));
+        }
+        const res = await api.get<DiscoverSnippetsSuccessRes>(
+            `${serverEndpoints.discoverSnippets}?${searchParams}`,
+        );
+        return res.data;
+    },
+    initialPageParam: null,
+    getNextPageParam: lastPage => lastPage.nextCursor,
+});
 
 // Discover collections
 type CollectionsCursor = {
-  updatedAt: Date
-}
+    updatedAt: Date;
+};
 type CollectionItem = Pick<
-  Collection,
-  | 'publicId'
-  | 'title'
-  | 'color'
-  | 'addedAt'
-  | 'description'
-  | 'allowForking'
-  | 'isPrivate'
+    Collection,
+    'publicId' | 'title' | 'color' | 'addedAt' | 'description' | 'allowForking' | 'isPrivate'
 > & {
-  creator: Pick<
-    User,
-    'username' | 'firstName' | 'lastName' | 'fullName' | 'image'
-  >
-  tags: Pick<Tag, 'name'>[]
-  snippets: Pick<Snippet, 'publicId' | 'title' | 'language' | 'addedAt'>[]
-  forkedCount: number
-  snippetsCount: number
-}
-type DiscoverCollectionsSuccessRes = SharedPaginatedSuccessRes<
-  CollectionItem[],
-  CollectionsCursor
->
+    creator: Pick<User, 'username' | 'firstName' | 'lastName' | 'fullName' | 'image'>;
+    tags: Pick<Tag, 'name'>[];
+    snippets: Pick<Snippet, 'publicId' | 'title' | 'language' | 'addedAt'>[];
+    forkedCount: number;
+    snippetsCount: number;
+};
+type DiscoverCollectionsSuccessRes = SharedPaginatedSuccessRes<CollectionItem[], CollectionsCursor>;
 
 export const discoverCollectionsQueryOptions = infiniteQueryOptions({
-  queryKey: ['discover', 'collections'],
-  queryFn: async ({ pageParam }: { pageParam: CollectionsCursor | null }) => {
-    const searchParams = new URLSearchParams()
-    if (pageParam) {
-      searchParams.set('cursor', JSON.stringify(pageParam))
-    }
-    const res = await api.get<DiscoverCollectionsSuccessRes>(
-      `${serverEndpoints.discoverCollections}?${searchParams}`,
-    )
-    return res.data
-  },
-  initialPageParam: null,
-  getNextPageParam: (lastPage) => lastPage.nextCursor,
-})
+    queryKey: ['discover', 'collections'],
+    queryFn: async ({ pageParam }: { pageParam: CollectionsCursor | null }) => {
+        const searchParams = new URLSearchParams();
+        if (pageParam) {
+            searchParams.set('cursor', JSON.stringify(pageParam));
+        }
+        const res = await api.get<DiscoverCollectionsSuccessRes>(
+            `${serverEndpoints.discoverCollections}?${searchParams}`,
+        );
+        return res.data;
+    },
+    initialPageParam: null,
+    getNextPageParam: lastPage => lastPage.nextCursor,
+});

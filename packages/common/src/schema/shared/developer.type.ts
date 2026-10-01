@@ -10,6 +10,6 @@ export const developer = node.extend({
     image: z.string().nullable(),
     imageKey: z.string().nullable(),
     isPrivate: z.boolean(),
-    deletedAt: z.date().nullable(),
+    deletedAt: z.coerce.date().nullable(),
     user: user,
 });

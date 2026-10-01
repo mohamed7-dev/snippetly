@@ -1,10 +1,10 @@
 import { NextFunction, Request, Response } from 'express';
 import { InternalServerError, RateLimiterError } from '../../common/errors/errors';
 import { ApiError } from '../../common/errors/generated-developer-errors';
-import { Logger } from '../../infra';
 import { I18nError } from '../../infra/i18n/i18n-error';
 import { I18nService } from '../../infra/i18n/i18n.service';
 import { moduleRef } from '../../infra/ioc-container/module-ref';
+import { Logger } from '../../infra/logger/logger';
 
 function isRateLimiterError(err: unknown): err is RateLimiterError {
     if (err instanceof RateLimiterError) return true;

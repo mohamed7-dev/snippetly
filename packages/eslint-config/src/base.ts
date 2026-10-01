@@ -11,11 +11,6 @@ export const config = defineConfig([
     js.configs.recommended,
     eslintConfigPrettier,
     ...tseslint.configs.recommended,
-    // {
-    //     plugins: {
-    //         onlyWarn,
-    //     },
-    // },
     {
         ignores: ['dist/**'],
     },

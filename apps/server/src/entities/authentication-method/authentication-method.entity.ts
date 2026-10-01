@@ -43,12 +43,14 @@ export class ExternalAuthenticationMethod extends AuthenticationMethod {
     }
 
     /**
+     * @description
      * The name of the external authentication provider (e.g., 'google', 'facebook', 'github').
      */
     @Column()
     provider: string;
 
     /**
+     * @description
      * The user's identifier within the external provider's system.
      * This is typically the unique ID assigned by the provider.
      */
@@ -56,6 +58,7 @@ export class ExternalAuthenticationMethod extends AuthenticationMethod {
     identifier: string;
 
     /**
+     * @description
      * Provider-specific metadata stored as JSON.
      * Contains additional information from the external provider
      * such as profile data, tokens, or other provider-specific fields.

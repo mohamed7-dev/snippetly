@@ -1,5 +1,10 @@
 import { AppEntity } from './app-entity';
 
+/**
+ * @description
+ * Given an entity and a subset of the entity, it overrides the properties on the
+ * the entity.
+ */
 export function patchEntity<
     Entity extends AppEntity,
     Input extends { [K in keyof Entity]?: Entity[K] | null },

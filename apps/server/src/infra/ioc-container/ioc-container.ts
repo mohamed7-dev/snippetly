@@ -223,6 +223,9 @@ export class IocContainer {
 
     public initRoutes(appRouter: Application) {
         for (const moduleClass of this.processedModules) {
+            const moduleMeta = Reflect.getMetadata(MODULE_DECORATOR_METADATA_KEY, moduleClass) || {};
+            const routePrefix = (moduleMeta as ModuleMeta).prefix ?? undefined;
+
             const moduleControllers = this.controllers.get(moduleClass) || [];
 
             for (const ControllerClass of moduleControllers) {
@@ -233,7 +236,10 @@ export class IocContainer {
                 const version = meta.version ?? 1;
                 const path = meta.path ?? '';
 
-                const basePath = `/api/v${version}/${path}`.replace(/\/+/g, '/');
+                const basePath = `/api/v${version}${routePrefix ? '/' + routePrefix : ''}/${path}`.replace(
+                    /\/+/g,
+                    '/',
+                );
 
                 if (typeof instance?.initRoutes !== 'function') {
                     throw new Error(`${ControllerClass.name} must implement initRoutes()`);

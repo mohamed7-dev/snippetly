@@ -33,6 +33,31 @@ export const initialData: InitialDataInput = {
             allowForking: false,
         },
     ],
-    snippets: [],
+    snippets: [
+        {
+            name: 'test snippet 1',
+            slug: 'test-snippet-1',
+        },
+        {
+            name: 'test snippet 2',
+            slug: 'test-snippet-2',
+        },
+        {
+            name: 'test snippet 3',
+            slug: 'test-snippet-3',
+        },
+        {
+            name: 'test snippet 4',
+            slug: 'test-snippet-4',
+        },
+        {
+            name: 'test snippet 5',
+            slug: 'test-snippet-5',
+        },
+        {
+            name: 'test snippet 6',
+            slug: 'test-snippet-6',
+        },
+    ],
     roles: [],
 };

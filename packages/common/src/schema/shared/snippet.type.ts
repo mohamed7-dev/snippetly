@@ -13,7 +13,7 @@ export const snippet = node.extend({
     note: z.string().nullable(),
     isPrivate: z.boolean(),
     allowForking: z.boolean(),
-    deletedAt: z.date().nullable(),
+    deletedAt: z.coerce.date().nullable(),
     creator: developer,
     collection: collection,
     tags: z.array(tag),

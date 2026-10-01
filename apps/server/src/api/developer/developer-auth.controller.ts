@@ -35,7 +35,7 @@ import { transactionInterceptor } from '../middlewares/transaction.interceptor';
 import { setSessionToken } from '../utils/session-utils';
 
 @Controller({
-    path: 'developer/auth',
+    path: 'auth',
     version: 1,
 })
 export class DeveloperAuthController extends CommonAuth implements AppRouter {

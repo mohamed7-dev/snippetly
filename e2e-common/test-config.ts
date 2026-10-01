@@ -1,6 +1,22 @@
 import { AppConfig, mergeConfig } from '@snippetly/server';
-import { testConfig as defaultTestConfig } from '@snippetly/testing';
-import { getE2ETestDatabase, getE2ETestPostgresPort, getTestFileIndex } from './e2e-common-utils';
+import {
+    addInitializer,
+    testConfig as defaultTestConfig,
+    PostgresqlDBInitializer,
+    SqljsDBInitializer,
+} from '@snippetly/testing';
+import path from 'node:path';
+import {
+    getE2ETestDatabase,
+    getE2ETestPostgresPort,
+    getPackageDir,
+    getTestFileIndex,
+} from './e2e-common-utils';
+
+const packageDir = getPackageDir();
+
+addInitializer('sqljs', new SqljsDBInitializer(path.join(packageDir, '__data__')));
+addInitializer('postgres', new PostgresqlDBInitializer());
 
 export const testConfig = () => {
     const index = getTestFileIndex();

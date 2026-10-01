@@ -315,8 +315,8 @@ export class UserService {
     ): Promise<User | PasswordValidationError> {
         const user = new User();
         user.identifier = normalizeInput(credentials.identifier);
-        const customerRole = await this.roleService.getDeveloperRole(ctx);
-        user.roles = [customerRole];
+        const developerRole = await this.roleService.getDeveloperRole(ctx);
+        user.roles = [developerRole];
         const assignCredentialsAuthMethodResult = await this.assignCredentialsAuthMethodToUser(
             ctx,
             user,

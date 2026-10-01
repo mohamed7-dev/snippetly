@@ -336,7 +336,10 @@ export class DeveloperService implements OnApplicationBootstrap {
                 id: input.id,
             },
             relations: {
-                user: true,
+                user: {
+                    roles: true,
+                    authenticationMethods: true,
+                },
             },
         });
 
@@ -534,6 +537,7 @@ export class DeveloperService implements OnApplicationBootstrap {
             throw developerUser;
         }
         developer.user = developerUser;
+
         if (password && password !== '') {
             const verificationToken = developer.user.getNativeAuthenticationMethod().verificationToken;
             if (verificationToken) {
@@ -548,9 +552,10 @@ export class DeveloperService implements OnApplicationBootstrap {
                 }
             }
         }
+        developer.user.roles = developerUser.roles;
         await this.eventBus.publish(new AccountRegistrationEvent(ctx, developer.user));
         const createdDeveloper = await this.databaseService.getRepository(ctx, Developer).save(developer);
         await this.eventBus.publish(new DeveloperEvent(ctx, createdDeveloper, 'created', input));
-        return createdDeveloper;
+        return developer;
     }
 }

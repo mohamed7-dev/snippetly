@@ -13,7 +13,7 @@ export class Role extends AppEntity {
      * @description
      * Unique name for the role. Must be unique across all roles.
      */
-    @Column()
+    @Column({ unique: true })
     name: string;
 
     /**

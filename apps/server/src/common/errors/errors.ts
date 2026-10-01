@@ -66,7 +66,7 @@ export class NotFoundError extends I18nError {
  */
 export class RouteNotFoundError extends I18nError {
     constructor(variables: { path: string }) {
-        super('errors.route-not-found', variables, 404, 'ROUTE_NOT_FOUND_ERROR', LogLevel.warn);
+        super('errors.route_not_found', variables, 404, 'ROUTE_NOT_FOUND_ERROR', LogLevel.warn);
     }
 }
 
@@ -86,7 +86,7 @@ export class ForbiddenError extends I18nError {
  */
 export class BlockedByCorsError extends I18nError {
     constructor() {
-        super('errors.blocked-by-cors', {}, 403, 'BLOCKED_BY_CORS_ERROR', LogLevel.warn);
+        super('errors.blocked_by_cors', {}, 403, 'BLOCKED_BY_CORS_ERROR', LogLevel.warn);
     }
 }
 
@@ -97,7 +97,7 @@ export class BlockedByCorsError extends I18nError {
  */
 export class RateLimiterError extends I18nError {
     constructor(
-        message = 'errors.rate-limiter-exceeded',
+        message = 'errors.rate_limiter_exceeded',
         variables: { [key: string]: string | number } = {},
     ) {
         super(message, variables, 429, 'RATE_LIMITER_ERROR', LogLevel.warn);

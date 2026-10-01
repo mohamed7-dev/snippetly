@@ -1,8 +1,40 @@
 {
     "errors": {
-        "test": "Test error response"
+        "authentication_methods_not_loaded": "Authentication methods have not been loaded.",
+        "native_authentication_method_not_found": "The account's password authentication method could not be found.",
+        "authentication_strategy_not_found": "The authentication strategy '{{name}}' is not configured.",
+        "developer_account_can't_be_located_for_user": "The developer account associated with this user could not be found.",
+        "invalid_input_fields": "The requested fields cannot be changed.",
+        "super_admin_role_not_found": "The super administrator role could not be found.",
+        "developer_role_not_found": "The developer role could not be found.",
+        "current_user_does_not_have_sufficient_permissions": "You do not have permission to perform this action.",
+        "permission_invalid": "'{{permission}}' is not a valid assignable permission.",
+        "super_admin_role_definition_not_defined": "The super administrator role is not configured.",
+        "developer_role_definition_not_defined": "The developer role is not configured.",
+        "identifier_placeholder_missing": "The account's pending email address could not be found.",
+        "invalid_user_data": "The user data is invalid.",
+        "user_input_error": "The submitted input is invalid. Check the fields for details.",
+        "entity_with_id_not_found": "{{entityName}} with ID {{entityId}} could not be found.",
+        "route_not_found": "No route was found for '{{path}}'.",
+        "forbidden": "You do not have permission to access this resource.",
+        "blocked_by_cors": "This request was blocked by the cross-origin request policy.",
+        "rate_limiter_exceeded": "Too many requests. Please try again later.",
+        "unverified_external_email": "Your identity provider has not verified this email address.",
+        "internal-server-error": "An unexpected server error occurred. Please try again later."
     },
     "apiErrors": {
-        "EMAIL_ADDRESS_CONFLICT_ERROR": "Email already exists"
+        "EMAIL_ADDRESS_CONFLICT_ERROR": "An account with this email address already exists.",
+        "IDENTIFIER_CHANGE_TOKEN_EXPIRED_ERROR": "This email change link has expired. Request a new one.",
+        "IDENTIFIER_CHANGE_TOKEN_INVALID_ERROR": "This email change link is invalid.",
+        "INVALID_CREDENTIALS_ERROR": "The provided credentials are incorrect.",
+        "INVALID_FRIENDSHIP_ACTION_ERROR": "This friendship action cannot be completed.",
+        "MISSING_PASSWORD_ERROR": "A password is required for this action.",
+        "NATIVE_AUTH_STRATEGY_ERROR": "Authentication is temporarily unavailable.",
+        "NOT_VERIFIED_ACCOUNT_ERROR": "Verify your account before signing in.",
+        "PASSWORD_RESET_TOKEN_EXPIRED_ERROR": "This password reset link has expired. Request a new one.",
+        "PASSWORD_RESET_TOKEN_INVALID_ERROR": "This password reset link is invalid.",
+        "PASSWORD_VALIDATION_ERROR": "The password does not meet the required criteria.",
+        "VERIFICATION_TOKEN_EXPIRED_ERROR": "This verification link has expired. Request a new one.",
+        "VERIFICATION_TOKEN_INVALID_ERROR": "This verification link is invalid."
     }
 }

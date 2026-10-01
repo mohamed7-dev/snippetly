@@ -12,7 +12,7 @@ import {
 import { omit } from '@snippetly/common/lib';
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
-import { EntityNotFoundError } from '../../common/errors/errors';
+import { EntityNotFoundError, ForbiddenError } from '../../common/errors/errors';
 import { AppRouter } from '../../common/types/app-router.interface';
 import { Developer } from '../../entities/developer/developer.entity';
 import { Controller } from '../../infra/ioc-container/controller.decorator';
@@ -24,7 +24,7 @@ import { transactionInterceptor } from '../middlewares/transaction.interceptor';
 import { RequestContext } from '../request-context/request-context';
 
 @Controller({
-    path: 'developer/snippets',
+    path: 'snippets',
     version: 1,
 })
 export class DeveloperSnippetController implements AppRouter {
@@ -71,7 +71,7 @@ export class DeveloperSnippetController implements AppRouter {
                 before: [
                     this.snippetWriteLimiter,
                     authGuard({
-                        permissions: [Permission.Authenticated, Permission.UpdateSnippet, Permission.Owner],
+                        permissions: [Permission.Owner],
                     }),
                 ],
                 body: updateSnippetDto.input.omit({ id: true }),
@@ -79,6 +79,9 @@ export class DeveloperSnippetController implements AppRouter {
                 response: updateSnippetDto.output,
                 interceptors: [transactionInterceptor()],
                 handler: async (req, res) => {
+                    if (!req.getRequestContext().activeUserId) {
+                        throw new ForbiddenError();
+                    }
                     const result = await this.snippetService.update(req.getRequestContext(), {
                         ...req.params,
                         ...req.body,
@@ -94,13 +97,16 @@ export class DeveloperSnippetController implements AppRouter {
                 before: [
                     this.snippetWriteLimiter,
                     authGuard({
-                        permissions: [Permission.Authenticated, Permission.DeleteSnippet, Permission.Owner],
+                        permissions: [Permission.Owner],
                     }),
                 ],
                 params: deleteSnippetDto.input,
                 response: deleteSnippetDto.output,
                 interceptors: [transactionInterceptor()],
                 handler: async (req, res) => {
+                    if (!req.getRequestContext().activeUserId) {
+                        throw new ForbiddenError();
+                    }
                     const result = await this.snippetService.delete(req.getRequestContext(), req.params);
                     res.status(200).json(result);
                 },
@@ -114,11 +120,15 @@ export class DeveloperSnippetController implements AppRouter {
                     this.snippetWriteLimiter,
                     authGuard({ permissions: [Permission.Authenticated, Permission.ForkSnippet] }),
                 ],
-                params: forkSnippetDto.input,
+                params: forkSnippetDto.input.pick({ id: true }),
+                body: forkSnippetDto.input.pick({ collectionId: true }),
                 response: forkSnippetDto.output,
                 interceptors: [transactionInterceptor()],
                 handler: async (req, res) => {
-                    const result = await this.snippetService.fork(req.getRequestContext(), req.params);
+                    const result = await this.snippetService.fork(req.getRequestContext(), {
+                        ...req.params,
+                        ...req.body,
+                    });
                     res.status(200).json(result);
                 },
             }),
@@ -141,17 +151,11 @@ export class DeveloperSnippetController implements AppRouter {
                             ...req.query.filter,
                             ...(shouldRestrictToPublic
                                 ? {
-                                      _and: [
-                                          ...(req.query.filter?._and ?? []),
-                                          { isPrivate: { equals: false } },
-                                          { deletedAt: { isNull: true } },
-                                      ],
+                                      isPrivate: { equals: false },
+                                      deletedAt: { isNull: true },
                                   }
                                 : {
-                                      _and: [
-                                          ...(req.query.filter?._and ?? []),
-                                          { deletedAt: { isNull: true } },
-                                      ],
+                                      deletedAt: { isNull: true },
                                   }),
                         },
                     });
@@ -219,7 +223,7 @@ export class DeveloperSnippetController implements AppRouter {
         router.get(
             '/:id',
             ...defineRoutePipeline({
-                before: [this.snippetReadLimiter,authGuard({permissions:[Permission.Public]})],
+                before: [this.snippetReadLimiter, authGuard({ permissions: [Permission.Public] })],
                 params: findOneSnippetDto.input,
                 response: findOneSnippetDto.output,
                 handler: async (req, res) => {

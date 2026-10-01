@@ -1,5 +1,6 @@
 import { DeepPartial } from '@snippetly/common/lib';
 import { Column, Entity, JoinTable, ManyToMany, OneToMany } from 'typeorm';
+import { InternalServerError } from '../../common/errors/errors';
 import { SoftDeletable } from '../../common/types/soft-deletable.interface';
 import { AppEntity } from '../../infra/database/app-entity';
 import {
@@ -45,13 +46,13 @@ export class User extends AppEntity implements SoftDeletable {
         throwError?: boolean;
     }): NativeAuthenticationMethod | undefined {
         if (!this.authenticationMethods) {
-            throw new Error('errors.authentication_methods_not_loaded');
+            throw new InternalServerError('errors.authentication_methods_not_loaded');
         }
         const match = this.authenticationMethods.find(
             (m): m is NativeAuthenticationMethod => m instanceof NativeAuthenticationMethod,
         );
         if (!match && options?.throwError) {
-            throw new Error('errors.native_authentication_method_not_found');
+            throw new InternalServerError('errors.native_authentication_method_not_found');
         }
         return match;
     }

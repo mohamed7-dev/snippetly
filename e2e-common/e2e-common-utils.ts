@@ -2,6 +2,20 @@ import { getCallerFilename } from '@snippetly/testing';
 import fs from 'node:fs';
 import path from 'node:path';
 
+export function getPackageDir() {
+    const packageDirName = process.env.PACKAGE;
+    if (!packageDirName) {
+        console.error('No package specified! Please set env variable PACKAGE');
+        process.exit(1);
+    }
+    return path.join(
+        __dirname,
+        packageDirName === 'server' ? '../apps' : '../packages',
+        packageDirName,
+        'e2e',
+    );
+}
+
 export function isTestRunningInCIEnv() {
     return process.env.CI === 'true' ? true : false;
 }

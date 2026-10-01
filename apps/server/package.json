@@ -1,6 +1,7 @@
 {
     "name": "@snippetly/server",
     "version": "0.0.0",
+    "private": true,
     "description": "the server side api of the snippetly application.",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
@@ -9,10 +10,10 @@
     ],
     "scripts": {
         "db:migration": "ts-node ./scripts/migrate-db.ts",
-        "db:migration:generate": "NODE_ENV=production pnpm run db:migration generate InitializeDbSchema",
+        "db:migration:generate": "NODE_ENV=production pnpm run db:migration generate",
         "db:migration:run": "NODE_ENV=production pnpm run db:migration run",
         "db:migration:revert": "NODE_ENV=production pnpm run db:migration revert",
-        "build": "rm -rf dist && tsc --project ./tsconfig.build.json",
+        "build": "pnpm run db:migration:run && rm -rf dist && tsc --project ./tsconfig.build.json",
         "start": "NODE_ENV=production node --env-file=.env.production --env-file=.env ./dist/main.js",
         "watch:ts": "nodemon --config ./nodemon.json",
         "watch:assets": "ts-node ./scripts/watch-assets --watch",
@@ -21,7 +22,7 @@
         "format": "prettier",
         "check": "prettier --write . && eslint --fix",
         "test": "vitest --config vitest.config.mts --run",
-        "e2e": "E2E_DB=postgres E2E_POSTGRES_PORT=5432 vitest --config ../../e2e-common/vitest.config.mts --run"
+        "e2e": "PACKAGE=server E2E_DB=postgres vitest --config ../../e2e-common/vitest.config.mts --run"
     },
     "dependencies": {
         "@asteasolutions/zod-to-openapi": "^8.1.0",

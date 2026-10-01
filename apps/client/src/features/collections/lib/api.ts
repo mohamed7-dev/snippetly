@@ -1,158 +1,137 @@
-import { api } from '@/lib/api'
-import { serverEndpoints } from '@/lib/routes'
-import type { SharedPaginatedSuccessRes, SharedSuccessRes } from '@/lib/types'
-import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query'
-import type { Collection, CollectionStats } from './types'
-import type { User } from '@/features/user/lib/types'
-import type { Tag } from '@/features/tags/lib/types'
-import type { Snippet } from '@/features/snippets/lib/types'
-import { replaceUrl } from '@/lib/utils'
-import { AxiosError } from 'axios'
+import type { Snippet } from '@/features/snippets/lib/types';
+import type { Tag } from '@/features/tags/lib/types';
+import type { User } from '@/features/user/lib/types';
+import { api } from '@/lib/api-client';
+import { serverEndpoints } from '@/lib/routes';
+import type { SharedPaginatedSuccessRes, SharedSuccessRes } from '@/lib/types';
+import { replaceUrl } from '@/lib/utils';
+import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
+import { AxiosError } from 'axios';
+import type { Collection, CollectionStats } from './types';
 
 //################################# Shared ############################
-type CreatorItem = Pick<
-  User,
-  'firstName' | 'username' | 'lastName' | 'fullName' | 'image'
->
-type TagItem = Pick<Tag, 'name'>
-type SnippetItem = Pick<Snippet, 'addedAt' | 'title' | 'publicId' | 'language'>
+type CreatorItem = Pick<User, 'firstName' | 'username' | 'lastName' | 'fullName' | 'image'>;
+type TagItem = Pick<Tag, 'name'>;
+type SnippetItem = Pick<Snippet, 'addedAt' | 'title' | 'publicId' | 'language'>;
 type CollectionItem = Pick<
-  Collection,
-  'title' | 'publicId' | 'color' | 'addedAt' | 'allowForking' | 'description'
+    Collection,
+    'title' | 'publicId' | 'color' | 'addedAt' | 'allowForking' | 'description'
 > &
-  Partial<Pick<Collection, 'isPrivate' | 'isForked' | 'lastUpdatedAt'>> & {
-    forkedCount?: number
-    snippetsCount?: number
-  }
+    Partial<Pick<Collection, 'isPrivate' | 'isForked' | 'lastUpdatedAt'>> & {
+        forkedCount?: number;
+        snippetsCount?: number;
+    };
 
 type UserCollection = CollectionItem & {
-  creator: CreatorItem
-  tags: TagItem[]
-  snippets: SnippetItem[]
-}
+    creator: CreatorItem;
+    tags: TagItem[];
+    snippets: SnippetItem[];
+};
 
 type Cursor = {
-  updatedAt: Date
-} | null
+    updatedAt: Date;
+} | null;
 // ########################################################################
 
 // Get Collection
-type GetCollectionSuccessRes = SharedSuccessRes<UserCollection>
+type GetCollectionSuccessRes = SharedSuccessRes<UserCollection>;
 
-export const getCollectionQueryOptions = (
-  slug: string,
-  getRedirectionUrl?: (newSlug: string) => string,
-) =>
-  queryOptions({
-    queryKey: ['collections', slug],
-    queryFn: async () => {
-      try {
-        const res = await api.get<GetCollectionSuccessRes>(
-          serverEndpoints.getCollection(slug),
-        )
-        return res.data
-      } catch (error) {
-        if (error instanceof AxiosError) {
-          if (error.status === 308) {
-            const axiosError = error as AxiosError<{ newSlug: string }>
-            const responseData = axiosError.response?.data
-            if (responseData && 'newSlug' in responseData) {
-              !!getRedirectionUrl &&
-                replaceUrl(getRedirectionUrl?.(responseData.newSlug))
+export const getCollectionQueryOptions = (slug: string, getRedirectionUrl?: (newSlug: string) => string) =>
+    queryOptions({
+        queryKey: ['collections', slug],
+        queryFn: async () => {
+            try {
+                const res = await api.get<GetCollectionSuccessRes>(serverEndpoints.getCollection(slug));
+                return res.data;
+            } catch (error) {
+                if (error instanceof AxiosError) {
+                    if (error.status === 308) {
+                        const axiosError = error as AxiosError<{ newSlug: string }>;
+                        const responseData = axiosError.response?.data;
+                        if (responseData && 'newSlug' in responseData) {
+                            !!getRedirectionUrl && replaceUrl(getRedirectionUrl?.(responseData.newSlug));
+                        }
+                    }
+                    throw error;
+                }
+                throw error;
             }
-          }
-          throw error
-        }
-        throw error
-      }
-    },
-  })
+        },
+    });
 
 // Get Current User Collections
 type GetCurrentUserCollectionsSuccessRes = SharedPaginatedSuccessRes<
-  Array<
-    Omit<
-      UserCollection,
-      'isPrivate' | 'lastUpdatedAt' | 'isForked' | 'snippetsCount'
-    > &
-      Required<
-        Pick<
-          UserCollection,
-          'isPrivate' | 'lastUpdatedAt' | 'isForked' | 'snippetsCount'
-        >
-      >
-  >,
-  Cursor
+    Array<
+        Omit<UserCollection, 'isPrivate' | 'lastUpdatedAt' | 'isForked' | 'snippetsCount'> &
+            Required<Pick<UserCollection, 'isPrivate' | 'lastUpdatedAt' | 'isForked' | 'snippetsCount'>>
+    >,
+    Cursor
 > & {
-  stats: CollectionStats
-}
+    stats: CollectionStats;
+};
 
 export const getCurrentUserCollectionsOptions = infiniteQueryOptions({
-  queryKey: ['collections', 'current'],
-  queryFn: async ({ pageParam }: { pageParam: null | Cursor }) => {
-    const searchParams = new URLSearchParams()
-    if (pageParam) {
-      searchParams.set('cursor', JSON.stringify(pageParam))
-    }
-    const res = await api.get<GetCurrentUserCollectionsSuccessRes>(
-      `${serverEndpoints.getCurrentUserCollections}?${searchParams}`,
-    )
+    queryKey: ['collections', 'current'],
+    queryFn: async ({ pageParam }: { pageParam: null | Cursor }) => {
+        const searchParams = new URLSearchParams();
+        if (pageParam) {
+            searchParams.set('cursor', JSON.stringify(pageParam));
+        }
+        const res = await api.get<GetCurrentUserCollectionsSuccessRes>(
+            `${serverEndpoints.getCurrentUserCollections}?${searchParams}`,
+        );
 
-    return res.data
-  },
-  initialPageParam: null,
-  getNextPageParam: (lastPage) => lastPage.nextCursor,
-})
+        return res.data;
+    },
+    initialPageParam: null,
+    getNextPageParam: lastPage => lastPage.nextCursor,
+});
 
 // Get Profile Snippets
 
 type GetProfileCollectionsSuccessRes = SharedPaginatedSuccessRes<
-  Array<
-    Omit<UserCollection, 'snippetsCount'> &
-      Required<Pick<UserCollection, 'snippetsCount'>>
-  > & {
-    stats: CollectionStats
-  }
+    Array<Omit<UserCollection, 'snippetsCount'> & Required<Pick<UserCollection, 'snippetsCount'>>> & {
+        stats: CollectionStats;
+    }
 > & {
-  stats: {
-    userId: number
-    totalCollections: number
-    publicCollections: number
-    totalSnippets: number
-  }
-}
+    stats: {
+        userId: number;
+        totalCollections: number;
+        publicCollections: number;
+        totalSnippets: number;
+    };
+};
 
 export const getProfileCollectionsOptions = (
-  name: string,
-  getRedirectionUrl?: (newUsername: string) => string,
+    name: string,
+    getRedirectionUrl?: (newUsername: string) => string,
 ) =>
-  infiniteQueryOptions({
-    queryKey: ['collection', 'user', name],
-    queryFn: async ({ pageParam }: { pageParam: Cursor | null }) => {
-      try {
-        const params = new URLSearchParams()
-        if (pageParam) {
-          params.set('cursor', JSON.stringify(pageParam))
-        }
-        const res = await api.get<GetProfileCollectionsSuccessRes>(
-          `${serverEndpoints.getUserCollections(name)}${params ? '?' + params : ''}`,
-        )
-        return res.data
-      } catch (error) {
-        if (error instanceof AxiosError) {
-          if (error.status === 308) {
-            const axiosError = error as AxiosError<{ newUsername: string }>
-            const responseData = axiosError.response?.data
-            if (responseData && 'newUsername' in responseData) {
-              !!getRedirectionUrl &&
-                replaceUrl(getRedirectionUrl?.(responseData.newUsername))
+    infiniteQueryOptions({
+        queryKey: ['collection', 'user', name],
+        queryFn: async ({ pageParam }: { pageParam: Cursor | null }) => {
+            try {
+                const params = new URLSearchParams();
+                if (pageParam) {
+                    params.set('cursor', JSON.stringify(pageParam));
+                }
+                const res = await api.get<GetProfileCollectionsSuccessRes>(
+                    `${serverEndpoints.getUserCollections(name)}${params ? '?' + params : ''}`,
+                );
+                return res.data;
+            } catch (error) {
+                if (error instanceof AxiosError) {
+                    if (error.status === 308) {
+                        const axiosError = error as AxiosError<{ newUsername: string }>;
+                        const responseData = axiosError.response?.data;
+                        if (responseData && 'newUsername' in responseData) {
+                            !!getRedirectionUrl && replaceUrl(getRedirectionUrl?.(responseData.newUsername));
+                        }
+                    }
+                    throw error;
+                }
+                throw error;
             }
-          }
-          throw error
-        }
-        throw error
-      }
-    },
-    initialPageParam: null,
-    getNextPageParam: (lastPage) => lastPage.nextCursor,
-  })
+        },
+        initialPageParam: null,
+        getNextPageParam: lastPage => lastPage.nextCursor,
+    });

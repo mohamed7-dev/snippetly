@@ -6,6 +6,7 @@ export type AppEntityEventType = 'created' | 'updated' | 'deleted' | string;
 /**
  * @description
  * Abstract class extended by all entity events used by the EventBus system.
+ *
  */
 export abstract class AppEntityEvent<Entity, Input = any> extends AppEvent {
     protected constructor(
