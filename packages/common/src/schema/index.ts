@@ -2,8 +2,10 @@ export * from './shared/auth.js';
 export * from './shared/common-schemas.js';
 export * from './shared/errors.js';
 export * from './shared/generated-auth-input.js';
+export * from './shared/generated-error-code.js';
 export * from './shared/generated-language-code.js';
 export * from './shared/generated-permission.js';
+export * from './shared/generated-server-errors.js';
 
 // developer API
 export * from './developer/auth.api.js';
@@ -11,6 +13,7 @@ export * from './developer/collection.api.js';
 export * from './developer/developer.api.js';
 export * from './developer/errors.js';
 export * from './developer/friendship.api.js';
+export * from './developer/slug.api.js';
 export * from './developer/snippet.api.js';
 export * from './developer/tag.api.js';
 

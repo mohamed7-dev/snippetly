@@ -6,7 +6,7 @@
  * - It excludes arrays.
  */
 export function isObject(target: unknown): target is object {
-    return (target && typeof target === 'object' && !Array.isArray(target)) as boolean;
+    return !!target && typeof target === 'object' && !Array.isArray(target);
 }
 
 /**

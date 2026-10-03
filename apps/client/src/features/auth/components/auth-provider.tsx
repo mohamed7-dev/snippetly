@@ -1,6 +1,8 @@
-import { developerApiClient } from '@/lib/api-client.js';
+import { developerApiClient, type ApiSuccess } from '@/lib/api-client.js';
 import { apiEndpoints } from '@/lib/api-endpoints.js';
 import { LOCAL_STORAGE_SESSION_TOKEN_KEY } from '@/lib/constants.js';
+import { toastApiError } from '@/lib/toast-api-error';
+import type { UserType } from '@/lib/types';
 import type { ActiveDeveloperDtoType, AuthenticateDeveloperDtoType } from '@snippetly/common/dto';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import React from 'react';
@@ -11,16 +13,17 @@ type Credentials = AuthenticateDeveloperDtoType['input'];
 
 export interface AuthContextType {
     isAuthenticated: boolean;
+    isActiveAuthMutationInProgress: boolean;
     status: 'initial' | 'authenticated' | 'verifying' | 'unauthenticated';
     errorMessage?: string;
-    login: (credentials: Credentials, onSuccess?: () => void) => void;
-    logout: (onSuccess?: () => void) => Promise<void>;
+    login: (credentials: Credentials, userType: UserType, onSuccess?: () => void) => void;
+    logout: (userType: UserType, onSuccess?: () => void) => Promise<void>;
     refreshActiveUser: () => void;
     /**
      * @description
      * The developer user info.
      */
-    user: ActiveDeveloperDtoType['output'] | undefined;
+    user: ApiSuccess<ActiveDeveloperDtoType['output']> | undefined;
 }
 
 export const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
@@ -42,10 +45,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } = useQuery({
         queryKey: [ACTIVE_USER_QUERY_KEY],
         queryFn: async () => {
-            const res = await developerApiClient.fetch(apiEndpoints.developers.getActiveDeveloper.url, {
-                method: apiEndpoints.developers.getActiveDeveloper.method,
-            });
-            const result = (await res.json()) as ActiveDeveloperDtoType['output'];
+            const result = await developerApiClient.fetch<ActiveDeveloperDtoType['output']>(
+                apiEndpoints.developers.getActiveDeveloper.url,
+                { method: apiEndpoints.developers.getActiveDeveloper.method },
+            );
             if (result === null) {
                 return undefined;
             }
@@ -55,21 +58,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         retry: false, // Disable retries to avoid waiting for multiple attempts
     });
 
-    const login = React.useCallback(
-        (credentials: Credentials, onSuccess?: () => void) => {
-            if (credentials.native) {
-                developerApiClient
-                    .asUserWithCredentials(credentials.native.identifier, credentials.native.password)
-                    .then(async data => {
-                        onLogin(data, onSuccess);
-                    });
-            }
-        },
-        [queryClient, refetchActiveUser],
-    );
-
-    const onLogin = React.useCallback(
-        async (data: AuthenticateDeveloperDtoType['output'], onSuccess?: () => void) => {
+    const onLoginSuccess = React.useCallback(
+        async (data: ApiSuccess<AuthenticateDeveloperDtoType['output']>, onSuccess?: () => void) => {
             if (data?.identifier) {
                 setAuthError(undefined);
                 await refetchActiveUser();
@@ -77,26 +67,44 @@ export function AuthProvider({ children }: AuthProviderProps) {
                 setAuthStatus('authenticated');
                 setIsActiveAuthMutationInProgress(false);
                 onSuccess?.();
-            } else {
-                setAuthError(data?.authenticateAdminUser.message);
-                setAuthStatus('unauthenticated');
-                setIsActiveAuthMutationInProgress(false);
             }
         },
         [],
     );
 
+    const login = React.useCallback(
+        (credentials: Credentials, userType: UserType, onSuccess?: () => void) => {
+            if (credentials.native) {
+                developerApiClient
+                    .asUserWithCredentials(credentials.native.identifier, credentials.native.password)
+                    .then(async data => {
+                        onLoginSuccess(data, onSuccess);
+                    })
+                    .catch(e => {
+                        const formattedErr = toastApiError(e);
+                        setAuthError(formattedErr.title);
+                        setAuthStatus('authenticated');
+                        setIsActiveAuthMutationInProgress(false);
+                    });
+            }
+        },
+        [queryClient, refetchActiveUser, onLoginSuccess],
+    );
+
     const logout = React.useCallback(
-        async (onLogoutSuccess?: () => void) => {
+        async (userType: UserType, onLogoutSuccess?: () => void) => {
             setIsActiveAuthMutationInProgress(true);
             setAuthStatus('verifying');
-            developerApiClient.asAnonymousUser().then(async () => {
-                localStorage.removeItem(LOCAL_STORAGE_SESSION_TOKEN_KEY);
-                queryClient.clear();
-                setAuthStatus('unauthenticated');
-                setIsActiveAuthMutationInProgress(false);
-                onLogoutSuccess?.();
-            });
+            developerApiClient
+                .asAnonymousUser()
+                .then(async () => {
+                    localStorage.removeItem(LOCAL_STORAGE_SESSION_TOKEN_KEY);
+                    queryClient.clear();
+                    setAuthStatus('unauthenticated');
+                    setIsActiveAuthMutationInProgress(false);
+                    onLogoutSuccess?.();
+                })
+                .catch(toastApiError);
         },
         [queryClient],
     );
@@ -120,7 +128,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (!isLoadingActiveUser && authStatus === 'verifying') {
             // user info is done being loaded and the auth status indicates that authentication is done verifying
             // so we need to decide the auth state
-            if (!activeUserError || !activeUserData?.me?.id) {
+            if (!activeUserError || !activeUserData?.id) {
                 setAuthStatus('unauthenticated');
             } else {
                 setAuthStatus('authenticated');
@@ -128,7 +136,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
     }, [authStatus, isLoadingActiveUser, activeUserError, activeUserData, isActiveAuthMutationInProgress]);
 
-    const isAuthenticated = !!activeUserData?.me?.id;
+    const isAuthenticated = !!activeUserData?.id;
 
     const contextValue = React.useMemo(() => {
         return {
@@ -139,7 +147,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
             isAuthenticated,
             refreshActiveUser: invalidateActiveUser,
             user: activeUserData,
+            isActiveAuthMutationInProgress: isActiveAuthMutationInProgress,
         } satisfies AuthContextType;
-    }, [login, logout, authError, authStatus, invalidateActiveUser, isAuthenticated, activeUserData]);
+    }, [
+        login,
+        logout,
+        authError,
+        authStatus,
+        invalidateActiveUser,
+        isAuthenticated,
+        isActiveAuthMutationInProgress,
+        activeUserData,
+    ]);
     return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;
 }

@@ -24,6 +24,7 @@ import { PasswordValidationService } from './helpers/password-validation.service
 import { Populator } from './helpers/populator.service';
 import { RequestContextService } from './helpers/request-context.service';
 import { SlugValidator } from './helpers/slug-validator.service';
+import { SlugService } from './helpers/slug.service';
 import { VerificationTokenGenerator } from './helpers/verification-token-generator.service';
 
 const helpers = [
@@ -37,6 +38,7 @@ const helpers = [
     DefaultRolesBuilder,
     ExternalAuthService,
     Populator,
+    SlugService,
 ];
 
 const services = [

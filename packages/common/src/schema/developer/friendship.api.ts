@@ -4,10 +4,12 @@ import {
     createPaginatedListOutputSchema,
     dateTimeFilterOperators,
     idSchema,
+    InferDtoType,
     sortDirection,
     stringFilterOperators,
 } from '../shared/common-schemas.js';
 import { developer } from '../shared/developer.type.js';
+import { forbiddenErrorSchema, userInputErrorSchema, withServerErrors } from '../shared/errors.js';
 import { friendship } from '../shared/friendship.type.js';
 import { invalidFriendshipActionError } from './errors.js';
 
@@ -28,56 +30,56 @@ const friendshipRequestInput = z.object({
 });
 
 // ############################## Send #############################
-const sendFriendshipRequestOutput = z.union([friendshipItem, invalidFriendshipActionError]);
+const sendFriendshipRequestOutput = withServerErrors(
+    z.union([friendshipItem, invalidFriendshipActionError]),
+    [userInputErrorSchema, forbiddenErrorSchema],
+);
 
 export const sendFriendshipRequestDto = {
     input: friendshipRequestInput,
     output: sendFriendshipRequestOutput,
 };
 
-export interface SendFriendshipRequestDtoType {
-    input: z.infer<typeof friendshipRequestInput>;
-    output: z.infer<typeof sendFriendshipRequestOutput>;
-}
+export type SendFriendshipRequestDtoType = InferDtoType<typeof sendFriendshipRequestDto>;
 
 // ############################## Accept #############################
-const acceptFriendshipRequestOutput = z.union([friendshipItem, invalidFriendshipActionError]);
+const acceptFriendshipRequestOutput = withServerErrors(
+    z.union([friendshipItem, invalidFriendshipActionError]),
+    [userInputErrorSchema, forbiddenErrorSchema],
+);
 
 export const acceptFriendshipRequestDto = {
     input: friendshipRequestInput,
     output: acceptFriendshipRequestOutput,
 };
 
-export interface AcceptFriendshipRequestDtoType {
-    input: z.infer<typeof friendshipRequestInput>;
-    output: z.infer<typeof acceptFriendshipRequestOutput>;
-}
+export type AcceptFriendshipRequestDtoType = InferDtoType<typeof acceptFriendshipRequestDto>;
 
 // ############################## Reject #############################
-const rejectFriendshipRequestOutput = z.union([friendshipItem, invalidFriendshipActionError]);
+const rejectFriendshipRequestOutput = withServerErrors(
+    z.union([friendshipItem, invalidFriendshipActionError]),
+    [userInputErrorSchema, forbiddenErrorSchema],
+);
 
 export const rejectFriendshipRequestDto = {
     input: friendshipRequestInput,
     output: rejectFriendshipRequestOutput,
 };
 
-export interface RejectFriendshipRequestDtoType {
-    input: z.infer<typeof friendshipRequestInput>;
-    output: z.infer<typeof rejectFriendshipRequestOutput>;
-}
+export type RejectFriendshipRequestDtoType = InferDtoType<typeof rejectFriendshipRequestDto>;
 
 // ############################## Cancel #############################
-const cancelFriendshipRequestOutput = z.union([friendshipItem, invalidFriendshipActionError]);
+const cancelFriendshipRequestOutput = withServerErrors(
+    z.union([friendshipItem, invalidFriendshipActionError]),
+    [userInputErrorSchema, forbiddenErrorSchema],
+);
 
 export const cancelFriendshipRequestDto = {
     input: friendshipRequestInput,
     output: cancelFriendshipRequestOutput,
 };
 
-export interface CancelFriendshipRequestDtoType {
-    input: z.infer<typeof friendshipRequestInput>;
-    output: z.infer<typeof cancelFriendshipRequestOutput>;
-}
+export type CancelFriendshipRequestDtoType = InferDtoType<typeof cancelFriendshipRequestDto>;
 
 // ############################## Friends #############################
 const filterSchema = z.object({
@@ -101,48 +103,48 @@ const currentUserFriendsListInput = createPaginatedListInputSchema(
     .unwrap()
     .partial();
 
-const currentUserFriendsListOutput = createPaginatedListOutputSchema(friendshipItem);
+const currentUserFriendsListOutput = withServerErrors(createPaginatedListOutputSchema(friendshipItem), [
+    userInputErrorSchema,
+    forbiddenErrorSchema,
+]);
 
 export const currentUserFriendsListDto = {
     input: currentUserFriendsListInput,
     output: currentUserFriendsListOutput,
 };
 
-export interface CurrentUserFriendsListDtoType {
-    input: z.infer<typeof currentUserFriendsListInput>;
-    output: z.infer<typeof currentUserFriendsListOutput>;
-}
+export type CurrentUserFriendsListDtoType = InferDtoType<typeof currentUserFriendsListDto>;
 
 // ############################## Inbox #############################
 const currentUserInboxListInput = createPaginatedListInputSchema(z.object({}), z.object({}))
     .unwrap()
     .partial();
 
-const currentUserInboxListOutput = createPaginatedListOutputSchema(friendshipItem);
+const currentUserInboxListOutput = withServerErrors(createPaginatedListOutputSchema(friendshipItem), [
+    userInputErrorSchema,
+    forbiddenErrorSchema,
+]);
 
 export const currentUserInboxListDto = {
     input: currentUserInboxListInput,
     output: currentUserInboxListOutput,
 };
 
-export interface CurrentUserInboxListDtoType {
-    input: z.infer<typeof currentUserInboxListInput>;
-    output: z.infer<typeof currentUserInboxListOutput>;
-}
+export type CurrentUserInboxListDtoType = InferDtoType<typeof currentUserInboxListDto>;
 
 // ############################## Outbox #############################
 const currentUserOutboxListInput = createPaginatedListInputSchema(z.object({}), z.object({}))
     .unwrap()
     .partial();
 
-const currentUserOutboxListOutput = createPaginatedListOutputSchema(friendshipItem);
+const currentUserOutboxListOutput = withServerErrors(createPaginatedListOutputSchema(friendshipItem), [
+    userInputErrorSchema,
+    forbiddenErrorSchema,
+]);
 
 export const currentUserOutboxListDto = {
     input: currentUserOutboxListInput,
     output: currentUserOutboxListOutput,
 };
 
-export interface CurrentUserOutboxListDtoType {
-    input: z.infer<typeof currentUserOutboxListInput>;
-    output: z.infer<typeof currentUserOutboxListOutput>;
-}
+export type CurrentUserOutboxListDtoType = InferDtoType<typeof currentUserOutboxListDto>;

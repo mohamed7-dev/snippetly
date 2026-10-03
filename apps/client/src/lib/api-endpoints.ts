@@ -6,7 +6,7 @@ export const apiUrl = (path: string) => {
 
 export interface ApiEndpoint {
     url: string | ((...args: never[]) => string);
-    method: 'GET' | 'POST' | 'PATCH' | 'DELETE';
+    method: 'GET' | 'POST' | 'PATCH' | 'DELETE' | 'PUT';
     contentType?: 'application/json' | null;
 }
 
@@ -25,11 +25,11 @@ export const apiEndpoints = {
             url: 'auth/accounts/me',
             method: 'PATCH',
         },
-        authenticateDeveloper: {
+        authenticate: {
             url: 'auth/sessions',
             method: 'POST',
         },
-        logoutDeveloper: {
+        logout: {
             url: 'auth/sessions/current',
             method: 'DELETE',
             contentType: null,
@@ -83,17 +83,17 @@ export const apiEndpoints = {
             contentType: null,
         },
         list: {
-            url: (searchParams: URLSearchParams) => `snippets/${searchParams.toString()}`,
+            url: (searchParams: URLSearchParams) => `snippets?${searchParams.toString()}`,
             method: 'GET',
             contentType: null,
         },
         listMine: {
-            url: (searchParams: URLSearchParams) => `snippets/me/${searchParams.toString()}`,
+            url: (searchParams: URLSearchParams) => `snippets/me?${searchParams.toString()}`,
             method: 'GET',
             contentType: null,
         },
         listFriends: {
-            url: (searchParams: URLSearchParams) => `snippets/friends/${searchParams.toString()}`,
+            url: (searchParams: URLSearchParams) => `snippets/friends?${searchParams.toString()}`,
             method: 'GET',
             contentType: null,
         },
@@ -123,12 +123,12 @@ export const apiEndpoints = {
             contentType: null,
         },
         list: {
-            url: (searchParams: URLSearchParams) => `collections/${searchParams.toString()}`,
+            url: (searchParams: URLSearchParams) => `collections?${searchParams.toString()}`,
             method: 'GET',
             contentType: null,
         },
         listMine: {
-            url: (searchParams: URLSearchParams) => `collections/me/${searchParams.toString()}`,
+            url: (searchParams: URLSearchParams) => `collections/me?${searchParams.toString()}`,
             method: 'GET',
             contentType: null,
         },
@@ -154,7 +154,7 @@ export const apiEndpoints = {
             contentType: null,
         },
         list: {
-            url: (searchParams: URLSearchParams) => `developers/${searchParams.toString()}`,
+            url: (searchParams: URLSearchParams) => `developers?${searchParams.toString()}`,
             method: 'GET',
             contentType: null,
         },
@@ -201,6 +201,12 @@ export const apiEndpoints = {
             url: (searchParams: URLSearchParams) => `friendships/outbox?${searchParams.toString()}`,
             method: 'GET',
             contentType: null,
+        },
+    },
+    slugs: {
+        generateSlugForEntity: {
+            url: `slugs`,
+            method: 'PUT',
         },
     },
 } as const satisfies Record<string, Record<string, ApiEndpoint>>;

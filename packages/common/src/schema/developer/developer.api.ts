@@ -4,25 +4,30 @@ import {
     createPaginatedListInputSchema,
     createPaginatedListOutputSchema,
     deletionResponse,
+    InferDtoType,
     inputIdSchema,
     sortDirection,
     stringFilterOperators,
 } from '../shared/common-schemas.js';
 import { developer } from '../shared/developer.type.js';
+import {
+    entityNotFoundErrorSchema,
+    forbiddenErrorSchema,
+    userInputErrorSchema,
+    withServerErrors,
+} from '../shared/errors.js';
+import { friendshipStatusSchema } from '../shared/friendship.type.js';
 
 //############################ Get Active Developer Account ############################
 
-const activeDeveloperOutput = developer.nullable();
+const activeDeveloperOutput = withServerErrors(developer.nullable(), [forbiddenErrorSchema]);
 
 export const activeDeveloperDto = {
     input: z.null(),
     output: activeDeveloperOutput,
 };
 
-export type ActiveDeveloperDtoType = {
-    input: null;
-    output: z.infer<typeof activeDeveloperOutput>;
-};
+export type ActiveDeveloperDtoType = InferDtoType<typeof activeDeveloperDto>;
 
 //############################ Update Developer Account ############################
 const updateDeveloperAccountInput = developer
@@ -36,37 +41,48 @@ const updateDeveloperAccountInput = developer
     })
     .partial();
 
-const updateDeveloperAccountOutput = developer;
+const updateDeveloperAccountOutput = withServerErrors(developer, [
+    userInputErrorSchema,
+    forbiddenErrorSchema,
+]);
 
 export const updateDeveloperAccountDto = {
     input: updateDeveloperAccountInput,
     output: updateDeveloperAccountOutput,
 };
 
-export type UpdateDeveloperAccountDtoType = {
-    input: z.infer<typeof updateDeveloperAccountInput>;
-    output: z.infer<typeof updateDeveloperAccountOutput>;
-};
+export type UpdateDeveloperAccountDtoType = InferDtoType<typeof updateDeveloperAccountDto>;
 
 //############################ Delete Developer Account ############################
 
-const deleteDeveloperAccountOutput = deletionResponse;
+const deleteDeveloperAccountOutput = withServerErrors(deletionResponse, [forbiddenErrorSchema]);
 
 export const deleteDeveloperAccountDto = {
     input: z.null(),
     output: deleteDeveloperAccountOutput,
 };
 
-export type DeleteDeveloperAccountDtoType = {
-    input: null;
-    output: z.infer<typeof deleteDeveloperAccountOutput>;
-};
+export type DeleteDeveloperAccountDtoType = InferDtoType<typeof deleteDeveloperAccountDto>;
 
 //############################ FindOne ############################
 
 const findOneDeveloperInput = inputIdSchema;
 
-const developerItem = developer;
+const developerProfileInfo = z.object({
+    friendCount: z.number().int().nonnegative(),
+    friendshipInfo: z.object({
+        isCurrentUserAFriend: z.boolean(),
+        requestStatus: friendshipStatusSchema.nullable(),
+    }),
+    stats: z.object({
+        snippetsCount: z.number().int().nonnegative(),
+        collectionsCount: z.number().int().nonnegative(),
+        friendsCount: z.number().int().nonnegative(),
+        forkedSnippetsCount: z.number().int().nonnegative(),
+        forkedCollectionsCount: z.number().int().nonnegative(),
+    }),
+});
+const developerItem = developer.extend(developerProfileInfo.shape);
 
 const publicDeveloperItem = developerItem.pick({
     id: true,
@@ -79,17 +95,17 @@ const publicDeveloperItem = developerItem.pick({
 
 const privateDeveloperItem = developerItem;
 
-const findOneDeveloperOutput = z.union([privateDeveloperItem, publicDeveloperItem]);
+const findOneDeveloperOutput = withServerErrors(z.union([privateDeveloperItem, publicDeveloperItem]), [
+    userInputErrorSchema,
+    entityNotFoundErrorSchema,
+]);
 
 export const findOneDeveloperDto = {
     input: findOneDeveloperInput,
     output: findOneDeveloperOutput,
 };
 
-export type FindOneDeveloperDtoType = {
-    input: z.infer<typeof findOneDeveloperInput>;
-    output: z.infer<typeof findOneDeveloperOutput>;
-};
+export type FindOneDeveloperDtoType = InferDtoType<typeof findOneDeveloperDto>;
 
 //############################ List Developers ############################
 
@@ -126,14 +142,13 @@ const developerListItem = developer.pick({
     image: true,
 });
 
-const developerListOutput = createPaginatedListOutputSchema(developerListItem);
+const developerListOutput = withServerErrors(createPaginatedListOutputSchema(developerListItem), [
+    userInputErrorSchema,
+]);
 
 export const developerListDto = {
     input: developerListInput,
     output: developerListOutput,
 };
 
-export type DeveloperListDtoType = {
-    input: z.infer<typeof developerListInput>;
-    output: z.infer<typeof developerListOutput>;
-};
+export type DeveloperListDtoType = InferDtoType<typeof developerListDto>;

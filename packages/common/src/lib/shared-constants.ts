@@ -10,3 +10,4 @@ export const DEVELOPER_ROLE_NAME = '__developer__';
 export const DEVELOPER_ROLE_DESCRIPTION = 'Developer';
 export const API_PORT = 3000;
 export const AUTH_TOKEN_HEADER_KEY = 'x-session-token';
+export const APP_NAME = 'Snippetly';

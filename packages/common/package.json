@@ -22,7 +22,7 @@
     },
     "scripts": {
         "dev": "tsc -p ./build/tsconfig.build.json -w",
-        "build": "rimraf dist & tsc -p ./build/tsconfig.build.json",
+        "build": "rimraf dist && tsc -p ./build/tsconfig.build.json",
         "lint": "eslint --fix .",
         "format": "prettier --write .",
         "test": "vitest"

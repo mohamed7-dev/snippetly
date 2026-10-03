@@ -1,131 +1,84 @@
+import { Button } from '@/components/ui/button';
 import {
-  EditIcon,
-  GitForkIcon,
-  MoreHorizontalIcon,
-  Trash2Icon,
-} from 'lucide-react'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Button } from '@/components/ui/button'
-import { Link } from '@tanstack/react-router'
-import { clientRoutes } from '@/lib/routes'
-import type { Collection } from '../../lib/types'
-import {
-  useForkCollection,
-  type ForkCollectionErrorRes,
-  type ForkCollectionSuccessRes,
-} from '../../hooks/use-fork-collection'
-import { useAuth } from '@/features/auth/components/auth-provider'
-import { useDeleteConfirmation } from '@/components/providers/delete-confirmation-provider'
-import {
-  useDeleteCollection,
-  type DeleteCollectionErrorRes,
-  type DeleteCollectionSuccessRes,
-} from '../../hooks/use-delete-collection'
-import type { AsyncActionCallback } from '@/lib/types'
-import { toast } from 'sonner'
-import React from 'react'
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useAuth } from '@/features/auth/hooks/use-auth';
+import { DeleteCollectionButton } from '@/features/collection-delete/components/delete-collection-button';
+import type { DeleteCollectionMutationCallbacks } from '@/features/collection-delete/hooks/use-delete-collection';
+import { ForkCollectionButton } from '@/features/collection-fork/components/fork-collection-button';
+import type { ForkCollectionMutationCallbacks } from '@/features/collection-fork/hooks/use-fork-collection';
+import type { ApiSuccess } from '@/lib/api-client';
+import type { CollectionListDtoType } from '@snippetly/common/dto';
+import { Link } from '@tanstack/react-router';
+import { EditIcon, MoreHorizontalIcon } from 'lucide-react';
+import React from 'react';
 
 export type CollectionActionMenuProps = {
-  collection: Pick<Collection, 'publicId' | 'creatorName' | 'title'>
-  deleteCollection?: AsyncActionCallback<
-    DeleteCollectionSuccessRes,
-    DeleteCollectionErrorRes
-  >
-  forkCollection?: AsyncActionCallback<
-    ForkCollectionSuccessRes,
-    ForkCollectionErrorRes
-  >
-}
+    collection: ApiSuccess<CollectionListDtoType['output']>['items'][number];
+    deleteCollection?: DeleteCollectionMutationCallbacks;
+    forkCollection?: ForkCollectionMutationCallbacks;
+};
 export function CollectionActionMenu({
-  collection,
-  deleteCollection,
-  forkCollection,
+    collection,
+    deleteCollection,
+    forkCollection,
 }: CollectionActionMenuProps) {
-  const auth = useAuth()
-  const user = auth.getCurrentUser()
-  const [open, setOpen] = React.useState(false)
-  // fork
-  const { onClick: fork, isPending: isForking } = useForkCollection({
-    ...forkCollection,
-    onSuccess: (data) => {
-      toast.success(data.message)
-      forkCollection?.onSuccess?.(data)
-      setOpen(false)
-    },
-    onError: (error) => {
-      toast.error(error.response?.data.message)
-      forkCollection?.onError?.(error)
-    },
-  })
-  const handleForking = () => {
-    fork({ slug: collection.publicId })
-  }
+    const { user } = useAuth();
+    const [open, setOpen] = React.useState(false);
 
-  // delete
-  const { confirm } = useDeleteConfirmation()
-  const { mutateAsync: deleteCollectionAction, isPending: isDeleting } =
-    useDeleteCollection({
-      ...deleteCollection,
-      onSuccess: (data) => {
-        toast.success(data.message)
-        deleteCollection?.onSuccess?.(data)
-        setOpen(false)
-      },
-      onError: (error) => {
-        toast.error(error.response?.data.message)
-        deleteCollection?.onError?.(error)
-      },
-    })
-  const handleDeletingCollection = () => {
-    confirm({
-      title: `Delete Collection ${collection.title}`,
-      onConfirm: async () => {
-        await deleteCollectionAction({ slug: collection.publicId })
-      },
-      isPending: isDeleting,
-    })
-  }
-  return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm">
-          <MoreHorizontalIcon className="h-4 w-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        {collection.creatorName === user?.name && (
-          <DropdownMenuItem asChild>
-            <Link
-              to={clientRoutes.editCollection}
-              params={{ slug: collection.publicId }}
-            >
-              <EditIcon className="mr-2 h-4 w-4" />
-              Edit Collection
-            </Link>
-          </DropdownMenuItem>
-        )}
-        {user?.name !== collection.creatorName && (
-          <DropdownMenuItem onClick={handleForking} disabled={isForking}>
-            <GitForkIcon className="mr-2 h-4 w-4" />
-            Fork Collection
-          </DropdownMenuItem>
-        )}
+    return (
+        <DropdownMenu open={open} onOpenChange={setOpen}>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm">
+                    <MoreHorizontalIcon className="h-4 w-4" />
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+                {collection.creator.id === user?.id && (
+                    <DropdownMenuItem asChild>
+                        <Button variant={'ghost'} className="justify-start" asChild>
+                            <Link to={'/dashboard/collections/$id/edit'} params={{ id: collection.id }}>
+                                <EditIcon className="mr-2 h-4 w-4" />
+                                Edit Collection
+                            </Link>
+                        </Button>
+                    </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onSelect={e => e.preventDefault()} asChild>
+                    <ForkCollectionButton
+                        variant={'ghost'}
+                        collectionId={collection.id}
+                        mutationCallbacks={{
+                            ...forkCollection,
+                            onSuccess: (...props) => {
+                                setOpen(false);
+                                forkCollection?.onSuccess?.(...props);
+                            },
+                        }}
+                        className="justify-start"
+                    />
+                </DropdownMenuItem>
 
-        {collection.creatorName === user?.name && (
-          <DropdownMenuItem
-            className="text-destructive focus:text-destructive"
-            onClick={handleDeletingCollection}
-          >
-            <Trash2Icon className="mr-2 h-4 w-4" />
-            Delete Collection
-          </DropdownMenuItem>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
+                {collection.creator.id === user?.id && (
+                    <DropdownMenuItem onSelect={e => e.preventDefault()} asChild>
+                        <DeleteCollectionButton
+                            collectionId={collection.id}
+                            mutationCallbacks={{
+                                ...deleteCollection,
+                                onSuccess: (...props) => {
+                                    setOpen(false);
+                                    deleteCollection?.onSuccess?.(...props);
+                                },
+                            }}
+                            className="justify-start"
+                            variant={'ghost'}
+                        />
+                    </DropdownMenuItem>
+                )}
+            </DropdownMenuContent>
+        </DropdownMenu>
+    );
 }

@@ -14,7 +14,7 @@ export async function bootstrap(
 
     const app = new App(AppModule);
     app.expressApp.set('trust proxy', finalConfig.api.trustProxy);
-
+    exposeHeaders(finalConfig);
     if (options.listen === false) {
         await app.initialize();
     } else {
@@ -30,4 +30,24 @@ export function runPreConfig(config?: PartialAppConfig): RuntimeAppConfig {
         AppConfigUtils.setConfig(config);
     }
     return AppConfigUtils.getConfig();
+}
+
+function exposeHeaders(config: RuntimeAppConfig) {
+    const authTokenHeaderKey = config.auth.authTokenHeaderKey;
+    const corsOptions = config.api.cors;
+    if (typeof corsOptions !== 'boolean') {
+        const { exposedHeaders } = corsOptions;
+        let exposedHeadersWithAuthKey: string[];
+        if (!exposedHeaders) {
+            exposedHeadersWithAuthKey = [authTokenHeaderKey];
+        } else if (typeof exposedHeaders === 'string') {
+            exposedHeadersWithAuthKey = exposedHeaders
+                .split(',')
+                .map(x => x.trim())
+                .concat(authTokenHeaderKey);
+        } else {
+            exposedHeadersWithAuthKey = exposedHeaders.concat(authTokenHeaderKey);
+        }
+        corsOptions.exposedHeaders = exposedHeadersWithAuthKey;
+    }
 }

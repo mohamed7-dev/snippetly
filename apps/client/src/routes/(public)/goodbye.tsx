@@ -1,29 +1,29 @@
-import { GoodbyePageView } from '@/components/views/goodbye-page-view'
-import { createFileRoute, redirect } from '@tanstack/react-router'
-import z from 'zod'
+import { GoodbyePage as BaseGoodbyePage } from '@/features/app-shell/components/goodbye/goodbye-page';
+import { createFileRoute, redirect } from '@tanstack/react-router';
+import z from 'zod';
 
 const searchSchema = z.object({
-  ['redirected-from-delete']: z.boolean().catch(false),
-})
+    ['redirected-from-delete']: z.boolean().catch(false),
+});
 export const Route = createFileRoute('/(public)/goodbye')({
-  component: GoodbyePage,
-  validateSearch: searchSchema,
-  beforeLoad: ({ search }) => {
-    if (!search['redirected-from-delete']) {
-      throw redirect({
-        to: '/',
-      })
-    }
-  },
-})
+    component: GoodbyePage,
+    validateSearch: searchSchema,
+    beforeLoad: ({ search }) => {
+        if (!search['redirected-from-delete']) {
+            throw redirect({
+                to: '/',
+            });
+        }
+    },
+});
 
 function GoodbyePage() {
-  const search = Route.useSearch()
+    const search = Route.useSearch();
 
-  if (!search['redirected-from-delete']) {
-    throw redirect({
-      to: '/',
-    })
-  }
-  return <GoodbyePageView />
+    if (!search['redirected-from-delete']) {
+        throw redirect({
+            to: '/',
+        });
+    }
+    return <BaseGoodbyePage />;
 }

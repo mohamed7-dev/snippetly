@@ -1,70 +1,70 @@
-import { useFilter } from '@/components/filter-menu'
-import { InfiniteLoader } from '@/components/loaders/infinite-loader'
-import { Button } from '@/components/ui/button'
-import { SnippetCard } from '@/features/snippets/components/snippet-card'
-import { getCurrentSnippetsOptions } from '@/features/snippets/lib/api'
-import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query'
-import { Link, useSearch } from '@tanstack/react-router'
-import { Code2Icon, PlusIcon } from 'lucide-react'
-import React from 'react'
+import { InfiniteLoader } from '@/components/feedback/infinite-loader';
+import { StatusCard } from '@/components/feedback/status-card';
+import { useFilter } from '@/components/filter-menu';
+import { Button } from '@/components/ui/button';
+import { SnippetCard } from '@/features/snippets/components/snippet-card';
+import { getCurrentSnippetsOptions } from '@/features/snippets/lib/api';
+import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import { Link, useSearch } from '@tanstack/react-router';
+import { PlusIcon } from 'lucide-react';
+import React from 'react';
 
 export function SnippetsSection() {
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    useSuspenseInfiniteQuery(getCurrentSnippetsOptions)
-  console.log({ data })
-  const snippets = data.pages.flatMap((p) => p.data.items) ?? []
-  const { filter } = useSearch({
-    from: '/(protected)/dashboard/_dashboard-layout/_error-boundary/',
-  })
+    const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
+        useSuspenseInfiniteQuery(getCurrentSnippetsOptions);
+    console.log({ data });
+    const snippets = data.pages.flatMap(p => p.data.items) ?? [];
+    const { filter } = useSearch({
+        from: '/(protected)/dashboard/_dashboard-layout/_error-boundary/',
+    });
 
-  const filteredSnippets = useFilter<typeof snippets>({
-    data: snippets,
-    filter,
-  })
-  const qClient = useQueryClient()
-  const onMutateSnippetSuccess = () => {
-    qClient.invalidateQueries({ queryKey: ['users', 'current', 'dashboard'] })
-  }
-  return (
-    <React.Fragment>
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {filteredSnippets?.map((snippet) => (
-          <SnippetCard
-            key={snippet.slug}
-            snippet={{ ...snippet }}
-            deleteSnippet={{
-              onSuccess: onMutateSnippetSuccess,
-            }}
-            forkSnippet={{
-              onSuccess: onMutateSnippetSuccess,
-            }}
-          />
-        ))}
-      </div>
-      <InfiniteLoader
-        fetchNextPage={fetchNextPage}
-        hasNextPage={hasNextPage}
-        isFetchingNextPage={isFetchingNextPage}
-        Content={
-          !filteredSnippets.length ? (
-            <div className="text-center py-12">
-              <Code2Icon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="font-heading font-semibold text-lg mb-2">
-                No snippets yet
-              </h3>
-              <p className="text-muted-foreground mb-4">
-                Create your first code snippet to get started
-              </p>
-              <Button asChild>
-                <Link to="/dashboard/snippets/new">
-                  <PlusIcon className="h-4 w-4 mr-2" />
-                  <span>Create Snippet</span>
-                </Link>
-              </Button>
+    const filteredSnippets = useFilter<typeof snippets>({
+        data: snippets,
+        filter,
+    });
+    const qClient = useQueryClient();
+    const onMutateSnippetSuccess = () => {
+        qClient.invalidateQueries({ queryKey: ['users', 'current', 'dashboard'] });
+    };
+    return (
+        <React.Fragment>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {filteredSnippets?.map(snippet => (
+                    <SnippetCard
+                        key={snippet.slug}
+                        snippet={{ ...snippet }}
+                        deleteSnippet={{
+                            onSuccess: onMutateSnippetSuccess,
+                        }}
+                        forkSnippet={{
+                            onSuccess: onMutateSnippetSuccess,
+                        }}
+                    />
+                ))}
             </div>
-          ) : null
-        }
-      />
-    </React.Fragment>
-  )
+            <InfiniteLoader
+                fetchNextPage={fetchNextPage}
+                hasNextPage={hasNextPage}
+                isFetchingNextPage={isFetchingNextPage}
+                Content={
+                    !filteredSnippets.length ? (
+                        <StatusCard
+                            variant="empty"
+                            title="No snippets yet"
+                            description="Create your first code snippet to get started"
+                            layout="section"
+                            actions={
+                                <Button asChild>
+                                    <Link to="/dashboard/snippets/new">
+                                        <PlusIcon className="h-4 w-4 mr-2" />
+                                        <span>Create Snippet</span>
+                                    </Link>
+                                </Button>
+                            }
+                        />
+                    ) : null
+                }
+            />
+        </React.Fragment>
+    );
 }

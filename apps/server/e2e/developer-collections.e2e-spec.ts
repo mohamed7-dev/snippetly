@@ -172,6 +172,7 @@ describe('Developer Collection Workflows', () => {
                 const result = (await res.json()) as FindOneCollectionDtoType['output'];
 
                 expect(result.id).toBe(collection.id);
+                expect(result.snippetCount).toEqual(expect.any(Number));
                 assertPrivateFieldsExist(result);
             });
 
@@ -228,6 +229,7 @@ describe('Developer Collection Workflows', () => {
             });
             const result = (await res.json()) as FindOneCollectionDtoType['output'];
             expect(result.id).toBe(targetCollectionToMutate.id);
+            expect(result.snippetCount).toEqual(expect.any(Number));
             assertPrivateFieldsAbsent(result);
         });
 
@@ -310,6 +312,19 @@ describe('Developer Collection Workflows', () => {
             if (result.items.length > 0) {
                 const item = result.items[0];
                 assertPrivateFieldsAbsent(item);
+
+                const expectedSnippets = server.state.snippets
+                    .filter(
+                        snippet =>
+                            snippet.collection?.id === item.id && !snippet.deletedAt && !snippet.isPrivate,
+                    )
+                    .sort(
+                        (a, b) => b.createdAt.getTime() - a.createdAt.getTime() || b.id.localeCompare(a.id),
+                    );
+                expect(item.snippetCount).toBe(expectedSnippets.length);
+                expect(item.snippets).toEqual(
+                    expectedSnippets.slice(0, 5).map(({ id, name, language }) => ({ id, name, language })),
+                );
             }
         });
 

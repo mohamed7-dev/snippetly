@@ -2,8 +2,10 @@ import { App, bootstrap, Logger, LogLevel, StdoutLoggerStrategy } from '@snippet
 import path from 'node:path';
 import { generateAuthInputDto } from './generate-auth-input-dto';
 import { generateErrorClasses } from './generate-error-classes-dtos';
+import { generateErrorCodesEnum } from './generate-error-codes-enum';
 import { generateLanguageCodeEnum } from './generate-language-code-enum';
 import { generatePermissionEnum } from './generate-permissions-enum';
+import { generateServerErrorSchemas } from './generate-server-error-schemas';
 
 let cachedAppPromise: Promise<any> | undefined = undefined;
 
@@ -33,11 +35,13 @@ async function generateTypes() {
         .then(async app => {
             Logger.info('Attempting to generate types...', LoggerContextName);
 
+            const errorSchemaDirPaths = [
+                path.resolve('.', 'packages', 'common', 'src', 'schema', 'developer'),
+                path.resolve('.', 'packages', 'common', 'src', 'schema', 'shared'),
+            ];
+
             await generateErrorClasses(
-                [
-                    path.resolve('.', 'packages', 'common', 'src', 'schema', 'developer'),
-                    path.resolve('.', 'packages', 'common', 'src', 'schema', 'shared'),
-                ],
+                errorSchemaDirPaths,
                 path.resolve(
                     '.',
                     'apps',
@@ -46,6 +50,23 @@ async function generateTypes() {
                     'common',
                     'errors',
                     'generated-developer-errors.ts',
+                ),
+            );
+
+            await generateErrorCodesEnum(
+                errorSchemaDirPaths,
+                path.resolve('.', 'packages', 'common', 'src', 'schema', 'shared', 'generated-error-code.ts'),
+            );
+
+            await generateServerErrorSchemas(
+                path.resolve(
+                    '.',
+                    'packages',
+                    'common',
+                    'src',
+                    'schema',
+                    'shared',
+                    'generated-server-errors.ts',
                 ),
             );
 

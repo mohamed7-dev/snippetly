@@ -111,7 +111,7 @@ export class SnippetService {
             friendship.requester.id === developerId ? friendship.addressee.id : friendship.requester.id,
         );
 
-        const qb = this.listQueryBuilder.build(Snippet, input, {
+        const qb = this.listQueryBuilder.build(Snippet, input as any, {
             ctx,
             where: {
                 creator: { id: In(friendIds) },
@@ -137,7 +137,7 @@ export class SnippetService {
         input: SnippetListDtoType['input'],
         relations?: FindOptionsRelations<Snippet>,
     ) {
-        const qb = this.listQueryBuilder.build(Snippet, input, {
+        const qb = this.listQueryBuilder.build(Snippet, input as any, {
             ctx,
             relations: {
                 creator: true,

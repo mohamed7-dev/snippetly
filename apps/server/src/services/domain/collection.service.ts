@@ -13,6 +13,7 @@ import { FindOptionsRelations, IsNull } from 'typeorm';
 import { RequestContext } from '../../api/request-context/request-context';
 import { EntityNotFoundError, ForbiddenError } from '../../common/errors/errors';
 import { Collection } from '../../entities/collections/collection.entity';
+import { Snippet } from '../../entities/snippets/snippet.entity';
 import { DatabaseService } from '../../infra/database/database.service';
 import { patchEntity } from '../../infra/database/patch-entity';
 import { EventBus } from '../../infra/event-bus/event-bus.service';
@@ -50,14 +51,28 @@ export class CollectionService {
             },
         });
 
-        return collection ?? undefined;
+        if (!collection) {
+            return undefined;
+        }
+
+        const isOwner = ctx.activeUserId === collection.creator?.user?.id;
+        const snippetCount = await this.databaseService.getRepository(ctx, Snippet).count({
+            where: {
+                collection: { id: collection.id },
+                deletedAt: IsNull(),
+                ...(isOwner ? {} : { isPrivate: false }),
+            },
+        });
+
+        return { ...collection, snippetCount };
     }
     public async find(
         ctx: RequestContext,
         input: CollectionListDtoType['input'],
         relations?: FindOptionsRelations<Collection>,
+        includePrivateSnippets = false,
     ) {
-        const qb = this.listQueryBuilder.build(Collection, input, {
+        const qb = this.listQueryBuilder.build(Collection, input as any, {
             ctx,
             relations,
             alias: 'c',
@@ -91,10 +106,73 @@ export class CollectionService {
             });
         }
 
-        return await qb.getManyAndCount().then(result => ({
-            items: result[0],
-            itemsCount: result[1],
-        }));
+        const [items, itemsCount] = await qb.getManyAndCount();
+        if (items.length === 0) {
+            return { items, itemsCount };
+        }
+
+        const snippetsQuery = this.databaseService
+            .getRepository(ctx, Snippet)
+            .createQueryBuilder('snippet')
+            .innerJoin('snippet.collection', 'collection')
+            .select('collection.id', 'collectionId')
+            .addSelect('snippet.id', 'snippetId')
+            .addSelect('snippet.name', 'snippetName')
+            .addSelect('snippet.language', 'snippetLanguage')
+            .addSelect('COUNT(snippet.id) OVER (PARTITION BY collection.id)', 'snippetCount')
+            .addSelect(
+                'ROW_NUMBER() OVER (PARTITION BY collection.id ORDER BY snippet.createdAt DESC, snippet.id DESC)',
+                'rowNumber',
+            )
+            .where('collection.id IN (:...collectionIds)', { collectionIds: items.map(item => item.id) })
+            .andWhere('snippet.deletedAt IS NULL');
+
+        if (!includePrivateSnippets) {
+            snippetsQuery.andWhere('snippet.isPrivate = :isPrivate', { isPrivate: false });
+        }
+
+        const snippetRows = await snippetsQuery.connection
+            .createQueryBuilder()
+            .select('ranked."collectionId"', 'collectionId')
+            .addSelect('ranked."snippetId"', 'snippetId')
+            .addSelect('ranked."snippetName"', 'snippetName')
+            .addSelect('ranked."snippetLanguage"', 'snippetLanguage')
+            .addSelect('ranked."snippetCount"', 'snippetCount')
+            .from(`(${snippetsQuery.getQuery()})`, 'ranked')
+            .where('ranked."rowNumber" <= :previewLimit', { previewLimit: 5 })
+            .orderBy('ranked."collectionId"', 'ASC')
+            .addOrderBy('ranked."rowNumber"', 'ASC')
+            .setParameters(snippetsQuery.getParameters())
+            .getRawMany<{
+                collectionId: string;
+                snippetId: string;
+                snippetName: string;
+                snippetLanguage: string;
+                snippetCount: string;
+            }>();
+
+        const snippetCountByCollection = new Map<string, number>();
+        const snippetsByCollection = new Map<string, Array<{ id: string; name: string; language: string }>>();
+
+        for (const row of snippetRows) {
+            snippetCountByCollection.set(row.collectionId, Number(row.snippetCount));
+            const snippets = snippetsByCollection.get(row.collectionId) ?? [];
+            snippets.push({
+                id: row.snippetId,
+                name: row.snippetName,
+                language: row.snippetLanguage,
+            });
+            snippetsByCollection.set(row.collectionId, snippets);
+        }
+
+        return {
+            items: items.map(item => ({
+                ...item,
+                snippetCount: snippetCountByCollection.get(item.id) ?? 0,
+                snippets: snippetsByCollection.get(item.id) ?? [],
+            })),
+            itemsCount,
+        };
     }
 
     public async create(ctx: RequestContext, input: CreateCollectionDtoType['input']) {

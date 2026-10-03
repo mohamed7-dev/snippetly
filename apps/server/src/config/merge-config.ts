@@ -15,7 +15,6 @@ export function mergeConfig<Target extends RuntimeAppConfig>(
         // clone dest to keep original dest object un-mutated
         dest = simpleDeepClone(dest);
     }
-
     if (isObject(src) && isObject(dest)) {
         for (const key in src) {
             if (OBJECT_PROTOTYPE_KEYS.includes(key)) {
@@ -34,6 +33,7 @@ export function mergeConfig<Target extends RuntimeAppConfig>(
                     assignToObject(dest, srcTypedKey, {});
                 }
                 if (isConstructorInstance(srcValue)) {
+                    // console.log(srcValue);
                     // constructor -> assign directly to dest
                     assignToObject(dest, srcTypedKey, srcValue);
                 } else {

@@ -4,6 +4,7 @@ import path from 'node:path';
 import { isDevelopment, isProduction } from './common/helpers/utils';
 import { AppConfig } from './config/app-config.interface';
 import { GoogleAuthenticationStrategy } from './config/auth/google-auth.strategy';
+import { NativeAuthenticationStrategy } from './config/auth/native-auth.strategy';
 import { RedisCacheStrategy } from './config/system/cache/redis-cache.strategy';
 import { NodemailerStrategy } from './config/system/email/nodemailer.strategy';
 import { entitiesMap } from './entities/entities-map';
@@ -43,8 +44,9 @@ export const appConfig: AppConfig = {
         trustProxy: isProduction() ? (process.env.VERCEL === '1' ? true : 1) : false,
     },
     auth: {
-        requireVerification: false,
+        requireVerification: true,
         developerAuthenticationStrategies: [
+            new NativeAuthenticationStrategy(),
             new GoogleAuthenticationStrategy({ googleClientId: process.env.GOOGLE_CLIENT_ID! }),
         ],
     },

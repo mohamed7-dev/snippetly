@@ -8,11 +8,18 @@ import {
     deletionResponse,
     filterGroupOperator,
     idSchema,
+    InferDtoType,
     inputIdSchema,
     sortDirection,
     stringFilterOperators,
 } from '../shared/common-schemas.js';
 import { developer } from '../shared/developer.type.js';
+import {
+    entityNotFoundErrorSchema,
+    forbiddenErrorSchema,
+    userInputErrorSchema,
+    withServerErrors,
+} from '../shared/errors.js';
 import { tag } from '../shared/tag.type.js';
 
 const collectionActionOutput = collection.omit({ creator: true, tags: true }).extend({
@@ -24,70 +31,74 @@ const collectionActionOutput = collection.omit({ creator: true, tags: true }).ex
 const createCollectionInput = collection
     .pick({
         name: true,
-        slug: true,
         color: true,
+        slug: true,
     })
     .extend(collection.pick({ isPrivate: true, allowForking: true, description: true }).partial().shape)
     .extend({
         tags: z.array(z.string().nonempty()).optional(),
     });
 
-const createCollectionOutput = collectionActionOutput;
+const createCollectionOutput = withServerErrors(collectionActionOutput, [
+    userInputErrorSchema,
+    forbiddenErrorSchema,
+    entityNotFoundErrorSchema,
+]);
 
 export const createCollectionDto = {
     input: createCollectionInput,
     output: createCollectionOutput,
 };
 
-export interface CreateCollectionDtoType {
-    input: z.infer<typeof createCollectionInput>;
-    output: z.infer<typeof createCollectionOutput>;
-}
+export type CreateCollectionDtoType = InferDtoType<typeof createCollectionDto>;
 
 // ############################ Update ######################################
 const updateCollectionInput = inputIdSchema.extend(createCollectionInput.partial().shape);
 
-const updateCollectionOutput = collectionActionOutput;
+const updateCollectionOutput = withServerErrors(collectionActionOutput, [
+    userInputErrorSchema,
+    forbiddenErrorSchema,
+    entityNotFoundErrorSchema,
+]);
 
 export const updateCollectionDto = {
     input: updateCollectionInput,
     output: updateCollectionOutput,
 };
 
-export interface UpdateCollectionDtoType {
-    input: z.infer<typeof updateCollectionInput>;
-    output: z.infer<typeof updateCollectionOutput>;
-}
+export type UpdateCollectionDtoType = InferDtoType<typeof updateCollectionDto>;
 
 // ############################ Delete #######################################
 const deleteCollectionInput = inputIdSchema;
 
-const deleteCollectionOutput = deletionResponse;
+const deleteCollectionOutput = withServerErrors(deletionResponse, [
+    userInputErrorSchema,
+    forbiddenErrorSchema,
+    entityNotFoundErrorSchema,
+]);
 
 export const deleteCollectionDto = {
     input: deleteCollectionInput,
     output: deleteCollectionOutput,
 };
 
-export interface DeleteCollectionDtoType {
-    input: z.infer<typeof deleteCollectionInput>;
-    output: z.infer<typeof deleteCollectionOutput>;
-}
+export type DeleteCollectionDtoType = InferDtoType<typeof deleteCollectionDto>;
 
 //########################### Fork ########################################
 const forkCollectionInput = inputIdSchema;
 
-const forkCollectionOutput = collectionActionOutput;
+const forkCollectionOutput = withServerErrors(collectionActionOutput, [
+    userInputErrorSchema,
+    forbiddenErrorSchema,
+    entityNotFoundErrorSchema,
+]);
 
 export const forkCollectionDto = {
     input: forkCollectionInput,
     output: forkCollectionOutput,
 };
 
-export interface ForkCollectionDtoType {
-    input: z.infer<typeof forkCollectionInput>;
-    output: z.infer<typeof forkCollectionOutput>;
-}
+export type ForkCollectionDtoType = InferDtoType<typeof forkCollectionDto>;
 
 //########################### FindOne ########################################
 const findOneCollectionInput = inputIdSchema;
@@ -100,6 +111,7 @@ const collectionItem = collection.omit({ creator: true, tags: true }).extend({
         image: true,
     }),
     tags: z.array(tag.pick({ value: true })),
+    snippetCount: z.number().int().nonnegative(),
 });
 
 const privateCollectionItem = collectionItem;
@@ -114,19 +126,20 @@ const publicCollectionItem = collectionItem.pick({
     allowForking: true,
     tags: true,
     creator: true,
+    snippetCount: true,
 });
 
-const findOneCollectionOutput = z.union([privateCollectionItem, publicCollectionItem]);
+const findOneCollectionOutput = withServerErrors(z.union([privateCollectionItem, publicCollectionItem]), [
+    userInputErrorSchema,
+    entityNotFoundErrorSchema,
+]);
 
 export const findOneCollectionDto = {
     input: findOneCollectionInput,
     output: findOneCollectionOutput,
 };
 
-export interface FindOneCollectionDtoType {
-    input: z.infer<typeof findOneCollectionInput>;
-    output: z.infer<typeof findOneCollectionOutput>;
-}
+export type FindOneCollectionDtoType = InferDtoType<typeof findOneCollectionDto>;
 
 //########################### List ########################################
 const filterSchema = z
@@ -174,6 +187,14 @@ const collectionListItem = collection.omit({ tags: true, creator: true }).extend
         lastName: true,
         image: true,
     }),
+    snippetCount: z.number().int().nonnegative(),
+    snippets: z.array(
+        z.object({
+            id: idSchema,
+            name: z.string(),
+            language: z.string(),
+        }),
+    ),
 });
 
 const privateCollectionListItem = collectionListItem;
@@ -188,10 +209,13 @@ const publicCollectionListItem = collectionListItem.pick({
     allowForking: true,
     tags: true,
     creator: true,
+    snippetCount: true,
+    snippets: true,
 });
 
-const collectionListOutput = createPaginatedListOutputSchema(
-    z.union([privateCollectionListItem, publicCollectionListItem]),
+const collectionListOutput = withServerErrors(
+    createPaginatedListOutputSchema(z.union([privateCollectionListItem, publicCollectionListItem])),
+    [userInputErrorSchema],
 );
 
 export const collectionListDto = {
@@ -199,22 +223,19 @@ export const collectionListDto = {
     output: collectionListOutput,
 };
 
-export interface CollectionListDtoType {
-    input: z.infer<typeof collectionListInput>;
-    output: z.infer<typeof collectionListOutput>;
-}
+export type CollectionListDtoType = InferDtoType<typeof collectionListDto>;
 
 //########################### List Current User Collections ########################################
 const currentUserCollectionListInput = collectionListInput.omit({ creator: true });
 
-const currentUserCollectionListOutput = createPaginatedListOutputSchema(collectionListItem);
+const currentUserCollectionListOutput = withServerErrors(
+    createPaginatedListOutputSchema(collectionListItem),
+    [userInputErrorSchema, forbiddenErrorSchema],
+);
 
 export const currentUserCollectionListDto = {
     input: currentUserCollectionListInput,
     output: currentUserCollectionListOutput,
 };
 
-export interface CurrentUserCollectionListDtoType {
-    input: z.infer<typeof currentUserCollectionListInput>;
-    output: z.infer<typeof currentUserCollectionListOutput>;
-}
+export type CurrentUserCollectionListDtoType = InferDtoType<typeof currentUserCollectionListDto>;

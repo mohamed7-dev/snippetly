@@ -12,9 +12,9 @@ import {
     UpdateDeveloperAccountDtoType,
     VerifyAccountDtoType,
 } from '@snippetly/common/dto';
-import { FindOptionsRelations, IsNull } from 'typeorm';
+import { FindOptionsRelations, IsNull, Not } from 'typeorm';
 import { RequestContext } from '../../api/request-context/request-context';
-import { ErrorResultUnion, isApiError } from '../../common/errors/api-error';
+import { isApiError } from '../../common/errors/api-error';
 import {
     EntityNotFoundError,
     ForbiddenError,
@@ -35,7 +35,9 @@ import {
 import { normalizeInput } from '../../common/helpers/validation';
 import { OnApplicationBootstrap } from '../../common/types/lifecycle-hooks';
 import { ConfigService } from '../../config';
+import { Collection } from '../../entities/collections/collection.entity';
 import { Developer } from '../../entities/developer/developer.entity';
+import { Snippet } from '../../entities/snippets/snippet.entity';
 import { User } from '../../entities/users/user.entity';
 import { Logger } from '../../infra';
 import { DatabaseService } from '../../infra/database/database.service';
@@ -451,12 +453,46 @@ export class DeveloperService implements OnApplicationBootstrap {
         return developer ?? undefined;
     }
 
+    public async getProfileStats(ctx: RequestContext, developerId: string, includePrivate = false) {
+        const publicFilter = includePrivate ? {} : { isPrivate: false };
+        const snippetRepo = this.databaseService.getRepository(ctx, Snippet);
+        const collectionRepo = this.databaseService.getRepository(ctx, Collection);
+
+        const [snippetsCount, collectionsCount, forkedSnippetsCount, forkedCollectionsCount] =
+            await Promise.all([
+                snippetRepo.count({
+                    where: { creator: { id: developerId }, deletedAt: IsNull(), ...publicFilter },
+                }),
+                collectionRepo.count({
+                    where: { creator: { id: developerId }, deletedAt: IsNull(), ...publicFilter },
+                }),
+                snippetRepo.count({
+                    where: {
+                        creator: { id: developerId },
+                        forkedFrom: Not(IsNull()),
+                        deletedAt: IsNull(),
+                        ...publicFilter,
+                    },
+                }),
+                collectionRepo.count({
+                    where: {
+                        creator: { id: developerId },
+                        forkedFrom: Not(IsNull()),
+                        deletedAt: IsNull(),
+                        ...publicFilter,
+                    },
+                }),
+            ]);
+
+        return { snippetsCount, collectionsCount, forkedSnippetsCount, forkedCollectionsCount };
+    }
+
     public async find(
         ctx: RequestContext,
         input: DeveloperListDtoType['input'],
         relations?: FindOptionsRelations<Developer>,
     ) {
-        const qb = this.listQueryBuilder.build(Developer, input, {
+        const qb = this.listQueryBuilder.build(Developer, input as any, {
             ctx,
             relations,
             where: { deletedAt: IsNull() },
@@ -512,7 +548,7 @@ export class DeveloperService implements OnApplicationBootstrap {
         ctx: RequestContext,
         input: CreateDeveloperDtoType['input'],
         password?: string,
-    ): Promise<ErrorResultUnion<CreateDeveloperDtoType['output'], Developer>> {
+    ): Promise<Developer | EmailAddressConflictError> {
         input.emailAddress = normalizeInput(input.emailAddress);
         const developer = new Developer(input);
 

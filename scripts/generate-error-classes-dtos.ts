@@ -30,13 +30,8 @@ export async function generateErrorClasses(schemasDirPaths: string[], outputPath
 
             'import { z } from "zod"',
             `import { ${schemas.map(schema => schema.exportName).join(',')} } from "@snippetly/common/dto"`,
+            'export { ErrorCode } from "@snippetly/common/dto"',
             '',
-            'export enum ErrorCode {',
-            ...Array.from(new Set(schemas.map(schema => schema.schema.shape.code.def.values[0]))).map(
-                code => `  ${code} = "${code}",`,
-            ),
-            '}',
-            ' ',
         ].join('\n');
 
         fs.writeFileSync(outputPath, globalImports);
@@ -63,6 +58,11 @@ export async function generateErrorClasses(schemasDirPaths: string[], outputPath
             LoggerContextName,
         );
     }
+}
+
+export async function getErrorCodes(schemasDirPaths: string[]): Promise<string[]> {
+    const schemas = await collectSchemas(findSchemaFiles(schemasDirPaths));
+    return Array.from(new Set(schemas.map(schema => schema.schema.shape.code.def.values[0])));
 }
 
 function findSchemaFiles(dirPaths: string[]): string[] {

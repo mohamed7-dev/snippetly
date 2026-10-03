@@ -1,4 +1,38 @@
 import z from 'zod';
+import { internalServerErrorSchema, rateLimiterErrorSchema } from './generated-server-errors.js';
+
+export {
+    blockedByCorsErrorSchema,
+    entityNotFoundErrorSchema,
+    forbiddenErrorSchema,
+    notFoundErrorSchema,
+    routeNotFoundErrorSchema,
+    unverifiedExternalEmailErrorSchema,
+    userInputErrorSchema,
+} from './generated-server-errors.js';
+
+type WithServerErrorsOutput<TSuccess extends z.ZodType, TRouteErrors extends readonly z.ZodType[]> =
+    | z.output<TSuccess>
+    | z.output<typeof internalServerErrorSchema>
+    | z.output<typeof rateLimiterErrorSchema>
+    | z.output<TRouteErrors[number]>;
+
+export function withServerErrors<
+    TSuccess extends z.ZodType,
+    const TRouteErrors extends readonly z.ZodType[] = [],
+>(
+    successSchema: TSuccess,
+    routeErrors: TRouteErrors = [] as unknown as TRouteErrors,
+): z.ZodType<WithServerErrorsOutput<TSuccess, TRouteErrors>> {
+    const schema = z.union([
+        successSchema,
+        internalServerErrorSchema,
+        rateLimiterErrorSchema,
+        ...routeErrors,
+    ] as const);
+
+    return schema;
+}
 
 /**
  * @description

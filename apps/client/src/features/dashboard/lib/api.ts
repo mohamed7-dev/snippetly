@@ -1,6 +1,3 @@
-import { api } from '@/lib/api-client';
-import { serverEndpoints } from '@/lib/routes';
-import { type GetCurrentUserDashboardResDtoType } from '@snippetly/common/dto';
 import { queryOptions } from '@tanstack/react-query';
 
 export const getCurrentUserDashboardOptions = queryOptions({

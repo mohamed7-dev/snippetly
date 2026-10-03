@@ -20,5 +20,6 @@
         "testing",
         "repo"
     ],
-    "cSpell.words": ["JWTOKEN", "snippetly", "Unstar", "virtuals"]
+    "cSpell.words": ["JWTOKEN", "snippetly", "Unstar", "virtuals"],
+    "js/ts.tsdk.path": "node_modules/typescript/lib"
 }

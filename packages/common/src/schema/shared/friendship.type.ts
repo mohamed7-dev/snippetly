@@ -9,7 +9,7 @@ export enum FriendshipStatus {
     Cancelled = 'Cancelled',
 }
 
-const friendshipStatusSchema = z.enum(FriendshipStatus);
+export const friendshipStatusSchema = z.enum(FriendshipStatus);
 
 export const friendship = node.extend({
     requester: developer,

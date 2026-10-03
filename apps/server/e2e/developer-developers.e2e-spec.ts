@@ -99,6 +99,18 @@ describe('Developer Account Workflows', () => {
             expect(result).not.toHaveProperty('isPrivate');
             expect(result).not.toHaveProperty('user');
             expect(result).not.toHaveProperty('updatedAt');
+            expect((result as any).friendCount).toEqual(expect.any(Number));
+            expect((result as any).friendshipInfo).toEqual({
+                isCurrentUserAFriend: false,
+                requestStatus: null,
+            });
+            expect((result as any).stats).toEqual({
+                snippetsCount: expect.any(Number),
+                collectionsCount: expect.any(Number),
+                friendsCount: expect.any(Number),
+                forkedSnippetsCount: expect.any(Number),
+                forkedCollectionsCount: expect.any(Number),
+            });
         });
     });
 
@@ -155,6 +167,18 @@ describe('Developer Account Workflows', () => {
             expect(result).toHaveProperty('emailAddress', owner.emailAddress);
             expect(result).toHaveProperty('isPrivate', true);
             expect(result).toHaveProperty('user');
+            expect((result as any).friendCount).toEqual(expect.any(Number));
+            expect((result as any).friendshipInfo).toEqual({
+                isCurrentUserAFriend: false,
+                requestStatus: null,
+            });
+            expect((result as any).stats).toEqual({
+                snippetsCount: expect.any(Number),
+                collectionsCount: expect.any(Number),
+                friendsCount: expect.any(Number),
+                forkedSnippetsCount: expect.any(Number),
+                forkedCollectionsCount: expect.any(Number),
+            });
         });
 
         it('deletes the current developer account', async () => {

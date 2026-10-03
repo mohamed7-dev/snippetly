@@ -254,7 +254,7 @@ export class FriendshipService {
         developerId: string,
         input: CurrentUserFriendsListDtoType['input'],
     ) {
-        const qb = this.listQueryBuilder.build(Friendship, input, {
+        const qb = this.listQueryBuilder.build(Friendship, input as any, {
             ctx,
             where: [
                 { requester: { id: developerId }, status: FriendshipStatus.Accepted },
@@ -272,12 +272,38 @@ export class FriendshipService {
         return { items, itemsCount };
     }
 
+    public async getDeveloperProfileInfo(
+        ctx: RequestContext,
+        developerId: string,
+        currentUserDeveloperId?: string,
+    ) {
+        const repo = this.databaseService.getRepository(ctx, Friendship);
+        const friendCount = await repo.count({
+            where: [
+                { requester: { id: developerId }, status: FriendshipStatus.Accepted },
+                { addressee: { id: developerId }, status: FriendshipStatus.Accepted },
+            ],
+        });
+        const friendship =
+            currentUserDeveloperId && currentUserDeveloperId !== developerId
+                ? await this.findFriendshipBetween(ctx, developerId, currentUserDeveloperId)
+                : null;
+
+        return {
+            friendCount,
+            friendshipInfo: {
+                isCurrentUserAFriend: friendship?.status === FriendshipStatus.Accepted,
+                requestStatus: friendship?.status ?? null,
+            },
+        };
+    }
+
     public async getCurrentUserInbox(
         ctx: RequestContext,
         developerId: string,
         input: CurrentUserInboxListDtoType['input'],
     ) {
-        const qb = this.listQueryBuilder.build(Friendship, input, {
+        const qb = this.listQueryBuilder.build(Friendship, input as any, {
             ctx,
             where: {
                 addressee: { id: developerId },
@@ -300,7 +326,7 @@ export class FriendshipService {
         developerId: string,
         input: CurrentUserOutboxListDtoType['input'],
     ) {
-        const qb = this.listQueryBuilder.build(Friendship, input, {
+        const qb = this.listQueryBuilder.build(Friendship, input as any, {
             ctx,
             where: {
                 requester: { id: developerId },

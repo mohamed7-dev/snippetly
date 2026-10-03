@@ -14,6 +14,7 @@ import { AppRouter } from '../../common/types/app-router.interface';
 import { Developer } from '../../entities/developer/developer.entity';
 import { Controller } from '../../infra/ioc-container/controller.decorator';
 import { DeveloperService } from '../../services/domain/developer.service';
+import { FriendshipService } from '../../services/domain/friendship.service';
 import { authGuard } from '../middlewares/auth.guard';
 import { defineRoutePipeline } from '../middlewares/define-router-pipeline.mw';
 import { RequestContext } from '../request-context/request-context';
@@ -23,7 +24,10 @@ import { RequestContext } from '../request-context/request-context';
     version: 1,
 })
 export class DeveloperDeveloperController implements AppRouter {
-    constructor(private readonly developerService: DeveloperService) {}
+    constructor(
+        private readonly developerService: DeveloperService,
+        private readonly friendshipService: FriendshipService,
+    ) {}
 
     developerReadLimiter = rateLimit({
         windowMs: 60 * 1000,
@@ -103,27 +107,39 @@ export class DeveloperDeveloperController implements AppRouter {
                 params: findOneDeveloperDto.input,
                 response: findOneDeveloperDto.output,
                 handler: async (req, res) => {
+                    const ctx = req.getRequestContext();
                     const result = await this.developerService.findOne(
-                        req.getRequestContext(),
+                        ctx,
                         req.params.id,
                         { user: { roles: true, authenticationMethods: true } },
                     );
 
-                    const isOwner = req.getRequestContext().activeUserId === result?.user.id ? true : false;
+                    const isOwner = ctx.activeUserId === result?.user.id ? true : false;
 
                     if (!result || (!isOwner && result?.isPrivate)) {
                         throw new EntityNotFoundError({ entityName: 'Developer', entityId: req.params.id });
                     }
 
-                    let finalResult;
-
-                    if (result) {
-                        finalResult = isOwner
+                    const currentDeveloper = ctx.activeUserId
+                        ? isOwner
                             ? result
-                            : omit(result, ['isPrivate', 'updatedAt', 'deletedAt', 'user']);
-                    }
+                            : await this.developerService.getOneByUserId(ctx, ctx.activeUserId)
+                        : undefined;
+                    const profileInfo = await this.friendshipService.getDeveloperProfileInfo(
+                        ctx,
+                        result.id,
+                        currentDeveloper?.id,
+                    );
+                    const profileStats = await this.developerService.getProfileStats(ctx, result.id, isOwner);
+                    const profile = isOwner
+                        ? result
+                        : omit(result, ['isPrivate', 'updatedAt', 'deletedAt', 'user']);
 
-                    res.status(200).json(finalResult);
+                    res.status(200).json({
+                        ...profile,
+                        ...profileInfo,
+                        stats: { ...profileStats, friendsCount: profileInfo.friendCount },
+                    });
                 },
             }),
         );

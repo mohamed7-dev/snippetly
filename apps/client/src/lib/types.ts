@@ -4,3 +4,5 @@ export interface AsyncActionCallback<D, E> {
     onSettled?: () => void;
     onMutate?: () => void;
 }
+
+export type UserType = 'developer' | 'admin';

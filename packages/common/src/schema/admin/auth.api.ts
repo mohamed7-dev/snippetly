@@ -1,29 +1,31 @@
 import z from 'zod';
 import { authenticatedUser } from '../shared/auth.js';
-import { SuccessResponse, successResponse } from '../shared/common-schemas.js';
-import { invalidCredentialsError } from '../shared/errors.js';
+import { InferDtoType, successResponse } from '../shared/common-schemas.js';
+import {
+    forbiddenErrorSchema,
+    invalidCredentialsError,
+    userInputErrorSchema,
+    withServerErrors,
+} from '../shared/errors.js';
 import { adminAuthInput } from '../shared/generated-auth-input.js';
 
 //############################### Authenticate ###############################
 
-const authenticateAdminOutput = z.union([authenticatedUser, invalidCredentialsError]);
+const authenticateAdminOutput = withServerErrors(z.union([authenticatedUser, invalidCredentialsError]), [
+    userInputErrorSchema,
+]);
 
 export const authenticateAdminDto = {
     input: adminAuthInput,
     output: authenticateAdminOutput,
 };
 
-export interface AuthenticateAdminDtoType {
-    input: z.infer<typeof adminAuthInput>;
-    output: z.infer<typeof authenticateAdminOutput>;
-}
+export type AuthenticateAdminDtoType = InferDtoType<typeof authenticateAdminDto>;
 
 //############################ Logout ##################################
 
-export const logoutAdminDto = {
-    output: successResponse,
-};
+const logoutAdminOutput = withServerErrors(successResponse, [forbiddenErrorSchema]);
 
-export type LogoutAdminDtoType = {
-    output: SuccessResponse;
-};
+export const logoutAdminDto = { output: logoutAdminOutput };
+
+export type LogoutAdminDtoType = InferDtoType<typeof logoutAdminDto>;

@@ -1,5 +1,40 @@
 import z, { ZodObject, ZodType } from 'zod';
 
+type InputForSchema<TSchema> =
+    TSchema extends z.ZodOptional<infer TInner>
+        ? InputForSchema<TInner> | undefined
+        : TSchema extends z.ZodNullable<infer TInner>
+          ? InputForSchema<TInner> | null
+          : TSchema extends { shape: infer TShape extends z.ZodRawShape }
+            ? ObjectInput<TShape>
+            : TSchema extends { _zod: { input: infer TInput; output: infer TOutput } }
+              ? unknown extends TInput
+                  ? TOutput
+                  : TInput
+              : TSchema extends { options: readonly (infer TOption)[] }
+                ? InputForSchema<TOption>
+                : never;
+
+type ObjectInput<TShape extends z.ZodRawShape> = {
+    [TKey in RequiredInputKeys<TShape>]: InputForSchema<TShape[TKey]>;
+} & {
+    [TKey in OptionalInputKeys<TShape>]?: InputForSchema<TShape[TKey]>;
+};
+
+type RequiredInputKeys<TShape extends z.ZodRawShape> = {
+    [TKey in keyof TShape]-?: undefined extends InputForSchema<TShape[TKey]> ? never : TKey;
+}[keyof TShape];
+
+type OptionalInputKeys<TShape extends z.ZodRawShape> = {
+    [TKey in keyof TShape]-?: undefined extends InputForSchema<TShape[TKey]> ? TKey : never;
+}[keyof TShape];
+
+type OutputForSchema<TSchema> = TSchema extends z.ZodType<infer TOutput> ? TOutput : never;
+
+export type InferDtoType<TDto extends { input?: z.ZodType; output: z.ZodType }> = {
+    output: OutputForSchema<TDto['output']>;
+} & (TDto extends { input: infer TInput } ? { input: InputForSchema<TInput> } : Record<never, never>);
+
 //############################ Password Schema ##########################
 
 export const passwordSchema = z.string().nonempty();

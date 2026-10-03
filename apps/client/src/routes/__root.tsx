@@ -1,43 +1,19 @@
-import {
-  HeadContent,
-  Outlet,
-  createRootRouteWithContext,
-} from '@tanstack/react-router'
-import type { QueryClient } from '@tanstack/react-query'
-import { type AuthContextValue } from '@/features/auth/components/auth-provider'
-import {
-  NotFoundPageView,
-  type NotFoundMetaData,
-} from '@/components/views/not-found-page-view'
-import { ErrorPageView } from '@/components/views/error-page-view'
-import { PageLoader } from '@/components/loaders/page-loader'
+import type { AuthContextType } from '@/features/auth/components/auth-provider';
+import type { QueryClient } from '@tanstack/react-query';
+import { HeadContent, Outlet, createRootRouteWithContext } from '@tanstack/react-router';
 
 export const Route = createRootRouteWithContext<{
-  queryClient: QueryClient
-  authContext?: AuthContextValue
+    queryClient: QueryClient;
+    auth: AuthContextType;
 }>()({
-  component: () => (
-    <div className="min-h-screen bg-background">
-      <HeadContent />
-      <Outlet />
-    </div>
-  ),
-  beforeLoad: async ({ context: { authContext } }) => {
-    if (!authContext) return
-    await authContext.ensureReady()
-  },
-  pendingComponent: () => {
-    return <PageLoader containerProps={{ className: 'min-h-screen' }} />
-  },
-  notFoundComponent: (meta) => {
+    component: RootDocument,
+});
+
+function RootDocument() {
     return (
-      <NotFoundPageView
-        title={(meta.data as NotFoundMetaData).title}
-        description={(meta.data as NotFoundMetaData).description}
-      />
-    )
-  },
-  errorComponent: (e) => {
-    return <ErrorPageView error={e.error} reset={e.reset} />
-  },
-})
+        <div className="min-h-screen bg-background">
+            <HeadContent />
+            <Outlet />
+        </div>
+    );
+}

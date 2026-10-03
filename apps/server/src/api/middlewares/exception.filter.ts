@@ -37,7 +37,7 @@ export function exceptionFilter(err: unknown, req: Request, res: Response, _next
     if (err instanceof I18nError) {
         const translated = i18nService.translateError(err, req);
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { logLevel, ...errorData } = err;
+        const { logLevel, variables, ...errorData } = err;
         return res.status(errorData.httpStatusCode).json({
             ...errorData,
             message: translated.message,

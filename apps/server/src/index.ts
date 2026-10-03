@@ -8,3 +8,4 @@ export * from './config/index';
 export * from './entities/index';
 export * from './infra/index';
 export * from './services/index';
+export { I18nError } from './infra/i18n/i18n-error';

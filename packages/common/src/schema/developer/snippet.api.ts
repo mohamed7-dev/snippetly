@@ -8,11 +8,18 @@ import {
     deletionResponse,
     filterGroupOperator,
     idSchema,
+    InferDtoType,
     inputIdSchema,
     sortDirection,
     stringFilterOperators,
 } from '../shared/common-schemas.js';
 import { developer } from '../shared/developer.type.js';
+import {
+    entityNotFoundErrorSchema,
+    forbiddenErrorSchema,
+    userInputErrorSchema,
+    withServerErrors,
+} from '../shared/errors.js';
 import { snippet } from '../shared/snippet.type.js';
 import { tag } from '../shared/tag.type.js';
 
@@ -38,64 +45,68 @@ const createSnippetInput = snippet
         tags: z.array(z.string().nonempty()).optional(),
     });
 
-const createSnippetOutput = snippetActionOutput;
+const createSnippetOutput = withServerErrors(snippetActionOutput, [
+    userInputErrorSchema,
+    forbiddenErrorSchema,
+    entityNotFoundErrorSchema,
+]);
 
 export const createSnippetDto = {
     input: createSnippetInput,
     output: createSnippetOutput,
 };
 
-export interface CreateSnippetDtoType {
-    input: z.infer<typeof createSnippetInput>;
-    output: z.infer<typeof createSnippetOutput>;
-}
+export type CreateSnippetDtoType = InferDtoType<typeof createSnippetDto>;
 
 // ############################ Update ######################################
 const updateSnippetInput = inputIdSchema.extend(createSnippetInput.partial().shape);
 
-const updateSnippetOutput = snippetActionOutput;
+const updateSnippetOutput = withServerErrors(snippetActionOutput, [
+    userInputErrorSchema,
+    forbiddenErrorSchema,
+    entityNotFoundErrorSchema,
+]);
 
 export const updateSnippetDto = {
     input: updateSnippetInput,
     output: updateSnippetOutput,
 };
 
-export interface UpdateSnippetDtoType {
-    input: z.infer<typeof updateSnippetInput>;
-    output: z.infer<typeof updateSnippetOutput>;
-}
+export type UpdateSnippetDtoType = InferDtoType<typeof updateSnippetDto>;
 
 // ############################ Delete #######################################
 const deleteSnippetInput = inputIdSchema;
 
-const deleteSnippetOutput = deletionResponse;
+const deleteSnippetOutput = withServerErrors(deletionResponse, [
+    userInputErrorSchema,
+    forbiddenErrorSchema,
+    entityNotFoundErrorSchema,
+]);
 
 export const deleteSnippetDto = {
     input: deleteSnippetInput,
     output: deleteSnippetOutput,
 };
 
-export interface DeleteSnippetDtoType {
-    input: z.infer<typeof deleteSnippetInput>;
-    output: z.infer<typeof deleteSnippetOutput>;
-}
+export type DeleteSnippetDtoType = InferDtoType<typeof deleteSnippetDto>;
 
 //########################### Fork ########################################
 const forkSnippetInput = inputIdSchema.extend({
     collectionId: idSchema.optional(),
 });
 
-const forkSnippetOutput = snippetActionOutput;
+const forkSnippetOutput = withServerErrors(snippetActionOutput, [
+    userInputErrorSchema,
+    forbiddenErrorSchema,
+    entityNotFoundErrorSchema,
+]);
 
 export const forkSnippetDto = {
     input: forkSnippetInput,
     output: forkSnippetOutput,
 };
 
-export interface ForkSnippetDtoType {
-    input: z.infer<typeof forkSnippetInput>;
-    output: z.infer<typeof forkSnippetOutput>;
-}
+export type ForkSnippetDtoType = InferDtoType<typeof forkSnippetDto>;
 
 //########################### FindOne ########################################
 const findOneSnippetInput = inputIdSchema;
@@ -132,17 +143,17 @@ const publicSnippetItem = snippetItem.pick({
 
 const privateSnippetItem = snippetItem;
 
-const findOneSnippetOutput = z.union([privateSnippetItem, publicSnippetItem]);
+const findOneSnippetOutput = withServerErrors(z.union([privateSnippetItem, publicSnippetItem]), [
+    userInputErrorSchema,
+    entityNotFoundErrorSchema,
+]);
 
 export const findOneSnippetDto = {
     input: findOneSnippetInput,
     output: findOneSnippetOutput,
 };
 
-export interface FindOneSnippetDtoType {
-    input: z.infer<typeof findOneSnippetInput>;
-    output: z.infer<typeof findOneSnippetOutput>;
-}
+export type FindOneSnippetDtoType = InferDtoType<typeof findOneSnippetDto>;
 
 //########################### List ########################################
 const filterSchema = z
@@ -219,8 +230,9 @@ const publicListSnippetItem = snippetListItem.pick({
 
 const privateListSnippetItem = snippetListItem;
 
-const snippetListOutput = createPaginatedListOutputSchema(
-    z.union([privateListSnippetItem, publicListSnippetItem]),
+const snippetListOutput = withServerErrors(
+    createPaginatedListOutputSchema(z.union([privateListSnippetItem, publicListSnippetItem])),
+    [userInputErrorSchema],
 );
 
 export const snippetListDto = {
@@ -228,25 +240,22 @@ export const snippetListDto = {
     output: snippetListOutput,
 };
 
-export interface SnippetListDtoType {
-    input: z.infer<typeof snippetListInput>;
-    output: z.infer<typeof snippetListOutput>;
-}
+export type SnippetListDtoType = InferDtoType<typeof snippetListDto>;
 
 //########################### List Current User Snippets ########################################
 const currentUserSnippetListInput = snippetListInput.omit({ creator: true });
 
-const currentUserSnippetListOutput = createPaginatedListOutputSchema(snippetListItem);
+const currentUserSnippetListOutput = withServerErrors(createPaginatedListOutputSchema(snippetListItem), [
+    userInputErrorSchema,
+    forbiddenErrorSchema,
+]);
 
 export const currentUserSnippetListDto = {
     input: currentUserSnippetListInput,
     output: currentUserSnippetListOutput,
 };
 
-export interface CurrentUserSnippetListDtoType {
-    input: z.infer<typeof currentUserSnippetListInput>;
-    output: z.infer<typeof currentUserSnippetListOutput>;
-}
+export type CurrentUserSnippetListDtoType = InferDtoType<typeof currentUserSnippetListDto>;
 
 //########################### List User Friends Snippets ########################################
 const userFriendsSnippetsListItem = snippetListItem.pick({
@@ -267,14 +276,14 @@ const userFriendsSnippetsListInput = snippetListInput;
 
 const userFriendsSnippetsItem = userFriendsSnippetsListItem;
 
-const userFriendsSnippetsListOutput = createPaginatedListOutputSchema(userFriendsSnippetsItem);
+const userFriendsSnippetsListOutput = withServerErrors(
+    createPaginatedListOutputSchema(userFriendsSnippetsItem),
+    [userInputErrorSchema, forbiddenErrorSchema],
+);
 
 export const userFriendsSnippetsListDto = {
     input: userFriendsSnippetsListInput,
     output: userFriendsSnippetsListOutput,
 };
 
-export interface UserFriendsSnippetsListDtoType {
-    input: z.infer<typeof userFriendsSnippetsListInput>;
-    output: z.infer<typeof userFriendsSnippetsListOutput>;
-}
+export type UserFriendsSnippetsListDtoType = InferDtoType<typeof userFriendsSnippetsListDto>;

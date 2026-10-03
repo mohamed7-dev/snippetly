@@ -156,6 +156,7 @@ export class DeveloperCollectionController implements AppRouter {
                             },
                         },
                         { creator: true },
+                        !shouldRestrictToPublic,
                     );
                     if (shouldRestrictToPublic) {
                         result.items = omit(result.items, ['isPrivate', 'updatedAt', 'deletedAt'], true);
@@ -193,6 +194,7 @@ export class DeveloperCollectionController implements AppRouter {
                             creator: developer.id,
                         },
                         { creator: true },
+                        true,
                     );
 
                     res.status(200).json(result);

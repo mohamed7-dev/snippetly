@@ -8,6 +8,7 @@ import { DeveloperAuthController } from './developer/developer-auth.controller';
 import { DeveloperCollectionController } from './developer/developer-collection.controller';
 import { DeveloperDeveloperController } from './developer/developer-developer.controller';
 import { DeveloperFriendshipController } from './developer/developer-friendship.controller';
+import { DeveloperSlugController } from './developer/developer-slug.controller';
 import { DeveloperSnippetController } from './developer/developer-snippet.controller';
 import { DeveloperTagController } from './developer/developer-tag.controller';
 
@@ -33,6 +34,7 @@ class AdminApiModule {}
         DeveloperFriendshipController,
         DeveloperTagController,
         DeveloperDeveloperController,
+        DeveloperSlugController,
     ],
     prefix: DEFAULT_DEVELOPER_API_PATH_PREFIX,
 })
