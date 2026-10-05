@@ -119,12 +119,14 @@ const snippetItem = snippet.omit({ collection: true, tags: true, creator: true }
         image: true,
     }),
     tags: z.array(tag.pick({ value: true })),
-    collection: collection.pick({
-        id: true,
-        name: true,
-        slug: true,
-        color: true,
-    }),
+    collection: collection
+        .pick({
+            id: true,
+            name: true,
+            slug: true,
+            color: true,
+        })
+        .nullish(),
 });
 
 const publicSnippetItem = snippetItem.pick({
@@ -192,6 +194,13 @@ const tagsInListInput = z.object({
 const snippetListInput = createPaginatedListInputSchema(filterSchema, sortSchema)
     .unwrap()
     .extend({
+        discover: z
+            .union([
+                z.boolean(),
+                z.literal('true').transform(() => true),
+                z.literal('false').transform(() => false),
+            ])
+            .optional(),
         tags: tagsInListInput,
         collection: idSchema.nonempty(),
         creator: idSchema.nonempty(),
@@ -206,12 +215,14 @@ const snippetListItem = snippet.omit({ collection: true, tags: true, creator: tr
         image: true,
     }),
     tags: z.array(tag.pick({ value: true })),
-    collection: collection.pick({
-        id: true,
-        name: true,
-        slug: true,
-        color: true,
-    }),
+    collection: collection
+        .pick({
+            id: true,
+            name: true,
+            slug: true,
+            color: true,
+        })
+        .nullish(),
 });
 
 const publicListSnippetItem = snippetListItem.pick({
@@ -272,7 +283,7 @@ const userFriendsSnippetsListItem = snippetListItem.pick({
     creator: true,
 });
 
-const userFriendsSnippetsListInput = snippetListInput;
+const userFriendsSnippetsListInput = snippetListInput.omit({ discover: true });
 
 const userFriendsSnippetsItem = userFriendsSnippetsListItem;
 

@@ -1,7 +1,11 @@
 import { developerApiClient } from '@/lib/api-client';
 import { apiEndpoints } from '@/lib/api-endpoints';
-import { DEFAULT_LISTING_COUNT } from '@/lib/constants';
-import type { SnippetListDtoType } from '@snippetly/common/dto';
+import { createSkipPagination } from '@/lib/skip-pagination';
+import type {
+    CurrentUserSnippetListDtoType,
+    SnippetListDtoType,
+    UserFriendsSnippetsListDtoType,
+} from '@snippetly/common/dto';
 import { transformInputToSearchParams } from '@snippetly/common/lib';
 import { infiniteQueryOptions } from '@tanstack/react-query';
 
@@ -10,8 +14,7 @@ export const listCreatorSnippetsQueryOptions = (
     input: Omit<SnippetListDtoType['input'], 'creator'> = {},
     queryKey?: string[],
 ) => {
-    const take = typeof input.take === 'number' ? input.take : DEFAULT_LISTING_COUNT;
-    const initialSkip = typeof input.skip === 'number' ? input.skip : 0;
+    const { initialSkip, getNextPageParam, take } = createSkipPagination(input.skip, input.take);
 
     return infiniteQueryOptions({
         queryKey: ['snippets', 'creator', creatorId, ...(queryKey ?? [])],
@@ -28,10 +31,7 @@ export const listCreatorSnippetsQueryOptions = (
             );
         },
         initialPageParam: initialSkip,
-        getNextPageParam: (lastPage, _allPages, lastPageParam) => {
-            const nextSkip = lastPageParam + lastPage.items.length;
-            return lastPage.items.length > 0 && nextSkip < lastPage.itemsCount ? nextSkip : undefined;
-        },
+        getNextPageParam,
     });
 };
 
@@ -40,8 +40,7 @@ export const listCollectionSnippetsQueryOptions = (
     input: Omit<SnippetListDtoType['input'], 'collection'> = {},
     queryKey?: string[],
 ) => {
-    const take = typeof input.take === 'number' ? input.take : DEFAULT_LISTING_COUNT;
-    const initialSkip = typeof input.skip === 'number' ? input.skip : 0;
+    const { initialSkip, getNextPageParam, take } = createSkipPagination(input.skip, input.take);
 
     return infiniteQueryOptions({
         queryKey: ['snippets', 'collection', collectionId, ...(queryKey ?? [])],
@@ -58,9 +57,54 @@ export const listCollectionSnippetsQueryOptions = (
             );
         },
         initialPageParam: initialSkip,
-        getNextPageParam: (lastPage, _allPages, lastPageParam) => {
-            const nextSkip = lastPageParam + lastPage.items.length;
-            return lastPage.items.length > 0 && nextSkip < lastPage.itemsCount ? nextSkip : undefined;
+        getNextPageParam,
+    });
+};
+
+export const listCurrentUserSnippetsQueryOptions = (
+    input: CurrentUserSnippetListDtoType['input'] = {},
+    queryKey?: string[],
+) => {
+    const { initialSkip, getNextPageParam, take } = createSkipPagination(input.skip, input.take);
+
+    return infiniteQueryOptions({
+        queryKey: ['snippets', 'current', ...(queryKey ?? [])],
+        queryFn: async ({ pageParam }) => {
+            const searchParams = transformInputToSearchParams({
+                ...input,
+                take,
+                skip: pageParam,
+            });
+            return await developerApiClient.fetch<CurrentUserSnippetListDtoType['output']>(
+                apiEndpoints.snippets.listMine.url(searchParams),
+                { method: apiEndpoints.snippets.listMine.method },
+            );
         },
+        initialPageParam: initialSkip,
+        getNextPageParam,
+    });
+};
+
+export const listCurrentUserFriendsSnippetsQueryOptions = (
+    input: Omit<UserFriendsSnippetsListDtoType['input'], 'creator'> = {},
+    queryKey?: string[],
+) => {
+    const { initialSkip, getNextPageParam, take } = createSkipPagination(input.skip, input.take);
+
+    return infiniteQueryOptions({
+        queryKey: ['snippets', 'current', 'friends', ...(queryKey ?? [])],
+        queryFn: async ({ pageParam }) => {
+            const searchParams = transformInputToSearchParams({
+                ...input,
+                take,
+                skip: pageParam,
+            });
+            return await developerApiClient.fetch<UserFriendsSnippetsListDtoType['output']>(
+                apiEndpoints.snippets.listFriends.url(searchParams),
+                { method: apiEndpoints.snippets.listFriends.method },
+            );
+        },
+        initialPageParam: initialSkip,
+        getNextPageParam,
     });
 };

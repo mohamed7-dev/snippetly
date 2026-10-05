@@ -3,9 +3,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import type { ApiSuccess } from '@/lib/api-client';
 import type { CollectionListDtoType } from '@snippetly/common/dto';
 import { Link } from '@tanstack/react-router';
-import { CollectionActionMenu } from '../shared/collection-action-menu';
+import { CollectionActionMenu, type CollectionActionMenuProps } from '../shared/collection-action-menu';
 
-interface CollectionCardProps {
+interface CollectionCardProps extends Pick<CollectionActionMenuProps, 'deleteCollection' | 'forkCollection'> {
     collection: ApiSuccess<CollectionListDtoType['output']>['items'][number];
 }
 

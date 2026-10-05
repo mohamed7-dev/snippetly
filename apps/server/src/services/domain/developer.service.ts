@@ -3,6 +3,7 @@ import {
     CreateDeveloperDtoType,
     DeleteDeveloperAccountDtoType,
     DeveloperListDtoType,
+    FriendshipStatus,
     RefreshVerificationTokenDtoType,
     RegisterDeveloperAccountDtoType,
     RequestEmailAddressChangeDtoType,
@@ -12,7 +13,7 @@ import {
     UpdateDeveloperAccountDtoType,
     VerifyAccountDtoType,
 } from '@snippetly/common/dto';
-import { FindOptionsRelations, IsNull, Not } from 'typeorm';
+import { Brackets, FindOptionsRelations, IsNull, Not } from 'typeorm';
 import { RequestContext } from '../../api/request-context/request-context';
 import { isApiError } from '../../common/errors/api-error';
 import {
@@ -37,7 +38,9 @@ import { OnApplicationBootstrap } from '../../common/types/lifecycle-hooks';
 import { ConfigService } from '../../config';
 import { Collection } from '../../entities/collections/collection.entity';
 import { Developer } from '../../entities/developer/developer.entity';
+import { Friendship } from '../../entities/friendships/friendship.entity';
 import { Snippet } from '../../entities/snippets/snippet.entity';
+import { Tag } from '../../entities/tags/tag.entity';
 import { User } from '../../entities/users/user.entity';
 import { Logger } from '../../infra';
 import { DatabaseService } from '../../infra/database/database.service';
@@ -457,34 +460,62 @@ export class DeveloperService implements OnApplicationBootstrap {
         const publicFilter = includePrivate ? {} : { isPrivate: false };
         const snippetRepo = this.databaseService.getRepository(ctx, Snippet);
         const collectionRepo = this.databaseService.getRepository(ctx, Collection);
+        const friendshipRepo = this.databaseService.getRepository(ctx, Friendship);
 
-        const [snippetsCount, collectionsCount, forkedSnippetsCount, forkedCollectionsCount] =
-            await Promise.all([
-                snippetRepo.count({
-                    where: { creator: { id: developerId }, deletedAt: IsNull(), ...publicFilter },
-                }),
-                collectionRepo.count({
-                    where: { creator: { id: developerId }, deletedAt: IsNull(), ...publicFilter },
-                }),
-                snippetRepo.count({
-                    where: {
-                        creator: { id: developerId },
-                        forkedFrom: Not(IsNull()),
-                        deletedAt: IsNull(),
-                        ...publicFilter,
-                    },
-                }),
-                collectionRepo.count({
-                    where: {
-                        creator: { id: developerId },
-                        forkedFrom: Not(IsNull()),
-                        deletedAt: IsNull(),
-                        ...publicFilter,
-                    },
-                }),
-            ]);
+        const [
+            snippetsCount,
+            collectionsCount,
+            forkedSnippetsCount,
+            forkedCollectionsCount,
+            friendsCount,
+            friendsInboxCount,
+            friendsOutboxCount,
+        ] = await Promise.all([
+            snippetRepo.count({
+                where: { creator: { id: developerId }, deletedAt: IsNull(), ...publicFilter },
+            }),
+            collectionRepo.count({
+                where: { creator: { id: developerId }, deletedAt: IsNull(), ...publicFilter },
+            }),
+            snippetRepo.count({
+                where: {
+                    creator: { id: developerId },
+                    forkedFrom: Not(IsNull()),
+                    deletedAt: IsNull(),
+                    ...publicFilter,
+                },
+            }),
+            collectionRepo.count({
+                where: {
+                    creator: { id: developerId },
+                    forkedFrom: Not(IsNull()),
+                    deletedAt: IsNull(),
+                    ...publicFilter,
+                },
+            }),
+            friendshipRepo.count({
+                where: [
+                    { requester: { id: developerId }, status: FriendshipStatus.Accepted },
+                    { addressee: { id: developerId }, status: FriendshipStatus.Accepted },
+                ],
+            }),
+            friendshipRepo.count({
+                where: { addressee: { id: developerId }, status: FriendshipStatus.Pending },
+            }),
+            friendshipRepo.count({
+                where: { requester: { id: developerId }, status: FriendshipStatus.Pending },
+            }),
+        ]);
 
-        return { snippetsCount, collectionsCount, forkedSnippetsCount, forkedCollectionsCount };
+        return {
+            snippetsCount,
+            collectionsCount,
+            forkedSnippetsCount,
+            forkedCollectionsCount,
+            friendsCount,
+            friendsInboxCount,
+            friendsOutboxCount,
+        };
     }
 
     public async find(
@@ -498,8 +529,44 @@ export class DeveloperService implements OnApplicationBootstrap {
             where: { deletedAt: IsNull() },
         });
 
+        const activeDeveloper = input.discover ? await this.getActiveDeveloper(ctx) : undefined;
+        if (activeDeveloper) {
+            const friendships = await this.databaseService
+                .getRepository(ctx, Friendship)
+                .createQueryBuilder('friendship')
+                .innerJoin('friendship.requester', 'requester')
+                .innerJoin('friendship.addressee', 'addressee')
+                .select('requester.id', 'requesterId')
+                .addSelect('addressee.id', 'addresseeId')
+                .where(
+                    new Brackets(qb => {
+                        qb.where('requester.id = :activeDeveloperId', {
+                            activeDeveloperId: activeDeveloper.id,
+                        }).orWhere('addressee.id = :activeDeveloperId', {
+                            activeDeveloperId: activeDeveloper.id,
+                        });
+                    }),
+                )
+                .andWhere('friendship.status = :acceptedStatus', {
+                    acceptedStatus: FriendshipStatus.Accepted,
+                })
+                .getRawMany<{ requesterId: string; addresseeId: string }>();
+            const excludedDeveloperIds = [
+                activeDeveloper.id,
+                ...friendships.map(({ requesterId, addresseeId }) =>
+                    requesterId === activeDeveloper.id ? addresseeId : requesterId,
+                ),
+            ];
+
+            qb.andWhere(`${qb.alias}.id NOT IN (:...excludedDeveloperIds)`, { excludedDeveloperIds });
+        }
+
         const [items, itemsCount] = await qb.getManyAndCount();
-        return { items, itemsCount };
+        if (!input.discover || items.length === 0) {
+            return { items, itemsCount };
+        }
+
+        return await this.discover(ctx, items, itemsCount);
     }
 
     async getOneByUserId(
@@ -593,5 +660,73 @@ export class DeveloperService implements OnApplicationBootstrap {
         const createdDeveloper = await this.databaseService.getRepository(ctx, Developer).save(developer);
         await this.eventBus.publish(new DeveloperEvent(ctx, createdDeveloper, 'created', input));
         return developer;
+    }
+
+    private async discover(ctx: RequestContext, items: Developer[], itemsCount: number) {
+        const developerIds = items.map(({ id }) => id);
+        const snippetRepo = this.databaseService.getRepository(ctx, Snippet);
+        const collectionRepo = this.databaseService.getRepository(ctx, Collection);
+        const tagRepo = this.databaseService.getRepository(ctx, Tag);
+
+        const [snippetCounts, collectionCounts, addedTags] = await Promise.all([
+            snippetRepo
+                .createQueryBuilder('snippet')
+                .innerJoin('snippet.creator', 'creator')
+                .select('creator.id', 'developerId')
+                .addSelect('COUNT(snippet.id)', 'count')
+                .where('creator.id IN (:...developerIds)', { developerIds })
+                .andWhere('snippet.isPrivate = :isPrivate', { isPrivate: false })
+                .andWhere('snippet.deletedAt IS NULL')
+                .groupBy('creator.id')
+                .getRawMany<{ developerId: string; count: string }>(),
+            collectionRepo
+                .createQueryBuilder('collection')
+                .innerJoin('collection.creator', 'creator')
+                .select('creator.id', 'developerId')
+                .addSelect('COUNT(collection.id)', 'count')
+                .where('creator.id IN (:...developerIds)', { developerIds })
+                .andWhere('collection.isPrivate = :isPrivate', { isPrivate: false })
+                .andWhere('collection.deletedAt IS NULL')
+                .groupBy('creator.id')
+                .getRawMany<{ developerId: string; count: string }>(),
+            tagRepo
+                .createQueryBuilder('tag')
+                .innerJoin('tag.addedBy', 'developer')
+                .select('developer.id', 'developerId')
+                .addSelect('tag.id', 'id')
+                .addSelect('tag.value', 'value')
+                .addSelect('tag.usageCount', 'usageCount')
+                .where('developer.id IN (:...developerIds)', { developerIds })
+                .orderBy('tag.value', 'ASC')
+                .getRawMany<{
+                    developerId: string;
+                    id: string;
+                    value: string;
+                    usageCount: number;
+                }>(),
+        ]);
+
+        const snippetCountsByDeveloper = new Map(
+            snippetCounts.map(({ developerId, count }) => [developerId, Number(count)]),
+        );
+        const collectionCountsByDeveloper = new Map(
+            collectionCounts.map(({ developerId, count }) => [developerId, Number(count)]),
+        );
+        const tagsByDeveloper = new Map<string, Array<{ id: string; value: string; usageCount: number }>>();
+
+        for (const { developerId, id, value, usageCount } of addedTags) {
+            const tags = tagsByDeveloper.get(developerId) ?? [];
+            tags.push({ id, value, usageCount: Number(usageCount) });
+            tagsByDeveloper.set(developerId, tags);
+        }
+
+        const enrichedItems = items.map(item => ({
+            ...item,
+            snippetsCount: snippetCountsByDeveloper.get(item.id) ?? 0,
+            collectionsCount: collectionCountsByDeveloper.get(item.id) ?? 0,
+            tags: tagsByDeveloper.get(item.id) ?? [],
+        }));
+
+        return { items: enrichedItems, itemsCount };
     }
 }

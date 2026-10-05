@@ -2,11 +2,12 @@ import {
     ActiveDeveloperDtoType,
     DeleteDeveloperAccountDtoType,
     DeveloperListDtoType,
+    FriendshipStatus,
     FindOneDeveloperDtoType,
     UpdateDeveloperAccountDtoType,
 } from '@snippetly/common/dto';
 import { transformInputToSearchParams } from '@snippetly/common/lib';
-import { Developer, mergeConfig } from '@snippetly/server';
+import { DatabaseService, Developer, Friendship, mergeConfig } from '@snippetly/server';
 import { createTestEnvironment } from '@snippetly/testing';
 import { afterAll, beforeAll, describe, expect, it, Mock, vi } from 'vitest';
 import { getE2ETestSetupTimeout } from '../../../e2e-common/e2e-common-utils';
@@ -89,6 +90,31 @@ describe('Developer Account Workflows', () => {
             expect(result.items[0]).not.toHaveProperty('user');
         });
 
+        it('includes public content counts and added tags when discovering developers', async () => {
+            const searchParams = transformInputToSearchParams({
+                take: 100,
+                discover: true,
+            } satisfies DeveloperListDtoType['input']);
+            const res = await developerClient.fetch(`/developers?${searchParams.toString()}`, {
+                method: 'GET',
+            });
+            const result = (await res.json()) as DeveloperListDtoType['output'];
+
+            expect(result.items.length).toBeGreaterThan(0);
+            for (const item of result.items) {
+                expect(item.snippetsCount).toEqual(expect.any(Number));
+                expect(item.collectionsCount).toEqual(expect.any(Number));
+                expect(item.tags).toEqual(expect.any(Array));
+                for (const addedTag of item.tags ?? []) {
+                    expect(addedTag).toEqual({
+                        id: expect.any(String),
+                        value: expect.any(String),
+                        usageCount: expect.any(Number),
+                    });
+                }
+            }
+        });
+
         it('returns only public fields when reading a developer profile', async () => {
             const targetDeveloper = server.state.developers[0];
             const res = await developerClient.fetch(`/developers/${targetDeveloper.id}`, { method: 'GET' });
@@ -110,6 +136,8 @@ describe('Developer Account Workflows', () => {
                 friendsCount: expect.any(Number),
                 forkedSnippetsCount: expect.any(Number),
                 forkedCollectionsCount: expect.any(Number),
+                friendsInboxCount: expect.any(Number),
+                friendsOutboxCount: expect.any(Number),
             });
         });
     });
@@ -129,6 +157,16 @@ describe('Developer Account Workflows', () => {
             expect(result).toHaveProperty('emailAddress', owner.emailAddress);
             expect(result).toHaveProperty('user');
             expect(result).toHaveProperty('isPrivate');
+            const stats = result && 'stats' in result ? result.stats : undefined;
+            expect(stats).toEqual({
+                snippetsCount: expect.any(Number),
+                collectionsCount: expect.any(Number),
+                friendsCount: expect.any(Number),
+                forkedSnippetsCount: expect.any(Number),
+                forkedCollectionsCount: expect.any(Number),
+                friendsInboxCount: expect.any(Number),
+                friendsOutboxCount: expect.any(Number),
+            });
         });
 
         it('updates the current developer account', async () => {
@@ -146,8 +184,25 @@ describe('Developer Account Workflows', () => {
             expect(result.isPrivate).toBe(true);
         });
 
-        it('excludes the current developer from public discovery', async () => {
+        it('excludes only accepted friends from public discovery', async () => {
+            const friend = server.state.developers[0];
+            const friendshipRepository = server.app
+                .getProvider<DatabaseService>(DatabaseService)
+                .getRepository(Friendship);
+            const friendship = await friendshipRepository.findOne({
+                where: [
+                    { requester: { id: owner.id }, addressee: { id: friend.id } },
+                    { requester: { id: friend.id }, addressee: { id: owner.id } },
+                ],
+            });
+            if (!friendship) throw new Error('Expected test friendship to exist');
+            friendship.requester = owner;
+            friendship.addressee = friend;
+            friendship.status = FriendshipStatus.Cancelled;
+            await friendshipRepository.save(friendship);
+
             const searchParams = transformInputToSearchParams({
+                discover: true,
                 take: 100,
             } satisfies DeveloperListDtoType['input']);
             const res = await developerClient.fetch(`/developers?${searchParams.toString()}`, {
@@ -156,7 +211,20 @@ describe('Developer Account Workflows', () => {
             const result = (await res.json()) as DeveloperListDtoType['output'];
 
             expect(result.items.some(item => item.id === owner.id)).toBe(false);
+            expect(result.items.some(item => item.id === friend.id)).toBe(true);
             expect(result.items.every(item => !('emailAddress' in item))).toBe(true);
+
+            friendship.status = FriendshipStatus.Accepted;
+            await friendshipRepository.save(friendship);
+
+            const acceptedFriendRes = await developerClient.fetch(
+                `/developers?${searchParams.toString()}`,
+                { method: 'GET' },
+            );
+            const acceptedFriendResult = (await acceptedFriendRes.json()) as DeveloperListDtoType['output'];
+
+            expect(acceptedFriendResult.items.some(item => item.id === owner.id)).toBe(false);
+            expect(acceptedFriendResult.items.some(item => item.id === friend.id)).toBe(false);
         });
 
         it('reads the private profile with owner fields', async () => {
@@ -178,6 +246,8 @@ describe('Developer Account Workflows', () => {
                 friendsCount: expect.any(Number),
                 forkedSnippetsCount: expect.any(Number),
                 forkedCollectionsCount: expect.any(Number),
+                friendsInboxCount: expect.any(Number),
+                friendsOutboxCount: expect.any(Number),
             });
         });
 

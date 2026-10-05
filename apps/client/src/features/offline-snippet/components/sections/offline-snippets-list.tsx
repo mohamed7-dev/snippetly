@@ -1,5 +1,6 @@
 import { SectionLoader } from '@/components/feedback/section-loader';
 import { StatusCard } from '@/components/feedback/status-card';
+import { Button } from '@/components/ui/button';
 import { Link } from '@tanstack/react-router';
 import React from 'react';
 import { useOfflineSnippetStore } from '../../hooks/useOfflineSnippetStore';
@@ -39,19 +40,19 @@ export function OfflineSnippetsList() {
         <ul className="space-y-3">
             {data.map(snippet => (
                 <li key={snippet.id} className="border rounded-md p-3 flex items-center justify-between">
-                    <div>
-                        <div className="font-medium">{snippet.name}</div>
+                    <div className="space-y-4">
+                        <div className="font-medium capitalize">{snippet.name}</div>
                         {snippet.description ? (
-                            <div className="text-sm opacity-80 line-clamp-2">{snippet.description}</div>
+                            <div className="text-sm opacity-80 line-clamp-2 first-letter:capitalize">
+                                {snippet.description}
+                            </div>
                         ) : null}
                     </div>
-                    <Link
-                        to="/offline/$id"
-                        params={{ id: snippet.id }}
-                        className="text-primary hover:underline"
-                    >
-                        View Snippet
-                    </Link>
+                    <Button variant={'link'} asChild>
+                        <Link to="/offline/$id" params={{ id: snippet.id }}>
+                            View Snippet
+                        </Link>
+                    </Button>
                 </li>
             ))}
         </ul>

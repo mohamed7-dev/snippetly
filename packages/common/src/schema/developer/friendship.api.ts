@@ -18,6 +18,7 @@ const friendshipParticipant = developer.pick({
     firstName: true,
     lastName: true,
     image: true,
+    bio: true,
 });
 
 const friendshipItem = friendship.omit({ requester: true, addressee: true }).extend({
@@ -103,10 +104,29 @@ const currentUserFriendsListInput = createPaginatedListInputSchema(
     .unwrap()
     .partial();
 
-const currentUserFriendsListOutput = withServerErrors(createPaginatedListOutputSchema(friendshipItem), [
-    userInputErrorSchema,
-    forbiddenErrorSchema,
-]);
+const currentUserFriendParticipant = friendshipParticipant.extend({
+    snippetsCount: z.number().int().nonnegative().optional(),
+    recentSnippets: z
+        .array(
+            z.object({
+                id: idSchema,
+                name: z.string(),
+                slug: z.string(),
+                language: z.string(),
+            }),
+        )
+        .optional(),
+});
+
+const currentUserFriendshipItem = friendshipItem.extend({
+    requester: currentUserFriendParticipant,
+    addressee: currentUserFriendParticipant,
+});
+
+const currentUserFriendsListOutput = withServerErrors(
+    createPaginatedListOutputSchema(currentUserFriendshipItem),
+    [userInputErrorSchema, forbiddenErrorSchema],
+);
 
 export const currentUserFriendsListDto = {
     input: currentUserFriendsListInput,

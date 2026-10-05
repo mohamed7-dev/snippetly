@@ -1,7 +1,7 @@
 import { listCurrentUserCollectionsQueryOptions } from '@/features/collection-listing/lib/collection-listing-query-options';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { BellIcon, BookOpenIcon, Code2Icon, SearchIcon, UsersIcon } from 'lucide-react';
+import { BellIcon, BookOpenIcon, CodeIcon, LayoutDashboardIcon, SearchIcon, UsersIcon } from 'lucide-react';
 
 export function SidebarContent() {
     const { data } = useInfiniteQuery(listCurrentUserCollectionsQueryOptions({ take: 5 }));
@@ -15,16 +15,14 @@ export function SidebarContent() {
                     activeProps={{
                         className: 'bg-primary/10 text-primary hover:bg-primary/10',
                     }}
-                    search={{ filter: 'recent' }}
                     activeOptions={{ exact: true, includeSearch: true }}
                     className="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
                 >
-                    <Code2Icon className="h-4 w-4" />
-                    All Snippets
+                    <LayoutDashboardIcon className="h-4 w-4" />
+                    Insights
                 </Link>
                 <Link
                     to={'/dashboard/collections'}
-                    search={{ filter: 'recent' }}
                     activeOptions={{ exact: true, includeSearch: true }}
                     activeProps={{
                         className: 'bg-primary/10 text-primary hover:bg-primary/10',
@@ -33,6 +31,17 @@ export function SidebarContent() {
                 >
                     <BookOpenIcon className="h-4 w-4" />
                     Collections
+                </Link>
+                <Link
+                    to={'/dashboard/snippets'}
+                    activeOptions={{ exact: true, includeSearch: true }}
+                    activeProps={{
+                        className: 'bg-primary/10 text-primary hover:bg-primary/10',
+                    }}
+                    className="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
+                >
+                    <CodeIcon className="h-4 w-4" />
+                    Snippets
                 </Link>
                 <Link
                     to={'/dashboard/friends'}

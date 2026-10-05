@@ -8,8 +8,8 @@ import { ThemeProvider } from './components/providers/theme-provider';
 import { ErrorPageView } from './components/views/error-page-view';
 import { NotFoundPageView, type NotFoundMetaData } from './components/views/not-found-page-view';
 import { PageLoader } from './components/views/page-loading-view';
-import { AuthProvider } from './features/auth/components/auth-provider';
 import { useAuth } from './features/auth/hooks/use-auth';
+import { AuthProvider } from './features/auth/providers/auth-provider';
 import { routeTree } from './routeTree.gen';
 
 export const router = createRouter({

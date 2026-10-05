@@ -25,7 +25,7 @@ export function HeaderUserMenu() {
                 to: '/sign-in',
             });
         }
-        await logout('developer');
+        await logout('developer', () => navigate({ to: '/' }));
     };
 
     const avatarFallback = user?.firstName?.slice(0, 1) + ' ' + user?.lastName?.slice(0, 1);
@@ -72,17 +72,21 @@ export function HeaderUserMenu() {
                     </DropdownMenuLabel>
                 )}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                    <Link to={'/offline'} className="flex items-center">
-                        <LibraryIcon className="mr-2 h-4 w-4" />
-                        <span>Offline Library</span>
-                    </Link>
+                <DropdownMenuItem asChild>
+                    <Button className="w-full justify-start" variant={'ghost'} asChild>
+                        <Link to={'/offline'}>
+                            <LibraryIcon className="mr-2 h-4 w-4" />
+                            <span>Offline Library</span>
+                        </Link>
+                    </Button>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
-                    <Link to={user ? '/dashboard/friends' : '/sign-in'} className="flex items-center">
-                        <UsersIcon className="mr-2 h-4 w-4" />
-                        <span>Friends</span>
-                    </Link>
+                <DropdownMenuItem asChild>
+                    <Button className="w-full justify-start" variant={'ghost'} asChild>
+                        <Link to={user ? '/dashboard/friends' : '/sign-in'}>
+                            <UsersIcon className="mr-2 h-4 w-4" />
+                            <span>Friends</span>
+                        </Link>
+                    </Button>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 {user ? (

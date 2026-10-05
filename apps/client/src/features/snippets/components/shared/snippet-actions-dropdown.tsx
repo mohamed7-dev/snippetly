@@ -13,7 +13,7 @@ import type { DeleteSnippetAsyncActionCallbacks } from '@/features/snippet-delet
 import { ForkSnippetButton } from '@/features/snippet-fork/components/fork-snippet-button';
 import { ForkSnippetToCollection } from '@/features/snippet-fork/components/fork-snippet-to-collection';
 import type { ForkSnippetMutationCallbacks } from '@/features/snippet-fork/hooks/use-fork-snippet';
-import { CopyButton } from '@/features/snippets/components/copy-button';
+import { CopyButton } from '@/features/snippets/components/shared/copy-button';
 import { useCopyCode } from '@/features/snippets/hooks/use-copy-code';
 import { type ApiSuccess } from '@/lib/api-client';
 import type { SnippetListDtoType } from '@snippetly/common/dto';
@@ -70,7 +70,7 @@ export function SnippetActionsDropdown({
                     <ForkSnippetToCollection
                         snippetId={snippet.id}
                         triggerAs="dropdown"
-                        asyncActionCallbacks={{
+                        mutationCallbacks={{
                             ...forkSnippet,
                             onSuccess: (...props) => {
                                 setOpen(false);
@@ -86,7 +86,6 @@ export function SnippetActionsDropdown({
                     <DropdownMenuItem onSelect={e => e.preventDefault()} asChild>
                         <ForkSnippetButton
                             className="justify-start"
-
                             snippetId={snippet.id}
                             mutationCallbacks={{
                                 ...forkSnippet,
@@ -103,8 +102,8 @@ export function SnippetActionsDropdown({
                         <DropdownMenuItem asChild>
                             <Button variant={'ghost'} size={'sm'} className="w-full justify-start" asChild>
                                 <Link
-                                    to="/dashboard/snippets/$slug/edit"
-                                    params={{ slug: snippet.slug }}
+                                    to="/dashboard/snippets/$id/edit"
+                                    params={{ id: snippet.id }}
                                     preload={false}
                                 >
                                     <EditIcon className="mr-2 h-4 w-4" />
@@ -115,8 +114,8 @@ export function SnippetActionsDropdown({
                         <DropdownMenuItem asChild>
                             <Button variant={'ghost'} size={'sm'} className="w-full justify-start" asChild>
                                 <Link
-                                    to="/dashboard/snippets/$slug"
-                                    params={{ slug: snippet.slug }}
+                                    to="/dashboard/snippets/$id"
+                                    params={{ id: snippet.id }}
                                     preload={false}
                                 >
                                     <EyeIcon className="mr-2 h-4 w-4" />
@@ -128,6 +127,7 @@ export function SnippetActionsDropdown({
                         <DropdownMenuItem asChild>
                             <DeleteSnippetButton
                                 snippetId={snippet.id}
+                                variant={'ghost'}
                                 className="justify-start"
                                 mutationCallbacks={{
                                     ...deleteSnippet,

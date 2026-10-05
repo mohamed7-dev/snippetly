@@ -1,7 +1,10 @@
 import { LoadingButton } from '@/components/inputs/loading-button';
 import { UsersIcon } from 'lucide-react';
 import type React from 'react';
-import { useSendFriendshipRequest } from '../hooks/use-send-friendship-request';
+import {
+    useSendFriendshipRequest,
+    type SendFriendshipRequestMutationCallbacks,
+} from '../hooks/use-send-friendship-request';
 
 interface SendFriendshipRequestButtonProps extends Omit<
     React.ComponentProps<typeof LoadingButton>,
@@ -10,19 +13,21 @@ interface SendFriendshipRequestButtonProps extends Omit<
     label?: string;
     friendId: string;
     isLoading?: boolean;
+    sendFriendshipRequestMutationCallbacks?: SendFriendshipRequestMutationCallbacks;
 }
 
 export function SendFriendshipRequestButton({
     label = 'add friend',
     onClick,
     friendId,
+    sendFriendshipRequestMutationCallbacks,
     ...props
 }: SendFriendshipRequestButtonProps) {
-    const { isPending, mutateAsync } = useSendFriendshipRequest();
+    const { isPending, mutateAsync } = useSendFriendshipRequest(sendFriendshipRequestMutationCallbacks);
 
     const handleSending = async (e: React.MouseEvent<HTMLButtonElement>) => {
         onClick?.(e);
-        if (!e.isDefaultPrevented) {
+        if (!e.isDefaultPrevented()) {
             await mutateAsync({ friendId });
         }
     };

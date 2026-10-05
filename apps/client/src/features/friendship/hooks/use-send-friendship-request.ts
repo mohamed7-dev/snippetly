@@ -3,7 +3,7 @@ import { apiEndpoints } from '@/lib/api-endpoints';
 import { toastApiError } from '@/lib/toast-api-error';
 import type { AsyncActionCallback } from '@/lib/types';
 import type { SendFriendshipRequestDtoType } from '@snippetly/common/dto';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 export type SendFriendshipRequestMutationCallbacks = AsyncActionCallback<
@@ -12,7 +12,6 @@ export type SendFriendshipRequestMutationCallbacks = AsyncActionCallback<
 >;
 
 export function useSendFriendshipRequest(mutationCallbacks?: SendFriendshipRequestMutationCallbacks) {
-    const qClient = useQueryClient();
     return useMutation({
         mutationFn: async (input: SendFriendshipRequestDtoType['input']) => {
             return await developerApiClient.fetch<SendFriendshipRequestDtoType['output']>(

@@ -3,7 +3,7 @@ import { apiEndpoints } from '@/lib/api-endpoints';
 import { toastApiError } from '@/lib/toast-api-error';
 import type { AsyncActionCallback } from '@/lib/types';
 import type { ForkCollectionDtoType } from '@snippetly/common/dto';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 export type ForkCollectionMutationCallbacks = AsyncActionCallback<
@@ -12,7 +12,6 @@ export type ForkCollectionMutationCallbacks = AsyncActionCallback<
 >;
 
 export function useForkCollection(callbacks?: ForkCollectionMutationCallbacks) {
-    const qClient = useQueryClient();
     return useMutation({
         mutationFn: async (input: ForkCollectionDtoType['input']) => {
             return await developerApiClient.fetch<ForkCollectionDtoType['output']>(

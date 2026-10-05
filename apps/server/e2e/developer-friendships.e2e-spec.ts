@@ -641,6 +641,21 @@ describe('Developer Friendship Workflows', () => {
 
             expect(result.items.length).toBe(1);
             expect(result.items.map(f => f.status)).toContainEqual(FriendshipStatus.Accepted);
+
+            const item = result.items[0];
+            const friend = item.requester.id === authenticatedDeveloper.id ? item.addressee : item.requester;
+            expect(friend.snippetsCount).toEqual(expect.any(Number));
+            expect(friend.recentSnippets).toEqual(expect.any(Array));
+            expect(friend.recentSnippets?.length).toBeLessThanOrEqual(3);
+            expect(friend.snippetsCount).toBeGreaterThanOrEqual(friend.recentSnippets?.length ?? 0);
+            for (const snippet of friend.recentSnippets ?? []) {
+                expect(snippet).toEqual({
+                    id: expect.any(String),
+                    name: expect.any(String),
+                    slug: expect.any(String),
+                    language: expect.any(String),
+                });
+            }
         });
     });
 });

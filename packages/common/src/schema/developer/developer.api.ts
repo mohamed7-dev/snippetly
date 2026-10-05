@@ -17,10 +17,23 @@ import {
     withServerErrors,
 } from '../shared/errors.js';
 import { friendshipStatusSchema } from '../shared/friendship.type.js';
+import { tag } from '../shared/tag.type.js';
 
 //############################ Get Active Developer Account ############################
 
-const activeDeveloperOutput = withServerErrors(developer.nullable(), [forbiddenErrorSchema]);
+const developerStats = z.object({
+    snippetsCount: z.number().int().nonnegative(),
+    collectionsCount: z.number().int().nonnegative(),
+    friendsCount: z.number().int().nonnegative(),
+    forkedSnippetsCount: z.number().int().nonnegative(),
+    forkedCollectionsCount: z.number().int().nonnegative(),
+    friendsInboxCount: z.number().int().nonnegative(),
+    friendsOutboxCount: z.number().int().nonnegative(),
+});
+
+const activeDeveloperOutput = withServerErrors(developer.extend({ stats: developerStats }).nullable(), [
+    forbiddenErrorSchema,
+]);
 
 export const activeDeveloperDto = {
     input: z.null(),
@@ -74,24 +87,20 @@ const developerProfileInfo = z.object({
         isCurrentUserAFriend: z.boolean(),
         requestStatus: friendshipStatusSchema.nullable(),
     }),
-    stats: z.object({
-        snippetsCount: z.number().int().nonnegative(),
-        collectionsCount: z.number().int().nonnegative(),
-        friendsCount: z.number().int().nonnegative(),
-        forkedSnippetsCount: z.number().int().nonnegative(),
-        forkedCollectionsCount: z.number().int().nonnegative(),
-    }),
+    stats: developerStats,
 });
 const developerItem = developer.extend(developerProfileInfo.shape);
 
-const publicDeveloperItem = developerItem.pick({
-    id: true,
-    firstName: true,
-    lastName: true,
-    bio: true,
-    createdAt: true,
-    image: true,
-});
+const publicDeveloperItem = developerItem
+    .pick({
+        id: true,
+        firstName: true,
+        lastName: true,
+        bio: true,
+        createdAt: true,
+        image: true,
+    })
+    .extend(developerProfileInfo.shape);
 
 const privateDeveloperItem = developerItem;
 
@@ -132,6 +141,15 @@ const developerListInput = createPaginatedListInputSchema(
         .partial(),
 )
     .unwrap()
+    .extend({
+        discover: z
+            .union([
+                z.boolean(),
+                z.literal('true').transform(() => true),
+                z.literal('false').transform(() => false),
+            ])
+            .optional(),
+    })
     .partial();
 
 const developerListItem = developer.pick({
@@ -140,11 +158,19 @@ const developerListItem = developer.pick({
     lastName: true,
     createdAt: true,
     image: true,
+    bio: true,
 });
 
-const developerListOutput = withServerErrors(createPaginatedListOutputSchema(developerListItem), [
-    userInputErrorSchema,
-]);
+const discoverDeveloperListItem = developerListItem.extend({
+    snippetsCount: z.number().int().nonnegative().optional(),
+    collectionsCount: z.number().int().nonnegative().optional(),
+    tags: z.array(tag.pick({ id: true, value: true, usageCount: true })).optional(),
+});
+
+const developerListOutput = withServerErrors(
+    createPaginatedListOutputSchema(discoverDeveloperListItem),
+    [userInputErrorSchema],
+);
 
 export const developerListDto = {
     input: developerListInput,

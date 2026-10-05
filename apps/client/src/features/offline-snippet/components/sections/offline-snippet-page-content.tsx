@@ -1,7 +1,8 @@
 import { StatusCard } from '@/components/feedback/status-card';
 import { LoadingButton } from '@/components/inputs/loading-button';
 import { Badge } from '@/components/ui/badge';
-import { registerLanguage } from '@/lib/highlightjs';
+import { SnippetCodeBlock } from '@/features/snippets/components/shared/snippet-code-block';
+import { useDeleteConfirmation } from '@/hooks/use-delete-confirmation';
 import { useNavigate, useRouter } from '@tanstack/react-router';
 import { Trash2Icon } from 'lucide-react';
 import React from 'react';
@@ -17,10 +18,21 @@ export function OfflineSnippetPageContent({ id }: { id: string }) {
     const router = useRouter();
     const navigate = useNavigate();
 
-    const handleRemove = async () => {
-        await mutate({ id });
-        navigate({ to: '/offline' });
-        router.invalidate();
+    const { confirm, resetAndClose } = useDeleteConfirmation();
+
+    const handleDelete = async () => {
+        confirm({
+            title: 'Delete snippet',
+            description: "Are you sure you want to delete this snippet? this action can't be undone.",
+            isPending: isPending,
+            onConfirm: async () => {
+                await mutate({ id }).then(() => {
+                    resetAndClose?.();
+                    navigate({ to: '/offline' });
+                    router.invalidate();
+                });
+            },
+        });
     };
 
     React.useEffect(() => {
@@ -28,6 +40,7 @@ export function OfflineSnippetPageContent({ id }: { id: string }) {
             const result = await query({ id });
             setSnippet(result);
         };
+
         get();
     }, [id, query]);
 
@@ -43,39 +56,17 @@ export function OfflineSnippetPageContent({ id }: { id: string }) {
     }
 
     if (snippet && !isPending) {
-        const codeElRef = React.useRef<HTMLElement | null>(null);
-        const code = snippet?.code ?? '';
-        const lang = (snippet?.language ?? 'plaintext').toLowerCase();
-
-        React.useEffect(() => {
-            let cancelled = false;
-            (async () => {
-                try {
-                    const hljs = (await import('highlight.js/lib/core')).default;
-                    await registerLanguage(hljs, lang);
-                    if (!cancelled && codeElRef.current) {
-                        hljs.highlightElement(codeElRef.current);
-                    }
-                } catch {
-                    if (!cancelled && codeElRef.current) {
-                        codeElRef.current.textContent = code;
-                    }
-                }
-            })();
-            return () => {
-                cancelled = true;
-            };
-        }, [code, lang]);
-
         return (
             <article className="space-y-3">
-                <h1 className="text-2xl font-semibold">{snippet.name}</h1>
-                {snippet?.description ? <p className="opacity-80">{snippet?.description}</p> : null}
+                <h1 className="text-2xl font-semibold capitalize">{snippet.name}</h1>
+                {snippet?.description ? (
+                    <p className="opacity-80 first-letter:capitalize">{snippet?.description}</p>
+                ) : null}
                 {snippet ? (
                     <div className="space-y-6">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
-                                <p className="text-sm opacity-70">
+                                <p className="text-sm opacity-70 capitalize">
                                     saved on {new Date(snippet.savedAt).toLocaleDateString()}
                                 </p>
                                 <Badge variant="outline" className="text-xs">
@@ -85,22 +76,19 @@ export function OfflineSnippetPageContent({ id }: { id: string }) {
                             <LoadingButton
                                 isLoading={isRemoving}
                                 variant="ghost"
-                                size="sm"
+                                size="icon"
                                 className="h-8 w-8 p-0"
-                                onClick={handleRemove}
+                                onClick={handleDelete}
                             >
                                 <Trash2Icon className="h-4 w-4" />
                             </LoadingButton>
                         </div>
-                        <pre className="bg-muted/50 p-3 rounded-md overflow-auto text-sm">
-                            <code ref={codeElRef} className={`language-${lang}`}>
-                                {code}
-                            </code>
-                        </pre>
+
+                        <SnippetCodeBlock snippet={snippet} />
 
                         {snippet?.note ? (
                             <div className="space-y-2">
-                                <h2 className="text-sm font-semibold">Snippet Note</h2>
+                                <h2 className="text-sm font-semibold capitalize">Snippet Note</h2>
                                 <p className="bg-muted/50 p-3 rounded-md overflow-auto text-sm">
                                     {snippet.note}
                                 </p>

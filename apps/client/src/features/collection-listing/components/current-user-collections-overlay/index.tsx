@@ -17,14 +17,16 @@ import { listCurrentUserCollectionsQueryOptions } from '../../lib/collection-lis
 import { CollectionItem } from './collection-item';
 
 export type CurrentUserCollectionsOverlayProps = {
-    onSelect: (id: string) => void;
+    onSelect: (id: string, name: string) => void;
     onOpenChange?: (open: boolean) => void;
     isOpen: boolean;
+    selectedCollectionId?: string;
 };
 export function CurrentUserCollectionsOverlay({
     onSelect,
     onOpenChange,
     isOpen,
+    selectedCollectionId,
 }: CurrentUserCollectionsOverlayProps) {
     const { data, fetchNextPage, isFetchingNextPage, hasNextPage } = useInfiniteQuery(
         listCurrentUserCollectionsQueryOptions(),
@@ -33,6 +35,11 @@ export function CurrentUserCollectionsOverlay({
     const handleOpenChange = (open: boolean) => {
         onOpenChange?.(open);
     };
+
+    const handleSelect = (id: string, name: string) => {
+        onSelect(id, name);
+    };
+
     return (
         <AlertDialog open={isOpen} onOpenChange={handleOpenChange}>
             <AlertDialogContent>
@@ -47,7 +54,8 @@ export function CurrentUserCollectionsOverlay({
                         <CollectionItem
                             key={collection.id}
                             collection={collection}
-                            onSelect={id => onSelect(id)}
+                            onSelect={(id, name) => handleSelect(id, name)}
+                            selectedItemId={selectedCollectionId}
                         />
                     ))}
                     <InfiniteLoader

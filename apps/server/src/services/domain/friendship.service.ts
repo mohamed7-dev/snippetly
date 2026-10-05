@@ -10,6 +10,7 @@ import { isApiError } from '../../common/errors/api-error';
 import { InvalidFriendshipActionError } from '../../common/errors/generated-developer-errors';
 import { Developer } from '../../entities/developer/developer.entity';
 import { Friendship } from '../../entities/friendships/friendship.entity';
+import { Snippet } from '../../entities/snippets/snippet.entity';
 import { DatabaseService } from '../../infra/database/database.service';
 import { EventBus } from '../../infra/event-bus/event-bus.service';
 import { FriendshipEvent } from '../../infra/event-bus/events/friendship.event';
@@ -249,7 +250,11 @@ export class FriendshipService {
         return friendship;
     }
 
-    public async getCurrentUserFriends(
+    // Note: the word Current here is misleading, it indicates that
+    // the method operates on the current active developer
+    // which is not the case because it operates on whatever `developerId` gets
+    // passed to it
+    public async getUserFriends(
         ctx: RequestContext,
         developerId: string,
         input: CurrentUserFriendsListDtoType['input'],
@@ -269,7 +274,93 @@ export class FriendshipService {
             },
         });
         const [items, itemsCount] = await qb.getManyAndCount();
+
         return { items, itemsCount };
+    }
+
+    public async enrichFriends(
+        ctx: RequestContext,
+        items: Friendship[],
+        itemsCount: number,
+        developerId: string,
+    ) {
+        const friendIds = items.map(friendship =>
+            friendship.requester.id === developerId ? friendship.addressee.id : friendship.requester.id,
+        );
+        const snippetRepo = this.databaseService.getRepository(ctx, Snippet);
+        const rankedSnippetsQuery = snippetRepo
+            .createQueryBuilder('snippet')
+            .innerJoin('snippet.creator', 'creator')
+            .select('creator.id', 'developer_id')
+            .addSelect('snippet.id', 'id')
+            .addSelect('snippet.name', 'name')
+            .addSelect('snippet.slug', 'slug')
+            .addSelect('snippet.language', 'language')
+            .addSelect('COUNT(snippet.id) OVER (PARTITION BY creator.id)', 'snippets_count')
+            .addSelect(
+                'ROW_NUMBER() OVER (PARTITION BY creator.id ORDER BY snippet.createdAt DESC, snippet.id DESC)',
+                'row_number',
+            )
+            .where('creator.id IN (:...friendIds)', { friendIds })
+            .andWhere('snippet.isPrivate = :isPrivate', { isPrivate: false })
+            .andWhere('snippet.deletedAt IS NULL');
+
+        const recentSnippets = await snippetRepo.manager
+            .createQueryBuilder()
+            .select('ranked.developer_id', 'developerId')
+            .addSelect('ranked.id', 'id')
+            .addSelect('ranked.name', 'name')
+            .addSelect('ranked.slug', 'slug')
+            .addSelect('ranked.language', 'language')
+            .addSelect('ranked.snippets_count', 'snippetsCount')
+            .from(`(${rankedSnippetsQuery.getQuery()})`, 'ranked')
+            .where('ranked.row_number <= :recentSnippetLimit', { recentSnippetLimit: 3 })
+            .setParameters(rankedSnippetsQuery.getParameters())
+            .orderBy('ranked.developer_id', 'ASC')
+            .addOrderBy('ranked.row_number', 'ASC')
+            .getRawMany<{
+                developerId: string;
+                id: string;
+                name: string;
+                slug: string;
+                language: string;
+                snippetsCount: string;
+            }>();
+
+        const friendStats = new Map<
+            string,
+            {
+                snippetsCount: number;
+                recentSnippets: Array<{
+                    id: string;
+                    name: string;
+                    slug: string;
+                    language: string;
+                }>;
+            }
+        >();
+
+        for (const { developerId: friendId, snippetsCount, ...snippet } of recentSnippets) {
+            const stats = friendStats.get(friendId) ?? {
+                snippetsCount: Number(snippetsCount),
+                recentSnippets: [],
+            };
+            stats.recentSnippets.push(snippet);
+            friendStats.set(friendId, stats);
+        }
+
+        const enrichedItems = items.map(friendship => {
+            const friendSide = friendship.requester.id === developerId ? 'addressee' : 'requester';
+            const friend = friendship[friendSide];
+            const stats = friendStats.get(friend.id) ?? { snippetsCount: 0, recentSnippets: [] };
+
+            return {
+                ...friendship,
+                [friendSide]: { ...friend, ...stats },
+            };
+        });
+
+        return { items: enrichedItems, itemsCount };
     }
 
     public async getDeveloperProfileInfo(

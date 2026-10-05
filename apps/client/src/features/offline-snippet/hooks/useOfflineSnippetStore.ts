@@ -22,13 +22,13 @@ export function useOfflineSnippetStore() {
         isGettingOne: false,
     });
 
-    const onError = (e: unknown, action: 'save' | 'update' | 'remove' | 'get' | 'list') => {
+    const onError = React.useCallback((e: unknown, action: 'save' | 'update' | 'remove' | 'get' | 'list') => {
         if (e instanceof DOMException) {
             toast.error(e.message);
         } else {
             toast.error(`Failed to ${action} offline snippet${action === 'list' ? 's' : ''}`);
         }
-    };
+    }, []);
 
     const insert = async (input: InsertOfflineSnippetInput) => {
         setStatus(prev => ({ ...prev, isInserting: true }));
@@ -69,19 +69,22 @@ export function useOfflineSnippetStore() {
         }
     };
 
-    const getOne = async (input: GetOfflineSnippetInput) => {
-        setStatus(prev => ({ ...prev, isGettingOne: true }));
+    const getOne = React.useCallback(
+        async (input: GetOfflineSnippetInput) => {
+            setStatus(prev => ({ ...prev, isGettingOne: true }));
 
-        try {
-            return await getOfflineSnippet(input);
-        } catch (e) {
-            onError(e, 'get');
-        } finally {
-            setStatus(prev => ({ ...prev, isGettingOne: false }));
-        }
-    };
+            try {
+                return await getOfflineSnippet(input);
+            } catch (e) {
+                onError(e, 'get');
+            } finally {
+                setStatus(prev => ({ ...prev, isGettingOne: false }));
+            }
+        },
+        [onError],
+    );
 
-    const list = async (): Promise<OfflineSnippetItem[]> => {
+    const list = React.useCallback(async (): Promise<OfflineSnippetItem[]> => {
         setStatus(prev => ({ ...prev, isListing: true }));
 
         try {
@@ -92,7 +95,7 @@ export function useOfflineSnippetStore() {
         } finally {
             setStatus(prev => ({ ...prev, isListing: false }));
         }
-    };
+    }, [onError]);
 
     return {
         insert: { mutate: insert, isPending: status.isInserting },

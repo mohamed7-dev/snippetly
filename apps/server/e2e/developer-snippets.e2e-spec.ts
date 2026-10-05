@@ -152,6 +152,31 @@ describe('Developer Snippet Workflows', () => {
             expect(result.itemsCount).toBeGreaterThan(0);
         });
 
+        it('excludes my snippets from discovery but keeps them in regular listings', async () => {
+            const discoverParams = transformInputToSearchParams({
+                discover: true,
+                take: 100,
+            } satisfies SnippetListDtoType['input']);
+            const discoverRes = await developerClient.fetch(`/snippets?${discoverParams.toString()}`, {
+                method: 'GET',
+            });
+            const discoverResult = (await discoverRes.json()) as SnippetListDtoType['output'];
+
+            expect(discoverResult.items.length).toBeGreaterThan(0);
+            expect(discoverResult.items.every(item => item.creator.id !== authenticatedDeveloper.id)).toBe(
+                true,
+            );
+
+            const regularRes = await developerClient.fetch('/snippets?take=100', {
+                method: 'GET',
+            });
+            const regularResult = (await regularRes.json()) as SnippetListDtoType['output'];
+
+            expect(regularResult.items.some(item => item.creator.id === authenticatedDeveloper.id)).toBe(
+                true,
+            );
+        });
+
         it("succeeds when listing my friends' snippets", async () => {
             const res = await developerClient.fetch('/snippets/friends', {
                 method: 'GET',

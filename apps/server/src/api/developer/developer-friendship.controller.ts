@@ -179,11 +179,20 @@ export class DeveloperFriendshipController implements AppRouter {
                         true,
                     );
 
-                    const result = await this.friendshipService.getCurrentUserFriends(
+                    let result = await this.friendshipService.getUserFriends(
                         req.getRequestContext(),
                         developer.id,
                         req.query,
                     );
+
+                    if (result.items.length > 0) {
+                        result = await this.friendshipService.enrichFriends(
+                            req.getRequestContext(),
+                            result.items,
+                            result.itemsCount,
+                            developer.id,
+                        );
+                    }
 
                     res.status(200).json(result);
                 },

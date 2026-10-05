@@ -1,4 +1,4 @@
-import type { AuthContextType } from '@/features/auth/components/auth-provider';
+import type { AuthContextType } from '@/features/auth/providers/auth-provider';
 import type { QueryClient } from '@tanstack/react-query';
 import { HeadContent, Outlet, createRootRouteWithContext } from '@tanstack/react-router';
 

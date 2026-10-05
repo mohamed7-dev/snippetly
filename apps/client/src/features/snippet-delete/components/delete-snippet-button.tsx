@@ -31,9 +31,10 @@ export function DeleteSnippetButton({
 
     const handleDelete = async (e: React.MouseEvent<HTMLButtonElement>) => {
         onClick?.(e);
-        if (!e.isDefaultPrevented) {
+        if (!e.isDefaultPrevented()) {
             confirm({
                 title: 'Delete snippet',
+                description: "Are you sure you want to delete this snippet? this action can't be undone.",
                 isPending: isPending,
                 onConfirm: async () => await mutateAsync({ id: snippetId }),
             });
@@ -42,7 +43,7 @@ export function DeleteSnippetButton({
     return (
         <LoadingButton
             {...props}
-            className={cn('text-destructive focus:text-destructive', className)}
+            className={cn('w-full', className)}
             onClick={handleDelete}
             isLoading={isPending}
         >

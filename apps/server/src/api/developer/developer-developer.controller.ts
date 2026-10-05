@@ -92,7 +92,16 @@ export class DeveloperDeveloperController implements AppRouter {
                                 },
                             },
                         );
-                        res.status(200).json(developer);
+                        if (developer) {
+                            const stats = await this.developerService.getProfileStats(
+                                req.getRequestContext(),
+                                developer.id,
+                                true,
+                            );
+                            res.status(200).json({ ...developer, stats });
+                        } else {
+                            res.status(200).json(null);
+                        }
                     } else {
                         res.status(200).json(null);
                     }

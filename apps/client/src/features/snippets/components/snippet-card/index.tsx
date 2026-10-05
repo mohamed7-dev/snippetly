@@ -7,7 +7,7 @@ import type { ApiSuccess } from '@/lib/api-client';
 import type { SnippetListDtoType } from '@snippetly/common/dto';
 import { Link } from '@tanstack/react-router';
 import { EditIcon } from 'lucide-react';
-import { CopyButton } from '../copy-button';
+import { CopyButton } from '../shared/copy-button';
 import { SnippetActionsDropdown, type SnippetActionsDropdownProps } from '../shared/snippet-actions-dropdown';
 
 type SnippetItem = ApiSuccess<SnippetListDtoType['output']>['items'][number];
@@ -31,14 +31,17 @@ export function SnippetCard({ snippet, onCopy, ...props }: SnippetCardProps) {
                     <div className="flex-1">
                         <CardTitle className="text-lg font-heading group-hover:text-primary transition-colors">
                             <Link
-                                to={'/dashboard/snippets/$slug'}
-                                params={{ slug: snippet.slug }}
+                                to={'/dashboard/snippets/$id'}
+                                params={{ id: snippet.id }}
                                 preload={false}
+                                className="capitalize"
                             >
                                 {snippet.name}
                             </Link>
                         </CardTitle>
-                        <CardDescription className="mt-1 text-pretty">{snippet.description}</CardDescription>
+                        <CardDescription className="my-2 text-pretty first-letter:capitalize">
+                            {snippet.description}
+                        </CardDescription>
                     </div>
                     <SnippetActionsDropdown snippet={snippet} onCopy={onCopy} {...props} />
                 </div>
@@ -99,8 +102,8 @@ export function SnippetCard({ snippet, onCopy, ...props }: SnippetCardProps) {
                     {creator.id === user?.id && (
                         <Button size="sm" variant="ghost" asChild>
                             <Link
-                                to="/dashboard/snippets/$slug/edit"
-                                params={{ slug: snippet.slug }}
+                                to="/dashboard/snippets/$id/edit"
+                                params={{ id: snippet.id }}
                                 preload={false}
                             >
                                 <EditIcon className="h-3 w-3 mr-1" />

@@ -26,6 +26,8 @@ export class SessionService implements EntitySubscriberInterface {
         this.sessionDurationInMs =
             typeof sessionDuration === 'string' ? ms(sessionDuration) : sessionDuration;
         this.cache = configService.authOptions.sessionCacheStrategy;
+
+        this.databaseService.dataSource.subscribers.push(this);
     }
 
     /** @internal */

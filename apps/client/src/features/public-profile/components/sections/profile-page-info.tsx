@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { SendFriendshipRequestButton } from '@/features/friendship/components/send-friendship-request-button';
 import { FriendshipStatus } from '@snippetly/common/dto';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { useParams } from '@tanstack/react-router';
 import { CalendarIcon } from 'lucide-react';
 import { getDeveloperProfileQueryOptions } from '../../lib/public-profile-query-options';
@@ -13,12 +13,17 @@ export function ProfilePageInfo() {
     const { id } = useParams({ from: '/(public)/profile/$id' });
     const { data: profile } = useSuspenseQuery(getDeveloperProfileQueryOptions(id));
     const { user } = useAuth();
+    const qClient = useQueryClient();
 
     // isCurrentUserAFriend is always true as long as there is an interaction
     // whether it's accepted or not
     const friendshipInfo = 'friendshipInfo' in profile ? profile.friendshipInfo : undefined;
     const friendCount = 'friendCount' in profile ? profile.friendCount : 0;
     const shouldDisplayFriendshipInfo = !!friendshipInfo && (user?.id ? profile.id !== user.id : true);
+
+    const shouldDisplaySendButton =
+        friendshipInfo?.requestStatus === FriendshipStatus.Cancelled ||
+        (friendshipInfo?.requestStatus !== FriendshipStatus.Pending && !friendshipInfo?.isCurrentUserAFriend);
 
     const avatarFallback = profile.firstName.slice(0, 1) + ' ' + profile.lastName.slice(0, 1);
     const fullName = profile.firstName + ' ' + profile.lastName;
@@ -53,10 +58,18 @@ export function ProfilePageInfo() {
                         </div>
                         {shouldDisplayFriendshipInfo && (
                             <div className="flex gap-2">
-                                {(friendshipInfo?.requestStatus === FriendshipStatus.Cancelled ||
-                                    !friendshipInfo?.isCurrentUserAFriend) && (
+                                {shouldDisplaySendButton && (
                                     <div className="flex gap-2">
-                                        <SendFriendshipRequestButton friendId={profile.id} />
+                                        <SendFriendshipRequestButton
+                                            friendId={profile.id}
+                                            sendFriendshipRequestMutationCallbacks={{
+                                                onSuccess: () => {
+                                                    qClient.invalidateQueries(
+                                                        getDeveloperProfileQueryOptions(id),
+                                                    );
+                                                },
+                                            }}
+                                        />
                                     </div>
                                 )}
                                 {!!friendshipInfo?.requestStatus && (

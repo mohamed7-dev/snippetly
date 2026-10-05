@@ -101,7 +101,7 @@ export class SnippetService {
         developerId: string,
         input: UserFriendsSnippetsListDtoType['input'],
     ) {
-        const friendships = await this.friendshipService.getCurrentUserFriends(ctx, developerId, {});
+        const friendships = await this.friendshipService.getUserFriends(ctx, developerId, {});
 
         if (!friendships.items.length) {
             return { items: [], itemsCount: 0 };
@@ -147,6 +147,16 @@ export class SnippetService {
             },
             alias: 's',
         });
+
+        if (input.discover === true) {
+            const activeDeveloper = await this.developerService.getActiveDeveloper(ctx);
+            if (activeDeveloper) {
+                qb.innerJoin('s.creator', 'discoverCreator').andWhere(
+                    'discoverCreator.id <> :activeDeveloperId',
+                    { activeDeveloperId: activeDeveloper.id },
+                );
+            }
+        }
 
         if (input.tags?.values?.length) {
             const tagSubquery = qb.connection
