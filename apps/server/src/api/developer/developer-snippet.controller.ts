@@ -160,7 +160,11 @@ export class DeveloperSnippetController implements AppRouter {
                         },
                     });
                     if (shouldRestrictToPublic) {
-                        result.items = omit(result.items, ['isPrivate', 'updatedAt', 'deletedAt'], true);
+                        result.items = omit(
+                            result.items,
+                            ['isPrivate', 'updatedAt', 'deletedAt', 'collection'],
+                            true,
+                        );
                     }
                     res.status(200).json(result);
                 },
@@ -245,7 +249,7 @@ export class DeveloperSnippetController implements AppRouter {
                     if (result) {
                         finalResult = isOwner
                             ? result
-                            : omit(result, ['isPrivate', 'updatedAt', 'deletedAt']);
+                            : omit(result, ['isPrivate', 'updatedAt', 'deletedAt', 'collection']);
                     }
 
                     res.status(200).json(finalResult);

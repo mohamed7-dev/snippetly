@@ -21,6 +21,7 @@ export default defineConfig({
                         if (id.includes('react')) return 'vendor-react';
                         if (id.includes('@tanstack')) return 'vendor-tanstack';
                         if (id.includes('lucide-react')) return 'vendor-icons';
+                        if (id.includes('/prettier/')) return 'vendor-prettier';
                         return 'vendor';
                     }
                 },

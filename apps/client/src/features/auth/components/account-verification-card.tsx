@@ -1,44 +1,33 @@
 import { ProcessStatus } from '@/components/feedback/process-status';
 import { PageLoader } from '@/components/views/page-loading-view';
-import { developerApiClient } from '@/lib/api-client';
-import { apiEndpoints } from '@/lib/api-endpoints';
-import { toastApiError } from '@/lib/toast-api-error';
-import { type VerifyAccountDtoType } from '@snippetly/common/dto';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearch } from '@tanstack/react-router';
 import React from 'react';
-import { toast } from 'sonner';
+import { useAuth } from '../hooks/use-auth';
+import { useVerifyAccount } from '../hooks/use-verify-account';
 import { AuthCard } from './auth-card';
 
 export function AccountVerificationCard() {
     const { token } = useSearch({
         from: '/(auth)/_auth-layout/account-verification',
     });
-    const qClient = useQueryClient();
-
-    const { mutateAsync, isPending, data } = useMutation({
-        mutationFn: async () => {
-            return developerApiClient.fetch<VerifyAccountDtoType['output']>(
-                apiEndpoints.auth.verifyAccount.url,
-                {
-                    method: apiEndpoints.auth.verifyAccount.method,
-                    body: JSON.stringify({ token } satisfies VerifyAccountDtoType['input']),
-                },
-            );
-        },
+    const { refreshActiveUser } = useAuth();
+    const {
+        mutateAsync: verifyAccount,
+        isPending,
+        data,
+    } = useVerifyAccount({
         onSuccess: () => {
-            toast.success('Account verified successfully.');
-            qClient.invalidateQueries({ queryKey: ['users', 'profiles', 'current'] });
+            refreshActiveUser();
         },
-        onError: toastApiError,
     });
 
     React.useEffect(() => {
-        const submit = async () => {
-            await mutateAsync();
+        const verify = async () => {
+            await verifyAccount({ token });
         };
+
         if (token && token?.length) {
-            submit();
+            verify();
         }
     }, [token]);
 

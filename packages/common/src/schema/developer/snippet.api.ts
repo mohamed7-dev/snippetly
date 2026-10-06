@@ -127,6 +127,17 @@ const snippetItem = snippet.omit({ collection: true, tags: true, creator: true }
             color: true,
         })
         .nullish(),
+    forkedFrom: snippet
+        .pick({ id: true, name: true, slug: true })
+        .extend({
+            creator: developer.pick({
+                id: true,
+                firstName: true,
+                lastName: true,
+                image: true,
+            }),
+        })
+        .nullish(),
 });
 
 const publicSnippetItem = snippetItem.pick({
@@ -139,8 +150,8 @@ const publicSnippetItem = snippetItem.pick({
     note: true,
     allowForking: true,
     tags: true,
-    collection: true,
     creator: true,
+    forkedFrom: true,
 });
 
 const privateSnippetItem = snippetItem;
@@ -223,6 +234,17 @@ const snippetListItem = snippet.omit({ collection: true, tags: true, creator: tr
             color: true,
         })
         .nullish(),
+    forkedFrom: snippet
+        .pick({ id: true, name: true, slug: true })
+        .extend({
+            creator: developer.pick({
+                id: true,
+                firstName: true,
+                lastName: true,
+                image: true,
+            }),
+        })
+        .nullish(),
 });
 
 const publicListSnippetItem = snippetListItem.pick({
@@ -235,8 +257,8 @@ const publicListSnippetItem = snippetListItem.pick({
     note: true,
     allowForking: true,
     tags: true,
-    collection: true,
     creator: true,
+    forkedFrom: true,
 });
 
 const privateListSnippetItem = snippetListItem;
@@ -279,8 +301,8 @@ const userFriendsSnippetsListItem = snippetListItem.pick({
     note: true,
     allowForking: true,
     tags: true,
-    collection: true,
     creator: true,
+    forkedFrom: true,
 });
 
 const userFriendsSnippetsListInput = snippetListInput.omit({ discover: true });

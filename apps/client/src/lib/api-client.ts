@@ -1,7 +1,7 @@
 import { type AuthenticateDeveloperDtoType, type LogoutDeveloperDtoType } from '@snippetly/common/dto';
 import { AUTH_TOKEN_HEADER_KEY } from '@snippetly/common/lib';
-import { apiEndpoints } from './api-endpoints';
-import { DEVELOPER_API_URL, LOCAL_STORAGE_SESSION_TOKEN_KEY } from './constants';
+import { apiEndpoints, apiUrl } from './api-endpoints';
+import { LOCAL_STORAGE_SESSION_TOKEN_KEY } from './constants';
 
 type ApiErrorPayload = {
     code: string;
@@ -96,9 +96,7 @@ export class ApiClient {
             headers.delete('Authorization');
         }
 
-        const requestUrl = /^https?:\/\//.test(url)
-            ? url
-            : `${this.apiUrl}${url.startsWith('/') ? url : `/${url}`}`;
+        const requestUrl = /^https?:\/\//.test(url) ? url : `${this.apiUrl}${url}`;
         const response = await fetch(requestUrl, {
             ...options,
             headers,
@@ -120,4 +118,4 @@ export class ApiClient {
     }
 }
 
-export const developerApiClient = new ApiClient(DEVELOPER_API_URL);
+export const developerApiClient = new ApiClient(apiUrl('', 'developer', 1));

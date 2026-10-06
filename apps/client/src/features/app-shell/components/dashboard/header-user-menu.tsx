@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
     DropdownMenuContent,
+    DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuSeparator,
@@ -10,7 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { Link, useNavigate } from '@tanstack/react-router';
-import { LibraryIcon, LogOutIcon, UsersIcon } from 'lucide-react';
+import { BrushIcon, LibraryIcon, LogOutIcon, UserCog2Icon, UsersIcon } from 'lucide-react';
 
 export function HeaderUserMenu() {
     const { isAuthenticated, user, logout, status, isActiveAuthMutationInProgress } = useAuth();
@@ -71,6 +72,25 @@ export function HeaderUserMenu() {
                         </Link>
                     </DropdownMenuLabel>
                 )}
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                    <DropdownMenuItem asChild>
+                        <Button className="w-full justify-start" variant={'ghost'} asChild>
+                            <Link to={'/dashboard/settings/profile'}>
+                                <UserCog2Icon className="mr-2 h-4 w-4" />
+                                <span>Profile Settings</span>
+                            </Link>
+                        </Button>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                        <Button className="w-full justify-start" variant={'ghost'} asChild>
+                            <Link to={'/dashboard/settings/appearance'}>
+                                <BrushIcon className="mr-2 h-4 w-4" />
+                                <span>Appearance Settings</span>
+                            </Link>
+                        </Button>
+                    </DropdownMenuItem>
+                </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                     <Button className="w-full justify-start" variant={'ghost'} asChild>

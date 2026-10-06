@@ -1,9 +1,11 @@
 import {
     authenticateDeveloperDto,
+    refreshVerificationTokenDto,
     registerDeveloperAccountDto,
     requestPasswordResetDto,
     resetPasswordDto,
     type AuthenticateDeveloperDtoType,
+    type RefreshVerificationTokenDtoType,
     type RegisterDeveloperAccountDtoType,
     type RequestPasswordResetDtoType,
     type ResetPasswordDtoType,
@@ -24,3 +26,7 @@ export type DeveloperPasswordResetRequestFormSchema = RequestPasswordResetDtoTyp
 // ResetPassword -> Developer
 export const developerResetPasswordFormSchema = resetPasswordDto.input;
 export type DeveloperResetPasswordFormSchema = ResetPasswordDtoType['input'];
+
+// RefreshAccountVerificationToken -> Developer
+export const refreshAccountVerificationTokenFormSchema = refreshVerificationTokenDto.input;
+export type RefreshAccountVerificationTokenFormSchemaType = RefreshVerificationTokenDtoType['input'];

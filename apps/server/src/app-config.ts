@@ -44,7 +44,7 @@ export const appConfig: AppConfig = {
         trustProxy: isProduction() ? (process.env.VERCEL === '1' ? true : 1) : false,
     },
     auth: {
-        requireVerification: true,
+        requireVerification: false,
         developerAuthenticationStrategies: [
             new NativeAuthenticationStrategy(),
             new GoogleAuthenticationStrategy({ googleClientId: process.env.GOOGLE_CLIENT_ID! }),

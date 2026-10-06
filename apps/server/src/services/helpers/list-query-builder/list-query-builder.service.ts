@@ -64,7 +64,6 @@ export class ListQueryBuilder {
             relations: extraOptions.relations,
             take,
             skip,
-            relationLoadStrategy: 'query',
             where: extraOptions.where ?? {},
         });
 

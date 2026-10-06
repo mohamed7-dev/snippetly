@@ -5,6 +5,7 @@ export const Route = createFileRoute('/(protected)/dashboard')({
     component: DashboardProtectedLayout,
     beforeLoad: async ({ context: { auth }, location }) => {
         if (!auth || !auth.isAuthenticated) {
+            // FIXME: redirects even when user is authenticated
             throw redirect({ to: '/sign-in', search: { redirect: location.href } });
         }
     },

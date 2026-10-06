@@ -345,7 +345,7 @@ export class UserService {
                 await this.verificationTokenGenerator.generateVerificationToken(ctx);
             user.isVerified = false;
         } else {
-            user.isVerified = true;
+            user.isVerified = false;
         }
 
         if (credentials.password) {

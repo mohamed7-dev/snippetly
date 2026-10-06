@@ -1,7 +1,13 @@
-import { DEVELOPER_API_URL } from './constants';
+import { DEFAULT_ADMIN_API_PATH_PREFIX, DEFAULT_DEVELOPER_API_PATH_PREFIX } from '@snippetly/common/lib';
+import { API_URL } from './constants';
+import type { UserType } from './types';
 
-export const apiUrl = (path: string) => {
-    return `${DEVELOPER_API_URL}/${path}`;
+export const apiUrl = (path: string, apiType?: UserType, apiVersion?: number) => {
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+    const normalizedApiUrl = (API_URL as string).endsWith('/')
+        ? (API_URL as string).slice(0, -1)
+        : (API_URL as string);
+    return `${normalizedApiUrl}${apiVersion ? '/v' + apiVersion : ''}${apiType ? (apiType === 'admin' ? '/' + DEFAULT_ADMIN_API_PATH_PREFIX : '/' + DEFAULT_DEVELOPER_API_PATH_PREFIX) : ''}${normalizedPath}`;
 };
 
 export interface ApiEndpoint {
@@ -207,6 +213,16 @@ export const apiEndpoints = {
         generateSlugForEntity: {
             url: `slugs`,
             method: 'PUT',
+        },
+    },
+    upload: {
+        base: {
+            url: apiUrl('upload'),
+            method: 'POST',
+        },
+        profileImage: {
+            url: 'upload-avatar',
+            method: 'POST',
         },
     },
 } as const satisfies Record<string, Record<string, ApiEndpoint>>;

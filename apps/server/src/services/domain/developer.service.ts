@@ -198,7 +198,7 @@ export class DeveloperService implements OnApplicationBootstrap {
         }
 
         // check if user is not verified and verification is required and create new token
-        if (!user.isVerified) {
+        if (!user.isVerified && this.configService.authOptions.requireVerification) {
             user = await this.userService.generateAndAssignVerificationToken(ctx, user);
         }
 

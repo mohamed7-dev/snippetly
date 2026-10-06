@@ -1,4 +1,4 @@
-import { LandingHeader } from '@/features/app-shell/components/landing/header';
+import { LandingLayoutHeader } from '@/features/app-shell/components/landing/landing-layout-header';
 import { LandingPageCta } from '@/features/landing/components/landing-page-cta';
 import { LandingPageDemo } from '@/features/landing/components/landing-page-demo';
 import { LandingPageFeatures } from '@/features/landing/components/landing-page-features';
@@ -25,7 +25,7 @@ export const Route = createFileRoute('/(public)/')({
 function LandingPage() {
     return (
         <React.Fragment>
-            <LandingHeader />
+            <LandingLayoutHeader />
             <main>
                 {/* Hero Section */}
                 <LandingPageHero />

@@ -229,6 +229,31 @@ describe('Developer Snippet Workflows', () => {
                 expect(result.id).not.toBe(snippet.id);
             });
 
+            it('succeeds when forking a snippet with tags', async () => {
+                const sourceRes = await developerClient.fetch('/snippets', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        name: 'tagged fork source',
+                        slug: 'tagged-fork-source',
+                        language: 'js',
+                        code: 'const tagged = true;',
+                        tags: ['fork-regression'],
+                    } satisfies CreateSnippetDtoType['input']),
+                });
+                const source = (await sourceRes.json()) as CreateSnippetDtoType['output'];
+
+                expect(sourceRes.ok).toBe(true);
+                if (!('id' in source)) throw new Error('Failed to create tagged snippet for fork test');
+
+                const forkRes = await developerClient.fetch(`/snippets/${source.id}/forks`, {
+                    method: 'POST',
+                });
+                const fork = (await forkRes.json()) as ForkSnippetDtoType['output'];
+
+                expect(forkRes.ok).toBe(true);
+                expect('id' in fork && fork.id).not.toBe(source.id);
+            });
+
             it('succeeds when creating&deleting a new snippet', async () => {
                 const res = await developerClient.fetch('/snippets', {
                     method: 'POST',

@@ -3,7 +3,7 @@ import { StatusCard } from '@/components/feedback/status-card';
 import { Button } from '@/components/ui/button';
 import { Link } from '@tanstack/react-router';
 import React from 'react';
-import { useOfflineSnippetStore } from '../../hooks/useOfflineSnippetStore';
+import { useOfflineSnippetStore } from '../../hooks/use-offline-snippet-store';
 import type { OfflineSnippetItem } from '../../lib/store';
 
 export function OfflineSnippetsList() {

@@ -41,6 +41,8 @@ export class App {
         });
         this.app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(openApiDocument));
         iocContainer.initRoutes(this.app);
+        // TODO: this doesn't participate in the normal routes definitions
+        // so middlewares will not intercept requests
         this.app.use(
             '/api/upload',
             createRouteHandler({

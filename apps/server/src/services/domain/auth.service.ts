@@ -22,6 +22,7 @@ import { LoginEvent } from '../../infra/event-bus/events/login.event';
 import { LogoutEvent } from '../../infra/event-bus/events/logout.event';
 import { Injectable } from '../../infra/ioc-container/injectable.decorator';
 import { SessionService } from './session.service';
+import { UserService } from './user.service';
 
 @Injectable()
 export class AuthService {
@@ -30,6 +31,7 @@ export class AuthService {
         private readonly databaseService: DatabaseService,
         private readonly sessionService: SessionService,
         private readonly eventBus: EventBus,
+        private readonly userService: UserService,
     ) {}
 
     public async authenticate(
@@ -82,6 +84,7 @@ export class AuthService {
         if (isUsingNativeMethod && !user.isVerified) {
             const nativeAuthMethod = user.getNativeAuthenticationMethod({ throwError: false });
             if (nativeAuthMethod && nativeAuthMethod.verificationToken != null) {
+                await this.userService.generateAndAssignVerificationToken(ctx, user);
                 return new NotVerifiedAccountError();
             }
         }

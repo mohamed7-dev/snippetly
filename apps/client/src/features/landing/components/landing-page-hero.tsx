@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useOfflineSnippetStore } from '@/features/offline-snippet/hooks/useOfflineSnippetStore';
+import { useOfflineSnippetStore } from '@/features/offline-snippet/hooks/use-offline-snippet-store';
 import type { OfflineSnippetItem } from '@/features/offline-snippet/lib/store';
 import { Link } from '@tanstack/react-router';
 import { ArrowRightIcon, LibraryIcon, StarIcon } from 'lucide-react';

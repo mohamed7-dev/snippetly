@@ -29,6 +29,7 @@ function isRateLimiterError(err: unknown): err is RateLimiterError {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function exceptionFilter(err: unknown, req: Request, res: Response, _next: NextFunction) {
+    console.log(err);
     Logger.debug(
         `Exception filter reported an error, ${err instanceof Error ? err.message : JSON.stringify(err)}`,
     );

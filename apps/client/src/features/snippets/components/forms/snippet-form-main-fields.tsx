@@ -134,7 +134,7 @@ export function SnippetFormMainFields({ isPending, snippetId }: { isPending: boo
 
             <Card>
                 <CardHeader>
-                    <CardTitle className="font-heading">Code</CardTitle>
+                    <CardTitle className="sr-only">Code Info</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <SnippetFormCode />

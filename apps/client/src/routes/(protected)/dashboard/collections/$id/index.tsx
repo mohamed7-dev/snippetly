@@ -29,8 +29,8 @@ export const Route = createFileRoute('/(protected)/dashboard/collections/$id/')(
             ],
         };
     },
-    loader: ({ context: { queryClient }, params: { id } }) => {
-        queryClient.infiniteQuery({ ...listCollectionSnippetsQueryOptions(id), staleTime: 'static' });
+    loader: async ({ context: { queryClient }, params: { id } }) => {
+        await queryClient.infiniteQuery({ ...listCollectionSnippetsQueryOptions(id), staleTime: 'static' });
     },
 });
 

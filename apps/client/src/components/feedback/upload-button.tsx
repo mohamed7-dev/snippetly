@@ -1,6 +1,6 @@
-import { API_URL } from '@/lib/constants';
+import { apiEndpoints } from '@/lib/api-endpoints';
 import { generateUploadButton } from '@uploadthing/react';
 
 export const UploadButton = generateUploadButton({
-    url: `${API_URL}/upload`,
+    url: apiEndpoints.upload.base.url,
 });

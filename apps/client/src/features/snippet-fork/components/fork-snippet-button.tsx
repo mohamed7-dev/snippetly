@@ -26,7 +26,7 @@ export function ForkSnippetButton({
 
     const handleForking = async (e: React.MouseEvent<HTMLButtonElement>) => {
         onClick?.(e);
-        if (!e.isDefaultPrevented) {
+        if (!e.isDefaultPrevented()) {
             await mutateAsync({ id: snippetId });
         }
     };

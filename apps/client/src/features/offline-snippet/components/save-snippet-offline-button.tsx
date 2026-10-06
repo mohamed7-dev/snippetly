@@ -1,14 +1,15 @@
 import { LoadingButton } from '@/components/inputs/loading-button';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { EyeIcon } from 'lucide-react';
+import { LibraryIcon } from 'lucide-react';
 import type React from 'react';
-import { useOfflineSnippetStore } from '../hooks/useOfflineSnippetStore';
+import { useOfflineSnippetStore } from '../hooks/use-offline-snippet-store';
 import type { InsertOfflineSnippetInput } from '../lib/store';
 
 interface SaveSnippetOfflineButtonProps extends React.ComponentProps<typeof Button> {
     label?: string;
     snippet: InsertOfflineSnippetInput;
+    onSuccess?: () => void;
 }
 
 export function SaveSnippetOfflineButton({
@@ -16,6 +17,7 @@ export function SaveSnippetOfflineButton({
     className,
     onClick,
     snippet,
+    onSuccess,
     ...props
 }: SaveSnippetOfflineButtonProps) {
     const {
@@ -24,21 +26,19 @@ export function SaveSnippetOfflineButton({
 
     const handleOfflineSave = async (e: React.MouseEvent<HTMLButtonElement>) => {
         onClick?.(e);
-        if (!e.isDefaultPrevented) {
-            await mutate(snippet);
+        if (!e.isDefaultPrevented()) {
+            await mutate(snippet).then(() => onSuccess?.());
         }
     };
 
     return (
         <LoadingButton
-            variant={'ghost'}
-            size={'sm'}
             {...props}
             className={cn('w-full', className)}
             onClick={handleOfflineSave}
             isLoading={isPending}
         >
-            <EyeIcon className="mr-2 h-4 w-4 rotate-180" />
+            <LibraryIcon className="mr-2 h-4 w-4 rotate-180" />
             {label}
         </LoadingButton>
     );

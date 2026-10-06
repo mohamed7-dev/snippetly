@@ -117,11 +117,9 @@ export class DeveloperDeveloperController implements AppRouter {
                 response: findOneDeveloperDto.output,
                 handler: async (req, res) => {
                     const ctx = req.getRequestContext();
-                    const result = await this.developerService.findOne(
-                        ctx,
-                        req.params.id,
-                        { user: { roles: true, authenticationMethods: true } },
-                    );
+                    const result = await this.developerService.findOne(ctx, req.params.id, {
+                        user: { roles: true, authenticationMethods: true },
+                    });
 
                     const isOwner = ctx.activeUserId === result?.user.id ? true : false;
 

@@ -90,6 +90,9 @@ export class SnippetService {
                     creator: true,
                     collection: true,
                     tags: true,
+                    forkedFrom: {
+                        creator: true,
+                    },
                     ...relations,
                 },
             })) ?? undefined
@@ -122,6 +125,9 @@ export class SnippetService {
                 creator: { user: true },
                 collection: true,
                 tags: true,
+                forkedFrom: {
+                    creator: true,
+                },
             },
             orderBy: {
                 createdAt: 'DESC',
@@ -143,6 +149,7 @@ export class SnippetService {
                 creator: true,
                 collection: true,
                 tags: true,
+                forkedFrom: { creator: true },
                 ...relations,
             },
             alias: 's',
@@ -174,6 +181,7 @@ export class SnippetService {
             });
         }
 
+        // TODO: filtering by collection is not working
         if (input.collection) {
             qb.innerJoin('s.collection', 'collection');
             qb.andWhere('collection.id = :collectionId', {
@@ -274,7 +282,6 @@ export class SnippetService {
             forkedFrom: source,
             creator: developer,
             collection: source.collection,
-            tags: source.tags,
         });
 
         const forkInput = { slug: source.slug };
@@ -293,7 +300,11 @@ export class SnippetService {
             snippet.collection = collection;
         }
 
-        await repo.save(snippet, { reload: false });
+        await repo.save(snippet);
+        if (source.tags.length > 0) {
+            await repo.createQueryBuilder().relation(Snippet, 'tags').of(snippet).add(source.tags);
+            snippet.tags = source.tags;
+        }
         await this.eventBus.publish(new SnippetEvent(ctx, snippet, 'forked', input));
 
         return snippet;

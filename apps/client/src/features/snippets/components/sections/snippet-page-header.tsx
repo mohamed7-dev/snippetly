@@ -1,19 +1,20 @@
 import { Button } from '@/components/ui/button';
 import { HeaderWrapper } from '@/features/app-shell/components/header-wrapper';
 import { useAuth } from '@/features/auth/hooks/use-auth';
-import { useOfflineSnippetStore } from '@/features/offline-snippet/hooks/useOfflineSnippetStore';
+import { RemoveSnippetOfflineButton } from '@/features/offline-snippet/components/remove-snippet-offline-button';
+import { SaveSnippetOfflineButton } from '@/features/offline-snippet/components/save-snippet-offline-button';
+import { useOfflineSnippetStore } from '@/features/offline-snippet/hooks/use-offline-snippet-store';
 import type { OfflineSnippetItem } from '@/features/offline-snippet/lib/store';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Link, useParams } from '@tanstack/react-router';
-import { ArrowLeftIcon, EditIcon, LibraryIcon } from 'lucide-react';
+import { ArrowLeftIcon, EditIcon } from 'lucide-react';
 import React from 'react';
 import { getSnippetQueryOptions } from '../../lib/snippet-query-options';
 import { CopyButton } from '../shared/copy-button';
 
 export function SnippetPageHeader() {
     const {
-        getOne: { query, isPending },
-        insert: { mutate, isPending: isSavingOffline },
+        getOne: { query },
     } = useOfflineSnippetStore();
 
     const [offlineSnippet, setOfflineSnippet] = React.useState<OfflineSnippetItem>();
@@ -23,17 +24,11 @@ export function SnippetPageHeader() {
     const { data: snippet } = useSuspenseQuery(getSnippetQueryOptions(params.id));
     const { user } = useAuth();
 
-    const handleSaveOffline = React.useCallback(async () => {
-        await mutate({
-            ...snippet,
-        });
-        setShowSaveButton(false);
-    }, [snippet]);
-
     React.useEffect(() => {
         const get = async () => {
             const item = await query({ id: params.id });
             setOfflineSnippet(item);
+            if (item) setShowSaveButton(false);
         };
         get();
     }, []);
@@ -51,15 +46,20 @@ export function SnippetPageHeader() {
 
             <div className="w-full sm:w-auto flex items-center justify-center gap-3">
                 <CopyButton variant={'outline'} code={snippet.code} />
-                {showSaveButton && (
-                    <Button
-                        disabled={isSavingOffline || isPending}
+                {showSaveButton ? (
+                    <SaveSnippetOfflineButton
+                        className="w-auto"
                         variant={'outline'}
-                        onClick={handleSaveOffline}
-                    >
-                        <LibraryIcon className="h-4 w-4 mr-2" />
-                        Save For Offline
-                    </Button>
+                        snippet={snippet}
+                        onSuccess={() => setShowSaveButton(false)}
+                    />
+                ) : (
+                    <RemoveSnippetOfflineButton
+                        className="w-auto"
+                        variant={'destructive-outline'}
+                        snippet={snippet}
+                        onSuccess={() => setShowSaveButton(true)}
+                    />
                 )}
                 {snippet.creator.id === user?.id && (
                     <Button size="sm" asChild>

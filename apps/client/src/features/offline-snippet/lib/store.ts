@@ -1,24 +1,47 @@
 import type { ApiSuccess } from '@/lib/api-client';
-import { DB_VERSION, withStore } from '@/lib/offline-store/indexeddb';
+import { withStore, type StoreDefinition } from '@/lib/offline-store/indexeddb';
 import type { SnippetListDtoType } from '@snippetly/common/dto';
 import { APP_NAME } from '@snippetly/common/lib';
 
 export const SNIPPETS_OFFLINE_DB_NAME = `${APP_NAME.toLowerCase()}-offline`;
 
-export const SNIPPETS_STORE = 'saved-snippets';
+const DEFAULT_SAVED_BY = 'anonymous';
+
+export const snippetStore: StoreDefinition = {
+    name: 'snippets',
+    indexes: [
+        {
+            name: 'savedBy',
+            keyPath: 'savedBy',
+        },
+        {
+            name: 'language',
+            keyPath: 'language',
+        },
+        {
+            name: 'collectionId',
+            keyPath: 'collectionId',
+        },
+        {
+            name: 'createdAt',
+            keyPath: 'createdAt',
+        },
+    ],
+};
 
 export interface OfflineSnippetItem extends Pick<
     ApiSuccess<SnippetListDtoType['output']>['items'][number],
     'name' | 'code' | 'language' | 'creator' | 'id' | 'description' | 'note' | 'tags' | 'slug'
 > {
     savedAt: Date;
+    savedBy?: string;
 }
 
 export type InsertOfflineSnippetInput = Omit<OfflineSnippetItem, 'savedAt'>;
 
 export async function insertOfflineSnippet(snippet: InsertOfflineSnippetInput): Promise<void> {
     await withStore(
-        SNIPPETS_STORE,
+        snippetStore,
         'readwrite',
         async store => {
             const current = await new Promise<OfflineSnippetItem | undefined>((resolve, reject) => {
@@ -30,11 +53,11 @@ export async function insertOfflineSnippet(snippet: InsertOfflineSnippetInput): 
             const value: OfflineSnippetItem = {
                 ...snippet,
                 savedAt: new Date(),
+                savedBy: snippet.savedBy ?? DEFAULT_SAVED_BY,
             };
             store.put(value);
         },
         SNIPPETS_OFFLINE_DB_NAME,
-        DB_VERSION,
     );
 }
 
@@ -42,21 +65,22 @@ export type RemoveOfflineSnippetInput = { id: string };
 
 export async function removeOfflineSnippet(input: RemoveOfflineSnippetInput): Promise<void> {
     await withStore(
-        SNIPPETS_STORE,
+        snippetStore,
         'readwrite',
         async store => {
             store.delete(input.id);
         },
         SNIPPETS_OFFLINE_DB_NAME,
-        DB_VERSION,
     );
 }
 
-export type UpdateOfflineSnippetInput = Partial<Omit<OfflineSnippetItem, 'id' | 'savedAt'>> & { id: string };
+export type UpdateOfflineSnippetInput = Partial<Omit<OfflineSnippetItem, 'id' | 'savedAt' | 'savedBy'>> & {
+    id: string;
+};
 
 export async function updateOfflineSnippet(patch: UpdateOfflineSnippetInput): Promise<void> {
     await withStore(
-        SNIPPETS_STORE,
+        snippetStore,
         'readwrite',
         async store => {
             const current = await new Promise<OfflineSnippetItem | undefined>((resolve, reject) => {
@@ -79,46 +103,51 @@ export async function updateOfflineSnippet(patch: UpdateOfflineSnippetInput): Pr
                 // Preserve identifiers and timestamps
                 id: current.id,
                 savedAt: current.savedAt ?? new Date(),
+                savedBy: current.savedBy ?? DEFAULT_SAVED_BY,
             };
             store.put(updated);
         },
         SNIPPETS_OFFLINE_DB_NAME,
-        DB_VERSION,
     );
 }
 
-export type GetOfflineSnippetInput = { id: string };
+export type GetOfflineSnippetInput = { id: string; savedBy?: string };
 
 export async function getOfflineSnippet(
     input: GetOfflineSnippetInput,
 ): Promise<OfflineSnippetItem | undefined> {
     return await withStore(
-        SNIPPETS_STORE,
+        snippetStore,
         'readonly',
         async store => {
             return await new Promise<OfflineSnippetItem | undefined>((resolve, reject) => {
                 const req = store.get(input.id);
-                req.onsuccess = () => resolve(req.result as OfflineSnippetItem | undefined);
+                const savedBy = input.savedBy ?? DEFAULT_SAVED_BY;
+
+                req.onsuccess = () =>
+                    resolve(
+                        (req.result as OfflineSnippetItem | undefined)?.savedBy === savedBy
+                            ? req.result
+                            : undefined,
+                    );
                 req.onerror = () => reject(req.error);
             });
         },
         SNIPPETS_OFFLINE_DB_NAME,
-        DB_VERSION,
     );
 }
 
-export async function listOfflineSnippets(): Promise<OfflineSnippetItem[]> {
+export async function listOfflineSnippets(activeUserId?: string): Promise<OfflineSnippetItem[]> {
     return await withStore(
-        SNIPPETS_STORE,
+        snippetStore,
         'readonly',
         async store => {
             return await new Promise<OfflineSnippetItem[]>((resolve, reject) => {
-                const req = store.getAll();
+                const req = store.index('savedBy').getAll(activeUserId ?? DEFAULT_SAVED_BY);
                 req.onsuccess = () => resolve((req.result as OfflineSnippetItem[]) ?? []);
                 req.onerror = () => reject(req.error);
             });
         },
         SNIPPETS_OFFLINE_DB_NAME,
-        DB_VERSION,
     );
 }

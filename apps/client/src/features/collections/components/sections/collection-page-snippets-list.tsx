@@ -16,10 +16,8 @@ export function CollectionPageSnippetsList() {
         listCollectionSnippetsQueryOptions(params.id),
     );
 
-    const snippets = data.pages.flatMap(page => page.items);
+    const snippets = data.pages.flatMap(page => page.items) ?? [];
     const total = data.pages[0]?.itemsCount ?? 0;
-
-    // const filteredSnippets = useFilter({ data: snippets, filter });
 
     const qClient = useQueryClient();
 
@@ -31,12 +29,6 @@ export function CollectionPageSnippetsList() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <h2 className="font-heading font-semibold text-xl">Snippets ({total})</h2>
-                {/* <div className="flex items-center gap-2">
-                    <FilterMenu
-                        onSelect={selected => navigate({ search: { filter: selected } })}
-                        selected={filter}
-                    />
-                </div> */}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">

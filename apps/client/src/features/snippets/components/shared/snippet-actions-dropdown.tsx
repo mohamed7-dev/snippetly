@@ -7,7 +7,9 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/features/auth/hooks/use-auth';
+import { RemoveSnippetOfflineButton } from '@/features/offline-snippet/components/remove-snippet-offline-button';
 import { SaveSnippetOfflineButton } from '@/features/offline-snippet/components/save-snippet-offline-button';
+import { useOfflineSnippetStore } from '@/features/offline-snippet/hooks/use-offline-snippet-store';
 import { DeleteSnippetButton } from '@/features/snippet-delete/components/delete-snippet-button';
 import type { DeleteSnippetAsyncActionCallbacks } from '@/features/snippet-delete/hooks/use-delete-snippet';
 import { ForkSnippetButton } from '@/features/snippet-fork/components/fork-snippet-button';
@@ -38,13 +40,27 @@ export function SnippetActionsDropdown({
 }: SnippetActionsDropdownProps) {
     const { user } = useAuth();
     const [open, setOpen] = React.useState(false);
-
+    const {
+        getOne: { query: getOfflineSnippet, isPending },
+    } = useOfflineSnippetStore();
+    const [showSaveOfflineButton, setShowSaveOfflineButton] = React.useState(() => true);
+    const collectionId = 'collection' in snippet ? snippet.collection?.id : undefined;
     // copy
     const { copyCode } = useCopyCode({ code: snippet.code });
     const handleCopy = () => {
         copyCode();
         onCopy?.(snippet.code);
     };
+
+    React.useEffect(() => {
+        const query = async () => {
+            const item = await getOfflineSnippet({ id: snippet.id });
+            if (item) {
+                setShowSaveOfflineButton(false);
+            }
+        };
+        query();
+    }, [snippet]);
 
     return (
         <DropdownMenu open={open} onOpenChange={setOpen}>
@@ -77,10 +93,27 @@ export function SnippetActionsDropdown({
                                 forkSnippet?.onSuccess?.(...props);
                             },
                         }}
+                        selectedCollectionId={collectionId}
                     />
                 )}
                 <DropdownMenuItem onSelect={e => e.preventDefault()} asChild>
-                    <SaveSnippetOfflineButton snippet={snippet} className="justify-start" />
+                    {showSaveOfflineButton ? (
+                        <SaveSnippetOfflineButton
+                            variant={'ghost'}
+                            snippet={snippet}
+                            className="justify-start"
+                            disabled={isPending}
+                            onSuccess={() => setShowSaveOfflineButton(false)}
+                        />
+                    ) : (
+                        <RemoveSnippetOfflineButton
+                            variant={'ghost'}
+                            snippet={snippet}
+                            className="justify-start"
+                            disabled={isPending}
+                            onSuccess={() => setShowSaveOfflineButton(true)}
+                        />
+                    )}
                 </DropdownMenuItem>
                 {user && (
                     <DropdownMenuItem onSelect={e => e.preventDefault()} asChild>

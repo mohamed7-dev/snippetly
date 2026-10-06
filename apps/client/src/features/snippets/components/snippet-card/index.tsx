@@ -29,7 +29,7 @@ export function SnippetCard({ snippet, onCopy, ...props }: SnippetCardProps) {
             <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                     <div className="flex-1">
-                        <CardTitle className="text-lg font-heading group-hover:text-primary transition-colors">
+                        <CardTitle className="text-lg font-heading hover:text-primary transition-colors">
                             <Link
                                 to={'/dashboard/snippets/$id'}
                                 params={{ id: snippet.id }}
@@ -39,8 +39,39 @@ export function SnippetCard({ snippet, onCopy, ...props }: SnippetCardProps) {
                                 {snippet.name}
                             </Link>
                         </CardTitle>
-                        <CardDescription className="my-2 text-pretty first-letter:capitalize">
-                            {snippet.description}
+                        <CardDescription className="my-2 text-pretty space-y-2">
+                            {snippet.forkedFrom && (
+                                <div>
+                                    <p>
+                                        <strong>Forked From</strong>:{' '}
+                                        <Button variant={'link'} asChild>
+                                            <Link
+                                                to={'/dashboard/snippets/$id'}
+                                                params={{ id: snippet.forkedFrom.id }}
+                                                preload={false}
+                                                className="capitalize"
+                                            >
+                                                {snippet.forkedFrom.name}
+                                            </Link>
+                                        </Button>
+                                    </p>
+                                    <p>
+                                        <strong>Originally Created By</strong>:{' '}
+                                        <Button variant={'link'} asChild>
+                                            <Link
+                                                to={'/profile/$id'}
+                                                params={{ id: snippet.forkedFrom.creator.id }}
+                                                preload={false}
+                                                className="capitalize"
+                                            >
+                                                {snippet.forkedFrom.creator.firstName +
+                                                    ' ' +
+                                                    snippet.forkedFrom.creator.lastName}
+                                            </Link>
+                                        </Button>
+                                    </p>
+                                </div>
+                            )}
                         </CardDescription>
                     </div>
                     <SnippetActionsDropdown snippet={snippet} onCopy={onCopy} {...props} />

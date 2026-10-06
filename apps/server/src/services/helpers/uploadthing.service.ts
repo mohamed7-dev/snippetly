@@ -41,7 +41,7 @@ export class UploadthingService {
                             moduleRef.getProvider<import('./request-context.service').RequestContextService>(
                                 RequestContextService,
                             );
-                        const ctx = await requestContextService.create({ apiType: 'developer' });
+                        const ctx = requestContextService.create({ apiType: 'developer' });
                         await developerService.update(ctx, {
                             id: developer.id,
                             image: file.ufsUrl,

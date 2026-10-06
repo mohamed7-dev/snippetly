@@ -1,5 +1,5 @@
 import { DeepPartial } from '@snippetly/common/lib';
-import { Column, Entity, Index, JoinTable, ManyToMany, ManyToOne, OneToMany } from 'typeorm';
+import { Column, Entity, Index, JoinColumn, JoinTable, ManyToMany, ManyToOne, OneToMany } from 'typeorm';
 import { SoftDeletable } from '../../common/types/soft-deletable.interface';
 import { AppEntity } from '../../infra/database/app-entity';
 import { Collection } from '../collections/collection.entity';
@@ -41,10 +41,14 @@ export class Snippet extends AppEntity implements SoftDeletable {
     allowForking: boolean;
 
     @Index()
+    @Column({ nullable: true })
+    forkedFromId: string | null;
+
     @ManyToOne(() => Snippet, snippet => snippet.forkedChildren, {
         onDelete: 'SET NULL',
         nullable: true,
     })
+    @JoinColumn({ name: 'forkedFromId' })
     forkedFrom: Snippet | null;
 
     @OneToMany(() => Snippet, snippet => snippet.forkedFrom)
