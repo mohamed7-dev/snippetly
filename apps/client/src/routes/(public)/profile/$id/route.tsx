@@ -34,7 +34,7 @@ export const Route = createFileRoute('/(public)/profile/$id')({
         };
     },
     loader: async ({ context: { queryClient }, params: { id } }) => {
-        queryClient.infiniteQuery(listCreatorSnippetsQueryOptions(id));
+        queryClient.infiniteQuery(listCreatorSnippetsQueryOptions(id)).catch();
         await queryClient.query({ ...getDeveloperProfileQueryOptions(id), staleTime: 'static' });
     },
 });

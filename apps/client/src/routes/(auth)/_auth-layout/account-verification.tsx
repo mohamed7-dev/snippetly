@@ -1,4 +1,4 @@
-import { AccountVerificationCard } from '@/features/auth/components/account-verification-card';
+import { AccountVerificationCard } from '@/features/auth/components/sections/account-verification-card';
 import { createFileRoute } from '@tanstack/react-router';
 import z from 'zod';
 

@@ -16,7 +16,7 @@ export interface AuthContextType {
     isActiveAuthMutationInProgress: boolean;
     status: 'initial' | 'authenticated' | 'verifying' | 'unauthenticated';
     errorMessage?: string;
-    login: (credentials: Credentials, userType: UserType, onSuccess?: () => void) => void;
+    login: (credentials: Credentials, userType: UserType, onSuccess?: () => void) => Promise<void>;
     logout: (userType: UserType, onSuccess?: () => void) => Promise<void>;
     refreshActiveUser: () => void;
     /**
@@ -73,9 +73,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     );
 
     const login = React.useCallback(
-        (credentials: Credentials, userType: UserType, onSuccess?: () => void) => {
+        async (credentials: Credentials, userType: UserType, onSuccess?: () => void) => {
             if (credentials.native) {
-                developerApiClient
+                await developerApiClient
                     .asUserWithCredentials(credentials.native.identifier, credentials.native.password)
                     .then(async data => {
                         onLoginSuccess(data, onSuccess);

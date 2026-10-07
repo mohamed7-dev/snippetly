@@ -1,8 +1,10 @@
 import { LoadingButton } from '@/components/inputs/loading-button';
 import { Button } from '@/components/ui/button';
 import { HeaderWrapper } from '@/features/app-shell/components/header-wrapper';
+import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
+import { Permission } from '@snippetly/common/dto';
 import { Link } from '@tanstack/react-router';
-import { ArrowLeftIcon, EyeIcon, SaveIcon } from 'lucide-react';
+import { ArrowLeftIcon, SaveIcon } from 'lucide-react';
 
 export function CreateSnippetPageHeader({ isPending: isMutating }: { isPending: boolean }) {
     const isPending = isMutating;
@@ -20,14 +22,12 @@ export function CreateSnippetPageHeader({ isPending: isMutating }: { isPending: 
             </div>
 
             <div className="w-full sm:w-auto flex items-center justify-center gap-3">
-                <Button type="button" variant="outline" disabled={isPending}>
-                    <EyeIcon className="h-4 w-4 mr-2" />
-                    Preview
-                </Button>
-                <LoadingButton isLoading={isPending} type="submit">
-                    <SaveIcon className="h-4 w-4 mr-2" />
-                    Create Snippet
-                </LoadingButton>
+                <PermissionGuard requiredPermissions={[Permission.Authenticated, Permission.CreateSnippet]}>
+                    <LoadingButton isLoading={isPending} type="submit">
+                        <SaveIcon className="h-4 w-4 mr-2" />
+                        Create Snippet
+                    </LoadingButton>
+                </PermissionGuard>
             </div>
         </HeaderWrapper>
     );

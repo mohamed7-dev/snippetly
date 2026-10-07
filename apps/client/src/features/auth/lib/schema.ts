@@ -12,20 +12,20 @@ import {
 } from '@snippetly/common/dto';
 
 // Registration -> Developer
-export const developerAccountRegistrationFormSchema = registerDeveloperAccountDto.input;
-export type DeveloperAccountRegistrationFormSchema = RegisterDeveloperAccountDtoType['input'];
+export const accountRegistrationFormSchema = registerDeveloperAccountDto.input;
+export type AccountRegistrationFormSchema = RegisterDeveloperAccountDtoType['input'];
 
 // Authentication -> Developer
 export const developerAuthenticationFormSchema = authenticateDeveloperDto.input;
 export type DeveloperAuthenticationFormSchema = AuthenticateDeveloperDtoType['input'];
 
 // RequestPasswordReset -> Developer
-export const developerPasswordResetRequestFormSchema = requestPasswordResetDto.input;
-export type DeveloperPasswordResetRequestFormSchema = RequestPasswordResetDtoType['input'];
+export const passwordResetRequestFormSchema = requestPasswordResetDto.input;
+export type PasswordResetRequestFormSchema = RequestPasswordResetDtoType['input'];
 
 // ResetPassword -> Developer
-export const developerResetPasswordFormSchema = resetPasswordDto.input;
-export type DeveloperResetPasswordFormSchema = ResetPasswordDtoType['input'];
+export const resetPasswordFormSchema = resetPasswordDto.input;
+export type ResetPasswordFormSchema = ResetPasswordDtoType['input'];
 
 // RefreshAccountVerificationToken -> Developer
 export const refreshAccountVerificationTokenFormSchema = refreshVerificationTokenDto.input;

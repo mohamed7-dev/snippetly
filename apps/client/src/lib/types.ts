@@ -1,5 +1,5 @@
-export interface AsyncActionCallback<D, E> {
-    onSuccess?: (info: D) => void;
+export interface AsyncActionCallback<D, E, V = any> {
+    onSuccess?: (info: D, variables?: V) => void;
     onError?: (info: E) => void;
     onSettled?: () => void;
     onMutate?: () => void;

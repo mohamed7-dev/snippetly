@@ -1,12 +1,13 @@
 import { InfiniteLoader } from '@/components/feedback/infinite-loader';
 import { StatusCard } from '@/components/feedback/status-card';
 import { Button } from '@/components/ui/button';
+import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import { listCurrentUserSnippetsQueryOptions } from '@/features/snippet-listing/lib/snippet-listing-query-options';
 import { SnippetCard } from '@/features/snippets/components/snippet-card';
+import { Permission } from '@snippetly/common/dto';
 import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { PlusIcon } from 'lucide-react';
-import React from 'react';
 
 export function InsightsPageSnippetsList() {
     const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery(
@@ -14,7 +15,7 @@ export function InsightsPageSnippetsList() {
     );
 
     const snippets = data.pages.flatMap(p => p.items) ?? [];
-
+    const ownerId = snippets?.[0]?.creator.id;
     const qClient = useQueryClient();
 
     const onMutateSnippetSuccess = async () => {
@@ -22,7 +23,10 @@ export function InsightsPageSnippetsList() {
     };
 
     return (
-        <React.Fragment>
+        <PermissionGuard
+            requiredPermissions={[Permission.Authenticated, Permission.Owner, Permission.ReadSnippet]}
+            ownerId={ownerId}
+        >
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {snippets?.map(snippet => (
                     <SnippetCard
@@ -60,6 +64,6 @@ export function InsightsPageSnippetsList() {
                     ) : null
                 }
             />
-        </React.Fragment>
+        </PermissionGuard>
     );
 }

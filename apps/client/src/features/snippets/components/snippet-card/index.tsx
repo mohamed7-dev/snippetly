@@ -2,9 +2,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAuth } from '@/features/auth/hooks/use-auth';
+import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import type { ApiSuccess } from '@/lib/api-client';
-import type { SnippetListDtoType } from '@snippetly/common/dto';
+import { Permission, type SnippetListDtoType } from '@snippetly/common/dto';
 import { Link } from '@tanstack/react-router';
 import { EditIcon } from 'lucide-react';
 import { CopyButton } from '../shared/copy-button';
@@ -16,8 +16,7 @@ interface SnippetCardProps extends Omit<SnippetActionsDropdownProps, 'snippet'> 
     snippet: SnippetItem;
 }
 
-export function SnippetCard({ snippet, onCopy, ...props }: SnippetCardProps) {
-    const { user } = useAuth();
+export function SnippetCard({ snippet, ...props }: SnippetCardProps) {
     const creator = snippet.creator;
     const avatarFallback = creator.firstName.slice(0, 1) + ' ' + creator.lastName.slice(0, 1);
     const fullName = creator.firstName + ' ' + creator.lastName;
@@ -74,7 +73,7 @@ export function SnippetCard({ snippet, onCopy, ...props }: SnippetCardProps) {
                             )}
                         </CardDescription>
                     </div>
-                    <SnippetActionsDropdown snippet={snippet} onCopy={onCopy} {...props} />
+                    <SnippetActionsDropdown snippet={snippet} {...props} />
                 </div>
                 <div className="flex items-center justify-between flex-wrap gap-2">
                     <div className="flex items-center gap-3">
@@ -129,8 +128,15 @@ export function SnippetCard({ snippet, onCopy, ...props }: SnippetCardProps) {
                         : null}
                 </div>
                 <div className="flex items-center gap-2 mt-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <CopyButton code={snippet.code} onClick={() => onCopy} />
-                    {creator.id === user?.id && (
+                    <CopyButton code={snippet.code} />
+                    <PermissionGuard
+                        requiredPermissions={[
+                            Permission.Authenticated,
+                            Permission.Owner,
+                            Permission.UpdateSnippet,
+                        ]}
+                        ownerId={creator.id}
+                    >
                         <Button size="sm" variant="ghost" asChild>
                             <Link
                                 to="/dashboard/snippets/$id/edit"
@@ -141,7 +147,7 @@ export function SnippetCard({ snippet, onCopy, ...props }: SnippetCardProps) {
                                 Edit
                             </Link>
                         </Button>
-                    )}
+                    </PermissionGuard>
                 </div>
             </CardContent>
         </Card>

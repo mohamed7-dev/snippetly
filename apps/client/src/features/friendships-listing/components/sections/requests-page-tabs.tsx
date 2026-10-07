@@ -7,15 +7,15 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAuth } from '@/features/auth/hooks/use-auth';
-import { useAcceptFriendshipRequest } from '@/features/friendship/hooks/use-accept-friendship-request';
+import { AcceptFriendshipRequestButton } from '@/features/friendship/components/accept-friendship-request-button';
+import { RejectFriendshipRequestButton } from '@/features/friendship/components/reject-friendship-request-buttton';
 import { useCancelFriendshipRequest } from '@/features/friendship/hooks/use-cancel-friendship-request';
-import { useRejectFriendshipRequest } from '@/features/friendship/hooks/use-reject-friendship-request';
+import { getCurrentDeveloperActivityStats } from '@/features/stats/lib/stats-query-options';
 import type { ApiSuccess } from '@/lib/api-client';
 import type { CurrentUserInboxListDtoType } from '@snippetly/common/dto';
-import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { CheckIcon, ClockIcon, MailIcon, UserPlusIcon, XIcon } from 'lucide-react';
+import { ClockIcon, MailIcon, UserPlusIcon, XIcon } from 'lucide-react';
 import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import {
@@ -24,8 +24,8 @@ import {
 } from '../../lib/friendships-listing-query-options';
 
 export function RequestsPageTabs() {
-    const { user } = useAuth();
-    const stats = user?.stats ?? { friendsInboxCount: 0, friendsOutboxCount: 0 };
+    const { data } = useQuery(getCurrentDeveloperActivityStats());
+    const stats = data ?? { friendsInboxCount: 0, friendsOutboxCount: 0 };
     const getNameFallback = (
         developer: ApiSuccess<CurrentUserInboxListDtoType['output']>['items'][number]['requester'],
     ) => {
@@ -79,17 +79,9 @@ function InboxTabContent({ getNameFallback, getFullName }: TabContentProps) {
 
     const qClient = useQueryClient();
 
-    const { mutateAsync: acceptRequest, isPending: isAccepting } = useAcceptFriendshipRequest({
-        onSuccess: () => {
-            qClient.invalidateQueries(listCurrentUserInboxQueryOptions());
-        },
-    });
-
-    const { mutateAsync: rejectRequest, isPending: isRejecting } = useRejectFriendshipRequest({
-        onSuccess: () => {
-            qClient.invalidateQueries(listCurrentUserInboxQueryOptions());
-        },
-    });
+    const onMutationSuccess = () => {
+        qClient.invalidateQueries(listCurrentUserInboxQueryOptions());
+    };
 
     return (
         <React.Fragment>
@@ -124,29 +116,24 @@ function InboxTabContent({ getNameFallback, getFullName }: TabContentProps) {
                                 <p className="text-sm text-muted-foreground mt-1">{request.requester.bio}</p>
 
                                 <div className="flex gap-2 flex-wrap">
-                                    <LoadingButton
-                                        isLoading={isAccepting}
-                                        size="sm"
-                                        onClick={() => acceptRequest({ friendId: request.requester.id })}
-                                        disabled={isAccepting}
-                                        className="bg-green-600 hover:bg-green-700"
-                                    >
-                                        <CheckIcon className="h-4 w-4 sm:mr-1" />
-                                        Accept
-                                    </LoadingButton>
-                                    <LoadingButton
-                                        isLoading={isRejecting}
-                                        disabled={isRejecting}
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => rejectRequest({ friendId: request.requester.id })}
-                                    >
-                                        <XIcon className="h-4 w-4 sm:mr-1" />
-                                        Decline
-                                    </LoadingButton>
-                                    <Button size="sm" variant="outline" asChild>
+                                    <AcceptFriendshipRequestButton
+                                        friendId={request.requester.id}
+                                        variant={'outline'}
+                                        acceptFriendshipRequestMutationCallbacks={{
+                                            onSuccess: onMutationSuccess,
+                                        }}
+                                    />
+                                    <RejectFriendshipRequestButton
+                                        friendId={request.requester.id}
+                                        variant={'destructive-outline'}
+                                        rejectFriendshipRequestMutationCallbacks={{
+                                            onSuccess: onMutationSuccess,
+                                        }}
+                                    />
+
+                                    <Button variant="ghost" className="capitalize" asChild>
                                         <Link to={'/profile/$id'} params={{ id: request.requester.id }}>
-                                            View
+                                            View {request.requester.firstName}'s Profile
                                         </Link>
                                     </Button>
                                 </div>
@@ -239,7 +226,7 @@ export function OutboxTabContent({ getNameFallback, getFullName }: TabContentPro
                                     </LoadingButton>
                                     <Link to={`/profile/$id`} params={{ id: request.addressee.id }}>
                                         <Button size="sm" variant="ghost">
-                                            View Profile
+                                            View {request.addressee.firstName}'s Profile
                                         </Button>
                                     </Link>
                                 </div>

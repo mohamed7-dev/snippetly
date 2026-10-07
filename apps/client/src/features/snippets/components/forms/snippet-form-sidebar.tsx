@@ -138,7 +138,8 @@ export function SnippetFormSidebar({
                                     </Button>
                                 </FormControl>
                                 <FormDescription>
-                                    Selected Collection: <strong>{SelectedCollectionName}</strong>
+                                    Selected Collection:{' '}
+                                    <strong>{SelectedCollectionName ?? 'Not Organized'}</strong>
                                 </FormDescription>
 
                                 <CurrentUserCollectionsOverlay

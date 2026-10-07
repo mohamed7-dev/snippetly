@@ -1,4 +1,6 @@
 import { Page } from '@/components/layout/page';
+import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
+import { listCurrentUserCollectionsQueryOptions } from '@/features/collection-listing/lib/collection-listing-query-options';
 import { CollectionForm } from '@/features/collections/components/forms/collection-form';
 import { getCollectionQueryOptions } from '@/features/collections/lib/query-options';
 import { listPopularTagsQueryOptions } from '@/features/tags/lib/list-tags-query-options';
@@ -10,11 +12,12 @@ import {
 } from '@/features/update-collection/lib/schema';
 import { notFoundWithMetadata } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Permission } from '@snippetly/common/dto';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { useForm } from 'react-hook-form';
 
-export const Route = createFileRoute('/(protected)/dashboard/collections/$id/edit')({
+export const Route = createFileRoute('/(protected)/dashboard/collections/$id/edit/')({
     component: UpdateCollectionPage,
     head: async ({ params, match }) => {
         const { queryClient } = match.context;
@@ -71,7 +74,7 @@ function UpdateCollectionPage() {
         onSuccess: async data => {
             updateCollectionForm.reset({ ...data, tags: data.tags?.map(t => t.value) });
             await qClient.invalidateQueries(getCollectionQueryOptions(id));
-            // TODO: revalidates the collections list
+            qClient.invalidateQueries(listCurrentUserCollectionsQueryOptions());
         },
     });
     return (
@@ -80,9 +83,18 @@ function UpdateCollectionPage() {
             submitHandler={updateCollectionForm.handleSubmit(values => mutateAsync(values))}
         >
             <UpdateCollectionPageHeader isPending={isPending} />
-            <main className="container mx-auto px-2 lg:px-6 py-8 max-w-2xl">
-                <CollectionForm isPending={isPending} />
-            </main>
+            <PermissionGuard
+                requiredPermissions={[
+                    Permission.Authenticated,
+                    Permission.UpdateCollection,
+                    Permission.Owner,
+                ]}
+                ownerId={data.creator.id}
+            >
+                <main className="container mx-auto px-2 lg:px-6 py-8 max-w-2xl">
+                    <CollectionForm isPending={isPending} />
+                </main>
+            </PermissionGuard>
         </Page>
     );
 }

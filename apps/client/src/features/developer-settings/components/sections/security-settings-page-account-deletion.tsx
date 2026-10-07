@@ -1,15 +1,17 @@
 import { ProcessStatus } from '@/components/feedback/process-status';
 import { LoadingButton } from '@/components/inputs/loading-button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { useDeleteConfirmation } from '@/hooks/use-delete-confirmation';
+import { Permission } from '@snippetly/common/dto';
 import { useNavigate } from '@tanstack/react-router';
 import { Trash2Icon } from 'lucide-react';
 import { useDeleteDeveloperAccount } from '../../hooks/use-delete-developer-account';
 
 export function SecuritySettingsPageAccountDeletion() {
     const { confirm, resetAndClose } = useDeleteConfirmation();
-    const { logout } = useAuth();
+    const { logout, user } = useAuth();
     const navigate = useNavigate();
 
     const { mutateAsync: deleteAccount, isPending } = useDeleteDeveloperAccount({
@@ -54,14 +56,23 @@ export function SecuritySettingsPageAccountDeletion() {
                         </p>
                     }
                 />
-                <LoadingButton
-                    variant="destructive"
-                    className="w-full sm:w-auto"
-                    onClick={handleDelete}
-                    isLoading={isPending}
+                <PermissionGuard
+                    requiredPermissions={[
+                        Permission.Authenticated,
+                        Permission.Owner,
+                        Permission.DeleteDeveloper,
+                    ]}
+                    ownerId={user?.id}
                 >
-                    Delete My Account
-                </LoadingButton>
+                    <LoadingButton
+                        variant="destructive"
+                        className="w-full sm:w-auto"
+                        onClick={handleDelete}
+                        isLoading={isPending}
+                    >
+                        Delete My Account
+                    </LoadingButton>
+                </PermissionGuard>
             </CardContent>
         </Card>
     );

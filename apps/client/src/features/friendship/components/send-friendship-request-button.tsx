@@ -34,7 +34,6 @@ export function SendFriendshipRequestButton({
 
     return (
         <LoadingButton
-            variant="outline"
             {...props}
             isLoading={isPending || (props?.isLoading ? props.isLoading : isPending)}
             onClick={handleSending}

@@ -159,6 +159,11 @@ export const apiEndpoints = {
             method: 'GET',
             contentType: null,
         },
+        getActiveDeveloperStats: {
+            url: `developers/me/stats`,
+            method: 'GET',
+            contentType: null,
+        },
         list: {
             url: (searchParams: URLSearchParams) => `developers?${searchParams.toString()}`,
             method: 'GET',

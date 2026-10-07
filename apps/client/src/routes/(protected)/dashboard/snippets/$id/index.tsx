@@ -35,7 +35,6 @@ function SnippetPage() {
             <SnippetPageHeader />
             <main className="container mx-auto px-3 md:px-6 py-8 max-w-6xl">
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                    {/* Main Content */}
                     <div className="lg:col-span-3 space-y-6">
                         <SnippetPageContentHeader />
                         <SnippetCodeBlock snippet={snippet} />

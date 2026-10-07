@@ -1,4 +1,6 @@
 import { Button } from '@/components/ui/button';
+import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
+import { Permission } from '@snippetly/common/dto';
 import { Link } from '@tanstack/react-router';
 import { ArrowLeftIcon } from 'lucide-react';
 import { HeaderUserMenu } from '../dashboard/header-user-menu';
@@ -18,7 +20,9 @@ export function SettingsLayoutHeader() {
                 </Button>
                 <h1 className="text-xl sm:text-3xl font-bold tracking-tight">Settings</h1>
             </div>
-            <HeaderUserMenu />
+            <PermissionGuard requiredPermissions={[Permission.Authenticated]}>
+                <HeaderUserMenu />
+            </PermissionGuard>
         </HeaderWrapper>
     );
 }

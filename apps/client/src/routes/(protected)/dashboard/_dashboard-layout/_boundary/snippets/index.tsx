@@ -31,6 +31,11 @@ function RouteComponent() {
             <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
                 <React.Suspense fallback={<SectionLoader />}>
                     <SnippetsPageStats />
+                </React.Suspense>
+            </ErrorBoundary>
+
+            <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
+                <React.Suspense fallback={<SectionLoader />}>
                     <SnippetsPageMainContent />
                 </React.Suspense>
             </ErrorBoundary>

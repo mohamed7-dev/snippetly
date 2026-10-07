@@ -2,9 +2,9 @@ import { ProcessStatus } from '@/components/feedback/process-status';
 import { PageLoader } from '@/components/views/page-loading-view';
 import { useSearch } from '@tanstack/react-router';
 import React from 'react';
-import { useAuth } from '../hooks/use-auth';
-import { useVerifyAccount } from '../hooks/use-verify-account';
-import { AuthCard } from './auth-card';
+import { useAuth } from '../../hooks/use-auth';
+import { useVerifyAccount } from '../../hooks/use-verify-account';
+import { AuthCard } from '../shared/auth-card';
 
 export function AccountVerificationCard() {
     const { token } = useSearch({

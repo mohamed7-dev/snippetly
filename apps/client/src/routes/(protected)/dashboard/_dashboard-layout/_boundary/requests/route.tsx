@@ -1,8 +1,10 @@
+import { SectionLoader } from '@/components/feedback/section-loader';
 import { RequestsPageMainContentHeader } from '@/features/friendships-listing/components/sections/requests-page-main-content-header';
 import { RequestsPageStats } from '@/features/friendships-listing/components/sections/requests-page-stats';
 import { RequestsPageTabs } from '@/features/friendships-listing/components/sections/requests-page-tabs';
 import { listCurrentUserInboxQueryOptions } from '@/features/friendships-listing/lib/friendships-listing-query-options';
 import { createFileRoute } from '@tanstack/react-router';
+import React from 'react';
 
 export const Route = createFileRoute('/(protected)/dashboard/_dashboard-layout/_boundary/requests')({
     component: RequestPage,
@@ -24,7 +26,9 @@ function RequestPage() {
     return (
         <div className="space-y-6">
             <RequestsPageMainContentHeader />
-            <RequestsPageStats />
+            <React.Suspense fallback={<SectionLoader />}>
+                <RequestsPageStats />
+            </React.Suspense>
             <RequestsPageTabs />
         </div>
     );

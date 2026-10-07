@@ -1,9 +1,7 @@
-import { FriendsPageHeader } from '@/features/friendships-listing/components/sections/friends-page-header';
 import { FriendsPageMainContentHeader } from '@/features/friendships-listing/components/sections/friends-page-main-content-header';
 import { FriendsPageTabs } from '@/features/friendships-listing/components/sections/friends-page-tabs';
 import { listCurrentUserFriendsQueryOptions } from '@/features/friendships-listing/lib/friendships-listing-query-options';
 import { createFileRoute } from '@tanstack/react-router';
-import React from 'react';
 import z from 'zod';
 
 const searchSchema = z.object({
@@ -11,7 +9,7 @@ const searchSchema = z.object({
     friendId: z.uuid().optional().catch(''),
 });
 
-export const Route = createFileRoute('/(protected)/dashboard/friends')({
+export const Route = createFileRoute('/(protected)/dashboard/_dashboard-layout/_boundary/friends/')({
     component: FriendsPage,
     head: () => {
         return {
@@ -30,12 +28,9 @@ export const Route = createFileRoute('/(protected)/dashboard/friends')({
 
 function FriendsPage() {
     return (
-        <React.Fragment>
-            <FriendsPageHeader />
-            <main className="container mx-auto px-3 md:px-6 py-8">
-                <FriendsPageMainContentHeader />
-                <FriendsPageTabs />
-            </main>
-        </React.Fragment>
+        <div className="space-y-6">
+            <FriendsPageMainContentHeader />
+            <FriendsPageTabs />
+        </div>
     );
 }

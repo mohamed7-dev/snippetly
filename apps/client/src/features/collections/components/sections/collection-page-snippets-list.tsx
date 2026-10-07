@@ -1,7 +1,9 @@
 import { InfiniteLoader } from '@/components/feedback/infinite-loader';
 import { Button } from '@/components/ui/button';
+import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import { listCollectionSnippetsQueryOptions } from '@/features/snippet-listing/lib/snippet-listing-query-options';
 import { SnippetCard } from '@/features/snippets/components/snippet-card';
+import { Permission } from '@snippetly/common/dto';
 import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { Link, useParams } from '@tanstack/react-router';
 import { Code2Icon, PlusIcon } from 'lucide-react';
@@ -33,16 +35,25 @@ export function CollectionPageSnippetsList() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                 {snippets.map(snippet => (
-                    <SnippetCard
+                    <PermissionGuard
                         key={snippet.id}
-                        snippet={snippet}
-                        deleteSnippet={{
-                            onSuccess: onSnippetMutationSuccess,
-                        }}
-                        forkSnippet={{
-                            onSuccess: onSnippetMutationSuccess,
-                        }}
-                    />
+                        requiredPermissions={[
+                            Permission.Authenticated,
+                            Permission.ReadSnippet,
+                            Permission.Owner,
+                        ]}
+                        ownerId={snippet.creator.id}
+                    >
+                        <SnippetCard
+                            snippet={snippet}
+                            deleteSnippet={{
+                                onSuccess: onSnippetMutationSuccess,
+                            }}
+                            forkSnippet={{
+                                onSuccess: onSnippetMutationSuccess,
+                            }}
+                        />
+                    </PermissionGuard>
                 ))}
             </div>
             <InfiniteLoader

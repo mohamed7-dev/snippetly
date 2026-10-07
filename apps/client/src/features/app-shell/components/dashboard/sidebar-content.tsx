@@ -1,109 +1,66 @@
+import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import { listCurrentUserCollectionsQueryOptions } from '@/features/collection-listing/lib/collection-listing-query-options';
+import { Permission } from '@snippetly/common/dto';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { BellIcon, BookOpenIcon, CodeIcon, LayoutDashboardIcon, SearchIcon, UsersIcon } from 'lucide-react';
+import { DASHBOARD_NAV_ITEMS } from '../../lib/constants';
 
 export function SidebarContent() {
     const { data } = useInfiniteQuery(listCurrentUserCollectionsQueryOptions({ take: 5 }));
     const collections = data?.pages.flatMap(p => p.items) ?? [];
+    const ownerId = collections?.[0]?.creator.id;
 
     return (
         <div className="p-6">
             <nav className="space-y-2">
-                <Link
-                    to={'/dashboard'}
-                    activeProps={{
-                        className: 'bg-primary/10 text-primary hover:bg-primary/10',
-                    }}
-                    activeOptions={{ exact: true, includeSearch: true }}
-                    className="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
-                >
-                    <LayoutDashboardIcon className="h-4 w-4" />
-                    Insights
-                </Link>
-                <Link
-                    to={'/dashboard/collections'}
-                    activeOptions={{ exact: true, includeSearch: true }}
-                    activeProps={{
-                        className: 'bg-primary/10 text-primary hover:bg-primary/10',
-                    }}
-                    className="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
-                >
-                    <BookOpenIcon className="h-4 w-4" />
-                    Collections
-                </Link>
-                <Link
-                    to={'/dashboard/snippets'}
-                    activeOptions={{ exact: true, includeSearch: true }}
-                    activeProps={{
-                        className: 'bg-primary/10 text-primary hover:bg-primary/10',
-                    }}
-                    className="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
-                >
-                    <CodeIcon className="h-4 w-4" />
-                    Snippets
-                </Link>
-                <Link
-                    to={'/dashboard/friends'}
-                    activeOptions={{ exact: true }}
-                    activeProps={{
-                        className: 'bg-primary/10 text-primary hover:bg-primary/10',
-                    }}
-                    className="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
-                >
-                    <UsersIcon className="h-4 w-4" />
-                    Friends
-                </Link>
-                <Link
-                    to="/dashboard/discover"
-                    activeOptions={{ exact: true }}
-                    activeProps={{
-                        className: 'bg-primary/10 text-primary hover:bg-primary/10',
-                    }}
-                    className="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
-                >
-                    <SearchIcon className="h-4 w-4" />
-                    Discover
-                </Link>
-                <Link
-                    to="/dashboard/requests"
-                    activeOptions={{ exact: true }}
-                    activeProps={{
-                        className: 'bg-primary/10 text-primary hover:bg-primary/10',
-                    }}
-                    className="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
-                >
-                    <BellIcon className="h-4 w-4" />
-                    Requests
-                </Link>
+                {DASHBOARD_NAV_ITEMS.map(item => (
+                    <PermissionGuard key={item.id} requiredPermissions={item.requiredPermissions}>
+                        <Link
+                            to={item.href}
+                            activeProps={{
+                                className: 'bg-primary/10 text-primary hover:bg-primary/10',
+                            }}
+                            activeOptions={{ exact: item.exact, includeSearch: true }}
+                            className="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
+                        >
+                            <item.icon />
+                            {item.title}
+                        </Link>
+                    </PermissionGuard>
+                ))}
             </nav>
 
-            {!!collections.length && (
-                <div className="mt-8">
-                    <h3 className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                        Collections
-                    </h3>
-                    <div className="space-y-1">
-                        {collections?.map(collection => (
-                            <Link
-                                key={collection.slug}
-                                to={'/dashboard/collections/$id'}
-                                params={{ id: collection.id }}
-                                className="flex items-center gap-3 px-3 py-2 text-sm rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
-                            >
-                                <div
-                                    className={`size-4 rounded-full`}
-                                    style={{
-                                        backgroundColor: collection.color,
-                                    }}
-                                />
-                                <span className="flex-1 truncate">{collection.name}</span>
-                                <span className="text-xs">{collection.snippetCount}</span>
-                            </Link>
-                        ))}
+            <PermissionGuard
+                requiredPermissions={[Permission.Authenticated, Permission.Owner, Permission.ReadCollection]}
+                ownerId={ownerId}
+            >
+                {!!collections.length && (
+                    <div className="mt-8">
+                        <h3 className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                            Collections
+                        </h3>
+                        <div className="space-y-1">
+                            {collections?.map(collection => (
+                                <Link
+                                    key={collection.slug}
+                                    to={'/dashboard/collections/$id'}
+                                    params={{ id: collection.id }}
+                                    className="flex items-center gap-3 px-3 py-2 text-sm rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
+                                >
+                                    <div
+                                        className={`size-4 rounded-full`}
+                                        style={{
+                                            backgroundColor: collection.color,
+                                        }}
+                                    />
+                                    <span className="flex-1 truncate">{collection.name}</span>
+                                    <span className="text-xs">{collection.snippetCount}</span>
+                                </Link>
+                            ))}
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
+            </PermissionGuard>
         </div>
     );
 }

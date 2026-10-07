@@ -22,6 +22,7 @@ export function useVerifyAccount(callbacks?: VerifyAccountMutationCallbacks) {
                 },
             );
         },
+        ...callbacks,
         onSuccess: data => {
             toast.success('Account was verified successfully');
             callbacks?.onSuccess?.(data);

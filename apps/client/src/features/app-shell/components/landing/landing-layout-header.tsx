@@ -1,6 +1,8 @@
 import { InstallAppButton } from '@/components/inputs/install-app-button';
 import { Button } from '@/components/ui/button';
+import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import { useAuth } from '@/features/auth/hooks/use-auth';
+import { Permission } from '@snippetly/common/dto';
 import { Link } from '@tanstack/react-router';
 import { HeaderWrapper } from '../header-wrapper';
 import { Logo } from '../logo';
@@ -28,11 +30,13 @@ export function LandingLayoutHeader() {
                             Testimonials
                         </Link>
                     </nav>
-                    {isAuthenticated ? (
+                    <PermissionGuard requiredPermissions={[Permission.Authenticated]}>
                         <Button className="items-center" variant="ghost" asChild>
                             <Link to={'/dashboard'}>Go To Dashboard</Link>
                         </Button>
-                    ) : (
+                    </PermissionGuard>
+
+                    {!isAuthenticated && (
                         <div className="flex items-center gap-3">
                             <InstallAppButton className="hidden sm:inline-flex" />
                             <Button variant="ghost" size="sm" asChild>

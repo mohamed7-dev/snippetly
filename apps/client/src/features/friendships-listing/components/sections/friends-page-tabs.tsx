@@ -15,8 +15,9 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { CurrentUserFriendsSnippets } from '@/features/snippet-listing/components/sections/current-user-friends-snippets';
+import { getCurrentDeveloperActivityStats } from '@/features/stats/lib/stats-query-options';
 import { omit } from '@snippetly/common/lib';
-import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import { useQuery, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import { EyeIcon, MoreHorizontalIcon, PlusIcon } from 'lucide-react';
 import React from 'react';
@@ -24,10 +25,12 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { listCurrentUserFriendsQueryOptions } from '../../lib/friendships-listing-query-options';
 
 export function FriendsPageTabs() {
-    const { tab, friendId } = useSearch({ from: '/(protected)/dashboard/friends' });
+    const { tab, friendId } = useSearch({
+        from: '/(protected)/dashboard/_dashboard-layout/_boundary/friends/',
+    });
     const navigate = useNavigate();
-    const { user } = useAuth();
 
+    const { data } = useQuery(getCurrentDeveloperActivityStats());
     return (
         <Tabs defaultValue="friends" value={tab} className="space-y-6">
             <TabsList className="grid w-full grid-cols-2">
@@ -35,7 +38,7 @@ export function FriendsPageTabs() {
                     value="friends"
                     onClick={() => navigate({ to: '.', search: { tab: 'friends' } })}
                 >
-                    My Friends ({user?.stats.friendsCount ?? 0})
+                    My Friends ({data?.friendsCount ?? 0})
                 </TabsTrigger>
                 <TabsTrigger
                     value="snippets"

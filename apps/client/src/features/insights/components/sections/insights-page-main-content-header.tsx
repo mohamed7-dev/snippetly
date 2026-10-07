@@ -1,4 +1,6 @@
 import { Button } from '@/components/ui/button';
+import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
+import { Permission } from '@snippetly/common/dto';
 import { Link } from '@tanstack/react-router';
 import { PlusIcon } from 'lucide-react';
 
@@ -9,14 +11,14 @@ export function InsightsPageMainContentHeader() {
                 <h1 className="font-heading font-bold text-2xl">My Snippets</h1>
                 <p className="text-muted-foreground">Manage and organize your code snippets</p>
             </div>
-            <div className="flex items-center gap-2">
+            <PermissionGuard requiredPermissions={[Permission.Authenticated, Permission.CreateSnippet]}>
                 <Button size="sm" asChild>
                     <Link to="/dashboard/snippets/new">
                         <PlusIcon className="h-4 w-4 mr-2" />
                         <span>New Snippet</span>
                     </Link>
                 </Button>
-            </div>
+            </PermissionGuard>
         </div>
     );
 }

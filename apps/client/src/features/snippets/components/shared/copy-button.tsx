@@ -7,9 +7,9 @@ type CopyButtonProps = React.ComponentProps<typeof Button> & {
 };
 
 export function CopyButton({ code, children, ...props }: CopyButtonProps) {
-    const { copyCode, isCopied } = useCopyCode({ code });
+    const { copyCode, isCopied } = useCopyCode();
     const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-        copyCode();
+        copyCode({ code: code });
         props?.onClick?.(e);
     };
 

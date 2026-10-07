@@ -1,10 +1,11 @@
 import { Card, CardContent } from '@/components/ui/card';
-import { useAuth } from '@/features/auth/hooks/use-auth';
+import { getCurrentDeveloperActivityStats } from '@/features/stats/lib/stats-query-options';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { BookOpenIcon, Code2Icon, StarIcon, UsersIcon } from 'lucide-react';
 
 export function InsightsPageStats() {
-    const { user } = useAuth();
-    const stats = user?.stats ?? {
+    const { data } = useSuspenseQuery(getCurrentDeveloperActivityStats());
+    const stats = data ?? {
         snippetsCount: 0,
         collectionsCount: 0,
         friendsCount: 0,

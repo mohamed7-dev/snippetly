@@ -17,7 +17,7 @@ import { SlugInput } from '@/features/slug/components/slug-input';
 import { listPopularTagsQueryOptions } from '@/features/tags/lib/list-tags-query-options';
 import { useEnterTag } from '@/hooks/use-enter-tag';
 import { type CreateCollectionDtoType } from '@snippetly/common/dto';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { XIcon } from 'lucide-react';
 import React from 'react';
 import { useFormContext, type UseFormReturn } from 'react-hook-form';
@@ -55,8 +55,8 @@ export function CollectionForm({ isPending: isMutating }: { isPending: boolean }
         form.setValue('tags', [...(tags ?? []), tag]);
     };
 
-    const { data } = useSuspenseQuery(listPopularTagsQueryOptions());
-    const popularTags = data.items?.filter(t => !tags?.includes(t.value));
+    const { data } = useQuery(listPopularTagsQueryOptions());
+    const popularTags = data?.items?.filter(t => !tags?.includes(t.value));
 
     return (
         <div className="space-y-6">
@@ -187,7 +187,7 @@ export function CollectionForm({ isPending: isMutating }: { isPending: boolean }
                         </div>
                     </div>
 
-                    {!!popularTags.length && (
+                    {!!popularTags?.length && (
                         <div className="space-y-2">
                             <Label>Popular Tags</Label>
                             <div className="flex flex-wrap gap-1">

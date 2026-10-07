@@ -1,4 +1,5 @@
 import {
+    activeDeveloperAccountStatsDto,
     activeDeveloperDto,
     deleteDeveloperAccountDto,
     developerListDto,
@@ -93,12 +94,47 @@ export class DeveloperDeveloperController implements AppRouter {
                             },
                         );
                         if (developer) {
+                            res.status(200).json({ ...developer });
+                        } else {
+                            res.status(200).json(null);
+                        }
+                    } else {
+                        res.status(200).json(null);
+                    }
+                },
+            }),
+        );
+
+        router.get(
+            '/me/stats',
+            ...defineRoutePipeline({
+                before: [
+                    this.developerReadLimiter,
+                    authGuard({
+                        permissions: [Permission.Owner],
+                    }),
+                ],
+                response: activeDeveloperAccountStatsDto.output,
+                handler: async (req, res) => {
+                    const userId = req.getRequestContext().activeUserId;
+                    if (userId) {
+                        const developer = await this.developerService.getOneByUserId(
+                            req.getRequestContext(),
+                            userId,
+                            {
+                                user: {
+                                    roles: true,
+                                    authenticationMethods: true,
+                                },
+                            },
+                        );
+                        if (developer) {
                             const stats = await this.developerService.getProfileStats(
                                 req.getRequestContext(),
                                 developer.id,
                                 true,
                             );
-                            res.status(200).json({ ...developer, stats });
+                            res.status(200).json({ ...stats, id: developer.id });
                         } else {
                             res.status(200).json(null);
                         }

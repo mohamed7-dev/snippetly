@@ -1,10 +1,11 @@
 import { Button } from '@/components/ui/button';
 import { HeaderWrapper } from '@/features/app-shell/components/header-wrapper';
-import { useAuth } from '@/features/auth/hooks/use-auth';
+import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import { RemoveSnippetOfflineButton } from '@/features/offline-snippet/components/remove-snippet-offline-button';
 import { SaveSnippetOfflineButton } from '@/features/offline-snippet/components/save-snippet-offline-button';
 import { useOfflineSnippetStore } from '@/features/offline-snippet/hooks/use-offline-snippet-store';
 import type { OfflineSnippetItem } from '@/features/offline-snippet/lib/store';
+import { Permission } from '@snippetly/common/dto';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Link, useParams } from '@tanstack/react-router';
 import { ArrowLeftIcon, EditIcon } from 'lucide-react';
@@ -22,7 +23,6 @@ export function SnippetPageHeader() {
 
     const params = useParams({ from: '/(protected)/dashboard/snippets/$id/' });
     const { data: snippet } = useSuspenseQuery(getSnippetQueryOptions(params.id));
-    const { user } = useAuth();
 
     React.useEffect(() => {
         const get = async () => {
@@ -61,14 +61,21 @@ export function SnippetPageHeader() {
                         onSuccess={() => setShowSaveButton(true)}
                     />
                 )}
-                {snippet.creator.id === user?.id && (
+                <PermissionGuard
+                    requiredPermissions={[
+                        Permission.Authenticated,
+                        Permission.Owner,
+                        Permission.UpdateSnippet,
+                    ]}
+                    ownerId={snippet.creator.id}
+                >
                     <Button size="sm" asChild>
                         <Link to={'/dashboard/snippets/$id/edit'} params={{ id: params.id }}>
                             <EditIcon className="h-4 w-4 mr-2" />
                             Edit
                         </Link>
                     </Button>
-                )}
+                </PermissionGuard>
             </div>
         </HeaderWrapper>
     );

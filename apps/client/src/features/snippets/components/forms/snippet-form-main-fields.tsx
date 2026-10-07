@@ -1,3 +1,4 @@
+import { RichTextInput } from '@/components/inputs/rich-text-input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -134,11 +135,10 @@ export function SnippetFormMainFields({ isPending, snippetId }: { isPending: boo
 
             <Card>
                 <CardHeader>
-                    <CardTitle className="sr-only">Code Info</CardTitle>
+                    <CardTitle>Snippet Code Info</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <SnippetFormCode />
-                    {/* TODO: replace with a rich text editor */}
                     <FormField
                         control={form.control}
                         name="note"
@@ -146,12 +146,11 @@ export function SnippetFormMainFields({ isPending, snippetId }: { isPending: boo
                             <FormItem>
                                 <FormLabel>Note</FormLabel>
                                 <FormControl>
-                                    <Textarea
-                                        disabled={isPending}
-                                        placeholder="Describe the code in the snippet..."
-                                        rows={3}
-                                        {...field}
+                                    <RichTextInput
                                         value={field.value ?? ''}
+                                        onChange={field.onChange}
+                                        isDisabled={isPending}
+                                        placeholder="Describe the code in the snippet..."
                                     />
                                 </FormControl>
                                 <FormMessage />

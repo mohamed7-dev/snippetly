@@ -19,8 +19,7 @@ import {
 import { friendshipStatusSchema } from '../shared/friendship.type.js';
 import { tag } from '../shared/tag.type.js';
 
-//############################ Get Active Developer Account ############################
-
+//############################ Get Active Developer Account Stats ############################
 const developerStats = z.object({
     snippetsCount: z.number().int().nonnegative(),
     collectionsCount: z.number().int().nonnegative(),
@@ -31,9 +30,21 @@ const developerStats = z.object({
     friendsOutboxCount: z.number().int().nonnegative(),
 });
 
-const activeDeveloperOutput = withServerErrors(developer.extend({ stats: developerStats }).nullable(), [
-    forbiddenErrorSchema,
-]);
+const activeDeveloperAccountStatsOutput = withServerErrors(
+    developerStats.extend(developer.pick({ id: true }).shape).nullable(),
+    [forbiddenErrorSchema],
+);
+
+export const activeDeveloperAccountStatsDto = {
+    input: z.null(),
+    output: activeDeveloperAccountStatsOutput,
+};
+
+export type ActiveDeveloperAccountStatsDtoType = InferDtoType<typeof activeDeveloperAccountStatsDto>;
+
+//############################ Get Active Developer Account ############################
+
+const activeDeveloperOutput = withServerErrors(developer.nullable(), [forbiddenErrorSchema]);
 
 export const activeDeveloperDto = {
     input: z.null(),
@@ -167,10 +178,9 @@ const discoverDeveloperListItem = developerListItem.extend({
     tags: z.array(tag.pick({ id: true, value: true, usageCount: true })).optional(),
 });
 
-const developerListOutput = withServerErrors(
-    createPaginatedListOutputSchema(discoverDeveloperListItem),
-    [userInputErrorSchema],
-);
+const developerListOutput = withServerErrors(createPaginatedListOutputSchema(discoverDeveloperListItem), [
+    userInputErrorSchema,
+]);
 
 export const developerListDto = {
     input: developerListInput,

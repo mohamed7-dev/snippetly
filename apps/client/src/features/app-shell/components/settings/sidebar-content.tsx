@@ -1,3 +1,4 @@
+import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import { cn } from '@/lib/utils';
 import { Link, useLocation } from '@tanstack/react-router';
 import { SETTINGS_NAV_ITEMS } from '../../lib/constants';
@@ -10,27 +11,29 @@ export function SidebarContent() {
             {SETTINGS_NAV_ITEMS.map(item => {
                 const isActive = item.href === currentPathname;
                 return (
-                    <Link
-                        key={item.href}
-                        to={item.href}
-                        activeProps={{ className: 'bg-primary text-primary-foreground' }}
-                        className={cn(
-                            'flex items-start gap-3 rounded-lg px-3 py-3 text-sm transition-colors text-muted-foreground hover:text-foreground hover:bg-muted',
-                        )}
-                    >
-                        <item.icon className="h-5 w-5 mt-0.5 shrink-0" />
-                        <div>
-                            <div className="font-medium">{item.title}</div>
-                            <div
-                                className={cn(
-                                    'text-xs mt-1',
-                                    isActive ? 'text-primary-foreground/80' : 'text-muted-foreground',
-                                )}
-                            >
-                                {item.description}
+                    <PermissionGuard requiredPermissions={item.requiredPermissions}>
+                        <Link
+                            key={item.href}
+                            to={item.href}
+                            activeProps={{ className: 'bg-primary text-primary-foreground' }}
+                            className={cn(
+                                'flex items-start gap-3 rounded-lg px-3 py-3 text-sm transition-colors text-muted-foreground hover:text-foreground hover:bg-muted',
+                            )}
+                        >
+                            <item.icon className="h-5 w-5 mt-0.5 shrink-0" />
+                            <div>
+                                <div className="font-medium">{item.title}</div>
+                                <div
+                                    className={cn(
+                                        'text-xs mt-1',
+                                        isActive ? 'text-primary-foreground/80' : 'text-muted-foreground',
+                                    )}
+                                >
+                                    {item.description}
+                                </div>
                             </div>
-                        </div>
-                    </Link>
+                        </Link>
+                    </PermissionGuard>
                 );
             })}
         </nav>

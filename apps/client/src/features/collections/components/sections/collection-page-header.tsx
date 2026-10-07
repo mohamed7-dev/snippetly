@@ -1,5 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { HeaderWrapper } from '@/features/app-shell/components/header-wrapper';
+import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
+import { Permission } from '@snippetly/common/dto';
 import { Link } from '@tanstack/react-router';
 import { ArrowLeftIcon, PlusIcon } from 'lucide-react';
 import React from 'react';
@@ -17,19 +19,15 @@ export function CollectionPageHeader() {
                     </Button>
                 </div>
 
-                <div className="flex items-center flex-wrap gap-3">
-                    {/* <SearchForm className="hidden sm:flex" /> */}
-                    <Button size="sm" asChild>
+                <PermissionGuard requiredPermissions={[Permission.Authenticated, Permission.CreateSnippet]}>
+                    <Button asChild>
                         <Link to={'/dashboard/snippets/new'}>
                             <PlusIcon className="h-4 w-4 mr-2" />
                             Add Snippet
                         </Link>
                     </Button>
-                </div>
+                </PermissionGuard>
             </HeaderWrapper>
-            <div className="w-full flex-1 flex md:hidden space-y-2 p-2 border-b border-border">
-                {/* <SearchForm className="w-full" /> */}
-            </div>
         </React.Fragment>
     );
 }

@@ -37,7 +37,6 @@ export function SlugInput({
     entityId,
     defaultReadonly = true,
     className,
-    name,
     placeholder,
     ...props
 }: SlugInputProps & { placeholder?: string }) {

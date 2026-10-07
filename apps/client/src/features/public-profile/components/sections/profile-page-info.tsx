@@ -61,6 +61,7 @@ export function ProfilePageInfo() {
                                 {shouldDisplaySendButton && (
                                     <div className="flex gap-2">
                                         <SendFriendshipRequestButton
+                                            variant={'outline'}
                                             friendId={profile.id}
                                             sendFriendshipRequestMutationCallbacks={{
                                                 onSuccess: () => {

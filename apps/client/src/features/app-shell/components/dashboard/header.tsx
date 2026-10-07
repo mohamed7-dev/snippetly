@@ -1,5 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
+import { Permission } from '@snippetly/common/dto';
 import { Link } from '@tanstack/react-router';
 import { PlusIcon, SearchIcon } from 'lucide-react';
 import { HeaderWrapper } from '../header-wrapper';
@@ -20,14 +22,18 @@ export function DashBoardHeader() {
             </div>
 
             <div className="flex items-center gap-3">
-                <Button size="sm" className="" asChild>
-                    <Link to="/dashboard/snippets/new">
-                        <PlusIcon className="h-4 w-4 mr-2 sm:mr-1" />
-                        New Snippet
-                    </Link>
-                </Button>
+                <PermissionGuard requiredPermissions={[Permission.Authenticated, Permission.CreateSnippet]}>
+                    <Button size="sm" className="" asChild>
+                        <Link to="/dashboard/snippets/new">
+                            <PlusIcon className="h-4 w-4 mr-2 sm:mr-1" />
+                            New Snippet
+                        </Link>
+                    </Button>
+                </PermissionGuard>
 
-                <HeaderUserMenu />
+                <PermissionGuard requiredPermissions={[Permission.Authenticated]}>
+                    <HeaderUserMenu />
+                </PermissionGuard>
             </div>
         </HeaderWrapper>
     );

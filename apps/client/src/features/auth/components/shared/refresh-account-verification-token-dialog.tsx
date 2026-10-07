@@ -7,9 +7,15 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { Form } from '@/components/ui/form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { XIcon } from 'lucide-react';
+import { useForm } from 'react-hook-form';
 import { useRefreshVerificationToken } from '../../hooks/use-refresh-verification-token';
-import type { RefreshAccountVerificationTokenFormSchemaType } from '../../lib/schema';
+import {
+    refreshAccountVerificationTokenFormSchema,
+    type RefreshAccountVerificationTokenFormSchemaType,
+} from '../../lib/schema';
 import { RefreshAccountVerificationTokenForm } from '../forms/refresh-account-verification-token-form';
 
 export function RefreshAccountVerificationTokenDialog({
@@ -19,10 +25,14 @@ export function RefreshAccountVerificationTokenDialog({
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
 }) {
+    const form = useForm<RefreshAccountVerificationTokenFormSchemaType>({
+        defaultValues: {
+            emailAddress: '',
+        },
+        resolver: zodResolver(refreshAccountVerificationTokenFormSchema),
+    });
     const { mutateAsync, isPending, data } = useRefreshVerificationToken();
-    const onSubmit = async (values: RefreshAccountVerificationTokenFormSchemaType) => {
-        await mutateAsync(values);
-    };
+
     return (
         <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
             <AlertDialogContent>
@@ -34,14 +44,23 @@ export function RefreshAccountVerificationTokenDialog({
                         </Button>
                     </AlertDialogCancel>
                 </AlertDialogHeader>
-                {!!data && (
-                    <ProcessStatus
-                        variant={'info'}
-                        title={'Verification token was refreshed successfully'}
-                        description={'Check you email address, and click the link to verify your account'}
-                    />
-                )}
-                <RefreshAccountVerificationTokenForm isPending={isPending} onSubmit={onSubmit} />
+                <Form {...form}>
+                    <form
+                        onSubmit={form.handleSubmit(async values => await mutateAsync(values))}
+                        className="space-y-8"
+                    >
+                        {!!data && !isPending && (
+                            <ProcessStatus
+                                variant={'info'}
+                                title={'Verification token was refreshed successfully'}
+                                description={
+                                    'Check you email address, and click the link to verify your account'
+                                }
+                            />
+                        )}
+                        <RefreshAccountVerificationTokenForm isPending={isPending} />
+                    </form>
+                </Form>
             </AlertDialogContent>
         </AlertDialog>
     );

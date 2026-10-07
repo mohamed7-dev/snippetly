@@ -1,12 +1,15 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
+import { Permission } from '@snippetly/common/dto';
+import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from '@tanstack/react-router';
 import { CalendarIcon, Code2Icon, GlobeIcon, LockIcon } from 'lucide-react';
 import { getCollectionQueryOptions } from '../../lib/query-options';
 import { CollectionActionMenu } from '../shared/collection-action-menu';
 
 export function CollectionPageMainContent() {
+    const qClient = useQueryClient();
     const params = useParams({
         from: '/(protected)/dashboard/collections/$id/',
     });
@@ -17,8 +20,8 @@ export function CollectionPageMainContent() {
 
     const navigate = useNavigate();
 
-    const onDeleteSuccess = () => {
-        navigate({ to: '/dashboard/collections' });
+    const onCollectionMutationSuccess = () => {
+        qClient.invalidateQueries(getCollectionQueryOptions(params.id));
     };
 
     const avatarFallback =
@@ -46,7 +49,15 @@ export function CollectionPageMainContent() {
                     <CollectionActionMenu
                         collection={collection}
                         deleteCollection={{
-                            onSuccess: onDeleteSuccess,
+                            onSuccess: () => {
+                                navigate({ to: '/dashboard/collections' });
+                                onCollectionMutationSuccess();
+                            },
+                        }}
+                        forkCollection={{
+                            onSuccess: () => {
+                                onCollectionMutationSuccess();
+                            },
                         }}
                     />
                 </div>
@@ -74,12 +85,21 @@ export function CollectionPageMainContent() {
                         <Code2Icon className="h-4 w-4" />
                         {collection.snippetCount} snippets
                     </div>
-                    {updatedAt && (
-                        <div className="flex items-center gap-1">
-                            <CalendarIcon className="h-4 w-4" />
-                            Updated {new Date(updatedAt).toLocaleDateString()}
-                        </div>
-                    )}
+                    <PermissionGuard
+                        requiredPermissions={[
+                            Permission.Authenticated,
+                            Permission.ReadCollection,
+                            Permission.Owner,
+                        ]}
+                        ownerId={collection.creator.id}
+                    >
+                        {updatedAt && (
+                            <div className="flex items-center gap-1">
+                                <CalendarIcon className="h-4 w-4" />
+                                Updated {new Date(updatedAt).toLocaleDateString()}
+                            </div>
+                        )}
+                    </PermissionGuard>
                 </div>
 
                 <div className="flex items-center gap-2">

@@ -1,5 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
+import { Permission } from '@snippetly/common/dto';
 import { Link } from '@tanstack/react-router';
 import { PlusIcon, SearchIcon } from 'lucide-react';
 import React from 'react';
@@ -18,12 +20,16 @@ export function SnippetsPageContentHeader() {
                     <Input placeholder="Search snippets..." className="pl-10 bg-muted/50 border-border" />
                 </div>
                 <div className="flex items-center gap-3">
-                    <Button size="sm" asChild>
-                        <Link to={'/dashboard/snippets/new'}>
-                            <PlusIcon className="h-4 w-4 mr-2" />
-                            <span>New Snippet</span>
-                        </Link>
-                    </Button>
+                    <PermissionGuard
+                        requiredPermissions={[Permission.Authenticated, Permission.CreateSnippet]}
+                    >
+                        <Button asChild>
+                            <Link to={'/dashboard/snippets/new'}>
+                                <PlusIcon className="h-4 w-4 mr-2" />
+                                <span>New Snippet</span>
+                            </Link>
+                        </Button>
+                    </PermissionGuard>
                 </div>
             </div>
         </React.Fragment>

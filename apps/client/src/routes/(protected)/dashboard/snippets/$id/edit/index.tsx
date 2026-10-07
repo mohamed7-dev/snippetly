@@ -1,4 +1,6 @@
 import { Page } from '@/components/layout/page';
+import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
+import { listCurrentUserSnippetsQueryOptions } from '@/features/snippet-listing/lib/snippet-listing-query-options';
 import { SnippetFormMainFields } from '@/features/snippets/components/forms/snippet-form-main-fields';
 import { SnippetFormSidebar } from '@/features/snippets/components/forms/snippet-form-sidebar';
 import { getSnippetQueryOptions } from '@/features/snippets/lib/snippet-query-options';
@@ -11,6 +13,7 @@ import {
 } from '@/features/update-snippet/lib/schema';
 import { notFoundWithMetadata } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Permission } from '@snippetly/common/dto';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { useForm } from 'react-hook-form';
@@ -52,6 +55,7 @@ export const Route = createFileRoute('/(protected)/dashboard/snippets/$id/edit/'
 function EditSnippetPage() {
     const { id } = Route.useParams();
     const { data } = useSuspenseQuery(getSnippetQueryOptions(id));
+    const collection = 'collection' in data ? data.collection : undefined;
     const qClient = useQueryClient();
     if (!data) {
         throw notFoundWithMetadata({
@@ -62,7 +66,7 @@ function EditSnippetPage() {
         });
     }
     const form = useForm<UpdateSnippetFormSchemaType>({
-        defaultValues: { ...data, tags: data.tags.map(t => t.value), collectionId: data.collection?.id },
+        defaultValues: { ...data, tags: data.tags.map(t => t.value), collectionId: collection?.id },
         resolver: zodResolver(updateSnippetFormSchema),
     });
 
@@ -70,23 +74,25 @@ function EditSnippetPage() {
         onSuccess: async data => {
             form.reset({ ...data, tags: data.tags?.map(t => t.value), collectionId: data.collection?.id });
             await qClient.invalidateQueries(getSnippetQueryOptions(id));
-            // TODO: revalidates the snippets list
+            qClient.invalidateQueries(listCurrentUserSnippetsQueryOptions());
         },
     });
     return (
         <Page form={form} submitHandler={form.handleSubmit(values => mutateAsync(values))}>
             <UpdateSnippetPageHeader isPending={isPending} />
-            <main className="container mx-auto px-2 lg:px-6 py-8 max-w-6xl">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div className="md:col-span-2 space-y-6">
-                        <SnippetFormMainFields isPending={isPending} snippetId={data.id} />
+            <PermissionGuard
+                requiredPermissions={[Permission.Authenticated, Permission.Owner, Permission.UpdateSnippet]}
+                ownerId={data.creator.id}
+            >
+                <main className="container mx-auto px-2 lg:px-6 py-8 max-w-6xl">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div className="md:col-span-2 space-y-6">
+                            <SnippetFormMainFields isPending={isPending} snippetId={data.id} />
+                        </div>
+                        <SnippetFormSidebar isPending={isPending} selectedCollectionName={collection?.name} />
                     </div>
-                    <SnippetFormSidebar
-                        isPending={isPending}
-                        selectedCollectionName={data.collection?.name}
-                    />
-                </div>
-            </main>
+                </main>
+            </PermissionGuard>
         </Page>
     );
 }

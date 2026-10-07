@@ -32,10 +32,10 @@ export function ForkSnippetToCollection({
             {triggerAs === 'dropdown' ? (
                 <DropdownMenuItem onSelect={e => e.preventDefault()} asChild>
                     <ForkSnippetButton
+                        label="fork to collection"
                         {...props}
                         isLoading={isPending}
                         className={cn('justify-start', props.className)}
-                        label="fork to collection"
                         snippetId={snippetId}
                         onClick={e => {
                             props.onClick?.(e);
@@ -48,9 +48,9 @@ export function ForkSnippetToCollection({
                 </DropdownMenuItem>
             ) : (
                 <ForkSnippetButton
+                    label="fork to collection"
                     {...props}
                     isLoading={isPending}
-                    label="fork to collection"
                     snippetId={snippetId}
                     onClick={e => {
                         props.onClick?.(e);

@@ -1,4 +1,5 @@
 import { Page } from '@/components/layout/page';
+import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { ProfileSettingsPageAvatar } from '@/features/developer-settings/components/sections/profile-settings-page-avatar';
 import { ProfileSettingsPageContentHeader } from '@/features/developer-settings/components/sections/profile-settings-page-content-header';
@@ -9,6 +10,7 @@ import {
     type UpdateDeveloperProfileInfoFormSchemaType,
 } from '@/features/developer-settings/lib/schema';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Permission } from '@snippetly/common/dto';
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { useForm } from 'react-hook-form';
 
@@ -53,11 +55,20 @@ function ProfileSettingsPage() {
     return (
         <Page form={form} submitHandler={form.handleSubmit(onSubmit)} entity={user}>
             <div className="flex flex-col gap-6">
-                <ProfileSettingsPageContentHeader />
-                <div className="space-y-8">
-                    <ProfileSettingsPageAvatar />
-                    <ProfileSettingsPageForm isPending={isPending} />
-                </div>
+                <PermissionGuard
+                    requiredPermissions={[
+                        Permission.Authenticated,
+                        Permission.Owner,
+                        Permission.UpdateDeveloper,
+                    ]}
+                    ownerId={user.id}
+                >
+                    <ProfileSettingsPageContentHeader />
+                    <div className="space-y-8">
+                        <ProfileSettingsPageAvatar />
+                        <ProfileSettingsPageForm isPending={isPending} />
+                    </div>
+                </PermissionGuard>
             </div>
         </Page>
     );

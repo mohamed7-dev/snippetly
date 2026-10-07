@@ -1,6 +1,7 @@
 import { OpenAPIRegistry, OpenApiGeneratorV3, type RouteConfig } from '@asteasolutions/zod-to-openapi';
 import {
     acceptFriendshipRequestDto,
+    activeDeveloperAccountStatsDto,
     activeDeveloperDto,
     authenticateDeveloperDto,
     cancelFriendshipRequestDto,
@@ -450,6 +451,14 @@ registerRoute({
     tag: 'Developers',
     summary: 'Get the current developer',
     response: activeDeveloperDto.output,
+    authenticated: true,
+});
+registerRoute({
+    method: 'get',
+    path: '/developer/developers/me/stats',
+    tag: 'Developers',
+    summary: 'Get current developer activity statistics',
+    response: activeDeveloperAccountStatsDto.output,
     authenticated: true,
 });
 registerRoute({

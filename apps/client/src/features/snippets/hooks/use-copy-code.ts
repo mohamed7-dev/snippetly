@@ -4,11 +4,12 @@ import { toast } from 'sonner';
 type UseCopyCodeProps = {
     code: string;
 };
-export function useCopyCode({ code }: UseCopyCodeProps) {
+export function useCopyCode() {
     const [isCopied, setIsCopied] = React.useState(false);
 
-    const copyCode = () => {
-        navigator.clipboard.writeText(code).then(() => {
+    const copyCode = (input: UseCopyCodeProps) => {
+        console.log('Copy Code', input.code);
+        navigator.clipboard.writeText(input.code).then(() => {
             setIsCopied(true);
             toast.info('Snippet code is copied to the clipboard.');
             setTimeout(() => setIsCopied(false), 2000);
