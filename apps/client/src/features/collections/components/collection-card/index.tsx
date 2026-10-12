@@ -1,7 +1,8 @@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import type { ApiSuccess } from '@/lib/api-client';
-import type { CollectionListDtoType } from '@snippetly/common/dto';
+import { Permission, type CollectionListDtoType } from '@snippetly/common/dto';
 import { Link } from '@tanstack/react-router';
 import { CollectionActionMenu, type CollectionActionMenuProps } from '../shared/collection-action-menu';
 
@@ -47,11 +48,20 @@ export function CollectionCard({ collection }: CollectionCardProps) {
                             Public
                         </Badge>
                     )}
-                    {updatedAt && (
-                        <span className="text-xs text-muted-foreground sm:ml-auto">
-                            Updated {new Date(updatedAt).toLocaleDateString()}
-                        </span>
-                    )}
+                    <PermissionGuard
+                        requiredPermissions={[
+                            Permission.Authenticated,
+                            Permission.ReadCollection,
+                            Permission.Owner,
+                        ]}
+                        ownerId={collection.creator.id}
+                    >
+                        {updatedAt && (
+                            <span className="text-xs text-muted-foreground sm:ml-auto">
+                                Updated {new Date(updatedAt).toLocaleDateString()}
+                            </span>
+                        )}
+                    </PermissionGuard>
                 </div>
             </CardHeader>
 

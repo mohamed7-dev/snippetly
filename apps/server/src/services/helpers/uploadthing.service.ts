@@ -36,12 +36,17 @@ export class UploadthingService {
                         if (!developer) {
                             throw new ForbiddenError();
                         }
-                        const { RequestContextService } = await import('./request-context.service.js');
+
+                        const { RequestContextService } =
+                            await import('../helpers/request-context.service.js');
                         const requestContextService =
-                            moduleRef.getProvider<import('./request-context.service').RequestContextService>(
-                                RequestContextService,
-                            );
-                        const ctx = requestContextService.create({ apiType: 'developer' });
+                            moduleRef.getProvider<
+                                import('../helpers/request-context.service').RequestContextService
+                            >(RequestContextService);
+                        const ctx = requestContextService.create({
+                            apiType: 'developer',
+                            user: developer.user,
+                        });
                         await developerService.update(ctx, {
                             id: developer.id,
                             image: file.ufsUrl,

@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DiscoverCollectionsList } from '@/features/collection-listing/components/sections/discover-collections-list';
 import { DiscoverSnippetsList } from '@/features/snippet-listing/components/sections/discover-snippets-list';
+import { formatDeveloperInfo } from '@/lib/format-developer-info';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import React from 'react';
@@ -46,14 +47,14 @@ export function DiscoverPageTabs() {
                 </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="developers" className="space-y-4">
+            <TabsContent value="developers" className="space-y-4 mt-6">
                 <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
                     <React.Suspense fallback={<SectionLoader />}>
                         <DevelopersTabContent />
                     </React.Suspense>
                 </ErrorBoundary>
             </TabsContent>
-            <TabsContent value="snippets" className="space-y-4">
+            <TabsContent value="snippets" className="space-y-4 mt-6">
                 <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
                     <React.Suspense fallback={<SectionLoader />}>
                         <DiscoverSnippetsList />
@@ -61,7 +62,7 @@ export function DiscoverPageTabs() {
                 </ErrorBoundary>
             </TabsContent>
 
-            <TabsContent value="collections" className="space-y-4">
+            <TabsContent value="collections" className="space-y-4 mt-6">
                 <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
                     <React.Suspense fallback={<SectionLoader />}>
                         <DiscoverCollectionsList />
@@ -79,10 +80,10 @@ function DevelopersTabContent() {
     const developers = data.pages?.flatMap(p => p.items) ?? [];
 
     const getNameFallback = (developer: { firstName: string; lastName: string }) => {
-        return developer.firstName.slice(0, 1) + ' ' + developer.lastName.slice(0, 1);
+        return formatDeveloperInfo(developer).initials;
     };
     const getFullName = (developer: { firstName: string; lastName: string }) => {
-        return developer.firstName + ' ' + developer.lastName;
+        return formatDeveloperInfo(developer).fullName;
     };
 
     return (

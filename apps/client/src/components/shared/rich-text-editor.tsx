@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils';
 import Placeholder from '@tiptap/extension-placeholder';
 import { TextStyle } from '@tiptap/extension-text-style';
-import { Editor, EditorContent, useEditor } from '@tiptap/react';
+import { EditorContent, useEditor, type Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { useCallback, useLayoutEffect, useMemo } from 'react';
 import { Toolbar } from './toolbar';
@@ -19,42 +19,24 @@ export function RichTextEditor({
     onValueChange,
     placeholder,
 }: RichTextEditorProps) {
-    const handleValueChange = useCallback(
-        (editor: Editor) => {
-            if (isDisabled || editor.isDestroyed) return;
-            const currentValue = editor.getHTML();
-            const wasValueChanged = currentValue !== value;
-            if (wasValueChanged) {
-                onValueChange?.(currentValue);
-            }
-        },
-        [value, onValueChange, isDisabled],
-    );
-
     const editorExtensions = useMemo(() => {
-        const baseExtensions = [
-            StarterKit.configure({
-                orderedList: { keepMarks: true, keepAttributes: false },
-                bulletList: { keepMarks: true, keepAttributes: false },
-                link: {
-                    openOnClick: false,
-                    validate: href => /^https?:\/\//.test(href),
-                    HTMLAttributes: {
-                        class: 'text-primary underline underline-offset-2 cursor-pointer hover:text-primary/80',
-                    },
-                },
-            }),
-            TextStyle.configure(),
-        ];
-
-        return placeholder ? [...baseExtensions, Placeholder.configure({ placeholder })] : baseExtensions;
+        return createRichTextExtensions(placeholder);
     }, [placeholder]);
+
+    const handleUpdate = useCallback(
+        ({ editor }: { editor: Editor }) => {
+            if (isDisabled || editor.isDestroyed) return;
+            const nextValue = editor.getHTML();
+            if (nextValue !== value) onValueChange(nextValue);
+        },
+        [isDisabled, onValueChange, value],
+    );
 
     const editor = useEditor(
         {
             content: value,
             editable: !isDisabled,
-            onUpdate: ({ editor }) => handleValueChange(editor),
+            onUpdate: handleUpdate,
             extensions: editorExtensions,
             parseOptions: {
                 preserveWhitespace: 'full',
@@ -80,161 +62,220 @@ export function RichTextEditor({
     if (!editor) return null;
 
     return (
-        <div className="border overflow-hidden rounded-md">
+        <div className="overflow-hidden rounded-md border">
             <Toolbar editor={editor} isDisabled={isDisabled} />
             <EditorContent editor={editor} />
-            <style>{`
-                .rte h1 {
-                    font-size: 2em;
-                    font-weight: 700;
-                    margin-top: 0.67em;
-                    margin-bottom: 0.67em;
-                    line-height: 1.2;
-                }
-                .rte h2 {
-                    font-size: 1.5em;
-                    font-weight: 600;
-                    margin-top: 0.83em;
-                    margin-bottom: 0.83em;
-                    line-height: 1.3;
-                }
-                .rte h3 {
-                    font-size: 1.17em;
-                    font-weight: 600;
-                    margin-top: 1em;
-                    margin-bottom: 1em;
-                    line-height: 1.4;
-                }
-                .rte h4 {
-                    font-size: 1em;
-                    font-weight: 600;
-                    margin-top: 1.33em;
-                    margin-bottom: 1.33em;
-                    line-height: 1.4;
-                }
-                .rte h5 {
-                    font-size: 0.83em;
-                    font-weight: 600;
-                    margin-top: 1.67em;
-                    margin-bottom: 1.67em;
-                    line-height: 1.5;
-                }
-                .rte h6 {
-                    font-size: 0.67em;
-                    font-weight: 600;
-                    margin-top: 2.33em;
-                    margin-bottom: 2.33em;
-                    line-height: 1.6;
-                }
-                .rte p {
-                    margin-top: 0;
-                    margin-bottom: 1em;
-                    line-height: 1.6;
-                }
-                .rte strong,
-                .rte b {
-                    font-weight: 700;
-                }
-                .rte em,
-                .rte i {
-                    font-style: italic;
-                }
-                .rte s,
-                .rte del,
-                .rte strike {
-                    text-decoration: line-through;
-                }
-                .rte ul {
-                    list-style-type: disc;
-                    margin-top: 0;
-                    margin-bottom: 1em;
-                    padding-left: 2em;
-                }
-                .rte ul ul {
-                    list-style-type: circle;
-                }
-                .rte ul ul ul {
-                    list-style-type: square;
-                }
-                .rte ol {
-                    list-style-type: decimal;
-                    margin-top: 0;
-                    margin-bottom: 1em;
-                    padding-left: 2em;
-                }
-                .rte li {
-                    margin-bottom: 0.25em;
-                    line-height: 1.6;
-                }
-                .rte li > p {
-                    margin-bottom: 0.25em;
-                }
-                .rte li:last-child {
-                    margin-bottom: 0;
-                }
-                .rte blockquote {
-                    border-left: 4px solid hsl(var(--border));
-                    margin: 1em 0;
-                    padding-left: 1em;
-                    font-style: italic;
-                    color: hsl(var(--muted-foreground));
-                }
-                .rte blockquote p {
-                    margin-bottom: 0.5em;
-                }
-                .rte blockquote p:last-child {
-                    margin-bottom: 0;
-                }
-                .rte a {
-                    color: hsl(var(--primary));
-                    text-decoration: underline;
-                    text-underline-offset: 2px;
-                    cursor: pointer;
-                }
-                .rte a:hover {
-                    opacity: 0.8;
-                }
-                .rte code {
-                    background-color: hsl(var(--muted));
-                    border-radius: 3px;
-                    font-family: 'Courier New', Courier, monospace;
-                    padding: 0.2em 0.4em;
-                    font-size: 0.9em;
-                }
-                .rte pre {
-                    background-color: hsl(var(--muted));
-                    border-radius: 6px;
-                    padding: 1em;
-                    overflow-x: auto;
-                    margin: 1em 0;
-                }
-                .rte pre code {
-                    background-color: transparent;
-                    padding: 0;
-                    font-size: 0.9em;
-                }
-                .rte hr {
-                    border: none;
-                    border-top: 1px solid hsl(var(--border));
-                    margin: 2em 0;
-                }
-                .rte:focus {
-                    outline: none;
-                }
-                .rte > *:first-child {
-                    margin-top: 0;
-                }
-                .rte > *:last-child {
-                    margin-bottom: 0;
-                }
-                .rte .is-editor-empty:first-child::before {
-                    content: attr(data-placeholder);
-                    float: left;
-                    color: var(--muted-foreground);
-                    pointer-events: none;
-                    height: 0;
-                }
-            `}</style>
+            <RichTextStyles />
         </div>
+    );
+}
+
+export function RichTextViewer({ content }: { content: string }) {
+    const extensions = useMemo(() => createRichTextExtensions(), []);
+    const editor = useEditor(
+        {
+            content,
+            editable: false,
+            immediatelyRender: false,
+            extensions,
+            parseOptions: { preserveWhitespace: 'full' },
+            editorProps: {
+                attributes: {
+                    class: 'rte w-full p-0 outline-none text-base',
+                },
+            },
+        },
+        [extensions],
+    );
+
+    useLayoutEffect(() => {
+        if (editor && editor.getHTML() !== content) {
+            editor.commands.setContent(content, { emitUpdate: false });
+        }
+    }, [content, editor]);
+
+    if (!editor) return null;
+
+    return (
+        <>
+            <EditorContent editor={editor} />
+            <RichTextStyles />
+        </>
+    );
+}
+
+function createRichTextExtensions(placeholder?: string) {
+    const extensions = [
+        StarterKit.configure({
+            orderedList: { keepMarks: true, keepAttributes: false },
+            bulletList: { keepMarks: true, keepAttributes: false },
+            link: {
+                openOnClick: false,
+                validate: href => /^https?:\/\//.test(href),
+                HTMLAttributes: {
+                    class: 'text-primary underline underline-offset-2 cursor-pointer hover:text-primary/80',
+                },
+            },
+        }),
+        TextStyle.configure(),
+    ];
+
+    return placeholder ? [...extensions, Placeholder.configure({ placeholder })] : extensions;
+}
+
+function RichTextStyles() {
+    return (
+        <style>{`
+            .rte h1 {
+                font-size: 2em;
+                font-weight: 700;
+                margin-top: 0.67em;
+                margin-bottom: 0.67em;
+                line-height: 1.2;
+            }
+            .rte h2 {
+                font-size: 1.5em;
+                font-weight: 600;
+                margin-top: 0.83em;
+                margin-bottom: 0.83em;
+                line-height: 1.3;
+            }
+            .rte h3 {
+                font-size: 1.17em;
+                font-weight: 600;
+                margin-top: 1em;
+                margin-bottom: 1em;
+                line-height: 1.4;
+            }
+            .rte h4 {
+                font-size: 1em;
+                font-weight: 600;
+                margin-top: 1.33em;
+                margin-bottom: 1.33em;
+                line-height: 1.4;
+            }
+            .rte h5 {
+                font-size: 0.83em;
+                font-weight: 600;
+                margin-top: 1.67em;
+                margin-bottom: 1.67em;
+                line-height: 1.5;
+            }
+            .rte h6 {
+                font-size: 0.67em;
+                font-weight: 600;
+                margin-top: 2.33em;
+                margin-bottom: 2.33em;
+                line-height: 1.6;
+            }
+            .rte p {
+                margin-top: 0;
+                margin-bottom: 1em;
+                line-height: 1.6;
+            }
+            .rte strong,
+            .rte b {
+                font-weight: 700;
+            }
+            .rte em,
+            .rte i {
+                font-style: italic;
+            }
+            .rte s,
+            .rte del,
+            .rte strike {
+                text-decoration: line-through;
+            }
+            .rte ul {
+                list-style-type: disc;
+                margin-top: 0;
+                margin-bottom: 1em;
+                padding-left: 2em;
+            }
+            .rte ul ul {
+                list-style-type: circle;
+            }
+            .rte ul ul ul {
+                list-style-type: square;
+            }
+            .rte ol {
+                list-style-type: decimal;
+                margin-top: 0;
+                margin-bottom: 1em;
+                padding-left: 2em;
+            }
+            .rte li {
+                margin-bottom: 0.25em;
+                line-height: 1.6;
+            }
+            .rte li > p {
+                margin-bottom: 0.25em;
+            }
+            .rte li:last-child {
+                margin-bottom: 0;
+            }
+            .rte blockquote {
+                border-left: 4px solid hsl(var(--border));
+                margin: 1em 0;
+                padding-left: 1em;
+                font-style: italic;
+                color: hsl(var(--muted-foreground));
+            }
+            .rte blockquote p {
+                margin-bottom: 0.5em;
+            }
+            .rte blockquote p:last-child {
+                margin-bottom: 0;
+            }
+            .rte a {
+                color: hsl(var(--primary));
+                text-decoration: underline;
+                text-underline-offset: 2px;
+                cursor: pointer;
+            }
+            .rte a:hover {
+                opacity: 0.8;
+            }
+            .rte code {
+                background-color: hsl(var(--muted));
+                border-radius: 3px;
+                font-family: 'Courier New', Courier, monospace;
+                padding: 0.2em 0.4em;
+                font-size: 0.9em;
+            }
+            .rte pre {
+                background-color: hsl(var(--muted));
+                border-radius: 6px;
+                padding: 1em;
+                overflow-x: auto;
+                margin: 1em 0;
+            }
+            .rte pre code {
+                background-color: transparent;
+                padding: 0;
+                font-size: 0.9em;
+            }
+            .rte hr {
+                border: none;
+                border-top: 1px solid hsl(var(--border));
+                margin: 2em 0;
+            }
+            .rte:focus {
+                outline: none;
+            }
+            .rte > *:first-child {
+                margin-top: 0;
+            }
+            .rte > *:last-child {
+                margin-bottom: 0;
+            }
+            .rte .is-editor-empty:first-child::before {
+                content: attr(data-placeholder);
+                float: left;
+                color: var(--muted-foreground);
+                pointer-events: none;
+                height: 0;
+            }
+        `}</style>
     );
 }

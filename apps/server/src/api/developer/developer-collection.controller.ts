@@ -155,7 +155,7 @@ export class DeveloperCollectionController implements AppRouter {
                                       }),
                             },
                         },
-                        { creator: true },
+                        { creator: true, tags: true },
                         !shouldRestrictToPublic,
                     );
                     if (shouldRestrictToPublic) {
@@ -193,7 +193,7 @@ export class DeveloperCollectionController implements AppRouter {
                             },
                             creator: developer.id,
                         },
-                        { creator: true },
+                        { creator: true, tags: true },
                         true,
                     );
 

@@ -71,7 +71,7 @@ export function AvatarField({ onChange, uploadInfo }: AvatarFieldProps) {
                         cn: twMerge,
                     }}
                     headers={{
-                        Authorization: `Bearer ${LOCAL_STORAGE_SESSION_TOKEN_KEY}`,
+                        Authorization: `Bearer ${localStorage.getItem(LOCAL_STORAGE_SESSION_TOKEN_KEY) ?? ''}`,
                     }}
                     endpoint={apiEndpoints.upload.profileImage.url}
                     onBeforeUploadBegin={async files => {

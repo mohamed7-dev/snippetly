@@ -1,5 +1,6 @@
 import { InfiniteLoader } from '@/components/feedback/infinite-loader';
 import { StatusCard } from '@/components/feedback/status-card';
+import { SnippetListLayout } from '@/components/shared/snippet-list-layout';
 import { Button } from '@/components/ui/button';
 import { discoverSnippetsQueryOptions } from '@/features/discover/lib/discover-query-options';
 import { SnippetCard } from '@/features/snippets/components/snippet-card';
@@ -15,11 +16,11 @@ export function DiscoverSnippetsList() {
     const snippets = data.pages?.flatMap(p => p.items) ?? [];
     return (
         <React.Fragment>
-            <div className="grid gap-4 lg:grid-cols-2">
+            <SnippetListLayout>
                 {snippets.map(snippet => (
                     <SnippetCard key={snippet.id} snippet={snippet} />
                 ))}
-            </div>
+            </SnippetListLayout>
             <InfiniteLoader
                 fetchNextPage={fetchNextPage}
                 hasNextPage={hasNextPage}

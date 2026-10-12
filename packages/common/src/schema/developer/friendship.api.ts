@@ -3,6 +3,7 @@ import {
     createPaginatedListInputSchema,
     createPaginatedListOutputSchema,
     dateTimeFilterOperators,
+    idFilterOperators,
     idSchema,
     InferDtoType,
     sortDirection,
@@ -88,6 +89,10 @@ const filterSchema = z.object({
     rejectedAt: dateTimeFilterOperators,
     cancelledAt: dateTimeFilterOperators,
     status: stringFilterOperators,
+    friendFirstName: stringFilterOperators,
+    friendLastName: stringFilterOperators,
+    friendEmailAddress: stringFilterOperators,
+    friendId: idFilterOperators,
 });
 
 const sortSchema = z.object({
@@ -95,6 +100,10 @@ const sortSchema = z.object({
     rejectedAt: sortDirection,
     cancelledAt: sortDirection,
     status: sortDirection,
+    friendFirstName: sortDirection,
+    friendLastName: sortDirection,
+    friendEmailAddress: sortDirection,
+    friendId: sortDirection,
 });
 
 const currentUserFriendsListInput = createPaginatedListInputSchema(
@@ -136,7 +145,20 @@ export const currentUserFriendsListDto = {
 export type CurrentUserFriendsListDtoType = InferDtoType<typeof currentUserFriendsListDto>;
 
 // ############################## Inbox #############################
-const currentUserInboxListInput = createPaginatedListInputSchema(z.object({}), z.object({}))
+const currentUserInboxListInput = createPaginatedListInputSchema(
+    z.object({
+        requesterFirstName: stringFilterOperators,
+        requesterLastName: stringFilterOperators,
+        requesterEmailAddress: stringFilterOperators,
+        requesterId: idFilterOperators,
+    }),
+    z.object({
+        requesterFirstName: sortDirection,
+        requesterLastName: sortDirection,
+        requesterEmailAddress: sortDirection,
+        requesterId: sortDirection,
+    }),
+)
     .unwrap()
     .partial();
 
@@ -153,7 +175,20 @@ export const currentUserInboxListDto = {
 export type CurrentUserInboxListDtoType = InferDtoType<typeof currentUserInboxListDto>;
 
 // ############################## Outbox #############################
-const currentUserOutboxListInput = createPaginatedListInputSchema(z.object({}), z.object({}))
+const currentUserOutboxListInput = createPaginatedListInputSchema(
+    z.object({
+        addresseeFirstName: stringFilterOperators,
+        addresseeLastName: stringFilterOperators,
+        addresseeEmailAddress: stringFilterOperators,
+        addresseeId: idFilterOperators,
+    }),
+    z.object({
+        addresseeFirstName: sortDirection,
+        addresseeLastName: sortDirection,
+        addresseeEmailAddress: sortDirection,
+        addresseeId: sortDirection,
+    }),
+)
     .unwrap()
     .partial();
 

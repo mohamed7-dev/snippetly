@@ -9,7 +9,10 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import { useAuth } from '@/features/auth/hooks/use-auth';
+import { formatDeveloperInfo } from '@/lib/format-developer-info';
+import { Permission } from '@snippetly/common/dto';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { BrushIcon, LibraryIcon, LogOutIcon, UserCog2Icon, UsersIcon } from 'lucide-react';
 
@@ -18,6 +21,10 @@ export function HeaderUserMenu() {
     const navigate = useNavigate();
 
     const isPending = status === 'authenticated' && isActiveAuthMutationInProgress;
+    const { fullName, initials: avatarFallback } = formatDeveloperInfo({
+        firstName: user?.firstName || '',
+        lastName: user?.lastName || '',
+    });
 
     // logout
     const handleLogout = async () => {
@@ -29,8 +36,6 @@ export function HeaderUserMenu() {
         await logout('developer', () => navigate({ to: '/' }));
     };
 
-    const avatarFallback = user?.firstName?.slice(0, 1) + ' ' + user?.lastName?.slice(0, 1);
-    const userFullName = user?.firstName + ' ' + user?.lastName;
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -42,7 +47,7 @@ export function HeaderUserMenu() {
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end" forceMount>
-                {user ? (
+                <PermissionGuard requiredPermissions={[Permission.Authenticated, Permission.ReadDeveloper]}>
                     <DropdownMenuLabel className="font-normal">
                         <Link to="/dashboard/settings/profile">
                             <div className="flex gap-4 items-center">
@@ -51,7 +56,7 @@ export function HeaderUserMenu() {
                                     <AvatarFallback>{avatarFallback}</AvatarFallback>
                                 </Avatar>
                                 <div className="flex flex-col gap-1">
-                                    <p className="text-sm font-medium leading-none">{userFullName}</p>
+                                    <p className="text-sm font-medium leading-none">{fullName}</p>
                                     <p className="text-xs leading-none text-muted-foreground truncate">
                                         {user?.emailAddress}
                                     </p>
@@ -59,7 +64,8 @@ export function HeaderUserMenu() {
                             </div>
                         </Link>
                     </DropdownMenuLabel>
-                ) : (
+                </PermissionGuard>
+                {!user && (
                     <DropdownMenuLabel className="font-normal">
                         <Link to="/sign-in">
                             <div className="flex gap-4 items-center">
@@ -72,25 +78,27 @@ export function HeaderUserMenu() {
                         </Link>
                     </DropdownMenuLabel>
                 )}
-                <DropdownMenuSeparator />
-                <DropdownMenuGroup>
-                    <DropdownMenuItem asChild>
-                        <Button className="w-full justify-start" variant={'ghost'} asChild>
-                            <Link to={'/dashboard/settings/profile'}>
-                                <UserCog2Icon className="mr-2 h-4 w-4" />
-                                <span>Profile Settings</span>
-                            </Link>
-                        </Button>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                        <Button className="w-full justify-start" variant={'ghost'} asChild>
-                            <Link to={'/dashboard/settings/appearance'}>
-                                <BrushIcon className="mr-2 h-4 w-4" />
-                                <span>Appearance Settings</span>
-                            </Link>
-                        </Button>
-                    </DropdownMenuItem>
-                </DropdownMenuGroup>
+                <PermissionGuard requiredPermissions={[Permission.Authenticated]}>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuGroup>
+                        <DropdownMenuItem asChild>
+                            <Button className="w-full justify-start" variant={'ghost'} asChild>
+                                <Link to={'/dashboard/settings/profile'}>
+                                    <UserCog2Icon className="mr-2 h-4 w-4" />
+                                    <span>Profile Settings</span>
+                                </Link>
+                            </Button>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                            <Button className="w-full justify-start" variant={'ghost'} asChild>
+                                <Link to={'/dashboard/settings/appearance'}>
+                                    <BrushIcon className="mr-2 h-4 w-4" />
+                                    <span>Appearance Settings</span>
+                                </Link>
+                            </Button>
+                        </DropdownMenuItem>
+                    </DropdownMenuGroup>
+                </PermissionGuard>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                     <Button className="w-full justify-start" variant={'ghost'} asChild>
@@ -100,21 +108,24 @@ export function HeaderUserMenu() {
                         </Link>
                     </Button>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                    <Button className="w-full justify-start" variant={'ghost'} asChild>
-                        <Link to={user ? '/dashboard/friends' : '/sign-in'}>
-                            <UsersIcon className="mr-2 h-4 w-4" />
-                            <span>Friends</span>
-                        </Link>
-                    </Button>
-                </DropdownMenuItem>
+                <PermissionGuard requiredPermissions={[Permission.Authenticated]}>
+                    <DropdownMenuItem asChild>
+                        <Button className="w-full justify-start" variant={'ghost'} asChild>
+                            <Link to={'/dashboard/friends'}>
+                                <UsersIcon className="mr-2 h-4 w-4" />
+                                <span>Friends</span>
+                            </Link>
+                        </Button>
+                    </DropdownMenuItem>
+                </PermissionGuard>
                 <DropdownMenuSeparator />
-                {user ? (
+                <PermissionGuard requiredPermissions={[Permission.Authenticated]}>
                     <DropdownMenuItem disabled={isPending} onClick={handleLogout}>
                         <LogOutIcon className="mr-2 h-4 w-4" />
                         <span>Log out</span>
                     </DropdownMenuItem>
-                ) : (
+                </PermissionGuard>
+                {!user && (
                     <DropdownMenuItem>
                         <Link to={'/sign-in'} className="flex items-center">
                             <UsersIcon className="mr-2 h-4 w-4" />

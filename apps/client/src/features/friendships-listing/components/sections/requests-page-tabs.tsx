@@ -2,6 +2,8 @@ import { ErrorBoundaryFallback } from '@/components/feedback/error-boundary-fall
 import { InfiniteLoader } from '@/components/feedback/infinite-loader';
 import { SectionLoader } from '@/components/feedback/section-loader';
 import { LoadingButton } from '@/components/inputs/loading-button';
+import { FilterQueryDialog } from '@/components/shared/list-query-builder/filter-query-dialog';
+import { SortQueryDialog } from '@/components/shared/list-query-builder/sort-query-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,9 +14,14 @@ import { RejectFriendshipRequestButton } from '@/features/friendship/components/
 import { useCancelFriendshipRequest } from '@/features/friendship/hooks/use-cancel-friendship-request';
 import { getCurrentDeveloperActivityStats } from '@/features/stats/lib/stats-query-options';
 import type { ApiSuccess } from '@/lib/api-client';
-import type { CurrentUserInboxListDtoType } from '@snippetly/common/dto';
+import { formatDeveloperInfo } from '@/lib/format-developer-info';
+import {
+    currentUserInboxListDto,
+    currentUserOutboxListDto,
+    type CurrentUserInboxListDtoType,
+} from '@snippetly/common/dto';
 import { useQuery, useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
+import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import { ClockIcon, MailIcon, UserPlusIcon, XIcon } from 'lucide-react';
 import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -24,23 +31,36 @@ import {
 } from '../../lib/friendships-listing-query-options';
 
 export function RequestsPageTabs() {
+    const { tab } = useSearch({
+        from: '/(protected)/dashboard/_dashboard-layout/_boundary/requests/',
+    });
+    const navigate = useNavigate();
+
     const { data } = useQuery(getCurrentDeveloperActivityStats());
     const stats = data ?? { friendsInboxCount: 0, friendsOutboxCount: 0 };
+
     const getNameFallback = (
         developer: ApiSuccess<CurrentUserInboxListDtoType['output']>['items'][number]['requester'],
     ) => {
-        return developer.firstName.slice(0, 1) + ' ' + developer.lastName.slice(0, 1);
+        return formatDeveloperInfo(developer).initials;
     };
     const getFullName = (
         developer: ApiSuccess<CurrentUserInboxListDtoType['output']>['items'][number]['requester'],
     ) => {
-        return developer.firstName + ' ' + developer.lastName;
+        return formatDeveloperInfo(developer).fullName;
     };
     return (
-        <Tabs defaultValue="incoming">
+        <Tabs defaultValue="incoming" value={tab}>
             <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="incoming">Incoming ({stats.friendsInboxCount})</TabsTrigger>
-                <TabsTrigger value="sent">Sent ({stats.friendsOutboxCount})</TabsTrigger>
+                <TabsTrigger
+                    value="incoming"
+                    onClick={() => navigate({ to: '.', search: { tab: 'incoming' } })}
+                >
+                    Incoming ({stats.friendsInboxCount})
+                </TabsTrigger>
+                <TabsTrigger value="sent" onClick={() => navigate({ to: '.', search: { tab: 'sent' } })}>
+                    Sent ({stats.friendsOutboxCount})
+                </TabsTrigger>
             </TabsList>
 
             <TabsContent value="incoming" className="space-y-4">
@@ -72,23 +92,52 @@ interface TabContentProps {
 }
 
 function InboxTabContent({ getNameFallback, getFullName }: TabContentProps) {
+    const { incoming, ...search } = useSearch({
+        from: '/(protected)/dashboard/_dashboard-layout/_boundary/requests/',
+    });
+    const navigate = useNavigate();
+
+    const queryKeys = Object.values(incoming ?? {});
+
     const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery(
-        listCurrentUserInboxQueryOptions(),
+        listCurrentUserInboxQueryOptions(incoming, queryKeys),
     );
     const inboxFriendships = data.pages?.flatMap(p => p.items) ?? [];
 
     const qClient = useQueryClient();
 
     const onMutationSuccess = () => {
-        qClient.invalidateQueries(listCurrentUserInboxQueryOptions());
+        qClient.invalidateQueries(listCurrentUserInboxQueryOptions(undefined, queryKeys));
     };
 
     return (
         <React.Fragment>
-            <div className="space-y-4">
+            <div className="flex items-center gap-4 my-6">
+                <SortQueryDialog
+                    sortSchema={currentUserInboxListDto.input.shape.sort}
+                    value={{ sort: incoming?.sort }}
+                    onApply={val =>
+                        navigate({
+                            to: '.',
+                            search: { ...search, incoming: { ...incoming, sort: val.sort } },
+                        })
+                    }
+                />
+                <FilterQueryDialog
+                    schema={currentUserInboxListDto.input.shape.filter}
+                    value={incoming}
+                    onApply={val =>
+                        navigate({
+                            to: '.',
+                            search: { ...search, incoming: { ...incoming, ...val } },
+                        })
+                    }
+                />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {inboxFriendships.map(request => (
                     <Card key={request.id} className="hover:shadow-md transition-shadow">
-                        <CardContent className="space-y-4 p-3">
+                        <CardContent className="space-y-8">
                             <div className="flex items-center gap-2 relative pt-6">
                                 <Avatar className="h-12 w-12">
                                     <AvatarImage
@@ -169,24 +218,53 @@ function InboxTabContent({ getNameFallback, getFullName }: TabContentProps) {
 }
 
 export function OutboxTabContent({ getNameFallback, getFullName }: TabContentProps) {
+    const { sent, ...search } = useSearch({
+        from: '/(protected)/dashboard/_dashboard-layout/_boundary/requests/',
+    });
+    const navigate = useNavigate();
+
+    const queryKeys = Object.values(sent ?? {});
     const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery(
-        listCurrentUserOutboxQueryOptions(),
+        listCurrentUserOutboxQueryOptions(sent, queryKeys),
     );
     const outboxFriendships = data.pages?.flatMap(p => p.items) ?? [];
 
     const qClient = useQueryClient();
+
     const { mutateAsync: cancelRequest, isPending: isCancelling } = useCancelFriendshipRequest({
         onSuccess: () => {
-            qClient.invalidateQueries(listCurrentUserOutboxQueryOptions());
+            qClient.invalidateQueries(listCurrentUserOutboxQueryOptions(undefined, queryKeys));
         },
     });
 
     return (
         <React.Fragment>
-            <div className="space-y-4">
+            <div className="flex items-center gap-4 my-6">
+                <SortQueryDialog
+                    sortSchema={currentUserOutboxListDto.input.shape.sort}
+                    value={{ sort: sent?.sort }}
+                    onApply={val =>
+                        navigate({
+                            to: '.',
+                            search: { ...search, sent: { ...sent, sort: val.sort } },
+                        })
+                    }
+                />
+                <FilterQueryDialog
+                    schema={currentUserOutboxListDto.input.shape.filter}
+                    value={sent}
+                    onApply={val =>
+                        navigate({
+                            to: '.',
+                            search: { ...search, sent: { ...sent, ...val } },
+                        })
+                    }
+                />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {outboxFriendships.map(request => (
                     <Card key={request.id} className="hover:shadow-md transition-shadow">
-                        <CardContent className="space-y-4">
+                        <CardContent className="space-y-8">
                             <div className="flex items-center gap-2 relative pt-6">
                                 <Avatar className="h-12 w-12">
                                     <AvatarImage

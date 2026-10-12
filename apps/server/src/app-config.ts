@@ -7,6 +7,8 @@ import { GoogleAuthenticationStrategy } from './config/auth/google-auth.strategy
 import { NativeAuthenticationStrategy } from './config/auth/native-auth.strategy';
 import { RedisCacheStrategy } from './config/system/cache/redis-cache.strategy';
 import { NodemailerStrategy } from './config/system/email/nodemailer.strategy';
+import { LogLevel } from './config/system/logger/logger-strategy.interface';
+import { StdoutLoggerStrategy } from './config/system/logger/stdout-logger.strategy';
 import { entitiesMap } from './entities/entities-map';
 
 const envPaths = ['.env'];
@@ -87,5 +89,6 @@ export const appConfig: AppConfig = {
             passwordResetCallbackUrl: process.env.PASSWORD_RESET_CALLBACK_URL,
             identifierChangeCallbackUrl: process.env.IDENTIFIER_CHANGE_CALLBACK_URL,
         },
+        loggerStrategy: new StdoutLoggerStrategy({ logLevel: LogLevel.debug }),
     },
 };

@@ -40,6 +40,16 @@ export const apiEndpoints = {
             method: 'DELETE',
             contentType: null,
         },
+        listSessions: {
+            url: 'auth/sessions',
+            method: 'GET',
+            contentType: null,
+        },
+        revokeSession: {
+            url: (id: string) => `auth/sessions/${id}`,
+            method: 'DELETE',
+            contentType: null,
+        },
         refreshVerificationToken: {
             url: 'auth/verification-tokens',
             method: 'POST',

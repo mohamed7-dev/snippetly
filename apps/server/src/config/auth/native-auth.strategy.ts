@@ -20,10 +20,10 @@ export class NativeAuthenticationStrategy implements AuthenticationStrategy {
     name: string = NATIVE_AUTH_STRATEGY_NAME;
 
     onInit?(moduleRef: ModuleRef): void {
-        const { UserService } = require('../../services/domain/user.service.js');
-        const { DeveloperService } = require('../../services/domain/developer.service.js');
-        const { PasswordHashingService } = require('../../services/helpers/password-hashing.service.js');
-        const { DatabaseService } = require('../../infra/database/database.service.js');
+        const { UserService } = require('../../services/domain/user.service');
+        const { DeveloperService } = require('../../services/domain/developer.service');
+        const { PasswordHashingService } = require('../../services/helpers/password-hashing.service');
+        const { DatabaseService } = require('../../infra/database/database.service');
         this.userService = moduleRef.getProvider(UserService);
         this.developerService = moduleRef.getProvider(DeveloperService);
         this.passwordHashingService = moduleRef.getProvider(PasswordHashingService);

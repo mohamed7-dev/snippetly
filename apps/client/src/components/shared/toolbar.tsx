@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
-import { Editor, useEditorState } from '@tiptap/react';
+import type { Editor } from '@tiptap/react';
+import { useEditorState } from '@tiptap/react';
 import {
     BoldIcon,
     ItalicIcon,
@@ -9,8 +10,9 @@ import {
     MoreHorizontalIcon,
     QuoteIcon,
     StrikethroughIcon,
+    type LucideIcon,
 } from 'lucide-react';
-import React, { lazy } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '../ui/button';
 import {
     DropdownMenu,
@@ -21,21 +23,30 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 const LinkDialog = lazy(async () => {
-    const mod = await import('./link-dialog');
-    return { default: mod.LinkDialog };
+    const { LinkDialog: Dialog } = await import('./link-dialog');
+    return { default: Dialog };
 });
 
-const toolbarButtonClassName = 'h-8 px-2';
+const buttonClassName = 'h-8 px-2';
+const headingOptions = [
+    { value: 'h1', label: 'Heading 1' },
+    { value: 'h2', label: 'Heading 2' },
+    { value: 'h3', label: 'Heading 3' },
+    { value: 'h4', label: 'Heading 4' },
+    { value: 'h5', label: 'Heading 5' },
+    { value: 'h6', label: 'Heading 6' },
+    { value: 'paragraph', label: 'Normal' },
+] as const;
 
-type HeadOptions = 'paragraph' | 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
+type HeadingOption = (typeof headingOptions)[number]['value'];
+type EditorSelection = { from: number; to: number };
 
 interface ToolbarItem {
     id: string;
-    order: number;
-    element: React.ReactNode;
-    action?: () => void;
     label: string;
-    isActive?: boolean;
+    Icon: LucideIcon;
+    active: boolean;
+    action: () => void;
 }
 
 interface ToolbarProps {
@@ -43,322 +54,213 @@ interface ToolbarProps {
     isDisabled?: boolean;
 }
 
-export function Toolbar({ editor, isDisabled }: ToolbarProps) {
-    const toolbarContainerRef = React.useRef<HTMLDivElement | null>(null);
-    const [isLinkDialogOpen, setIsLinkDialogOpen] = React.useState(false);
-
-    const headingLevelsItems = React.useMemo(() => {
-        return [
-            { value: 'h1', label: 'Heading 1' },
-            { value: 'h2', label: 'Heading 2' },
-            { value: 'h3', label: 'Heading 3' },
-            { value: 'h4', label: 'Heading 4' },
-            { value: 'h5', label: 'Heading 5' },
-            { value: 'h6', label: 'Heading 6' },
-            { value: 'paragraph', label: 'Normal' },
-        ];
-    }, []);
-
-    const resolveCurrentHeading = React.useCallback((): HeadOptions => {
-        let headingOption: HeadOptions = 'paragraph';
-        if (!editor) {
-            headingOption = 'paragraph';
-        }
-
-        Array.from({ length: 6 }).forEach(level => {
-            const isActiveHeading = editor?.isActive('heading', { level });
-            if (isActiveHeading) {
-                headingOption = `h${level}` as HeadOptions;
-                return;
-            }
-        });
-
-        return headingOption;
-    }, [editor]);
-
-    const handleHeadingChange = React.useCallback(
-        (value: HeadOptions) => {
-            if (!editor || !value) return;
-
-            if (value === 'paragraph') {
-                editor.chain().focus().setParagraph().run();
-            } else {
-                const level = parseInt(value.slice(1)) as 1 | 2 | 3 | 4 | 5 | 6;
-                editor.chain().focus().toggleHeading({ level }).run();
-            }
-        },
-        [editor],
-    );
-
-    // Toolbar Items
-    const [visibleItems, setVisibleItems] = React.useState<ToolbarItem[]>([]);
-    const [overflowItems, setOverflowItems] = React.useState<ToolbarItem[]>([]);
+export function Toolbar({ editor, isDisabled = false }: ToolbarProps) {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [visibleIds, setVisibleIds] = useState<string[]>([]);
+    const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+    const [linkSelection, setLinkSelection] = useState<EditorSelection>({ from: 0, to: 0 });
 
     const editorState = useEditorState({
         editor,
-        selector: ctx => {
-            if (!ctx.editor) return;
-            return {
-                isBold: ctx.editor.isActive('bold'),
-                isItalic: ctx.editor.isActive('italic'),
-                isStrike: ctx.editor.isActive('strike'),
-                isOrderedList: ctx.editor.isActive('orderedList'),
-                isBulletList: ctx.editor.isActive('bulletList'),
-                isLink: ctx.editor.isActive('link'),
-                isBlockquote: ctx.editor.isActive('blockquote'),
-            };
-        },
+        selector: ({ editor: currentEditor }) =>
+            currentEditor
+                ? {
+                      bold: currentEditor.isActive('bold'),
+                      italic: currentEditor.isActive('italic'),
+                      strike: currentEditor.isActive('strike'),
+                      bulletList: currentEditor.isActive('bulletList'),
+                      orderedList: currentEditor.isActive('orderedList'),
+                      link: currentEditor.isActive('link'),
+                      blockquote: currentEditor.isActive('blockquote'),
+                  }
+                : null,
     });
 
-    const toolbarItems: ToolbarItem[] = React.useMemo(() => {
-        if (!editor || !editorState) return [];
+    const heading = useMemo<HeadingOption>(() => {
+        if (!editor) return 'paragraph';
+        for (let level = 1; level <= 6; level += 1) {
+            if (editor.isActive('heading', { level })) return `h${level}` as HeadingOption;
+        }
+        return 'paragraph';
+    }, [editor, editorState]);
 
+    const openLinkDialog = useCallback(() => {
+        if (!editor) return;
+        const { from, to } = editor.state.selection;
+        setLinkSelection({ from, to });
+        setLinkDialogOpen(true);
+    }, [editor]);
+
+    const items = useMemo<ToolbarItem[]>(() => {
+        if (!editor || !editorState) return [];
         return [
             {
                 id: 'bold',
-                order: 1,
-                isActive: editorState.isBold,
                 label: 'Bold',
+                Icon: BoldIcon,
+                active: editorState.bold,
                 action: () => editor.chain().focus().toggleBold().run(),
-                element: (
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        key="bold"
-                        type="button"
-                        disabled={isDisabled}
-                        className={cn(toolbarButtonClassName, editorState.isBold ? 'bg-accent' : '')}
-                        onClick={() => editor.chain().focus().toggleBold().run()}
-                    >
-                        <BoldIcon />
-                    </Button>
-                ),
             },
             {
                 id: 'italic',
-                order: 2,
-                isActive: editorState.isItalic,
                 label: 'Italic',
+                Icon: ItalicIcon,
+                active: editorState.italic,
                 action: () => editor.chain().focus().toggleItalic().run(),
-                element: (
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        key="italic"
-                        type="button"
-                        disabled={isDisabled}
-                        className={cn(toolbarButtonClassName, editorState.isItalic ? 'bg-accent' : '')}
-                        onClick={() => editor.chain().focus().toggleItalic().run()}
-                    >
-                        <ItalicIcon />
-                    </Button>
-                ),
             },
             {
                 id: 'strikethrough',
-                order: 3,
-                isActive: editorState.isStrike,
                 label: 'Strikethrough',
+                Icon: StrikethroughIcon,
+                active: editorState.strike,
                 action: () => editor.chain().focus().toggleStrike().run(),
-                element: (
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        key="strikethrough"
-                        type="button"
-                        disabled={isDisabled}
-                        className={cn(toolbarButtonClassName, editorState.isStrike ? 'bg-accent' : '')}
-                        onClick={() => editor.chain().focus().toggleStrike().run()}
-                    >
-                        <StrikethroughIcon />
-                    </Button>
-                ),
             },
             {
                 id: 'bulletList',
-                order: 4,
-                isActive: editorState.isBulletList,
                 label: 'Bullet List',
+                Icon: ListIcon,
+                active: editorState.bulletList,
                 action: () => editor.chain().focus().toggleBulletList().run(),
-                element: (
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        key="bulletList"
-                        type="button"
-                        disabled={isDisabled}
-                        className={cn(toolbarButtonClassName, editorState.isBulletList ? 'bg-accent' : '')}
-                        onClick={() => editor.chain().focus().toggleBulletList().run()}
-                    >
-                        <ListIcon />
-                    </Button>
-                ),
             },
             {
                 id: 'orderedList',
-                order: 5,
-                isActive: editorState.isOrderedList,
                 label: 'Ordered List',
+                Icon: ListOrderedIcon,
+                active: editorState.orderedList,
                 action: () => editor.chain().focus().toggleOrderedList().run(),
-                element: (
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        key="orderedList"
-                        type="button"
-                        disabled={isDisabled}
-                        className={cn(toolbarButtonClassName, editorState.isOrderedList ? 'bg-accent' : '')}
-                        onClick={() => editor.chain().focus().toggleOrderedList().run()}
-                    >
-                        <ListOrderedIcon />
-                    </Button>
-                ),
             },
-            {
-                id: 'link',
-                order: 6,
-                label: 'Link',
-                isActive: editorState.isLink,
-                action: () => setIsLinkDialogOpen(true),
-                element: (
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        key="link"
-                        type="button"
-                        disabled={isDisabled}
-                        className={cn(toolbarButtonClassName, editorState.isLink ? 'bg-accent' : '')}
-                        onClick={() => setIsLinkDialogOpen(true)}
-                    >
-                        <LinkIcon className="h-4 w-4" />
-                    </Button>
-                ),
-            },
+            { id: 'link', label: 'Link', Icon: LinkIcon, active: editorState.link, action: openLinkDialog },
             {
                 id: 'blockquote',
-                order: 7,
                 label: 'Blockquote',
-                isActive: editorState.isBlockquote,
+                Icon: QuoteIcon,
+                active: editorState.blockquote,
                 action: () => editor.chain().focus().toggleBlockquote().run(),
-                element: (
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        key="blockquote"
-                        type="button"
-                        disabled={isDisabled}
-                        className={cn(toolbarButtonClassName, editorState.isBlockquote ? 'bg-accent' : '')}
-                        onClick={() => editor.chain().focus().toggleBlockquote().run()}
-                    >
-                        <QuoteIcon className="h-4 w-4" />
-                    </Button>
-                ),
             },
-        ] satisfies ToolbarItem[];
-    }, [editor, editorState, isDisabled]);
+        ];
+    }, [editor, editorState, openLinkDialog]);
 
-    React.useEffect(() => {
-        const getVisibleToolbarItems = () => {
-            if (!toolbarContainerRef.current) return;
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
 
-            const sortedItems = toolbarItems.sort((a, b) => a.order - b.order);
-
-            const toolbarContainerWidth = toolbarContainerRef.current?.clientWidth;
-
+        const updateVisibleItems = () => {
             const buttonWidth = 40;
             const overflowButtonWidth = 40;
-            const padding = 16;
+            let availableWidth = container.clientWidth - 146;
+            const shown: string[] = [];
+            const hidden: string[] = [];
 
-            const headingSelectionBtnWidth = 130;
-
-            const usedWidth = headingSelectionBtnWidth + padding;
-
-            let remainingToolbarWidth = toolbarContainerWidth - usedWidth;
-
-            const overflowItems: ToolbarItem[] = [];
-            const visibleItems: ToolbarItem[] = [];
-
-            sortedItems.forEach(item => {
-                const isNotOverflowing =
-                    remainingToolbarWidth >= buttonWidth + (overflowItems.length ? overflowButtonWidth : 0);
-
-                if (isNotOverflowing) {
-                    visibleItems.push(item);
-                    remainingToolbarWidth -= buttonWidth;
+            for (const item of items) {
+                const reserveOverflow = hidden.length > 0 ? overflowButtonWidth : 0;
+                if (availableWidth >= buttonWidth + reserveOverflow) {
+                    shown.push(item.id);
+                    availableWidth -= buttonWidth;
                 } else {
-                    overflowItems.push(item);
+                    hidden.push(item.id);
                 }
-            });
-            setVisibleItems(visibleItems);
-            setOverflowItems(overflowItems);
+            }
+
+            setVisibleIds(shown);
         };
 
-        getVisibleToolbarItems();
+        updateVisibleItems();
+        const observer = new ResizeObserver(updateVisibleItems);
+        observer.observe(container);
+        return () => observer.disconnect();
+    }, [items]);
 
-        const resizeObserver = new ResizeObserver(getVisibleToolbarItems);
-        if (toolbarContainerRef.current) {
-            resizeObserver.observe(toolbarContainerRef.current);
+    const applyHeading = (value: HeadingOption) => {
+        if (!editor) return;
+        if (value === 'paragraph') {
+            editor.chain().focus().setParagraph().run();
+        } else {
+            editor
+                .chain()
+                .focus()
+                .toggleHeading({ level: Number(value.slice(1)) as 1 | 2 | 3 | 4 | 5 | 6 })
+                .run();
         }
-
-        return () => {
-            resizeObserver.disconnect();
-        };
-    }, [toolbarItems, editor]);
-
-    const visibleJSXElements = visibleItems.map(item => item.element);
+    };
 
     if (!editor) return null;
 
+    const visibleItems = items.filter(item => visibleIds.includes(item.id));
+    const overflowItems = items.filter(item => !visibleIds.includes(item.id));
+
     return (
-        <div ref={toolbarContainerRef} className="flex items-center gap-1 p-2 border-b bg-muted">
+        <div ref={containerRef} className="flex items-center gap-1 p-2 border-b bg-muted">
             <Select
-                value={resolveCurrentHeading()}
-                onValueChange={value => handleHeadingChange(value as HeadOptions)}
+                value={heading}
+                onValueChange={value => applyHeading(value as HeadingOption)}
                 disabled={isDisabled}
             >
                 <SelectTrigger size="sm" className="w-32 py-1">
                     <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                    {headingLevelsItems.map(item => (
-                        <SelectItem key={item.value} value={item.value}>
-                            {item.label}
+                    {headingOptions.map(option => (
+                        <SelectItem key={option.value} value={option.value}>
+                            {option.label}
                         </SelectItem>
                     ))}
                 </SelectContent>
             </Select>
-            {visibleJSXElements}
-            {!!overflowItems.length && (
+
+            {visibleItems.map(({ id, label, Icon, active, action }) => (
+                <Button
+                    key={id}
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    aria-label={label}
+                    title={label}
+                    disabled={isDisabled}
+                    className={cn(buttonClassName, active && 'bg-accent')}
+                    onMouseDown={event => event.preventDefault()}
+                    onClick={action}
+                >
+                    <Icon className="h-4 w-4" />
+                </Button>
+            ))}
+
+            {overflowItems.length > 0 && (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button
                             type="button"
-                            variant={'ghost'}
-                            size={'sm'}
-                            className={cn(toolbarButtonClassName)}
+                            variant="ghost"
+                            size="sm"
+                            aria-label="More formatting options"
+                            className={buttonClassName}
                             disabled={isDisabled}
                         >
                             <MoreHorizontalIcon />
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                        {overflowItems.map(item => (
-                            <div key={item.id}>
-                                <DropdownMenuItem
-                                    onClick={item.action}
-                                    className={cn(item.isActive ? 'bg-accent' : '')}
-                                    disabled={isDisabled}
-                                >
-                                    {item.label}
-                                </DropdownMenuItem>
-                            </div>
+                        {overflowItems.map(({ id, label, active, action }) => (
+                            <DropdownMenuItem
+                                key={id}
+                                className={cn(active && 'bg-accent')}
+                                disabled={isDisabled}
+                                onSelect={action}
+                            >
+                                {label}
+                            </DropdownMenuItem>
                         ))}
                     </DropdownMenuContent>
                 </DropdownMenu>
             )}
-            <React.Suspense fallback={null}>
-                <LinkDialog isOpen={isLinkDialogOpen} onOpenChange={setIsLinkDialogOpen} editor={editor} />
-            </React.Suspense>
+
+            <Suspense fallback={null}>
+                <LinkDialog
+                    isOpen={linkDialogOpen}
+                    onOpenChange={setLinkDialogOpen}
+                    editor={editor}
+                    selection={linkSelection}
+                />
+            </Suspense>
         </div>
     );
 }

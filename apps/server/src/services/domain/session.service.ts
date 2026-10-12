@@ -1,8 +1,9 @@
 import ms from 'ms';
 import { randomBytes } from 'node:crypto';
-import { EntitySubscriberInterface, InsertEvent, RemoveEvent, UpdateEvent } from 'typeorm';
+import { EntitySubscriberInterface, InsertEvent, MoreThan, RemoveEvent, UpdateEvent } from 'typeorm';
 import { RequestContext } from '../../api/request-context/request-context';
 import { getUserPermissions } from '../../api/utils/get-user-permissions';
+import { EntityNotFoundError } from '../../common/errors/errors';
 import { race } from '../../common/helpers/race';
 import { SessionCacheEntry, SessionCacheStrategy } from '../../config/auth/session-cache-strategy.interface';
 import { ConfigService } from '../../config/config.service';
@@ -45,11 +46,17 @@ export class SessionService implements EntitySubscriberInterface {
         await this.clearSessionCacheOnDataChange(event);
     }
 
-    public async createSession(ctx: RequestContext, user: User, authStrategyName: string) {
+    public async createSession(
+        ctx: RequestContext,
+        user: User,
+        authStrategyName: string,
+        userAgent: string | null = null,
+    ) {
         const authenticatedSession = new Session({
             token: await this.createToken(),
             invalidated: false,
             authenticationStrategy: authStrategyName,
+            userAgent,
             user,
             expiresAt: this.calculateExpiry(this.sessionDurationInMs),
         });
@@ -58,6 +65,31 @@ export class SessionService implements EntitySubscriberInterface {
             .save(authenticatedSession);
         await race(this.cache.set(this.toCacheEntry(savedSession)), this.sessionCacheTimeoutMs);
         return savedSession;
+    }
+
+    public async listActiveSessions(ctx: RequestContext, userId: string): Promise<Session[]> {
+        return this.databaseService.getRepository(ctx, Session).find({
+            where: {
+                user: { id: userId },
+                invalidated: false,
+                expiresAt: MoreThan(new Date()),
+            },
+            order: { createdAt: 'DESC' },
+        });
+    }
+
+    public async revokeSession(ctx: RequestContext, userId: string, sessionId: string): Promise<Session> {
+        const repository = this.databaseService.getRepository(ctx, Session);
+        const session = await repository.findOne({
+            where: { id: sessionId, user: { id: userId } },
+        });
+        if (!session) {
+            throw new EntityNotFoundError({ entityName: 'Session', entityId: sessionId });
+        }
+
+        await repository.remove(session);
+        await race(this.cache.delete(session.token), this.sessionCacheTimeoutMs);
+        return session;
     }
 
     /**

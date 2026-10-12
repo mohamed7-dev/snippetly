@@ -82,20 +82,29 @@ export const inputIdsSchema = z.object({
 export type InputIdsSchema = z.infer<typeof inputIdsSchema>;
 
 //############################ Filter & Sort Operators ##########################
-export const stringFilterOperators = z
-    .object({
-        equals: z.string(),
-        notEquals: z.string(),
-        contains: z.string(),
-        doesNotContain: z.string(),
-        includedIn: z.array(z.string()),
-        excludedFrom: z.array(z.string()),
-        matchesRegex: z.string(),
-        isNull: z.boolean(),
-    })
-    .partial();
+export type FilterType = 'Text' | 'Numeric' | 'Date' | 'Boolean' | 'ID' | 'None';
+export const stringFilterOperators = defineFilter('Text', {
+    equals: z.string(),
+    notEquals: z.string(),
+    contains: z.string(),
+    doesNotContain: z.string(),
+    includedIn: z.array(z.string()),
+    excludedFrom: z.array(z.string()),
+    matchesRegex: z.string(),
+    isNull: z.boolean(),
+});
 
 export type StringFilterOperators = z.infer<typeof stringFilterOperators>;
+
+export const idFilterOperators = defineFilter('ID', {
+    equals: idSchema,
+    notEquals: idSchema,
+    includedIn: z.array(idSchema),
+    excludedFrom: z.array(idSchema),
+    isNull: z.boolean(),
+});
+
+export type IDFilterOperators = z.infer<typeof idFilterOperators>;
 
 const numericRangeInput = z.object({
     min: z.number(),
@@ -103,26 +112,22 @@ const numericRangeInput = z.object({
 });
 export type NumericRangeInput = z.infer<typeof numericRangeInput>;
 
-export const numericFilterOperators = z
-    .object({
-        equals: z.number(),
-        lessThan: z.number(),
-        lessThanOrEqual: z.number(),
-        greaterThan: z.number(),
-        greaterThanOrEqual: z.number(),
-        withinRange: numericRangeInput,
-        isNull: z.boolean(),
-    })
-    .partial();
+export const numericFilterOperators = defineFilter('Numeric', {
+    equals: z.number(),
+    lessThan: z.number(),
+    lessThanOrEqual: z.number(),
+    greaterThan: z.number(),
+    greaterThanOrEqual: z.number(),
+    withinRange: numericRangeInput,
+    isNull: z.boolean(),
+});
 
 export type NumericFilterOperators = z.infer<typeof numericFilterOperators>;
 
-export const booleanFilterOperators = z
-    .object({
-        equals: z.boolean(),
-        isNull: z.boolean(),
-    })
-    .partial();
+export const booleanFilterOperators = defineFilter('Boolean', {
+    equals: z.boolean(),
+    isNull: z.boolean(),
+});
 
 export type BooleanFilterOperators = z.infer<typeof booleanFilterOperators>;
 
@@ -132,15 +137,13 @@ const dateTimeRangeInput = z.object({
 });
 export type DateTimeRangeInput = z.infer<typeof dateTimeRangeInput>;
 
-export const dateTimeFilterOperators = z
-    .object({
-        equals: z.coerce.date(),
-        before: z.coerce.date(),
-        after: z.coerce.date(),
-        withinRange: dateTimeRangeInput,
-        isNull: z.boolean(),
-    })
-    .partial();
+export const dateTimeFilterOperators = defineFilter('Date', {
+    equals: z.coerce.date(),
+    before: z.coerce.date(),
+    after: z.coerce.date(),
+    withinRange: dateTimeRangeInput,
+    isNull: z.boolean(),
+});
 
 export type DateTimeFilterOperators = z.infer<typeof dateTimeFilterOperators>;
 
@@ -149,7 +152,10 @@ export enum FilterGroupOperator {
     AND = 'AND',
 }
 
-export const filterGroupOperator = z.enum(FilterGroupOperator);
+export const filterGroupOperator = z.preprocess(
+    value => (typeof value === 'string' ? value.toUpperCase() : value),
+    z.enum(FilterGroupOperator),
+);
 
 export enum SortDirection {
     ASC = 'ASC',
@@ -165,6 +171,16 @@ const paginatedListInputSchema = z.object({
     skip: z.coerce.number(),
 });
 
+/**
+ * @description
+ * Define a reusable filter-operators object. All operators are optional and the
+ * object is tagged with its filter type. Note: .meta() must be applied last,
+ * after .partial(), because .partial() returns a new schema instance.
+ */
+export function defineFilter<T extends z.ZodRawShape>(filterType: FilterType, shape: T) {
+    return z.object(shape).partial().meta({ filterType });
+}
+
 export function createPaginatedListInputSchema<Filter extends z.ZodRawShape, Sort extends z.ZodRawShape>(
     filterSchema: ZodObject<Filter>,
     sortSchema: ZodObject<Sort>,
@@ -173,10 +189,10 @@ export function createPaginatedListInputSchema<Filter extends z.ZodRawShape, Sor
         .object({
             createdAt: dateTimeFilterOperators,
             updatedAt: dateTimeFilterOperators,
-            id: stringFilterOperators,
+            id: idFilterOperators,
         })
         .partial()
-        .extend(filterSchema.shape);
+        .extend(filterSchema.partial().shape);
 
     return paginatedListInputSchema
         .extend({
@@ -184,6 +200,7 @@ export function createPaginatedListInputSchema<Filter extends z.ZodRawShape, Sor
                 .object({ _and: z.array(extendedFilterSchema), _or: z.array(extendedFilterSchema) })
                 .partial()
                 .extend(extendedFilterSchema.shape),
+            filterOperator: filterGroupOperator.default(FilterGroupOperator.AND),
         })
         .extend({
             sort: z

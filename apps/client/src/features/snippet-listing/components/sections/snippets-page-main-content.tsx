@@ -1,41 +1,53 @@
 import { InfiniteLoader } from '@/components/feedback/infinite-loader';
 import { StatusCard } from '@/components/feedback/status-card';
+import { SnippetListLayout } from '@/components/shared/snippet-list-layout';
 import { Button } from '@/components/ui/button';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import { SnippetCard } from '@/features/snippets/components/snippet-card';
 import { Permission } from '@snippetly/common/dto';
 import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
+import { Link, useSearch } from '@tanstack/react-router';
 import { PlusIcon } from 'lucide-react';
+import React from 'react';
 import { listCurrentUserSnippetsQueryOptions } from '../../lib/snippet-listing-query-options';
 
 export function SnippetsPageMainContent() {
+    const search = useSearch({
+        from: '/(protected)/dashboard/_dashboard-layout/_boundary/snippets/',
+    });
+    const queryKeys = [search.sort, search.filter, search.filterOperator, search.tags];
     const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery(
-        listCurrentUserSnippetsQueryOptions(),
+        listCurrentUserSnippetsQueryOptions(search, queryKeys),
     );
     const snippets = data.pages?.flatMap(page => page.items) ?? [];
-    const ownerId = snippets?.[0]?.creator.id;
     const qClient = useQueryClient();
+
     const onDeleteSuccess = async () => {
-        await qClient.invalidateQueries(listCurrentUserSnippetsQueryOptions());
+        await qClient.invalidateQueries(listCurrentUserSnippetsQueryOptions(undefined, queryKeys));
     };
 
     return (
-        <PermissionGuard
-            requiredPermissions={[Permission.Authenticated, Permission.Owner, Permission.ReadSnippet]}
-            ownerId={ownerId}
-        >
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {snippets.map(snippets => (
-                    <SnippetCard
-                        key={snippets.id}
-                        snippet={snippets}
-                        deleteSnippet={{
-                            onSuccess: onDeleteSuccess,
-                        }}
-                    />
+        <React.Fragment>
+            <SnippetListLayout>
+                {snippets.map(snippet => (
+                    <PermissionGuard
+                        key={snippet.id}
+                        requiredPermissions={[
+                            Permission.Authenticated,
+                            Permission.Owner,
+                            Permission.ReadSnippet,
+                        ]}
+                        ownerId={snippet.creator.id}
+                    >
+                        <SnippetCard
+                            snippet={snippet}
+                            deleteSnippet={{
+                                onSuccess: onDeleteSuccess,
+                            }}
+                        />
+                    </PermissionGuard>
                 ))}
-            </div>
+            </SnippetListLayout>
             <InfiniteLoader
                 fetchNextPage={fetchNextPage}
                 hasNextPage={hasNextPage}
@@ -49,17 +61,21 @@ export function SnippetsPageMainContent() {
                             description="Create your first code snippet"
                             layout="section"
                             actions={
-                                <Button asChild>
-                                    <Link to={'/dashboard/snippets/new'}>
-                                        <PlusIcon className="h-4 w-4 mr-2" />
-                                        Create Snippet
-                                    </Link>
-                                </Button>
+                                <PermissionGuard
+                                    requiredPermissions={[Permission.Authenticated, Permission.CreateSnippet]}
+                                >
+                                    <Button asChild>
+                                        <Link to={'/dashboard/snippets/new'}>
+                                            <PlusIcon className="h-4 w-4 mr-2" />
+                                            Create Snippet
+                                        </Link>
+                                    </Button>
+                                </PermissionGuard>
                             }
                         />
                     ) : null
                 }
             />
-        </PermissionGuard>
+        </React.Fragment>
     );
 }

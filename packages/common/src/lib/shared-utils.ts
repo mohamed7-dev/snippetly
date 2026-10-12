@@ -45,7 +45,9 @@ export function transformInputToSearchParams(input: Record<string, unknown>): UR
     const searchParams = new URLSearchParams();
 
     Object.entries(input).forEach(([key, value]) => {
-        if (key === 'filter' || key === 'sort') {
+        if (!notNullOrUndefined(value)) return;
+
+        if (key === 'filter' || key === 'sort' || key === 'tags') {
             searchParams.set(key, JSON.stringify(value));
         } else {
             searchParams.set(key, `${value as string | number}`);

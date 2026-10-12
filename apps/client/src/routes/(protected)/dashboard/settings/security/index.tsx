@@ -5,6 +5,7 @@ import { SecuritySettingsPageContentHeader } from '@/features/developer-settings
 import { SecuritySettingsPageEmail } from '@/features/developer-settings/components/sections/security-settings-page-email';
 import { SecuritySettingsPageEmailChange } from '@/features/developer-settings/components/sections/security-settings-page-email-change';
 import { SecuritySettingsPagePassword } from '@/features/developer-settings/components/sections/security-settings-page-password';
+import { SecuritySettingsPageSessions } from '@/features/developer-settings/components/sections/security-settings-page-sessions';
 import { Permission } from '@snippetly/common/dto';
 import { createFileRoute } from '@tanstack/react-router';
 
@@ -33,6 +34,7 @@ function SecurityPage() {
                 <SecuritySettingsPageEmail />
                 <SecuritySettingsPageEmailChange />
                 <SecuritySettingsPagePassword />
+                <SecuritySettingsPageSessions />
                 <SecuritySettingsPageAccountDeletion />
             </PermissionGuard>
         </div>

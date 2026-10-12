@@ -6,6 +6,7 @@ export * from './shared/generated-error-code.js';
 export * from './shared/generated-language-code.js';
 export * from './shared/generated-permission.js';
 export * from './shared/generated-server-errors.js';
+export * from './shared/session.api.js';
 
 // developer API
 export * from './developer/auth.api.js';

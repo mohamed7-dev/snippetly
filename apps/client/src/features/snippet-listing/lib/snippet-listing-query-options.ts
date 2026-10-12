@@ -50,6 +50,7 @@ export const listCollectionSnippetsQueryOptions = (
                 collection: collectionId,
                 take,
                 skip: pageParam,
+                discover: false,
             });
             return await developerApiClient.fetch<SnippetListDtoType['output']>(
                 apiEndpoints.snippets.list.url(searchParams),

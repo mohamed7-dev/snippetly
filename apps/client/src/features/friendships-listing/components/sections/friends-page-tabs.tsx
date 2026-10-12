@@ -2,6 +2,8 @@ import { ErrorBoundaryFallback } from '@/components/feedback/error-boundary-fall
 import { InfiniteLoader } from '@/components/feedback/infinite-loader';
 import { SectionLoader } from '@/components/feedback/section-loader';
 import { StatusCard } from '@/components/feedback/status-card';
+import { FilterQueryDialog } from '@/components/shared/list-query-builder/filter-query-dialog';
+import { SortQueryDialog } from '@/components/shared/list-query-builder/sort-query-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -16,6 +18,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { CurrentUserFriendsSnippets } from '@/features/snippet-listing/components/sections/current-user-friends-snippets';
 import { getCurrentDeveloperActivityStats } from '@/features/stats/lib/stats-query-options';
+import { formatDeveloperInfo } from '@/lib/format-developer-info';
+import { currentUserFriendsListDto } from '@snippetly/common/dto';
 import { omit } from '@snippetly/common/lib';
 import { useQuery, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
@@ -25,9 +29,10 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { listCurrentUserFriendsQueryOptions } from '../../lib/friendships-listing-query-options';
 
 export function FriendsPageTabs() {
-    const { tab, friendId } = useSearch({
+    const { tab, snippets } = useSearch({
         from: '/(protected)/dashboard/_dashboard-layout/_boundary/friends/',
     });
+    const friendId = snippets?.friendId;
     const navigate = useNavigate();
 
     const { data } = useQuery(getCurrentDeveloperActivityStats());
@@ -62,7 +67,13 @@ export function FriendsPageTabs() {
                         <CurrentUserFriendsSnippets
                             friendId={friendId}
                             onClearingFriendId={() =>
-                                navigate({ to: '.', search: { friendId: '', tab: 'snippets' } })
+                                navigate({
+                                    to: '.',
+                                    search: prev => ({
+                                        ...prev,
+                                        snippets: snippets ? omit(snippets, ['friendId']) : undefined,
+                                    }),
+                                })
                             }
                         />
                     </React.Suspense>
@@ -73,10 +84,16 @@ export function FriendsPageTabs() {
 }
 
 function FriendsTabContent() {
+    const { snippets, friends, ...search } = useSearch({
+        from: '/(protected)/dashboard/_dashboard-layout/_boundary/friends/',
+    });
+    const queryKeys = Object.values(friends ?? {});
+    const navigate = useNavigate();
     const { data, isFetchingNextPage, hasNextPage, fetchNextPage } = useSuspenseInfiniteQuery(
-        listCurrentUserFriendsQueryOptions(),
+        listCurrentUserFriendsQueryOptions(friends, queryKeys),
     );
     const { user } = useAuth();
+
     const friendships = (data.pages?.flatMap(p => p.items) ?? []).map(f => {
         if (f.requester.id === user?.id) {
             const addressee = f.addressee;
@@ -90,14 +107,36 @@ function FriendsTabContent() {
     });
 
     const getNameFallback = (developer: { firstName: string; lastName: string }) => {
-        return developer.firstName.slice(0, 1) + ' ' + developer.lastName.slice(0, 1);
+        return formatDeveloperInfo(developer).initials;
     };
     const getFullName = (developer: { firstName: string; lastName: string }) => {
-        return developer.firstName + ' ' + developer.lastName;
+        return formatDeveloperInfo(developer).fullName;
     };
 
     return (
         <React.Fragment>
+            <div className="flex items-center gap-4 my-6">
+                <SortQueryDialog
+                    sortSchema={currentUserFriendsListDto.input.shape.sort}
+                    value={{ sort: friends?.sort }}
+                    onApply={val =>
+                        navigate({
+                            to: '.',
+                            search: { ...search, snippets, friends: { ...friends, sort: val.sort } },
+                        })
+                    }
+                />
+                <FilterQueryDialog
+                    schema={currentUserFriendsListDto.input.shape.filter}
+                    value={{ filter: friends?.filter, filterOperator: friends?.filterOperator }}
+                    onApply={val =>
+                        navigate({
+                            to: '.',
+                            search: { ...search, snippets, friends: { ...friends, ...val } },
+                        })
+                    }
+                />
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {friendships.map(item => (
                     <Card key={item.id} className="border-border hover:shadow-lg transition-shadow">
@@ -170,7 +209,15 @@ function FriendsTabContent() {
 
                             <div className="flex items-center justify-between pt-2">
                                 <Button size="sm" variant="outline">
-                                    <Link to="." search={{ tab: 'snippets', friendId: item.friend.id }}>
+                                    <Link
+                                        to="."
+                                        search={{
+                                            ...search,
+                                            friends,
+                                            tab: 'snippets',
+                                            snippets: { ...snippets, friendId: item.friend.id },
+                                        }}
+                                    >
                                         View Snippets
                                     </Link>
                                 </Button>

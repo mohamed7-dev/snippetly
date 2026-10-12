@@ -31,9 +31,7 @@ export function DashBoardHeader() {
                     </Button>
                 </PermissionGuard>
 
-                <PermissionGuard requiredPermissions={[Permission.Authenticated]}>
-                    <HeaderUserMenu />
-                </PermissionGuard>
+                <HeaderUserMenu />
             </div>
         </HeaderWrapper>
     );

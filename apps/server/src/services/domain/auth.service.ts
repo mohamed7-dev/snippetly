@@ -39,6 +39,7 @@ export class AuthService {
         authStrategyName: string,
         authData: any,
         apiType: ApiType,
+        userAgent: string | null = null,
     ): Promise<Session | InvalidCredentialsError | NotVerifiedAccountError> {
         await this.eventBus.publish(
             new LoginAttemptEvent(
@@ -56,7 +57,7 @@ export class AuthService {
         } else if (!result) {
             return new InvalidCredentialsError({ reason: '' });
         }
-        return await this.openAuthenticatedSession(ctx, result, authStrategy.name);
+        return await this.openAuthenticatedSession(ctx, result, authStrategy.name, userAgent);
     }
 
     /**
@@ -68,6 +69,7 @@ export class AuthService {
         ctx: RequestContext,
         user: User,
         authStrategyName: string,
+        userAgent: string | null = null,
     ): Promise<Session | NotVerifiedAccountError> {
         // roles needed in later steps so we need to make sure that they exist
         if (!user.roles) {
@@ -101,7 +103,7 @@ export class AuthService {
         }
         user.lastAuthenticatedAt = new Date();
         await this.databaseService.getRepository(ctx, User).save(user);
-        const session = await this.sessionService.createSession(ctx, user, authStrategyName);
+        const session = await this.sessionService.createSession(ctx, user, authStrategyName, userAgent);
         await this.eventBus.publish(new LoginEvent(ctx, user));
         return session;
     }

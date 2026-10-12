@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils';
-import { Editor } from '@tiptap/react';
+import type { Editor } from '@tiptap/react';
 import { XIcon } from 'lucide-react';
-import React from 'react';
+import { useEffect, useRef, useState, type HTMLAttributes } from 'react';
 import {
     AlertDialog,
     AlertDialogCancel,
@@ -17,100 +17,115 @@ import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 type LinkTarget = '_self' | '_blank';
+type EditorSelection = { from: number; to: number };
 
 interface LinkDialogProps {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
     editor: Editor;
+    selection: EditorSelection;
 }
 
-export function LinkDialog({ isOpen, onOpenChange, editor }: LinkDialogProps) {
-    const [linkHref, setLinkHref] = React.useState('');
-    const [linkTitle, setLinkTitle] = React.useState('');
-    const [linkTarget, setLinkTarget] = React.useState<LinkTarget>('_self');
+export function LinkDialog({ isOpen, onOpenChange, editor, selection }: LinkDialogProps) {
+    const [href, setHref] = useState('');
+    const [title, setTitle] = useState('');
+    const [target, setTarget] = useState<LinkTarget>('_self');
+    const selectionRef = useRef(selection);
+    const isEditingLink = editor.isActive('link');
 
-    const isLinkEditingActive = editor.isActive('link');
+    useEffect(() => {
+        if (!isOpen) return;
 
-    const onClose = () => {
-        setLinkHref('');
-        setLinkTitle('');
-        setLinkTarget('_blank');
+        selectionRef.current = selection;
+        const attributes = editor.getAttributes('link');
+        const selectedText = editor.state.doc.textBetween(selection.from, selection.to);
+        const currentHref = typeof attributes.href === 'string' ? attributes.href : '';
+        const initialHref =
+            currentHref ||
+            (selectedText.startsWith('http') || selectedText.startsWith('www') ? selectedText : '');
+
+        setHref(initialHref);
+        setTitle(typeof attributes.title === 'string' ? attributes.title : '');
+        setTarget(attributes.target === '_blank' ? '_blank' : '_self');
+    }, [editor, isOpen, selection]);
+
+    const close = () => {
+        setHref('');
+        setTitle('');
+        setTarget('_self');
         onOpenChange(false);
     };
 
-    const handleInsertingLink = () => {
-        if (!linkHref) {
-            editor.chain().focus().unsetLink().run();
-        } else {
-            editor
-                .chain()
-                .focus()
-                .extendMarkRange('link')
-                .setLink({
-                    href: linkHref,
-                    target: linkTarget,
-                    rel: linkTarget === '_blank' ? 'noopener noreferrer' : undefined,
+    const linkAttributes = () => ({
+        href: href.trim(),
+        title: title.trim() || null,
+        target,
+        rel: target === '_blank' ? 'noopener noreferrer' : null,
+    });
+
+    const insertLink = () => {
+        const normalizedHref = href.trim();
+        const range = selectionRef.current;
+
+        if (!normalizedHref) {
+            editor.chain().focus().setTextSelection(range).unsetLink().run();
+            close();
+            return;
+        }
+
+        const attributes = linkAttributes();
+        const chain = editor.chain().focus().setTextSelection(range);
+
+        if (range.from === range.to && !editor.isActive('link')) {
+            chain
+                .insertContent({
+                    type: 'text',
+                    text: title.trim() || normalizedHref,
+                    marks: [{ type: 'link', attrs: attributes }],
                 })
                 .run();
+        } else {
+            chain.extendMarkRange('link').setLink(attributes).run();
         }
-        onClose();
+
+        close();
     };
 
-    const handleRemovingLink = () => {
-        editor.chain().focus().unsetLink().run();
-        onClose();
+    const removeLink = () => {
+        editor
+            .chain()
+            .focus()
+            .setTextSelection(selectionRef.current)
+            .extendMarkRange('link')
+            .unsetLink()
+            .run();
+        close();
     };
-
-    React.useEffect(() => {
-        if (isOpen) {
-            // if editing an existing selected link -> grab link info
-            const {
-                href: currentHref,
-                target: currentTarget,
-                title: currentTitle,
-            } = editor.getAttributes('link');
-
-            // Sync editor states with component states
-            setLinkTarget(currentTarget === '_blank' ? '_blank' : '_self');
-            setLinkHref(currentHref || '');
-            setLinkTitle(currentTitle || '');
-
-            // In case of selecting a non-link text -> check if the selection looks like a URL
-            // and set it as the initial href
-            if (!currentHref) {
-                const { from, to } = editor.state.selection;
-                const selectedText = editor.state.doc.textBetween(from, to);
-                const isLinkAlike = selectedText.startsWith('http') || selectedText.startsWith('www');
-                if (selectedText && isLinkAlike) {
-                    setLinkHref(selectedText);
-                }
-            }
-        }
-    }, [isOpen, editor]);
 
     return (
         <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
             <AlertDialogContent>
                 <AlertDialogHeader className="flex-row items-center justify-between">
-                    <AlertDialogTitle>{isLinkEditingActive ? 'Edit link' : 'Insert link'}</AlertDialogTitle>
+                    <AlertDialogTitle>{isEditingLink ? 'Edit link' : 'Insert link'}</AlertDialogTitle>
                     <AlertDialogCancel asChild>
                         <Button variant="ghost" size="icon" aria-label="Close link editor">
                             <XIcon />
                         </Button>
                     </AlertDialogCancel>
                     <AlertDialogDescription className="sr-only">
-                        {isLinkEditingActive
+                        {isEditingLink
                             ? 'Edit the selected link properties'
                             : 'Insert a new hyperlink with URL and target options'}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
+
                 <div className="space-y-4">
                     <Field>
                         <Label htmlFor="link-href">Link href</Label>
                         <Input
                             id="link-href"
-                            value={linkHref}
-                            onChange={e => setLinkHref(e.target.value)}
+                            value={href}
+                            onChange={event => setHref(event.target.value)}
                             placeholder="https://<domain>"
                             className="col-span-3"
                             autoFocus
@@ -120,19 +135,16 @@ export function LinkDialog({ isOpen, onOpenChange, editor }: LinkDialogProps) {
                         <Label htmlFor="link-title">Link title</Label>
                         <Input
                             id="link-title"
-                            value={linkTitle}
-                            onChange={e => setLinkTitle(e.target.value)}
+                            value={title}
+                            onChange={event => setTitle(event.target.value)}
                             placeholder="Accessible name of the link"
                             className="col-span-3"
                         />
                     </Field>
                     <Field>
                         <Label htmlFor="link-target">Link target</Label>
-                        <Select
-                            value={linkTarget}
-                            onValueChange={value => setLinkTarget(value as LinkTarget)}
-                        >
-                            <SelectTrigger className="col-span-3">
+                        <Select value={target} onValueChange={value => setTarget(value as LinkTarget)}>
+                            <SelectTrigger id="link-target" className="col-span-3">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -142,16 +154,17 @@ export function LinkDialog({ isOpen, onOpenChange, editor }: LinkDialogProps) {
                         </Select>
                     </Field>
                 </div>
+
                 <AlertDialogFooter>
-                    {isLinkEditingActive && (
-                        <Button type="button" variant="destructive" onClick={handleRemovingLink}>
+                    {isEditingLink && (
+                        <Button type="button" variant="destructive" onClick={removeLink}>
                             Remove link
                         </Button>
                     )}
-                    <Button type="button" variant="outline" onClick={onClose}>
+                    <Button type="button" variant="outline" onClick={close}>
                         Cancel
                     </Button>
-                    <Button type="button" onClick={handleInsertingLink}>
+                    <Button type="button" onClick={insertLink}>
                         Insert link
                     </Button>
                 </AlertDialogFooter>
@@ -160,6 +173,6 @@ export function LinkDialog({ isOpen, onOpenChange, editor }: LinkDialogProps) {
     );
 }
 
-function Field(props: React.HTMLAttributes<HTMLDivElement>) {
+function Field(props: HTMLAttributes<HTMLDivElement>) {
     return <div {...props} className={cn('grid grid-cols-4 items-center gap-4', props.className)} />;
 }

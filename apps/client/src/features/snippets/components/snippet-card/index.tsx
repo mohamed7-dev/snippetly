@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import type { ApiSuccess } from '@/lib/api-client';
+import { formatDeveloperInfo } from '@/lib/format-developer-info';
 import { Permission, type SnippetListDtoType } from '@snippetly/common/dto';
 import { Link } from '@tanstack/react-router';
 import { EditIcon } from 'lucide-react';
@@ -18,8 +19,8 @@ interface SnippetCardProps extends Omit<SnippetActionsDropdownProps, 'snippet'> 
 
 export function SnippetCard({ snippet, ...props }: SnippetCardProps) {
     const creator = snippet.creator;
-    const avatarFallback = creator.firstName.slice(0, 1) + ' ' + creator.lastName.slice(0, 1);
-    const fullName = creator.firstName + ' ' + creator.lastName;
+    const { fullName, initials: avatarFallback } = formatDeveloperInfo(creator);
+
     const isPrivate = 'isPrivate' in snippet ? snippet.isPrivate : false;
     const createdAt = 'createdAt' in snippet ? snippet.createdAt : undefined;
 

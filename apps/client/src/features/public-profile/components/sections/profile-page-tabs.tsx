@@ -1,13 +1,13 @@
 import { ErrorBoundaryFallback } from '@/components/feedback/error-boundary-fallback';
 import { SectionLoader } from '@/components/feedback/section-loader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PublicProfilePageCollectionsList } from '@/features/collection-listing/components/sections/public-profile-page-collections-list';
+import { PublicProfilePageSnippetsList } from '@/features/snippet-listing/components/sections/public-profile-page-snippets-list';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router';
 import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { getDeveloperProfileQueryOptions } from '../../lib/public-profile-query-options';
-import { CollectionsTabContent } from './collections-tab-content';
-import { SnippetsTabContent } from './snippets-tab-content';
 
 export function ProfilePageTabs() {
     const { id } = useParams({ from: '/(public)/profile/$id' });
@@ -25,18 +25,19 @@ export function ProfilePageTabs() {
 
     const { tab } = useSearch({ from: '/(public)/profile/$id' });
     const navigate = useNavigate();
+
     return (
         <Tabs defaultValue="snippets" value={tab}>
             <TabsList className="grid grid-cols-2 w-full">
                 <TabsTrigger
                     value="snippets"
-                    onClick={() => navigate({ to: '.', search: { tab: 'snippets' } })}
+                    onClick={() => navigate({ to: '.', search: prev => ({ ...prev, tab: 'snippets' }) })}
                 >
                     Snippets ({stats.snippetsCount})
                 </TabsTrigger>
                 <TabsTrigger
                     value="collections"
-                    onClick={() => navigate({ to: '.', search: { tab: 'collections' } })}
+                    onClick={() => navigate({ to: '.', search: prev => ({ ...prev, tab: 'collections' }) })}
                 >
                     Collections ({stats.collectionsCount})
                 </TabsTrigger>
@@ -45,7 +46,7 @@ export function ProfilePageTabs() {
             <TabsContent value="snippets" className="space-y-4 mt-4">
                 <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
                     <React.Suspense fallback={<SectionLoader />}>
-                        <SnippetsTabContent />
+                        <PublicProfilePageSnippetsList />
                     </React.Suspense>
                 </ErrorBoundary>
             </TabsContent>
@@ -53,7 +54,7 @@ export function ProfilePageTabs() {
             <TabsContent value="collections" className="space-y-4 mt-4">
                 <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
                     <React.Suspense fallback={<SectionLoader />}>
-                        <CollectionsTabContent />
+                        <PublicProfilePageCollectionsList />
                     </React.Suspense>
                 </ErrorBoundary>
             </TabsContent>

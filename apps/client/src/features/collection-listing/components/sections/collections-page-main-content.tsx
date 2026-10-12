@@ -1,38 +1,58 @@
 import { InfiniteLoader } from '@/components/feedback/infinite-loader';
 import { StatusCard } from '@/components/feedback/status-card';
+import { CollectionListLayout } from '@/components/shared/collection-list-layout';
 import { Button } from '@/components/ui/button';
+import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import { CollectionCard } from '@/features/collections/components/collection-card';
+import { Permission } from '@snippetly/common/dto';
 import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
+import { Link, useSearch } from '@tanstack/react-router';
 import { PlusIcon } from 'lucide-react';
 import React from 'react';
 import { listCurrentUserCollectionsQueryOptions } from '../../lib/collection-listing-query-options';
 
 export function CollectionsPageMainContent() {
+    const search = useSearch({
+        from: '/(protected)/dashboard/_dashboard-layout/_boundary/collections/',
+    });
+
+    const { sort, filter, filterOperator, tags } = search ?? {};
+
+    const queryKey = [sort, filter, filterOperator, tags];
+
     const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery(
-        listCurrentUserCollectionsQueryOptions(),
+        listCurrentUserCollectionsQueryOptions({ sort, filter, filterOperator, tags }, queryKey),
     );
     const collections = data.pages?.flatMap(page => page.items) ?? [];
 
     const qClient = useQueryClient();
+
     const onDeleteSuccess = async () => {
-        await qClient.invalidateQueries(listCurrentUserCollectionsQueryOptions());
+        await qClient.invalidateQueries(listCurrentUserCollectionsQueryOptions(undefined, queryKey));
     };
 
     return (
         <React.Fragment>
-            {/* Collections Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <CollectionListLayout>
                 {collections.map(collection => (
-                    <CollectionCard
+                    <PermissionGuard
                         key={collection.id}
-                        collection={collection}
-                        deleteCollection={{
-                            onSuccess: onDeleteSuccess,
-                        }}
-                    />
+                        requiredPermissions={[
+                            Permission.Authenticated,
+                            Permission.ReadCollection,
+                            Permission.Owner,
+                        ]}
+                        ownerId={collection.creator.id}
+                    >
+                        <CollectionCard
+                            collection={collection}
+                            deleteCollection={{
+                                onSuccess: onDeleteSuccess,
+                            }}
+                        />
+                    </PermissionGuard>
                 ))}
-            </div>
+            </CollectionListLayout>
             <InfiniteLoader
                 fetchNextPage={fetchNextPage}
                 hasNextPage={hasNextPage}
@@ -46,12 +66,19 @@ export function CollectionsPageMainContent() {
                             description="Create your first collection to organize your code snippets"
                             layout="section"
                             actions={
-                                <Button asChild>
-                                    <Link to={'/dashboard/collections/new'}>
-                                        <PlusIcon className="h-4 w-4 mr-2" />
-                                        Create Collection
-                                    </Link>
-                                </Button>
+                                <PermissionGuard
+                                    requiredPermissions={[
+                                        Permission.Authenticated,
+                                        Permission.CreateCollection,
+                                    ]}
+                                >
+                                    <Button asChild>
+                                        <Link to={'/dashboard/collections/new'}>
+                                            <PlusIcon className="h-4 w-4 mr-2" />
+                                            Create Collection
+                                        </Link>
+                                    </Button>
+                                </PermissionGuard>
                             }
                         />
                     ) : null

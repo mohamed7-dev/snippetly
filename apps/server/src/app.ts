@@ -1,8 +1,10 @@
+import { Permission } from '@snippetly/common/dto';
 import cookieParser from 'cookie-parser';
 import express, { Application } from 'express';
 import { Server } from 'http';
 import swaggerUi from 'swagger-ui-express';
 import { createRouteHandler } from 'uploadthing/express';
+import { authGuard } from './api/middlewares/auth.guard';
 import { cors } from './api/middlewares/cors.mw';
 import { exceptionFilter } from './api/middlewares/exception.filter';
 import { i18n } from './api/middlewares/i18n.mw';
@@ -41,10 +43,9 @@ export class App {
         });
         this.app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(openApiDocument));
         iocContainer.initRoutes(this.app);
-        // TODO: this doesn't participate in the normal routes definitions
-        // so middlewares will not intercept requests
         this.app.use(
             '/api/upload',
+            authGuard({ permissions: [Permission.Public] }),
             createRouteHandler({
                 router: uploadRouter,
             }),

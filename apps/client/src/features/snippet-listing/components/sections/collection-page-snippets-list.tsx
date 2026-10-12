@@ -1,21 +1,26 @@
 import { InfiniteLoader } from '@/components/feedback/infinite-loader';
+import { FilterQueryDialog } from '@/components/shared/list-query-builder/filter-query-dialog';
+import { SortQueryDialog } from '@/components/shared/list-query-builder/sort-query-dialog';
+import { SnippetListLayout } from '@/components/shared/snippet-list-layout';
 import { Button } from '@/components/ui/button';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import { listCollectionSnippetsQueryOptions } from '@/features/snippet-listing/lib/snippet-listing-query-options';
 import { SnippetCard } from '@/features/snippets/components/snippet-card';
-import { Permission } from '@snippetly/common/dto';
+import { Permission, snippetListDto } from '@snippetly/common/dto';
 import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
-import { Link, useParams } from '@tanstack/react-router';
+import { Link, useNavigate, useParams, useSearch } from '@tanstack/react-router';
 import { Code2Icon, PlusIcon } from 'lucide-react';
 
 export function CollectionPageSnippetsList() {
     const params = useParams({
         from: '/(protected)/dashboard/collections/$id/',
     });
-
+    const { filter, sort, filterOperator } = useSearch({ from: '/(protected)/dashboard/collections/$id/' });
+    const navigate = useNavigate();
+    const queryKeys = [filter, sort, filterOperator];
     // snippets
     const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery(
-        listCollectionSnippetsQueryOptions(params.id),
+        listCollectionSnippetsQueryOptions(params.id, { filter, sort, filterOperator }, queryKeys),
     );
 
     const snippets = data.pages.flatMap(page => page.items) ?? [];
@@ -24,16 +29,28 @@ export function CollectionPageSnippetsList() {
     const qClient = useQueryClient();
 
     const onSnippetMutationSuccess = () => {
-        qClient.invalidateQueries(listCollectionSnippetsQueryOptions(params.id));
+        qClient.invalidateQueries(listCollectionSnippetsQueryOptions(params.id, undefined, queryKeys));
     };
 
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <h2 className="font-heading font-semibold text-xl">Snippets ({total})</h2>
+                <div className="flex items-center gap-2">
+                    <FilterQueryDialog
+                        schema={snippetListDto.input.shape.filter}
+                        value={{ filter }}
+                        onApply={val => navigate({ to: '.', search: prev => ({ ...prev, filter: val }) })}
+                    />
+                    <SortQueryDialog
+                        sortSchema={snippetListDto.input.shape.sort}
+                        value={{ sort }}
+                        onApply={val => navigate({ to: '.', search: prev => ({ ...prev, sort: val.sort }) })}
+                    />
+                </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            <SnippetListLayout>
                 {snippets.map(snippet => (
                     <PermissionGuard
                         key={snippet.id}
@@ -55,7 +72,7 @@ export function CollectionPageSnippetsList() {
                         />
                     </PermissionGuard>
                 ))}
-            </div>
+            </SnippetListLayout>
             <InfiniteLoader
                 hasNextPage={hasNextPage}
                 isFetchingNextPage={isFetchingNextPage}
@@ -72,12 +89,16 @@ export function CollectionPageSnippetsList() {
                             <p className="text-muted-foreground mb-4">
                                 Add your first snippet to get started
                             </p>
-                            <Button asChild>
-                                <Link to="/dashboard/snippets/new">
-                                    <PlusIcon className="h-4 w-4 mr-2" />
-                                    Add Snippet
-                                </Link>
-                            </Button>
+                            <PermissionGuard
+                                requiredPermissions={[Permission.Authenticated, Permission.CreateSnippet]}
+                            >
+                                <Button asChild>
+                                    <Link to="/dashboard/snippets/new">
+                                        <PlusIcon className="h-4 w-4 mr-2" />
+                                        Add Snippet
+                                    </Link>
+                                </Button>
+                            </PermissionGuard>
                         </div>
                     ) : null
                 }

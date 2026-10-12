@@ -1,6 +1,7 @@
 import {
     CreateSnippetDtoType,
     DeleteSnippetDtoType,
+    FilterGroupOperator,
     FindOneSnippetDtoType,
     ForkSnippetDtoType,
     SnippetListDtoType,
@@ -165,20 +166,24 @@ export class SnippetService {
             }
         }
 
-        if (input.tags?.values?.length) {
+        const tagFilter = input.tags;
+        const tagValues = tagFilter?.values;
+        if (tagFilter && tagValues?.length) {
             const tagSubquery = qb.connection
                 .createQueryBuilder()
                 .select('snippet.id')
                 .from(Snippet, 'snippet')
                 .innerJoin('snippet.tags', 'tag')
                 .where('tag.value IN (:...tagValues)')
-                .groupBy('snippet.id')
-                .having('COUNT(DISTINCT tag.id) = :tagCount');
+                .setParameters({ tagValues });
 
-            qb.andWhere(`s.id IN (${tagSubquery.getQuery()})`).setParameters({
-                tagValues: input.tags,
-                tagCount: input.tags?.values?.length,
-            });
+            if ((tagFilter.operator ?? FilterGroupOperator.AND) === FilterGroupOperator.AND) {
+                tagSubquery
+                    .groupBy('snippet.id')
+                    .having('COUNT(DISTINCT tag.id) = :tagCount', { tagCount: tagValues.length });
+            }
+
+            qb.andWhere(`s.id IN (${tagSubquery.getQuery()})`).setParameters(tagSubquery.getParameters());
         }
 
         // TODO: filtering by collection is not working

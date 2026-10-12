@@ -29,10 +29,7 @@ function isRateLimiterError(err: unknown): err is RateLimiterError {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function exceptionFilter(err: unknown, req: Request, res: Response, _next: NextFunction) {
-    console.log(err);
-    Logger.debug(
-        `Exception filter reported an error, ${err instanceof Error ? err.message : JSON.stringify(err)}`,
-    );
+    Logger.debug(`Error Report, ${'\n' + JSON.stringify(err) + '\n'}`, 'ExceptionFilter');
 
     const i18nService = moduleRef.getProvider<I18nService>(I18nService);
     if (err instanceof I18nError) {
@@ -59,7 +56,7 @@ export function exceptionFilter(err: unknown, req: Request, res: Response, _next
             message: translated.message,
         });
     } else {
-        const internalServerError = new InternalServerError('errors.internal-server-error');
+        const internalServerError = new InternalServerError('errors.internal_server_error');
 
         const translated = i18nService.translateError(internalServerError, req);
 

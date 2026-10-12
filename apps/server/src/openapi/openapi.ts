@@ -24,6 +24,7 @@ import {
     findOneSnippetDto,
     forkCollectionDto,
     forkSnippetDto,
+    listActiveSessionsDto,
     logoutDeveloperDto,
     popularTagsDto,
     refreshVerificationTokenDto,
@@ -32,6 +33,7 @@ import {
     requestEmailAddressChangeDto,
     requestPasswordResetDto,
     resetPasswordDto,
+    revokeSessionDto,
     sendFriendshipRequestDto,
     snippetListDto,
     updateCollectionDto,
@@ -248,6 +250,38 @@ registerRoute({
     response: logoutDeveloperDto.output,
     optionalAuthentication: true,
     sessionTokenHeaderDescription: 'An empty value indicates that the session token was cleared.',
+});
+registerRoute({
+    method: 'delete',
+    path: '/developer/auth/sessions/current',
+    tag: 'Authentication',
+    summary: 'Log out the current session',
+    response: logoutDeveloperDto.output,
+    optionalAuthentication: true,
+    sessionTokenHeaderDescription: 'An empty value indicates that the session token was cleared.',
+});
+registerRoute({
+    method: 'get',
+    path: '/developer/auth/sessions',
+    tag: 'Authentication',
+    summary: 'Lists all active sessions of the current user',
+    response: listActiveSessionsDto.output,
+    optionalAuthentication: false,
+    authenticated: true,
+    sessionTokenHeaderDescription:
+        "The session token to use in the Authorization Bearer header, and by which the list of the users' sessions get identified.",
+});
+registerRoute({
+    method: 'delete',
+    path: '/developer/auth/sessions/{id}',
+    tag: 'Authentication',
+    summary: 'Revokes session',
+    response: revokeSessionDto.output,
+    params: revokeSessionDto.input,
+    optionalAuthentication: false,
+    authenticated: true,
+    sessionTokenHeaderDescription:
+        'The session token to use in the Authorization Bearer header, and by which the owner of the target session gets verified.',
 });
 registerRoute({
     method: 'post',

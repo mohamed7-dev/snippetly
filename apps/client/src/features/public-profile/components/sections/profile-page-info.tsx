@@ -1,9 +1,11 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { SendFriendshipRequestButton } from '@/features/friendship/components/send-friendship-request-button';
-import { FriendshipStatus } from '@snippetly/common/dto';
+import { formatDeveloperInfo } from '@/lib/format-developer-info';
+import { FriendshipStatus, Permission } from '@snippetly/common/dto';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { useParams } from '@tanstack/react-router';
 import { CalendarIcon } from 'lucide-react';
@@ -11,9 +13,12 @@ import { getDeveloperProfileQueryOptions } from '../../lib/public-profile-query-
 
 export function ProfilePageInfo() {
     const { id } = useParams({ from: '/(public)/profile/$id' });
-    const { data: profile } = useSuspenseQuery(getDeveloperProfileQueryOptions(id));
-    const { user } = useAuth();
     const qClient = useQueryClient();
+    const { user } = useAuth();
+    const { data: profile } = useSuspenseQuery(getDeveloperProfileQueryOptions(id));
+    const isPrivate = 'isPrivate' in profile ? profile.isPrivate : false;
+
+    const { fullName, initials: avatarFallback } = formatDeveloperInfo(profile);
 
     // isCurrentUserAFriend is always true as long as there is an interaction
     // whether it's accepted or not
@@ -25,8 +30,6 @@ export function ProfilePageInfo() {
         friendshipInfo?.requestStatus === FriendshipStatus.Cancelled ||
         (friendshipInfo?.requestStatus !== FriendshipStatus.Pending && !friendshipInfo?.isCurrentUserAFriend);
 
-    const avatarFallback = profile.firstName.slice(0, 1) + ' ' + profile.lastName.slice(0, 1);
-    const fullName = profile.firstName + ' ' + profile.lastName;
     return (
         <Card>
             <CardContent className="pt-6">
@@ -46,9 +49,7 @@ export function ProfilePageInfo() {
                                 <CalendarIcon className="h-4 w-4" />
                                 Joined {new Date(profile.createdAt).toLocaleDateString()}
                             </div>
-                            <Badge variant="secondary">
-                                {'isPrivate' in profile && profile?.isPrivate ? 'Private' : 'Public'}
-                            </Badge>
+                            <Badge variant="secondary">{isPrivate ? 'Private' : 'Public'}</Badge>
                         </div>
                         <div className="flex gap-6 text-sm">
                             <span>
@@ -56,30 +57,34 @@ export function ProfilePageInfo() {
                                 {friendCount !== 1 ? 's' : ''}
                             </span>
                         </div>
-                        {shouldDisplayFriendshipInfo && (
-                            <div className="flex gap-2">
-                                {shouldDisplaySendButton && (
-                                    <div className="flex gap-2">
-                                        <SendFriendshipRequestButton
-                                            variant={'outline'}
-                                            friendId={profile.id}
-                                            sendFriendshipRequestMutationCallbacks={{
-                                                onSuccess: () => {
-                                                    qClient.invalidateQueries(
-                                                        getDeveloperProfileQueryOptions(id),
-                                                    );
-                                                },
-                                            }}
-                                        />
-                                    </div>
-                                )}
-                                {!!friendshipInfo?.requestStatus && (
-                                    <Badge variant="secondary" className="capitalize">
-                                        {friendshipInfo.requestStatus} Friendship Request
-                                    </Badge>
-                                )}
-                            </div>
-                        )}
+                        <PermissionGuard
+                            requiredPermissions={[Permission.Authenticated, Permission.CreateFriendship]}
+                        >
+                            {shouldDisplayFriendshipInfo && (
+                                <div className="flex gap-2">
+                                    {shouldDisplaySendButton && (
+                                        <div className="flex gap-2">
+                                            <SendFriendshipRequestButton
+                                                variant={'outline'}
+                                                friendId={profile.id}
+                                                sendFriendshipRequestMutationCallbacks={{
+                                                    onSuccess: () => {
+                                                        qClient.invalidateQueries(
+                                                            getDeveloperProfileQueryOptions(id),
+                                                        );
+                                                    },
+                                                }}
+                                            />
+                                        </div>
+                                    )}
+                                    {!!friendshipInfo?.requestStatus && (
+                                        <Badge variant="secondary" className="capitalize">
+                                            {friendshipInfo.requestStatus} Friendship Request
+                                        </Badge>
+                                    )}
+                                </div>
+                            )}
+                        </PermissionGuard>
                     </div>
                 </div>
             </CardContent>

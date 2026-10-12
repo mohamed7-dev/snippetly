@@ -7,6 +7,7 @@ import { ConfigService } from '../../config/config.service';
 import { Controller } from '../../infra/ioc-container/controller.decorator';
 import { AdministratorService } from '../../services/domain/administrator.service';
 import { AuthService } from '../../services/domain/auth.service';
+import { SessionService } from '../../services/domain/session.service';
 import { UserService } from '../../services/domain/user.service';
 import { CommonAuth } from '../common/common-auth';
 import { authGuard } from '../middlewares/auth.guard';
@@ -23,8 +24,9 @@ export class AdminAuthController extends CommonAuth implements AppRouter {
         protected readonly administratorService: AdministratorService,
         protected readonly userService: UserService,
         protected readonly configService: ConfigService,
+        protected readonly sessionService: SessionService,
     ) {
-        super(authService, administratorService, userService, configService);
+        super(authService, administratorService, userService, configService, sessionService);
     }
 
     loginLimiter = defineRateLimiter(
@@ -72,6 +74,7 @@ export class AdminAuthController extends CommonAuth implements AppRouter {
             }),
         );
 
+        this.registerSessionManagementRoutes(router, this.sessionLimiter);
         return router;
     }
 }

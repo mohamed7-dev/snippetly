@@ -16,9 +16,10 @@ export class DefaultSessionCacheStrategy implements SessionCacheStrategy {
 
     constructor(private config?: DefaultSessionCacheStrategyConfig) {}
 
-    onInit(moduleRef: ModuleRef): void | Promise<void> {
-        const { CacheService } = require('../../infra/cache/cache.service.js');
-        this.cacheService = moduleRef.getProvider<typeof CacheService>(CacheService);
+    onInit(moduleRef: ModuleRef): void {
+        const { CacheService } = require('../../infra/cache/cache.service');
+        this.cacheService =
+            moduleRef.getProvider<import('../../infra/cache/cache.service').CacheService>(CacheService);
     }
 
     public async set(session: SessionCacheEntry): Promise<void> {

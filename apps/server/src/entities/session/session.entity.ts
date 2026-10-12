@@ -25,6 +25,9 @@ export class Session extends AppEntity {
     @Column()
     authenticationStrategy: string;
 
+    @Column({ type: 'text', nullable: true })
+    userAgent: string | null;
+
     @Index()
     @ManyToOne(() => User, user => user.sessions)
     user: User;
