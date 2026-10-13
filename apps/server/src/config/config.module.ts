@@ -42,7 +42,7 @@ export class ConfigModule implements OnApplicationBootstrap, OnApplicationShutdo
             sessionCacheStrategy,
             verificationTokenStrategy,
         } = this.configService.authOptions;
-        const { email, cacheStrategy } = this.configService.systemOptions;
+        const { email, cacheStrategy, jobQueueStrategy } = this.configService.systemOptions;
         return [
             passwordHashingStrategy,
             sessionCacheStrategy,
@@ -51,6 +51,7 @@ export class ConfigModule implements OnApplicationBootstrap, OnApplicationShutdo
             ...developerAuthenticationStrategies,
             email.emailTransporterStrategy,
             cacheStrategy,
+            jobQueueStrategy,
         ];
     }
 }

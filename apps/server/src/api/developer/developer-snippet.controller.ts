@@ -16,6 +16,7 @@ import { EntityNotFoundError, ForbiddenError } from '../../common/errors/errors'
 import { AppRouter } from '../../common/types/app-router.interface';
 import { Developer } from '../../entities/developer/developer.entity';
 import { Controller } from '../../infra/ioc-container/controller.decorator';
+import { CollectionService } from '../../services/domain/collection.service';
 import { DeveloperService } from '../../services/domain/developer.service';
 import { SnippetService } from '../../services/domain/snippet.service';
 import { authGuard } from '../middlewares/auth.guard';
@@ -31,6 +32,7 @@ export class DeveloperSnippetController implements AppRouter {
     constructor(
         private readonly snippetService: SnippetService,
         private readonly developerService: DeveloperService,
+        private readonly collectionService: CollectionService,
     ) {}
 
     snippetWriteLimiter = rateLimit({
@@ -107,7 +109,7 @@ export class DeveloperSnippetController implements AppRouter {
                     if (!req.getRequestContext().activeUserId) {
                         throw new ForbiddenError();
                     }
-                    const result = await this.snippetService.delete(req.getRequestContext(), req.params);
+                    const result = await this.snippetService.softDelete(req.getRequestContext(), req.params);
                     res.status(200).json(result);
                 },
             }),
@@ -145,27 +147,43 @@ export class DeveloperSnippetController implements AppRouter {
                     const shouldRestrictToPublic =
                         !req.query.creator || !developer || req.query.creator !== developer.id;
 
-                    const result = await this.snippetService.find(req.getRequestContext(), {
-                        ...req.query,
-                        filter: {
-                            ...req.query.filter,
-                            ...(shouldRestrictToPublic
-                                ? {
-                                      isPrivate: { equals: false },
-                                      deletedAt: { isNull: true },
-                                  }
-                                : {
-                                      deletedAt: { isNull: true },
-                                  }),
-                        },
-                    });
-                    if (shouldRestrictToPublic) {
+                    const canReadPrivateCollectionSnippets =
+                        shouldRestrictToPublic &&
+                        !req.query.creator &&
+                        Boolean(
+                            developer &&
+                            req.query.collection &&
+                            (await this.collectionService.isCollectionOwnedBy(
+                                req.getRequestContext(),
+                                req.query.collection,
+                                developer.id,
+                            )),
+                        );
+
+                    const restrictToPublic = shouldRestrictToPublic && !canReadPrivateCollectionSnippets;
+
+                    const result = await this.snippetService.find(
+                        req.getRequestContext(),
+                        req.query,
+                        { creator: true, collection: true, tags: true, forkedFrom: { creator: true } },
+                        canReadPrivateCollectionSnippets && developer
+                            ? {
+                                  includePrivateSnippetsForCreatorId: developer.id,
+                                  includePrivateSnippets: !restrictToPublic,
+                              }
+                            : {
+                                  includePrivateSnippets: !restrictToPublic,
+                              },
+                    );
+
+                    if (restrictToPublic) {
                         result.items = omit(
                             result.items,
                             ['isPrivate', 'updatedAt', 'deletedAt', 'collection'],
                             true,
                         );
                     }
+
                     res.status(200).json(result);
                 },
             }),
@@ -185,16 +203,20 @@ export class DeveloperSnippetController implements AppRouter {
                 handler: async (req, res) => {
                     const developer = await this.requireDeveloperForCurrentUser(req.getRequestContext());
 
-                    // if the user passes deletedAt filter -> use it
-                    // otherwise, use defaults which only returns active snippets
-                    const result = await this.snippetService.find(req.getRequestContext(), {
-                        ...req.query,
-                        filter: {
-                            ...req.query.filter,
-                            deletedAt: req.query.filter?.deletedAt ?? { isNull: true },
+                    const result = await this.snippetService.find(
+                        req.getRequestContext(),
+                        {
+                            ...req.query,
+                            creator: developer.id,
                         },
-                        creator: developer.id,
-                    });
+                        {
+                            creator: true,
+                            collection: true,
+                            tags: true,
+                            forkedFrom: { creator: true },
+                        },
+                        { includePrivateSnippets: true },
+                    );
 
                     res.status(200).json(result);
                 },
@@ -231,11 +253,19 @@ export class DeveloperSnippetController implements AppRouter {
                 params: findOneSnippetDto.input,
                 response: findOneSnippetDto.output,
                 handler: async (req, res) => {
-                    const result = await this.snippetService.findOne(req.getRequestContext(), req.params, {
-                        creator: true,
-                        collection: true,
-                        tags: true,
-                    });
+                    const result = await this.snippetService.findOne(
+                        req.getRequestContext(),
+                        req.params,
+                        {
+                            creator: true,
+                            collection: true,
+                            tags: true,
+                            forkedFrom: {
+                                creator: true,
+                            },
+                        },
+                        { includePrivateSnippet: true },
+                    );
 
                     const isOwner =
                         req.getRequestContext().activeUserId === result?.creator.user.id ? true : false;

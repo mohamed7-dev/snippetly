@@ -16,7 +16,11 @@ export interface AuthContextType {
     isActiveAuthMutationInProgress: boolean;
     status: 'initial' | 'authenticated' | 'verifying' | 'unauthenticated';
     errorMessage?: string;
-    login: (credentials: Credentials, userType: UserType, onSuccess?: () => void) => Promise<void>;
+    login: (
+        credentials: Credentials,
+        userType: UserType,
+        onSuccess?: () => void | Promise<void>,
+    ) => Promise<void>;
     logout: (userType: UserType, onSuccess?: () => void) => Promise<void>;
     refreshActiveUser: () => void;
     /**
@@ -40,7 +44,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const {
         data: activeUserData,
         isLoading: isLoadingActiveUser,
-        error: activeUserError,
         refetch: refetchActiveUser,
     } = useQuery({
         queryKey: [ACTIVE_USER_QUERY_KEY],
@@ -58,37 +61,45 @@ export function AuthProvider({ children }: AuthProviderProps) {
         retry: false, // Disable retries to avoid waiting for multiple attempts
     });
 
-    const onLoginSuccess = React.useCallback(
-        async (data: ApiSuccess<AuthenticateDeveloperDtoType['output']>, onSuccess?: () => void) => {
-            if (data?.identifier) {
-                setAuthError(undefined);
-                await refetchActiveUser();
-                await queryClient.invalidateQueries();
-                setAuthStatus('authenticated');
-                setIsActiveAuthMutationInProgress(false);
-                onSuccess?.();
-            }
-        },
-        [],
-    );
-
     const login = React.useCallback(
-        async (credentials: Credentials, userType: UserType, onSuccess?: () => void) => {
-            if (credentials.native) {
-                await developerApiClient
-                    .asUserWithCredentials(credentials.native.identifier, credentials.native.password)
-                    .then(async data => {
-                        onLoginSuccess(data, onSuccess);
-                    })
-                    .catch(e => {
-                        const formattedErr = toastApiError(e);
-                        setAuthError(formattedErr.title);
-                        setAuthStatus('authenticated');
-                        setIsActiveAuthMutationInProgress(false);
-                    });
+        async (
+            credentials: Credentials,
+            _userType: UserType,
+            onSuccess?: () => void | Promise<void>,
+        ) => {
+            if (!credentials.native) return;
+
+            setIsActiveAuthMutationInProgress(true);
+            setAuthStatus('verifying');
+
+            try {
+                const data = await developerApiClient.asUserWithCredentials(
+                    credentials.native.identifier,
+                    credentials.native.password,
+                );
+                if (!data?.identifier) {
+                    throw new Error('Authentication response did not include the signed-in user');
+                }
+
+                setAuthError(undefined);
+                const activeUserResult = await refetchActiveUser({ throwOnError: true });
+                if (!activeUserResult.data?.id) {
+                    throw new Error('The authenticated user could not be loaded');
+                }
+
+                setAuthStatus('authenticated');
+            } catch (error) {
+                const formattedErr = toastApiError(error);
+                setAuthError(formattedErr.title);
+                setAuthStatus('unauthenticated');
+                throw error;
+            } finally {
+                setIsActiveAuthMutationInProgress(false);
             }
+
+            await onSuccess?.();
         },
-        [queryClient, refetchActiveUser, onLoginSuccess],
+        [refetchActiveUser],
     );
 
     const logout = React.useCallback(
@@ -119,22 +130,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // we must not perform any side effect while a mutation is active
         if (isActiveAuthMutationInProgress) return;
 
-        if (authStatus === 'initial' && isLoadingActiveUser) {
-            // user info is being loaded and the auth status indicates that no authentication happened
-            // so this is considered an active verification
+        if (isLoadingActiveUser) {
             setAuthStatus('verifying');
+            return;
         }
 
-        if (!isLoadingActiveUser && authStatus === 'verifying') {
-            // user info is done being loaded and the auth status indicates that authentication is done verifying
-            // so we need to decide the auth state
-            if (!activeUserError || !activeUserData?.id) {
-                setAuthStatus('unauthenticated');
-            } else {
-                setAuthStatus('authenticated');
-            }
-        }
-    }, [authStatus, isLoadingActiveUser, activeUserError, activeUserData, isActiveAuthMutationInProgress]);
+        setAuthStatus(activeUserData?.id ? 'authenticated' : 'unauthenticated');
+    }, [isLoadingActiveUser, activeUserData?.id, isActiveAuthMutationInProgress]);
 
     const isAuthenticated = !!activeUserData?.id;
 

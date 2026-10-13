@@ -1,4 +1,3 @@
-import { ProfilePageHeader } from '@/features/public-profile/components/sections/profile-page-header';
 import { ProfilePageInfo } from '@/features/public-profile/components/sections/profile-page-info';
 import { ProfilePageStats } from '@/features/public-profile/components/sections/profile-page-stats';
 import { ProfilePageTabs } from '@/features/public-profile/components/sections/profile-page-tabs';
@@ -62,13 +61,10 @@ export const Route = createFileRoute('/(public)/profile/$id')({
 
 function ProfilePage() {
     return (
-        <div className="min-h-screen">
-            <ProfilePageHeader />
-            <main className="flex flex-col gap-6 container mx-auto px-6 py-8">
-                <ProfilePageInfo />
-                <ProfilePageStats />
-                <ProfilePageTabs />
-            </main>
-        </div>
+        <main className="container mx-auto flex flex-col gap-6 px-6 py-8">
+            <ProfilePageInfo />
+            <ProfilePageStats />
+            <ProfilePageTabs />
+        </main>
     );
 }

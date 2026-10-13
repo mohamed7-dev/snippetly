@@ -4,7 +4,7 @@ import {
     CurrentUserOutboxListDtoType,
     FriendshipStatus,
 } from '@snippetly/common/dto';
-import { In } from 'typeorm';
+import { In, IsNull } from 'typeorm';
 import { RequestContext } from '../../api/request-context/request-context';
 import { isApiError } from '../../common/errors/api-error';
 import { InvalidFriendshipActionError } from '../../common/errors/generated-developer-errors';
@@ -35,6 +35,27 @@ export class FriendshipService {
         private readonly listQueryBuilder: ListQueryBuilder,
         private readonly eventBus: EventBus,
     ) {}
+
+    public async countDeveloperFriendships(ctx: RequestContext, developerId: string) {
+        const friendshipRepo = this.databaseService.getRepository(ctx, Friendship);
+
+        const [friendsCount, friendsInboxCount, friendsOutboxCount] = await Promise.all([
+            friendshipRepo.count({
+                where: [
+                    { requester: { id: developerId }, status: FriendshipStatus.Accepted },
+                    { addressee: { id: developerId }, status: FriendshipStatus.Accepted },
+                ],
+            }),
+            friendshipRepo.count({
+                where: { addressee: { id: developerId }, status: FriendshipStatus.Pending },
+            }),
+            friendshipRepo.count({
+                where: { requester: { id: developerId }, status: FriendshipStatus.Pending },
+            }),
+        ]);
+
+        return { friendsCount, friendsInboxCount, friendsOutboxCount };
+    }
 
     public async create(
         ctx: RequestContext,
@@ -262,8 +283,8 @@ export class FriendshipService {
         const qb = this.listQueryBuilder.build(Friendship, input as any, {
             ctx,
             where: [
-                { requester: { id: developerId }, status: FriendshipStatus.Accepted },
-                { addressee: { id: developerId }, status: FriendshipStatus.Accepted },
+                { requester: { id: developerId, deletedAt: IsNull() }, status: FriendshipStatus.Accepted },
+                { addressee: { id: developerId, deletedAt: IsNull() }, status: FriendshipStatus.Accepted },
             ],
             relations: {
                 requester: true,
@@ -397,7 +418,7 @@ export class FriendshipService {
         const qb = this.listQueryBuilder.build(Friendship, input as any, {
             ctx,
             where: {
-                addressee: { id: developerId },
+                addressee: { id: developerId, deletedAt: IsNull() },
                 status: FriendshipStatus.Pending,
             },
             relations: {
@@ -420,7 +441,7 @@ export class FriendshipService {
         const qb = this.listQueryBuilder.build(Friendship, input as any, {
             ctx,
             where: {
-                requester: { id: developerId },
+                requester: { id: developerId, deletedAt: IsNull() },
                 status: FriendshipStatus.Pending,
             },
             relations: {

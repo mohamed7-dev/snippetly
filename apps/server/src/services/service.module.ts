@@ -9,6 +9,7 @@ import { AuthService } from './domain/auth.service';
 import { CollectionService } from './domain/collection.service';
 import { DeveloperService } from './domain/developer.service';
 import { FriendshipService } from './domain/friendship.service';
+import { JobRunner } from './domain/job-runner.service';
 import { RoleService } from './domain/role.service';
 import { SessionService } from './domain/session.service';
 import { SnippetService } from './domain/snippet.service';
@@ -18,6 +19,7 @@ import { DefaultRolesBuilder } from './helpers/default-roles-builder.service';
 import { EmailClient } from './helpers/email-client.service';
 import { ExternalAuthService } from './helpers/external-auth.service';
 import { InitializerService } from './helpers/initializer.service';
+import { JobQueue } from './helpers/job-qeueue.service';
 import { ListQueryBuilder } from './helpers/list-query-builder/list-query-builder.service';
 import { PasswordHashingService } from './helpers/password-hashing.service';
 import { PasswordValidationService } from './helpers/password-validation.service';
@@ -39,6 +41,7 @@ const helpers = [
     ExternalAuthService,
     Populator,
     SlugService,
+    JobQueue,
 ];
 
 const services = [
@@ -52,6 +55,7 @@ const services = [
     CollectionService,
     TagService,
     FriendshipService,
+    JobRunner,
 ];
 
 @Module({
@@ -64,6 +68,7 @@ export class ServiceModule implements OnApplicationBootstrap {
         private readonly initializerService: InitializerService,
         private readonly configService: ConfigService,
         private readonly developerService: DeveloperService,
+        private readonly collectionService: CollectionService,
     ) {}
 
     async onApplicationBootstrap(): Promise<void> {
@@ -71,5 +76,6 @@ export class ServiceModule implements OnApplicationBootstrap {
             void (await this.initializerService.initialize());
         }
         this.developerService.onApplicationBootstrap();
+        this.collectionService.onApplicationBootstrap();
     }
 }

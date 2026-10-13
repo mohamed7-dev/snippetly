@@ -1,4 +1,5 @@
 import {
+    CreateCollectionDtoType,
     CreateSnippetDtoType,
     CurrentUserSnippetListDtoType,
     DeleteSnippetDtoType,
@@ -252,6 +253,57 @@ describe('Developer Snippet Workflows', () => {
 
                 expect(forkRes.ok).toBe(true);
                 expect('id' in fork && fork.id).not.toBe(source.id);
+            });
+
+            it('lists my private snippet forks when filtering by a collection I own', async () => {
+                const uniqueSuffix = Date.now().toString();
+                const collectionRes = await developerClient.fetch('/collections', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        name: 'private fork collection',
+                        slug: `private-fork-collection-${uniqueSuffix}`,
+                        color: 'blue',
+                    } satisfies CreateCollectionDtoType['input']),
+                });
+                const collection = (await collectionRes.json()) as CreateCollectionDtoType['output'];
+
+                expect(collectionRes.ok).toBe(true);
+                if (!('id' in collection)) throw new Error('Failed to create collection for fork test');
+
+                const sourceRes = await developerClient.fetch('/snippets', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        name: 'public fork source',
+                        slug: `public-fork-source-${uniqueSuffix}`,
+                        language: 'js',
+                        code: 'const forkSource = true;',
+                        isPrivate: false,
+                    } satisfies CreateSnippetDtoType['input']),
+                });
+                const source = (await sourceRes.json()) as CreateSnippetDtoType['output'];
+
+                expect(sourceRes.ok).toBe(true);
+                if (!('id' in source)) throw new Error('Failed to create public snippet for fork test');
+
+                const forkRes = await developerClient.fetch(`/snippets/${source.id}/forks`, {
+                    method: 'POST',
+                    body: JSON.stringify({ collectionId: collection.id }),
+                });
+                const fork = (await forkRes.json()) as ForkSnippetDtoType['output'];
+
+                expect(forkRes.ok).toBe(true);
+                if (!('id' in fork)) throw new Error('Failed to fork snippet into collection');
+
+                const query = transformInputToSearchParams({
+                    collection: collection.id,
+                } satisfies SnippetListDtoType['input']);
+                const listRes = await developerClient.fetch(`/snippets?${query.toString()}`, {
+                    method: 'GET',
+                });
+                const list = (await listRes.json()) as SnippetListDtoType['output'];
+
+                if (!('items' in list)) throw new Error('Failed to list snippets for collection');
+                expect(list.items.some(item => item.id === fork.id)).toBe(true);
             });
 
             it('succeeds when creating&deleting a new snippet', async () => {

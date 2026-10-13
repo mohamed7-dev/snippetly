@@ -12,6 +12,7 @@ import { omit } from '@snippetly/common/lib';
 import { FindOptionsRelations, IsNull } from 'typeorm';
 import { RequestContext } from '../../api/request-context/request-context';
 import { EntityNotFoundError, ForbiddenError } from '../../common/errors/errors';
+import { OnApplicationBootstrap } from '../../common/types/lifecycle-hooks';
 import { Collection } from '../../entities/collections/collection.entity';
 import { Snippet } from '../../entities/snippets/snippet.entity';
 import { DatabaseService } from '../../infra/database/database.service';
@@ -19,13 +20,15 @@ import { patchEntity } from '../../infra/database/patch-entity';
 import { EventBus } from '../../infra/event-bus/event-bus.service';
 import { CollectionEvent } from '../../infra/event-bus/events/collection.event';
 import { Injectable } from '../../infra/ioc-container/injectable.decorator';
+import { AppJob, JobQueue } from '../helpers/job-qeueue.service';
 import { ListQueryBuilder } from '../helpers/list-query-builder/list-query-builder.service';
+import { normalizeDeveloperCounts } from '../helpers/normalize-developer-counts';
 import { SlugValidator } from '../helpers/slug-validator.service';
 import { DeveloperService } from './developer.service';
 import { TagService } from './tag.service';
 
 @Injectable()
-export class CollectionService {
+export class CollectionService implements OnApplicationBootstrap {
     constructor(
         private readonly databaseService: DatabaseService,
         private readonly listQueryBuilder: ListQueryBuilder,
@@ -33,18 +36,37 @@ export class CollectionService {
         private readonly developerService: DeveloperService,
         private readonly tagService: TagService,
         private readonly eventBus: EventBus,
+        private readonly jobQueue: JobQueue,
     ) {}
+
+    /**@internal */
+    onApplicationBootstrap(): void {
+        this.eventBus.ofType(CollectionEvent).subscribe(e => {
+            if (e.type === 'forked' && e.entity.forkedFrom) {
+                const job: AppJob = {
+                    type: 'copy-collection-snippets',
+                    sourceCollectionId: e.entity.forkedFrom?.id,
+                    targetCollectionId: e.entity.id,
+                    developerId: e.entity.creator.id,
+                };
+                void this.jobQueue.enqueue(job, 10);
+            }
+        });
+    }
+
     public async findOne(
         ctx: RequestContext,
         input: FindOneCollectionDtoType['input'],
         relations?: FindOptionsRelations<Collection>,
+        options?: { includePrivateCollection?: boolean; includeSoftDeleted?: boolean },
     ) {
         const repo = this.databaseService.getRepository(ctx, Collection);
 
         const collection = await repo.findOne({
             where: {
                 id: input.id,
-                deletedAt: IsNull(),
+                ...(options?.includeSoftDeleted ? {} : { deletedAt: IsNull() }),
+                ...(options?.includePrivateCollection ? {} : { isPrivate: false }),
             },
             relations: {
                 ...relations,
@@ -55,31 +77,37 @@ export class CollectionService {
             return undefined;
         }
 
-        const isOwner = ctx.activeUserId === collection.creator?.user?.id;
-        const snippetCount = await this.databaseService.getRepository(ctx, Snippet).count({
-            where: {
-                collection: { id: collection.id },
-                deletedAt: IsNull(),
-                ...(isOwner ? {} : { isPrivate: false }),
-            },
-        });
-
-        return { ...collection, snippetCount };
+        return collection;
     }
     public async find(
         ctx: RequestContext,
         input: CollectionListDtoType['input'],
         relations?: FindOptionsRelations<Collection>,
-        includePrivateSnippets = false,
+        options?: { includePrivateCollections?: boolean; includeSoftDeleted?: boolean },
     ) {
         const qb = this.listQueryBuilder.build(Collection, input as any, {
             ctx,
             relations,
             alias: 'c',
+            where: {
+                ...(options?.includeSoftDeleted ? {} : { deletedAt: IsNull() }),
+                ...(options?.includePrivateCollections ? {} : { isPrivate: false }),
+            },
         });
+
+        if (input.discover === true) {
+            const activeDeveloper = await this.developerService.getActiveDeveloper(ctx);
+            if (activeDeveloper) {
+                qb.innerJoin('c.creator', 'discoverCreator').andWhere(
+                    'discoverCreator.id <> :activeDeveloperId',
+                    { activeDeveloperId: activeDeveloper.id },
+                );
+            }
+        }
 
         const tags = input.tags;
         const tagValues = tags?.values;
+
         if (tagValues && tagValues.length) {
             const operator = tags?.operator ?? FilterGroupOperator.AND;
             const subquery = qb.connection
@@ -107,10 +135,84 @@ export class CollectionService {
         }
 
         const [items, itemsCount] = await qb.getManyAndCount();
-        if (items.length === 0) {
-            return { items, itemsCount };
+
+        return { items, itemsCount };
+    }
+
+    public async countDevelopersCollections(
+        ctx: RequestContext,
+        developerIds: string[],
+        options?: { includePrivateCollections?: boolean; includeSoftDeleted?: boolean },
+    ) {
+        const collectionRepo = this.databaseService.getRepository(ctx, Collection);
+
+        const qb = collectionRepo
+            .createQueryBuilder('collection')
+            .innerJoin('collection.creator', 'creator')
+            .select('creator.id', 'developerId')
+            .addSelect('COUNT(collection.id)', 'count')
+            .where('creator.id IN (:...developerIds)', { developerIds })
+            .groupBy('creator.id');
+
+        if (!options?.includePrivateCollections) {
+            qb.andWhere('collection.isPrivate = :isPrivate', { isPrivate: false });
         }
 
+        if (!options?.includeSoftDeleted) {
+            qb.andWhere('collection.deletedAt IS NULL');
+        }
+
+        const counts = await qb.getRawMany<{ developerId: string; count: number | string }>();
+        return normalizeDeveloperCounts(developerIds, counts);
+    }
+
+    public async countDevelopersForkedCollections(
+        ctx: RequestContext,
+        developerIds: string[],
+        options?: { includePrivateCollections?: boolean; includeSoftDeleted?: boolean },
+    ) {
+        const collectionRepo = this.databaseService.getRepository(ctx, Collection);
+
+        const qb = collectionRepo
+            .createQueryBuilder('collection')
+            .innerJoin('collection.creator', 'creator')
+            .innerJoin('collection.forkedFrom', 'fork')
+            .select('creator.id', 'developerId')
+            .addSelect('COUNT(collection.id)', 'count')
+            .where('creator.id IN (:...developerIds)', { developerIds })
+            .groupBy('creator.id');
+
+        if (!options?.includePrivateCollections) {
+            qb.andWhere('collection.isPrivate = :isPrivate', { isPrivate: false });
+        }
+
+        if (!options?.includeSoftDeleted) {
+            qb.andWhere('collection.deletedAt IS NULL');
+        }
+
+        const counts = await qb.getRawMany<{ developerId: string; count: number | string }>();
+        return normalizeDeveloperCounts(developerIds, counts);
+    }
+
+    public async isCollectionOwnedBy(
+        ctx: RequestContext,
+        collectionId: string,
+        developerId: string,
+    ): Promise<boolean> {
+        const collection = await this.findOne(
+            ctx,
+            { id: collectionId },
+            { creator: { user: true } },
+            { includePrivateCollection: true, includeSoftDeleted: true },
+        );
+        return collection?.creator?.id === developerId;
+    }
+
+    public async addSnippetsPreview(
+        ctx: RequestContext,
+        items: Collection[],
+        options: { includePrivateSnippets: boolean },
+    ) {
         const snippetsQuery = this.databaseService
             .getRepository(ctx, Snippet)
             .createQueryBuilder('snippet')
@@ -127,7 +229,7 @@ export class CollectionService {
             .where('collection.id IN (:...collectionIds)', { collectionIds: items.map(item => item.id) })
             .andWhere('snippet.deletedAt IS NULL');
 
-        if (!includePrivateSnippets) {
+        if (!options.includePrivateSnippets) {
             snippetsQuery.andWhere('snippet.isPrivate = :isPrivate', { isPrivate: false });
         }
 
@@ -165,14 +267,7 @@ export class CollectionService {
             snippetsByCollection.set(row.collectionId, snippets);
         }
 
-        return {
-            items: items.map(item => ({
-                ...item,
-                snippetCount: snippetCountByCollection.get(item.id) ?? 0,
-                snippets: snippetsByCollection.get(item.id) ?? [],
-            })),
-            itemsCount,
-        };
+        return { snippetCountByCollection, snippetsByCollection };
     }
 
     public async create(ctx: RequestContext, input: CreateCollectionDtoType['input']) {
@@ -209,15 +304,12 @@ export class CollectionService {
 
         const repo = this.databaseService.getRepository(ctx, Collection);
 
-        const source = await repo.findOne({
-            where: {
-                id: input.id,
-            },
-            relations: {
-                creator: true,
-                tags: true,
-            },
-        });
+        const source = await this.findOne(
+            ctx,
+            { id: input.id },
+            { creator: true, tags: true },
+            { includePrivateCollection: true, includeSoftDeleted: false },
+        );
 
         if (!source) {
             throw new EntityNotFoundError({
@@ -260,14 +352,12 @@ export class CollectionService {
     public async update(ctx: RequestContext, input: UpdateCollectionDtoType['input']) {
         const repo = this.databaseService.getRepository(ctx, Collection);
 
-        let collection = await repo.findOne({
-            where: {
-                id: input.id,
-            },
-            relations: {
-                creator: true,
-            },
-        });
+        let collection = await this.findOne(
+            ctx,
+            { id: input.id },
+            { creator: true },
+            { includePrivateCollection: true, includeSoftDeleted: false },
+        );
 
         if (!collection || (ctx.isAuthorizedAsOwnerOnly && collection.creator.user.id !== ctx.activeUserId)) {
             throw new EntityNotFoundError({ entityName: 'Collection', entityId: input.id });
@@ -285,20 +375,18 @@ export class CollectionService {
         return collection;
     }
 
-    public async delete(
+    public async softDelete(
         ctx: RequestContext,
         input: DeleteCollectionDtoType['input'],
     ): Promise<DeletionResponse> {
         const repo = this.databaseService.getRepository(ctx, Collection);
 
-        const collection = await repo.findOne({
-            where: {
-                id: input.id,
-            },
-            relations: {
-                creator: true,
-            },
-        });
+        const collection = await this.findOne(
+            ctx,
+            input,
+            { creator: true },
+            { includePrivateCollection: true, includeSoftDeleted: false },
+        );
 
         if (!collection || (ctx.isAuthorizedAsOwnerOnly && collection.creator.user.id !== ctx.activeUserId)) {
             return {

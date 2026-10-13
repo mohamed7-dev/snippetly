@@ -7,10 +7,8 @@ export function OfflineSnippetPageHeader() {
     return (
         <HeaderWrapper className="gap-4">
             <Logo />
-            <Button variant="ghost" size="sm" asChild>
-                <Link to="/offline" className="flex items-center gap-2">
-                    Back to Offline Library
-                </Link>
+            <Button variant="link" asChild>
+                <Link to="/offline">Back to Offline Library</Link>
             </Button>
         </HeaderWrapper>
     );

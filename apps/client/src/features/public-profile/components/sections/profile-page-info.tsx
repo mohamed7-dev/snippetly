@@ -1,20 +1,21 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { SendFriendshipRequestButton } from '@/features/friendship/components/send-friendship-request-button';
 import { formatDeveloperInfo } from '@/lib/format-developer-info';
-import { FriendshipStatus, Permission } from '@snippetly/common/dto';
+import { FriendshipStatus } from '@snippetly/common/dto';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
-import { useParams } from '@tanstack/react-router';
+import { useLocation, useNavigate, useParams } from '@tanstack/react-router';
 import { CalendarIcon } from 'lucide-react';
 import { getDeveloperProfileQueryOptions } from '../../lib/public-profile-query-options';
 
 export function ProfilePageInfo() {
     const { id } = useParams({ from: '/(public)/profile/$id' });
     const qClient = useQueryClient();
-    const { user } = useAuth();
+    const navigate = useNavigate();
+    const location = useLocation();
+    const { user, isAuthenticated } = useAuth();
     const { data: profile } = useSuspenseQuery(getDeveloperProfileQueryOptions(id));
     const isPrivate = 'isPrivate' in profile ? profile.isPrivate : false;
 
@@ -57,34 +58,40 @@ export function ProfilePageInfo() {
                                 {friendCount !== 1 ? 's' : ''}
                             </span>
                         </div>
-                        <PermissionGuard
-                            requiredPermissions={[Permission.Authenticated, Permission.CreateFriendship]}
-                        >
-                            {shouldDisplayFriendshipInfo && (
-                                <div className="flex gap-2">
-                                    {shouldDisplaySendButton && (
-                                        <div className="flex gap-2">
-                                            <SendFriendshipRequestButton
-                                                variant={'outline'}
-                                                friendId={profile.id}
-                                                sendFriendshipRequestMutationCallbacks={{
-                                                    onSuccess: () => {
-                                                        qClient.invalidateQueries(
-                                                            getDeveloperProfileQueryOptions(id),
-                                                        );
-                                                    },
-                                                }}
-                                            />
-                                        </div>
-                                    )}
-                                    {!!friendshipInfo?.requestStatus && (
-                                        <Badge variant="secondary" className="capitalize">
-                                            {friendshipInfo.requestStatus} Friendship Request
-                                        </Badge>
-                                    )}
-                                </div>
-                            )}
-                        </PermissionGuard>
+
+                        {shouldDisplayFriendshipInfo && (
+                            <div className="flex gap-2">
+                                {shouldDisplaySendButton && (
+                                    <div className="flex gap-2">
+                                        <SendFriendshipRequestButton
+                                            variant={'outline'}
+                                            friendId={profile.id}
+                                            sendFriendshipRequestMutationCallbacks={{
+                                                onSuccess: () => {
+                                                    qClient.invalidateQueries(
+                                                        getDeveloperProfileQueryOptions(id),
+                                                    );
+                                                },
+                                            }}
+                                            onClick={e => {
+                                                if (!isAuthenticated) {
+                                                    e.preventDefault();
+                                                    navigate({
+                                                        to: '/sign-in',
+                                                        search: { redirect: location.href },
+                                                    });
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                )}
+                                {!!friendshipInfo?.requestStatus && (
+                                    <Badge variant="secondary" className="capitalize">
+                                        {friendshipInfo.requestStatus} Friendship Request
+                                    </Badge>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
             </CardContent>

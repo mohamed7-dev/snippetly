@@ -16,9 +16,7 @@ export const Route = createFileRoute('/(auth)/_auth-layout/sign-in')({
 
 function DeveloperAuthenticationPage() {
     const auth = useAuth();
-    const isLoading = useRouterState({
-        select: s => s.isLoading,
-    });
+    const isLoading = useRouterState({ select: state => state.isLoading });
     const navigate = Route.useNavigate();
     const { redirect: from } = Route.useSearch();
 
@@ -34,16 +32,16 @@ function DeveloperAuthenticationPage() {
     });
 
     const { mutateAsync, isPending } = useAuthenticateDeveloper({
-        onSuccess: () => {
+        onSuccess: async () => {
             form.reset();
 
             if (!from) {
-                navigate({
+                await navigate({
                     to: '/dashboard',
                     replace: true,
                 });
             } else {
-                navigate({
+                await navigate({
                     href: from,
                     replace: true,
                 });

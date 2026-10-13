@@ -7,3 +7,7 @@ export * from './system/email/email-transporter-strategy.interface';
 export { LogLevel } from './system/logger/logger-strategy.interface';
 export { NoopLogger } from './system/logger/noop-logger.strategy';
 export { StdoutLoggerStrategy } from './system/logger/stdout-logger.strategy';
+export * from './system/job-queue/job-queue-strategy.interface';
+export { DummyJobQueueStrategy } from './system/job-queue/dummy-job-queue.strategy';
+export { QStashJobQueueStrategy } from './system/job-queue/qstash-job-queue.strategy';
+export type { QStashJobQueueOptions } from './system/job-queue/qstash-job-queue.strategy';

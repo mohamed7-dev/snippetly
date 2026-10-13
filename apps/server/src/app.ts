@@ -1,6 +1,6 @@
 import { Permission } from '@snippetly/common/dto';
 import cookieParser from 'cookie-parser';
-import express, { Application } from 'express';
+import express, { Application, Request } from 'express';
 import { Server } from 'http';
 import swaggerUi from 'swagger-ui-express';
 import { createRouteHandler } from 'uploadthing/express';
@@ -164,7 +164,15 @@ export class App {
     }
 
     private initializeMiddlewares(): void {
-        this.app.use(express.json());
+        this.app.use(
+            express.json({
+                verify: (req, _res, buffer) => {
+                    if ((req as Request).path.endsWith('/jobs')) {
+                        (req as Request & { rawBody?: string }).rawBody = buffer.toString('utf8');
+                    }
+                },
+            }),
+        );
         this.app.use(express.urlencoded({ extended: true }));
         this.app.use(parseSearchParams);
         this.app.use(cookieParser());

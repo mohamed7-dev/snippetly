@@ -50,7 +50,7 @@ export function CollectionPageSnippetsList() {
                 </div>
             </div>
 
-            <SnippetListLayout>
+            <SnippetListLayout className="xl:grid-cols-2">
                 {snippets.map(snippet => (
                     <PermissionGuard
                         key={snippet.id}

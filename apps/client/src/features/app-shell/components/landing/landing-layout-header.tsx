@@ -15,20 +15,22 @@ export function LandingLayoutHeader() {
                 <div className="flex items-center justify-between h-16">
                     <Logo />
                     <nav className="hidden md:flex items-center gap-6">
-                        <Link
-                            to="."
-                            hash="features"
-                            className="text-muted-foreground hover:text-foreground transition-colors"
-                        >
-                            Features
-                        </Link>
-                        <Link
-                            to="."
-                            hash="testimonials"
-                            className="text-muted-foreground hover:text-foreground transition-colors"
-                        >
-                            Testimonials
-                        </Link>
+                        <Button variant={'ghost'} asChild>
+                            <Link to="." hash="features">
+                                Features
+                            </Link>
+                        </Button>
+                        <Button variant={'ghost'} asChild>
+                            <Link to="." hash="testimonials">
+                                Testimonials
+                            </Link>
+                        </Button>
+                        <Button variant={'ghost'} asChild>
+                            <Link to="/discover">Discover</Link>
+                        </Button>
+                        <Button variant={'ghost'} asChild>
+                            <Link to="/offline">Offline Library</Link>
+                        </Button>
                     </nav>
                     <PermissionGuard requiredPermissions={[Permission.Authenticated]}>
                         <Button className="items-center" variant="ghost" asChild>

@@ -1,25 +1,9 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useOfflineSnippetStore } from '@/features/offline-snippet/hooks/use-offline-snippet-store';
-import type { OfflineSnippetItem } from '@/features/offline-snippet/lib/store';
 import { Link } from '@tanstack/react-router';
-import { ArrowRightIcon, LibraryIcon, StarIcon } from 'lucide-react';
-import React from 'react';
+import { ArrowRightIcon, SearchCodeIcon, StarIcon } from 'lucide-react';
 
 export function LandingPageHero() {
-    const {
-        list: { query },
-    } = useOfflineSnippetStore();
-    const [snippets, setSnippets] = React.useState<OfflineSnippetItem[]>([]);
-
-    React.useEffect(() => {
-        const list = async () => {
-            const result = await query();
-            setSnippets(result);
-        };
-        list();
-    }, []);
-
     return (
         <section className="py-20 lg:py-32">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -40,28 +24,16 @@ export function LandingPageHero() {
                         <Button size="lg" className="text-lg px-8" asChild>
                             <Link to="/register-account">
                                 Start Building Your Library
-                                <ArrowRightIcon className="ml-2 h-5 w-5" />
+                                <ArrowRightIcon />
                             </Link>
                         </Button>
-                        {snippets.length ? (
-                            <Button size="lg" className="text-lg px-8" asChild>
-                                <Link to="/offline">
-                                    Access Your Offline Library
-                                    <LibraryIcon className="ml-2 h-5 w-5" />
-                                </Link>
-                            </Button>
-                        ) : (
-                            <Button
-                                size="lg"
-                                variant="outline"
-                                className="text-lg px-8 bg-transparent"
-                                asChild
-                            >
-                                <Link to="." hash="demo">
-                                    View Demo
-                                </Link>
-                            </Button>
-                        )}
+
+                        <Button size="lg" variant="outline" className="text-lg px-8 bg-transparent" asChild>
+                            <Link to="/discover">
+                                Discover
+                                <SearchCodeIcon />
+                            </Link>
+                        </Button>
                     </div>
                 </div>
             </div>

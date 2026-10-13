@@ -1,5 +1,12 @@
 import { DEFAULT_ADMIN_API_PATH_PREFIX, DEFAULT_DEVELOPER_API_PATH_PREFIX } from '@snippetly/common/lib';
-import { defaultAppConfig, LogLevel, mergeConfig, NoopLogger, StdoutLoggerStrategy } from '@snippetly/server';
+import {
+    defaultAppConfig,
+    DummyJobQueueStrategy,
+    LogLevel,
+    mergeConfig,
+    NoopLogger,
+    StdoutLoggerStrategy,
+} from '@snippetly/server';
 
 const logger = process.env.LOG ? new StdoutLoggerStrategy({ logLevel: LogLevel.debug }) : new NoopLogger();
 
@@ -28,6 +35,7 @@ export const testConfig = mergeConfig(
         },
         system: {
             loggerStrategy: logger,
+            jobQueueStrategy: new DummyJobQueueStrategy(),
         },
     },
     defaultAppConfig,

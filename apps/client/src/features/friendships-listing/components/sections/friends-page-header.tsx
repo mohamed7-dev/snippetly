@@ -20,7 +20,7 @@ export function FriendsPageHeader() {
 
             <div className="flex items-center justify-center gap-3 w-full sm:w-auto">
                 <Button size="sm" asChild>
-                    <Link to="/dashboard/discover">
+                    <Link to="/discover">
                         <UserPlusIcon className="h-4 w-4 mr-2" />
                         Find Friends
                     </Link>

@@ -204,7 +204,7 @@ function InboxTabContent({ getNameFallback, getFullName }: TabContentProps) {
                                 You don't have any pending friend requests at the moment.
                             </p>
                             <Button asChild>
-                                <Link to="/dashboard/discover">
+                                <Link to="/discover">
                                     <UserPlusIcon className="h-4 w-4 mr-2" />
                                     Discover Developers
                                 </Link>
@@ -326,7 +326,7 @@ export function OutboxTabContent({ getNameFallback, getFullName }: TabContentPro
                                 You haven't sent any friend requests recently.
                             </p>
                             <Button asChild>
-                                <Link to="/dashboard/discover">
+                                <Link to="/discover">
                                     <UserPlusIcon className="h-4 w-4 mr-2" />
                                     Find People to Connect
                                 </Link>

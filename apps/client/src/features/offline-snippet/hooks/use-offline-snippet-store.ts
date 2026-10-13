@@ -1,4 +1,5 @@
 import { useAuth } from '@/features/auth/hooks/use-auth';
+import { useLiveQuery } from 'dexie-react-hooks';
 import React from 'react';
 import { toast } from 'sonner';
 import {
@@ -9,20 +10,20 @@ import {
     updateOfflineSnippet,
     type GetOfflineSnippetInput,
     type InsertOfflineSnippetInput,
-    type OfflineSnippetItem,
     type RemoveOfflineSnippetInput,
     type UpdateOfflineSnippetInput,
 } from '../lib/store';
 
 export function useOfflineSnippetStore() {
     const { user } = useAuth();
+    const savedBy = user?.id;
     const [status, setStatus] = React.useState({
         isInserting: false,
         isUpdating: false,
         isRemoving: false,
-        isListing: false,
         isGettingOne: false,
     });
+    const snippets = useLiveQuery(() => listOfflineSnippets(savedBy), [savedBy]);
 
     const onError = React.useCallback((e: unknown, action: 'save' | 'update' | 'remove' | 'get' | 'list') => {
         if (e instanceof DOMException) {
@@ -32,40 +33,46 @@ export function useOfflineSnippetStore() {
         }
     }, []);
 
-    const insert = async (input: Omit<InsertOfflineSnippetInput, 'savedBy'>) => {
+    const insert = async (input: Omit<InsertOfflineSnippetInput, 'savedBy'>): Promise<boolean> => {
         setStatus(prev => ({ ...prev, isInserting: true }));
 
         try {
-            await insertOfflineSnippet({ ...input, savedBy: user?.id });
+            await insertOfflineSnippet({ ...input, savedBy });
             toast.success('Saved for offline use');
+            return true;
         } catch (e) {
             onError(e, 'save');
+            return false;
         } finally {
             setStatus(prev => ({ ...prev, isInserting: false }));
         }
     };
 
-    const update = async (input: UpdateOfflineSnippetInput) => {
+    const update = async (input: UpdateOfflineSnippetInput): Promise<boolean> => {
         setStatus(prev => ({ ...prev, isUpdating: true }));
 
         try {
             await updateOfflineSnippet(input);
             toast.success('Offline snippet was updated successfully');
+            return true;
         } catch (e) {
             onError(e, 'update');
+            return false;
         } finally {
             setStatus(prev => ({ ...prev, isUpdating: false }));
         }
     };
 
-    const remove = async (input: RemoveOfflineSnippetInput) => {
+    const remove = async (input: RemoveOfflineSnippetInput): Promise<boolean> => {
         setStatus(prev => ({ ...prev, isRemoving: true }));
 
         try {
             await removeOfflineSnippet(input);
             toast.success('Snippet was removed from the offline store.');
+            return true;
         } catch (e) {
             onError(e, 'remove');
+            return false;
         } finally {
             setStatus(prev => ({ ...prev, isRemoving: false }));
         }
@@ -76,28 +83,15 @@ export function useOfflineSnippetStore() {
             setStatus(prev => ({ ...prev, isGettingOne: true }));
 
             try {
-                return await getOfflineSnippet({ ...input, savedBy: user?.id });
+                return await getOfflineSnippet({ ...input, savedBy });
             } catch (e) {
                 onError(e, 'get');
             } finally {
                 setStatus(prev => ({ ...prev, isGettingOne: false }));
             }
         },
-        [onError],
+        [onError, savedBy],
     );
-
-    const list = React.useCallback(async (): Promise<OfflineSnippetItem[]> => {
-        setStatus(prev => ({ ...prev, isListing: true }));
-
-        try {
-            return await listOfflineSnippets(user?.id);
-        } catch (e) {
-            onError(e, 'list');
-            return [];
-        } finally {
-            setStatus(prev => ({ ...prev, isListing: false }));
-        }
-    }, [onError]);
 
     return {
         insert: { mutate: insert, isPending: status.isInserting },
@@ -114,8 +108,8 @@ export function useOfflineSnippetStore() {
             isPending: status.isGettingOne,
         },
         list: {
-            query: list,
-            isPending: status.isListing,
+            data: snippets,
+            isPending: snippets === undefined,
         },
     };
 }

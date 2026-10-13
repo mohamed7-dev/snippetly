@@ -6,8 +6,8 @@ import { ArrowLeftIcon } from 'lucide-react';
 export function OfflineSnippetsPageHeader() {
     return (
         <HeaderWrapper className="gap-4">
-            <Button variant="ghost" size="sm" asChild>
-                <Link to="/" className="flex items-center gap-2">
+            <Button variant="link" asChild>
+                <Link to="/">
                     <ArrowLeftIcon className="h-4 w-4" />
                     Back to Home
                 </Link>

@@ -9,15 +9,17 @@ import {
     UserFriendsSnippetsListDtoType,
 } from '@snippetly/common/dto';
 import { omit } from '@snippetly/common/lib';
-import { FindOptionsRelations, In, IsNull } from 'typeorm';
+import { Brackets, FindOptionsRelations, In, IsNull } from 'typeorm';
 import { RequestContext } from '../../api/request-context/request-context';
 import { EntityNotFoundError } from '../../common/errors/errors';
+import { Collection } from '../../entities/collections/collection.entity';
 import { Snippet } from '../../entities/snippets/snippet.entity';
 import { DatabaseService } from '../../infra/database/database.service';
 import { EventBus } from '../../infra/event-bus/event-bus.service';
 import { SnippetEvent } from '../../infra/event-bus/events/snippet.event';
 import { Injectable } from '../../infra/ioc-container/injectable.decorator';
 import { ListQueryBuilder } from '../helpers/list-query-builder/list-query-builder.service';
+import { normalizeDeveloperCounts } from '../helpers/normalize-developer-counts';
 import { SlugValidator } from '../helpers/slug-validator.service';
 import { CollectionService } from './collection.service';
 import { DeveloperService } from './developer.service';
@@ -36,6 +38,183 @@ export class SnippetService {
         private readonly friendshipService: FriendshipService,
         private readonly eventBus: EventBus,
     ) {}
+
+    public async findOne(
+        ctx: RequestContext,
+        input: FindOneSnippetDtoType['input'],
+        relations?: FindOptionsRelations<Snippet>,
+        options?: { includePrivateSnippet?: boolean; includeSoftDeleted?: boolean },
+    ) {
+        const repo = this.databaseService.getRepository(ctx, Snippet);
+
+        const snippet = await repo.findOne({
+            where: {
+                id: input.id,
+                ...(options?.includeSoftDeleted ? {} : { deletedAt: IsNull() }),
+                ...(options?.includePrivateSnippet ? {} : { isPrivate: false }),
+            },
+            relations,
+        });
+
+        if (!snippet) return undefined;
+        return snippet;
+    }
+
+    public async find(
+        ctx: RequestContext,
+        input: SnippetListDtoType['input'],
+        relations?: FindOptionsRelations<Snippet>,
+        options?: {
+            includePrivateSnippetsForCreatorId?: string;
+            includePrivateSnippets?: boolean;
+            includeSoftDeleted?: boolean;
+        },
+    ) {
+        const qb = this.listQueryBuilder.build(Snippet, input as any, {
+            ctx,
+            relations: {
+                ...relations,
+            },
+            alias: 's',
+            where: {
+                ...(options?.includeSoftDeleted ? {} : { deletedAt: IsNull() }),
+                ...(options?.includePrivateSnippets ? {} : { isPrivate: false }),
+            },
+        });
+
+        if (input.discover === true) {
+            const activeDeveloper = await this.developerService.getActiveDeveloper(ctx);
+            if (activeDeveloper) {
+                qb.innerJoin('s.creator', 'discoverCreator').andWhere(
+                    'discoverCreator.id <> :activeDeveloperId',
+                    { activeDeveloperId: activeDeveloper.id },
+                );
+            }
+        }
+
+        const tagFilter = input.tags;
+        const tagValues = tagFilter?.values;
+        if (tagFilter && tagValues?.length) {
+            const tagSubquery = qb.connection
+                .createQueryBuilder()
+                .select('snippet.id')
+                .from(Snippet, 'snippet')
+                .innerJoin('snippet.tags', 'tag')
+                .where('tag.value IN (:...tagValues)')
+                .setParameters({ tagValues });
+
+            if ((tagFilter.operator ?? FilterGroupOperator.AND) === FilterGroupOperator.AND) {
+                tagSubquery
+                    .groupBy('snippet.id')
+                    .having('COUNT(DISTINCT tag.id) = :tagCount', { tagCount: tagValues.length });
+            }
+
+            qb.andWhere(`s.id IN (${tagSubquery.getQuery()})`).setParameters(tagSubquery.getParameters());
+        }
+
+        if (input.collection) {
+            qb.innerJoin('s.collection', 'collection');
+            qb.andWhere('collection.id = :collectionId', {
+                collectionId: input.collection,
+            });
+        }
+
+        if (options?.includePrivateSnippetsForCreatorId) {
+            qb.innerJoin('s.creator', 'collectionSnippetCreator');
+            qb.andWhere(
+                new Brackets(where =>
+                    where
+                        .where('s.isPrivate = :collectionSnippetIsPublic', {
+                            collectionSnippetIsPublic: false,
+                        })
+                        .orWhere('collectionSnippetCreator.id = :collectionSnippetCreatorId', {
+                            collectionSnippetCreatorId: options.includePrivateSnippetsForCreatorId,
+                        }),
+                ),
+            );
+        }
+
+        if (input.creator) {
+            qb.innerJoin('s.creator', 'creator');
+            qb.andWhere('creator.id = :creatorId', {
+                creatorId: input.creator,
+            });
+        }
+
+        const [items, itemsCount] = await qb.getManyAndCount();
+        return { items, itemsCount };
+    }
+
+    public async countSnippetsInCollection(
+        ctx: RequestContext,
+        input: { collection: Collection },
+        options?: { includePrivateSnippets?: boolean; includeSoftDeleted?: boolean },
+    ) {
+        const snippetCount = await this.databaseService.getRepository(ctx, Snippet).count({
+            where: {
+                collection: { id: input.collection.id },
+                ...(options?.includeSoftDeleted ? {} : { deletedAt: IsNull() }),
+                ...(options?.includePrivateSnippets ? {} : { isPrivate: false }),
+            },
+        });
+
+        return { snippetCount };
+    }
+
+    public async countDevelopersSnippets(
+        ctx: RequestContext,
+        developerIds: string[],
+        options?: { includePrivateSnippets?: boolean; includeSoftDeleted?: boolean },
+    ) {
+        const snippetRepo = this.databaseService.getRepository(ctx, Snippet);
+
+        const qb = snippetRepo
+            .createQueryBuilder('snippet')
+            .innerJoin('snippet.creator', 'creator')
+            .select('creator.id', 'developerId')
+            .addSelect('COUNT(snippet.id)', 'count')
+            .where('creator.id IN (:...developerIds)', { developerIds })
+            .groupBy('creator.id');
+
+        if (!options?.includePrivateSnippets) {
+            qb.andWhere('snippet.isPrivate = :isPrivate', { isPrivate: false });
+        }
+
+        if (!options?.includeSoftDeleted) {
+            qb.andWhere('snippet.deletedAt IS NULL');
+        }
+
+        const counts = await qb.getRawMany<{ developerId: string; count: number | string }>();
+        return normalizeDeveloperCounts(developerIds, counts);
+    }
+
+    public async countDevelopersForkedSnippets(
+        ctx: RequestContext,
+        developerIds: string[],
+        options?: { includePrivateSnippets?: boolean; includeSoftDeleted?: boolean },
+    ) {
+        const snippetRepo = this.databaseService.getRepository(ctx, Snippet);
+
+        const qb = snippetRepo
+            .createQueryBuilder('snippet')
+            .innerJoin('snippet.creator', 'creator')
+            .innerJoin('snippet.forkedFrom', 'fork')
+            .select('creator.id', 'developerId')
+            .addSelect('COUNT(snippet.id)', 'count')
+            .where('creator.id IN (:...developerIds)', { developerIds })
+            .groupBy('creator.id');
+
+        if (!options?.includePrivateSnippets) {
+            qb.andWhere('snippet.isPrivate = :isPrivate', { isPrivate: false });
+        }
+
+        if (!options?.includeSoftDeleted) {
+            qb.andWhere('snippet.deletedAt IS NULL');
+        }
+
+        const counts = await qb.getRawMany<{ developerId: string; count: number | string }>();
+        return normalizeDeveloperCounts(developerIds, counts);
+    }
 
     public async create(ctx: RequestContext, input: CreateSnippetDtoType['input']) {
         // resolve developer from current active user
@@ -77,29 +256,6 @@ export class SnippetService {
         return snippet;
     }
 
-    public async findOne(
-        ctx: RequestContext,
-        input: FindOneSnippetDtoType['input'],
-        relations?: FindOptionsRelations<Snippet>,
-    ) {
-        const repo = this.databaseService.getRepository(ctx, Snippet);
-
-        return (
-            (await repo.findOne({
-                where: { id: input.id, deletedAt: IsNull() },
-                relations: {
-                    creator: true,
-                    collection: true,
-                    tags: true,
-                    forkedFrom: {
-                        creator: true,
-                    },
-                    ...relations,
-                },
-            })) ?? undefined
-        );
-    }
-
     public async getUserFriendsSnippets(
         ctx: RequestContext,
         developerId: string,
@@ -139,80 +295,16 @@ export class SnippetService {
         return { items, itemsCount };
     }
 
-    public async find(
-        ctx: RequestContext,
-        input: SnippetListDtoType['input'],
-        relations?: FindOptionsRelations<Snippet>,
-    ) {
-        const qb = this.listQueryBuilder.build(Snippet, input as any, {
-            ctx,
-            relations: {
-                creator: true,
-                collection: true,
-                tags: true,
-                forkedFrom: { creator: true },
-                ...relations,
-            },
-            alias: 's',
-        });
-
-        if (input.discover === true) {
-            const activeDeveloper = await this.developerService.getActiveDeveloper(ctx);
-            if (activeDeveloper) {
-                qb.innerJoin('s.creator', 'discoverCreator').andWhere(
-                    'discoverCreator.id <> :activeDeveloperId',
-                    { activeDeveloperId: activeDeveloper.id },
-                );
-            }
-        }
-
-        const tagFilter = input.tags;
-        const tagValues = tagFilter?.values;
-        if (tagFilter && tagValues?.length) {
-            const tagSubquery = qb.connection
-                .createQueryBuilder()
-                .select('snippet.id')
-                .from(Snippet, 'snippet')
-                .innerJoin('snippet.tags', 'tag')
-                .where('tag.value IN (:...tagValues)')
-                .setParameters({ tagValues });
-
-            if ((tagFilter.operator ?? FilterGroupOperator.AND) === FilterGroupOperator.AND) {
-                tagSubquery
-                    .groupBy('snippet.id')
-                    .having('COUNT(DISTINCT tag.id) = :tagCount', { tagCount: tagValues.length });
-            }
-
-            qb.andWhere(`s.id IN (${tagSubquery.getQuery()})`).setParameters(tagSubquery.getParameters());
-        }
-
-        // TODO: filtering by collection is not working
-        if (input.collection) {
-            qb.innerJoin('s.collection', 'collection');
-            qb.andWhere('collection.id = :collectionId', {
-                collectionId: input.collection,
-            });
-        }
-
-        if (input.creator) {
-            qb.innerJoin('s.creator', 'creator');
-            qb.andWhere('creator.id = :creatorId', {
-                creatorId: input.creator,
-            });
-        }
-
-        const [items, itemsCount] = await qb.getManyAndCount();
-        return { items, itemsCount };
-    }
-
     public async update(ctx: RequestContext, input: UpdateSnippetDtoType['input']) {
         await this.slugValidator.validateSlug(ctx, input, Snippet);
 
         const repo = this.databaseService.getRepository(ctx, Snippet);
-        let snippet = await repo.findOne({
-            where: { id: input.id },
-            relations: { creator: true, collection: true, tags: true },
-        });
+        let snippet = await this.findOne(
+            ctx,
+            input,
+            { creator: true, collection: true, tags: true },
+            { includePrivateSnippet: true },
+        );
 
         if (!snippet || (ctx.isAuthorizedAsOwnerOnly && snippet.creator.user.id !== ctx.activeUserId)) {
             throw new EntityNotFoundError({ entityName: 'Snippet', entityId: input.id });
@@ -240,15 +332,17 @@ export class SnippetService {
         return snippet;
     }
 
-    public async delete(
+    public async softDelete(
         ctx: RequestContext,
         input: DeleteSnippetDtoType['input'],
     ): Promise<{ result: 'DELETED' | 'NOT_DELETED'; message: string }> {
         const repo = this.databaseService.getRepository(ctx, Snippet);
-        const snippet = await repo.findOne({
-            where: { id: input.id },
-            relations: { creator: true },
-        });
+        const snippet = await this.findOne(
+            ctx,
+            { id: input.id },
+            { creator: true },
+            { includePrivateSnippet: true },
+        );
 
         if (!snippet || (ctx.isAuthorizedAsOwnerOnly && snippet.creator.user.id !== ctx.activeUserId)) {
             return { result: 'NOT_DELETED', message: 'Snippet not found' };
@@ -265,10 +359,13 @@ export class SnippetService {
         const developer = await this.developerService.getActiveDeveloper(ctx, true);
 
         const repo = this.databaseService.getRepository(ctx, Snippet);
-        const source = await repo.findOne({
-            where: { id: input.id },
-            relations: { creator: true, collection: true, tags: true },
-        });
+
+        const source = await this.findOne(
+            ctx,
+            { id: input.id },
+            { creator: true, collection: true, tags: true },
+            { includePrivateSnippet: true },
+        );
 
         const isOwner = source?.creator.id === developer.id;
 

@@ -1,9 +1,12 @@
 import { StatusCard } from '@/components/feedback/status-card';
 import { LoadingButton } from '@/components/inputs/loading-button';
+import { RichTextViewer } from '@/components/shared/rich-text-editor';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SnippetCodeBlock } from '@/features/snippets/components/shared/snippet-code-block';
 import { useDeleteConfirmation } from '@/hooks/use-delete-confirmation';
+import { formatDeveloperInfo } from '@/lib/format-developer-info';
 import { useNavigate, useRouter } from '@tanstack/react-router';
 import { Trash2Icon } from 'lucide-react';
 import React from 'react';
@@ -25,13 +28,13 @@ export function OfflineSnippetPageContent({ id }: { id: string }) {
         confirm({
             title: 'Delete snippet',
             description: "Are you sure you want to delete this snippet? this action can't be undone.",
-            isPending: isPending,
+            isPending: isRemoving,
             onConfirm: async () => {
-                await mutate({ id }).then(() => {
+                if (await mutate({ id })) {
                     resetAndClose?.();
                     navigate({ to: '/offline' });
                     router.invalidate();
-                });
+                }
             },
         });
     };
@@ -57,9 +60,7 @@ export function OfflineSnippetPageContent({ id }: { id: string }) {
     }
 
     if (snippet && !isPending) {
-        const nameFallback =
-            snippet.creator.firstName.slice(0, 1) + ' ' + snippet.creator.lastName.slice(0, 1);
-        const fullName = snippet.creator.firstName + ' ' + snippet.creator.lastName;
+        const { fullName, initials } = formatDeveloperInfo(snippet.creator);
         return (
             <article className="space-y-3">
                 <h1 className="text-2xl font-semibold capitalize">{snippet.name}</h1>
@@ -74,9 +75,9 @@ export function OfflineSnippetPageContent({ id }: { id: string }) {
                                     <Avatar className="h-8 w-8">
                                         <AvatarImage
                                             src={snippet.creator.image || '/placeholder.svg'}
-                                            alt={nameFallback}
+                                            alt={initials}
                                         />
-                                        <AvatarFallback>{nameFallback}</AvatarFallback>
+                                        <AvatarFallback>{initials}</AvatarFallback>
                                     </Avatar>
                                     <p className="text-sm font-medium">{fullName}</p>
                                 </div>
@@ -104,12 +105,14 @@ export function OfflineSnippetPageContent({ id }: { id: string }) {
                         <SnippetCodeBlock snippet={snippet} />
 
                         {snippet?.note ? (
-                            <div className="space-y-2">
-                                <h2 className="text-sm font-semibold capitalize">Snippet Note</h2>
-                                <p className="bg-muted/50 p-3 rounded-md overflow-auto text-sm">
-                                    {snippet.note}
-                                </p>
-                            </div>
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Snippet Note</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <RichTextViewer content={snippet.note} />
+                                </CardContent>
+                            </Card>
                         ) : null}
                     </div>
                 ) : (

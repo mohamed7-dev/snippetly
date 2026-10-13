@@ -4,7 +4,6 @@ import {
     booleanFilterOperators,
     createPaginatedListInputSchema,
     createPaginatedListOutputSchema,
-    dateTimeFilterOperators,
     deletionResponse,
     filterGroupOperator,
     idSchema,
@@ -150,7 +149,6 @@ const filterSchema = z
         description: stringFilterOperators,
         isPrivate: booleanFilterOperators,
         allowForking: booleanFilterOperators,
-        deletedAt: dateTimeFilterOperators,
     })
     .partial();
 
@@ -162,7 +160,6 @@ const sortSchema = z
         description: sortDirection,
         isPrivate: sortDirection,
         allowForking: sortDirection,
-        deletedAt: sortDirection,
     })
     .partial();
 
@@ -174,6 +171,13 @@ const tagsInListInput = z.object({
 const collectionListInput = createPaginatedListInputSchema(filterSchema, sortSchema)
     .unwrap()
     .extend({
+        discover: z
+            .union([
+                z.boolean(),
+                z.literal('true').transform(() => true),
+                z.literal('false').transform(() => false),
+            ])
+            .optional(),
         tags: tagsInListInput,
         creator: idSchema.nonempty(),
     })

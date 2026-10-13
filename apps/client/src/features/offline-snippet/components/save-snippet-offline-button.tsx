@@ -27,7 +27,7 @@ export function SaveSnippetOfflineButton({
     const handleOfflineSave = async (e: React.MouseEvent<HTMLButtonElement>) => {
         onClick?.(e);
         if (!e.isDefaultPrevented()) {
-            await mutate(snippet).then(() => onSuccess?.());
+            if (await mutate(snippet)) onSuccess?.();
         }
     };
 

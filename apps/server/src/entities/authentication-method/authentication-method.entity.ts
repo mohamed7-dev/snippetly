@@ -7,7 +7,7 @@ import { User } from '../users/user.entity';
 @Entity()
 export abstract class AuthenticationMethod extends AppEntity {
     @Index()
-    @ManyToOne(() => User, user => user.authenticationMethods)
+    @ManyToOne(() => User, user => user.authenticationMethods, { onDelete: 'CASCADE' })
     user: User;
 }
 

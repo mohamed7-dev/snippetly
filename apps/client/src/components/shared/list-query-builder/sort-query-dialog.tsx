@@ -150,8 +150,7 @@ function QueryDialogBody({
         <React.Fragment>
             <div className="max-h-[60vh] space-y-6 overflow-y-auto pr-1">
                 {hasSort && (
-                    <section aria-label="Sorting" className="space-y-3">
-                        {<h3 className="text-sm font-medium">Sorting</h3>}
+                    <section aria-label="Sorting">
                         <SortBuilderView builder={sort} directionLabels={directionLabels} />
                     </section>
                 )}

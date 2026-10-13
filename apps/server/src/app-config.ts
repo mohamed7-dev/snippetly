@@ -7,6 +7,8 @@ import { GoogleAuthenticationStrategy } from './config/auth/google-auth.strategy
 import { NativeAuthenticationStrategy } from './config/auth/native-auth.strategy';
 import { RedisCacheStrategy } from './config/system/cache/redis-cache.strategy';
 import { NodemailerStrategy } from './config/system/email/nodemailer.strategy';
+import { DummyJobQueueStrategy } from './config/system/job-queue/dummy-job-queue.strategy';
+import { QStashJobQueueStrategy } from './config/system/job-queue/qstash-job-queue.strategy';
 import { LogLevel } from './config/system/logger/logger-strategy.interface';
 import { StdoutLoggerStrategy } from './config/system/logger/stdout-logger.strategy';
 import { entitiesMap } from './entities/entities-map';
@@ -90,5 +92,13 @@ export const appConfig: AppConfig = {
             identifierChangeCallbackUrl: process.env.IDENTIFIER_CHANGE_CALLBACK_URL,
         },
         loggerStrategy: new StdoutLoggerStrategy({ logLevel: LogLevel.debug }),
+        jobQueueStrategy: isProduction()
+            ? new QStashJobQueueStrategy({
+                  token: process.env.QSTASH_TOKEN,
+                  callbackUrl: process.env.QSTASH_JOBS_CALLBACK_URL,
+                  currentSigningKey: process.env.QSTASH_CURRENT_SIGNING_KEY,
+                  nextSigningKey: process.env.QSTASH_NEXT_SIGNING_KEY,
+              })
+            : new DummyJobQueueStrategy(),
     },
 };

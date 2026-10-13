@@ -9,6 +9,7 @@ import { VerificationTokenStrategy } from './auth/verification-token-strategy.in
 import { CacheStrategy } from './system/cache/cache-strategy.interface';
 import { EmailTransporterStrategy } from './system/email/email-transporter-strategy.interface';
 import { LoggerStrategy } from './system/logger/logger-strategy.interface';
+import { JobQueueStrategy } from './system/job-queue/job-queue-strategy.interface';
 
 interface ApiActorOptions {
     path?: string;
@@ -40,6 +41,7 @@ export interface SystemConfigOptions {
     };
     loggerStrategy?: LoggerStrategy;
     cacheStrategy?: CacheStrategy;
+    jobQueueStrategy?: JobQueueStrategy;
 }
 
 export interface AuthConfigOptions {
@@ -113,6 +115,7 @@ export interface RuntimeAppConfig extends Required<AppConfig> {
     };
     system: Required<SystemConfigOptions> & {
         email: Required<SystemConfigOptions['email']>;
+        jobQueueStrategy: JobQueueStrategy;
     };
 }
 

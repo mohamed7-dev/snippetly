@@ -74,7 +74,7 @@ export const DASHBOARD_NAV_ITEMS = [
     {
         id: 'discover',
         title: 'Discover',
-        href: '/dashboard/discover',
+        href: '/discover',
         icon: SearchIcon,
         requiredPermissions: [Permission.Authenticated],
         exact: false,

@@ -25,7 +25,7 @@ export function NotFoundPageView({ title, description }: NotFoundMetaData) {
                     </Button>
 
                     <Button variant="outline" asChild className="w-full bg-transparent" size="lg">
-                        <Link to="/dashboard/discover">
+                        <Link to="/discover">
                             <SearchIcon className="w-4 h-4 mr-2" />
                             Discover Snippets
                         </Link>

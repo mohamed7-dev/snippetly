@@ -1,3 +1,4 @@
+import { useOfflineSnippetStore } from '@/features/offline-snippet/hooks/use-offline-snippet-store';
 import { ApiClientError, developerApiClient, type ApiSuccess } from '@/lib/api-client';
 import { apiEndpoints } from '@/lib/api-endpoints';
 import { toastApiError } from '@/lib/toast-api-error';
@@ -13,6 +14,8 @@ export type UpdateSnippetMutationCallbacks = AsyncActionCallback<
 >;
 
 export function useUpdateSnippet(mutationCallbacks?: UpdateSnippetMutationCallbacks) {
+    const { update: updateOfflineSnippet } = useOfflineSnippetStore();
+
     return useMutation({
         mutationFn: async (input: UpdateSnippetDtoType['input']) => {
             return await developerApiClient.fetch<UpdateSnippetDtoType['output']>(
@@ -24,8 +27,10 @@ export function useUpdateSnippet(mutationCallbacks?: UpdateSnippetMutationCallba
             );
         },
         ...mutationCallbacks,
-        onSuccess: data => {
+        onSuccess: async data => {
             toast.success('Snippet was updated successfully');
+            updateOfflineSnippet.mutate({ ...data, tags: data.tags ?? [] });
+
             mutationCallbacks?.onSuccess?.(data);
         },
         onError: e => {

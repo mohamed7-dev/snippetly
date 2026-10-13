@@ -144,7 +144,15 @@ export class IocContainer {
         const paramTypes = Reflect.getMetadata('design:paramtypes', cls) || [];
 
         const injectTokens = Reflect.getMetadata(INJECT_DECORATOR_METADATA_KEY, cls) || {};
-        const deps = paramTypes.map((t: any, i: number) => this.resolve(injectTokens[i] || t, module));
+        const deps = paramTypes.map((type: any, index: number) => {
+            const token = injectTokens[index] || type;
+            if (!this.providers.has(token)) {
+                throw new Error(
+                    `No provider for ${String(token)} required by ${cls.name} constructor parameter ${index}`,
+                );
+            }
+            return this.resolve(token, module);
+        });
         return new cls(...deps);
     }
 

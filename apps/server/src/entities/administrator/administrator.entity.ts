@@ -22,7 +22,7 @@ export class Administrator extends AppEntity implements SoftDeletable {
     @Column()
     lastName: string;
 
-    @OneToOne(() => User)
+    @OneToOne(() => User, { onDelete: 'CASCADE' })
     @JoinColumn()
     user: User;
 }

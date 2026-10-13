@@ -3,6 +3,7 @@ import {
     CreateDeveloperDtoType,
     DeleteDeveloperAccountDtoType,
     DeveloperListDtoType,
+    FindOneDeveloperDtoType,
     FriendshipStatus,
     RefreshVerificationTokenDtoType,
     RegisterDeveloperAccountDtoType,
@@ -13,7 +14,7 @@ import {
     UpdateDeveloperAccountDtoType,
     VerifyAccountDtoType,
 } from '@snippetly/common/dto';
-import { Brackets, FindOptionsRelations, IsNull, Not } from 'typeorm';
+import { Brackets, FindOptionsRelations, IsNull } from 'typeorm';
 import { RequestContext } from '../../api/request-context/request-context';
 import { isApiError } from '../../common/errors/api-error';
 import {
@@ -36,11 +37,8 @@ import {
 import { normalizeInput } from '../../common/helpers/validation';
 import { OnApplicationBootstrap } from '../../common/types/lifecycle-hooks';
 import { ConfigService } from '../../config';
-import { Collection } from '../../entities/collections/collection.entity';
 import { Developer } from '../../entities/developer/developer.entity';
 import { Friendship } from '../../entities/friendships/friendship.entity';
-import { Snippet } from '../../entities/snippets/snippet.entity';
-import { Tag } from '../../entities/tags/tag.entity';
 import { User } from '../../entities/users/user.entity';
 import { Logger } from '../../infra';
 import { DatabaseService } from '../../infra/database/database.service';
@@ -54,18 +52,38 @@ import { IdentifierChangedEvent } from '../../infra/event-bus/events/identifier-
 import { PasswordResetRequestedEvent } from '../../infra/event-bus/events/password-reset-requested.event';
 import { PasswordResetVerifiedEvent } from '../../infra/event-bus/events/password-reset-verified.event';
 import { Injectable } from '../../infra/ioc-container/injectable.decorator';
+import { moduleRef } from '../../infra/ioc-container/module-ref';
 import { EmailClient } from '../helpers/email-client.service';
+import { JobQueue } from '../helpers/job-qeueue.service';
 import { ListQueryBuilder } from '../helpers/list-query-builder/list-query-builder.service';
+import type { CollectionService } from './collection.service';
+import { FriendshipService } from './friendship.service';
+import type { SnippetService } from './snippet.service';
+import { TagService } from './tag.service';
 import { UserService } from './user.service';
 
 @Injectable()
 export class DeveloperService implements OnApplicationBootstrap {
+    private get snippetService(): SnippetService {
+        const { SnippetService } = require('./snippet.service') as typeof import('./snippet.service');
+        return moduleRef.getProvider<SnippetService>(SnippetService);
+    }
+
+    private get collectionService(): CollectionService {
+        const { CollectionService } =
+            require('./collection.service') as typeof import('./collection.service');
+        return moduleRef.getProvider<CollectionService>(CollectionService);
+    }
+
     constructor(
         private readonly userService: UserService,
+        private readonly friendshipService: FriendshipService,
+        private readonly tagService: TagService,
         private readonly databaseService: DatabaseService,
         private readonly configService: ConfigService,
         private readonly listQueryBuilder: ListQueryBuilder,
         private readonly eventBus: EventBus,
+        private readonly jobQueue: JobQueue,
         private readonly emailClient: EmailClient,
     ) {}
 
@@ -74,6 +92,28 @@ export class DeveloperService implements OnApplicationBootstrap {
         this.subscribeToAccountRegistrationEvent();
         this.subscribeToPasswordResetRequestedEvent();
         this.subscribeToIdentifierChangeRequestedEvent();
+        this.subscribeToAccountDeletionEvent();
+    }
+
+    private subscribeToAccountDeletionEvent() {
+        this.eventBus.ofType(DeveloperEvent).subscribe(event => {
+            Logger.debug(`Handling event 'DeveloperEvent[#deleted]'`);
+            const scheduledDeletionAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+            if (event.type === 'deleted' && event.entity.user) {
+                void this.jobQueue.enqueue(
+                    {
+                        type: 'delete-developer-account',
+                        userId: event.entity.user.id,
+                        deleteAfter: scheduledDeletionAt.getTime(),
+                    },
+                    7 * 24 * 60 * 60,
+                );
+                void this.databaseService.dataSource
+                    .getRepository(Developer)
+                    .update({ id: event.entity.id }, { scheduledDeletionAt });
+            }
+        });
     }
 
     private subscribeToAccountRegistrationEvent() {
@@ -137,6 +177,129 @@ export class DeveloperService implements OnApplicationBootstrap {
                 `,
             });
         });
+    }
+
+    public async find(
+        ctx: RequestContext,
+        input: DeveloperListDtoType['input'],
+        relations?: FindOptionsRelations<Developer>,
+        options?: { includePrivateDevelopers?: boolean; includeSoftDeleted?: boolean },
+    ) {
+        const qb = this.listQueryBuilder.build(Developer, input as any, {
+            ctx,
+            relations,
+            where: {
+                ...(options?.includeSoftDeleted ? {} : { deletedAt: IsNull() }),
+                ...(options?.includePrivateDevelopers ? {} : { isPrivate: false }),
+            },
+        });
+
+        const activeDeveloper = input.discover ? await this.getActiveDeveloper(ctx) : undefined;
+
+        if (activeDeveloper) {
+            // exclude active user and his friends from discover
+            const friendships = await this.databaseService
+                .getRepository(ctx, Friendship)
+                .createQueryBuilder('friendship')
+                .innerJoin('friendship.requester', 'requester')
+                .innerJoin('friendship.addressee', 'addressee')
+                .select('requester.id', 'requesterId')
+                .addSelect('addressee.id', 'addresseeId')
+                .where(
+                    new Brackets(qb => {
+                        qb.where('requester.id = :activeDeveloperId', {
+                            activeDeveloperId: activeDeveloper.id,
+                        }).orWhere('addressee.id = :activeDeveloperId', {
+                            activeDeveloperId: activeDeveloper.id,
+                        });
+                    }),
+                )
+                .andWhere('friendship.status = :acceptedStatus', {
+                    acceptedStatus: FriendshipStatus.Accepted,
+                })
+                .getRawMany<{ requesterId: string; addresseeId: string }>();
+            const excludedDeveloperIds = [
+                activeDeveloper.id,
+                ...friendships.map(({ requesterId, addresseeId }) =>
+                    requesterId === activeDeveloper.id ? addresseeId : requesterId,
+                ),
+            ];
+
+            qb.andWhere(`${qb.alias}.id NOT IN (:...excludedDeveloperIds)`, { excludedDeveloperIds });
+        }
+
+        const [items, itemsCount] = await qb.getManyAndCount();
+
+        return { items, itemsCount };
+    }
+
+    public async findOne(
+        ctx: RequestContext,
+        input: FindOneDeveloperDtoType['input'],
+        relations?: FindOptionsRelations<Developer>,
+        options?: { includePrivateDevelopers?: boolean; includeSoftDeleted?: boolean },
+    ): Promise<Developer | undefined> {
+        const repo = this.databaseService.getRepository(ctx, Developer);
+        const developer = await repo.findOne({
+            where: {
+                id: input.id,
+                ...(options?.includeSoftDeleted ? {} : { deletedAt: IsNull() }),
+                ...(options?.includePrivateDevelopers ? {} : { isPrivate: false }),
+            },
+            relations: {
+                ...relations,
+            },
+        });
+
+        return developer ?? undefined;
+    }
+
+    public async getOneByUserId(
+        ctx: RequestContext,
+        userId: string,
+        relations?: FindOptionsRelations<Developer>,
+        options?: { includePrivateDevelopers?: boolean; includeSoftDeleted?: boolean },
+    ): Promise<Developer | undefined> {
+        const repo = this.databaseService.getRepository(ctx, Developer);
+
+        const developer = await repo.findOne({
+            where: {
+                user: {
+                    id: userId,
+                },
+                ...(options?.includeSoftDeleted ? {} : { deletedAt: IsNull() }),
+                ...(options?.includePrivateDevelopers ? {} : { isPrivate: false }),
+            },
+            relations: {
+                ...relations,
+            },
+        });
+
+        return developer ?? undefined;
+    }
+
+    public async getActiveDeveloper(ctx: RequestContext, strict: boolean): Promise<Developer>;
+    public async getActiveDeveloper(ctx: RequestContext, strict?: boolean): Promise<Developer | undefined>;
+    public async getActiveDeveloper(
+        ctx: RequestContext,
+        maybeStrict?: boolean,
+    ): Promise<Developer | undefined> {
+        if (!ctx.activeUserId && maybeStrict) {
+            throw new ForbiddenError();
+        } else if (!ctx.activeUserId) {
+            return undefined;
+        }
+
+        const developer = await this.getOneByUserId(ctx, ctx.activeUserId, undefined, {
+            includeSoftDeleted: false,
+            includePrivateDevelopers: true,
+        });
+
+        if (maybeStrict && !developer) {
+            throw new InternalServerError("errors.developer_account_can't_be_located_for_user");
+        }
+
+        return developer ?? undefined;
     }
 
     public async registerAccount(
@@ -336,19 +499,22 @@ export class DeveloperService implements OnApplicationBootstrap {
 
         const repo = this.databaseService.getRepository(ctx, Developer);
 
-        let developer = await repo.findOne({
-            where: {
-                id: input.id,
-            },
-            relations: {
+        let developer = await this.findOne(
+            ctx,
+            { id: input.id },
+            {
                 user: {
                     roles: true,
                     authenticationMethods: true,
                 },
             },
-        });
+            {
+                includePrivateDevelopers: true,
+                includeSoftDeleted: false,
+            },
+        );
 
-        if (!developer || developer.user.id !== ctx.activeUserId) {
+        if (!developer || (ctx.isAuthorizedAsOwnerOnly && developer.user.id !== ctx.activeUserId)) {
             throw new EntityNotFoundError({ entityId: input.id, entityName: 'Developer' });
         }
 
@@ -367,13 +533,12 @@ export class DeveloperService implements OnApplicationBootstrap {
     ): Promise<DeleteDeveloperAccountDtoType['output']> {
         const repo = this.databaseService.getRepository(ctx, Developer);
 
-        const developer = await repo.findOne({
-            where: {
-                id: developerId,
-            },
+        const developer = await this.findOne(ctx, { id: developerId }, undefined, {
+            includePrivateDevelopers: true,
+            includeSoftDeleted: false,
         });
 
-        if (!developer || developer.user.id !== ctx.activeUserId) {
+        if (!developer || (ctx.isAuthorizedAsOwnerOnly && developer.user.id !== ctx.activeUserId)) {
             throw new EntityNotFoundError({ entityName: 'Developer', entityId: developerId });
         }
 
@@ -389,226 +554,20 @@ export class DeveloperService implements OnApplicationBootstrap {
     }
 
     public async restoreAccount(ctx: RequestContext, userId: string): Promise<boolean> {
-        const developer = await this.databaseService.getRepository(ctx, Developer).findOne({
-            where: {
-                user: {
-                    id: userId,
-                },
-            },
-            withDeleted: true,
+        const developer = await this.getOneByUserId(ctx, userId, undefined, {
+            includeSoftDeleted: true,
+            includePrivateDevelopers: true,
         });
 
-        if (!developer) return false;
+        if (!developer || (ctx.isAuthorizedAsOwnerOnly && developer.user.id !== ctx.activeUserId))
+            return false;
 
         await this.databaseService.getRepository(ctx, User).update({ id: userId }, { deletedAt: null });
         await this.databaseService
             .getRepository(ctx, Developer)
-            .update({ id: developer.id }, { deletedAt: null });
+            .update({ id: developer.id }, { deletedAt: null, scheduledDeletionAt: null });
 
         return true;
-    }
-
-    public async getActiveDeveloper(ctx: RequestContext, strict: boolean): Promise<Developer>;
-    public async getActiveDeveloper(ctx: RequestContext, strict?: boolean): Promise<Developer | undefined>;
-    public async getActiveDeveloper(
-        ctx: RequestContext,
-        maybeStrict?: boolean,
-    ): Promise<Developer | undefined> {
-        if (!ctx.activeUserId && maybeStrict) {
-            throw new ForbiddenError();
-        } else if (!ctx.activeUserId) {
-            return undefined;
-        }
-
-        const repo = this.databaseService.getRepository(ctx, Developer);
-
-        const developer = await repo.findOne({
-            where: {
-                user: {
-                    id: ctx.activeUserId,
-                },
-            },
-        });
-
-        if (maybeStrict && !developer) {
-            throw new InternalServerError("errors.developer_account_can't_be_located_for_user");
-        }
-
-        return developer ?? undefined;
-    }
-
-    public async findOne(
-        ctx: RequestContext,
-        id: string,
-        relations?: FindOptionsRelations<Developer>,
-    ): Promise<Developer | undefined> {
-        const repo = this.databaseService.getRepository(ctx, Developer);
-        const developer = await repo.findOne({
-            where: {
-                id,
-                deletedAt: IsNull(),
-            },
-            relations: {
-                ...relations,
-            },
-        });
-
-        return developer ?? undefined;
-    }
-
-    public async getProfileStats(ctx: RequestContext, developerId: string, includePrivate = false) {
-        const publicFilter = includePrivate ? {} : { isPrivate: false };
-        const snippetRepo = this.databaseService.getRepository(ctx, Snippet);
-        const collectionRepo = this.databaseService.getRepository(ctx, Collection);
-        const friendshipRepo = this.databaseService.getRepository(ctx, Friendship);
-
-        const [
-            snippetsCount,
-            collectionsCount,
-            forkedSnippetsCount,
-            forkedCollectionsCount,
-            friendsCount,
-            friendsInboxCount,
-            friendsOutboxCount,
-        ] = await Promise.all([
-            snippetRepo.count({
-                where: { creator: { id: developerId }, deletedAt: IsNull(), ...publicFilter },
-            }),
-            collectionRepo.count({
-                where: { creator: { id: developerId }, deletedAt: IsNull(), ...publicFilter },
-            }),
-            snippetRepo.count({
-                where: {
-                    creator: { id: developerId },
-                    forkedFrom: Not(IsNull()),
-                    deletedAt: IsNull(),
-                    ...publicFilter,
-                },
-            }),
-            collectionRepo.count({
-                where: {
-                    creator: { id: developerId },
-                    forkedFrom: Not(IsNull()),
-                    deletedAt: IsNull(),
-                    ...publicFilter,
-                },
-            }),
-            friendshipRepo.count({
-                where: [
-                    { requester: { id: developerId }, status: FriendshipStatus.Accepted },
-                    { addressee: { id: developerId }, status: FriendshipStatus.Accepted },
-                ],
-            }),
-            friendshipRepo.count({
-                where: { addressee: { id: developerId }, status: FriendshipStatus.Pending },
-            }),
-            friendshipRepo.count({
-                where: { requester: { id: developerId }, status: FriendshipStatus.Pending },
-            }),
-        ]);
-
-        return {
-            snippetsCount,
-            collectionsCount,
-            forkedSnippetsCount,
-            forkedCollectionsCount,
-            friendsCount,
-            friendsInboxCount,
-            friendsOutboxCount,
-        };
-    }
-
-    public async find(
-        ctx: RequestContext,
-        input: DeveloperListDtoType['input'],
-        relations?: FindOptionsRelations<Developer>,
-    ) {
-        const qb = this.listQueryBuilder.build(Developer, input as any, {
-            ctx,
-            relations,
-            where: { deletedAt: IsNull() },
-        });
-
-        const activeDeveloper = input.discover ? await this.getActiveDeveloper(ctx) : undefined;
-        if (activeDeveloper) {
-            const friendships = await this.databaseService
-                .getRepository(ctx, Friendship)
-                .createQueryBuilder('friendship')
-                .innerJoin('friendship.requester', 'requester')
-                .innerJoin('friendship.addressee', 'addressee')
-                .select('requester.id', 'requesterId')
-                .addSelect('addressee.id', 'addresseeId')
-                .where(
-                    new Brackets(qb => {
-                        qb.where('requester.id = :activeDeveloperId', {
-                            activeDeveloperId: activeDeveloper.id,
-                        }).orWhere('addressee.id = :activeDeveloperId', {
-                            activeDeveloperId: activeDeveloper.id,
-                        });
-                    }),
-                )
-                .andWhere('friendship.status = :acceptedStatus', {
-                    acceptedStatus: FriendshipStatus.Accepted,
-                })
-                .getRawMany<{ requesterId: string; addresseeId: string }>();
-            const excludedDeveloperIds = [
-                activeDeveloper.id,
-                ...friendships.map(({ requesterId, addresseeId }) =>
-                    requesterId === activeDeveloper.id ? addresseeId : requesterId,
-                ),
-            ];
-
-            qb.andWhere(`${qb.alias}.id NOT IN (:...excludedDeveloperIds)`, { excludedDeveloperIds });
-        }
-
-        const [items, itemsCount] = await qb.getManyAndCount();
-        if (!input.discover || items.length === 0) {
-            return { items, itemsCount };
-        }
-
-        return await this.discover(ctx, items, itemsCount);
-    }
-
-    async getOneByUserId(
-        ctx: RequestContext,
-        userId: string,
-        relations?: FindOptionsRelations<Developer>,
-    ): Promise<Developer | undefined>;
-    async getOneByUserId(
-        userId: string,
-        relations?: FindOptionsRelations<Developer>,
-    ): Promise<Developer | undefined>;
-    async getOneByUserId(
-        ctx: RequestContext | null,
-        userId: string,
-        relations?: FindOptionsRelations<Developer>,
-    ): Promise<Developer | undefined>;
-    public async getOneByUserId(
-        ctxOrUserId: RequestContext | string | null,
-        maybeUserIdOrRelations?: string | FindOptionsRelations<Developer>,
-        relations?: FindOptionsRelations<Developer>,
-    ): Promise<Developer | undefined> {
-        const hasContext = ctxOrUserId instanceof RequestContext || ctxOrUserId === null;
-        const ctx = hasContext ? ctxOrUserId : undefined;
-        const userId = hasContext ? (maybeUserIdOrRelations as string) : ctxOrUserId;
-        const resolvedRelations = hasContext
-            ? relations
-            : (maybeUserIdOrRelations as FindOptionsRelations<Developer> | undefined);
-        const repo = this.databaseService.getRepository(ctx ?? undefined, Developer);
-
-        const developer = await repo.findOne({
-            where: {
-                user: {
-                    id: userId,
-                },
-                deletedAt: IsNull(),
-            },
-            relations: {
-                ...resolvedRelations,
-            },
-        });
-
-        return developer ?? undefined;
     }
 
     public async create(
@@ -662,48 +621,18 @@ export class DeveloperService implements OnApplicationBootstrap {
         return developer;
     }
 
-    private async discover(ctx: RequestContext, items: Developer[], itemsCount: number) {
+    public async attachStatsToDevelopersList(
+        ctx: RequestContext,
+        items: Developer[],
+        itemsCount: number,
+        options?: { includePrivateSnippets?: boolean; includePrivateCollections?: boolean },
+    ) {
         const developerIds = items.map(({ id }) => id);
-        const snippetRepo = this.databaseService.getRepository(ctx, Snippet);
-        const collectionRepo = this.databaseService.getRepository(ctx, Collection);
-        const tagRepo = this.databaseService.getRepository(ctx, Tag);
 
         const [snippetCounts, collectionCounts, addedTags] = await Promise.all([
-            snippetRepo
-                .createQueryBuilder('snippet')
-                .innerJoin('snippet.creator', 'creator')
-                .select('creator.id', 'developerId')
-                .addSelect('COUNT(snippet.id)', 'count')
-                .where('creator.id IN (:...developerIds)', { developerIds })
-                .andWhere('snippet.isPrivate = :isPrivate', { isPrivate: false })
-                .andWhere('snippet.deletedAt IS NULL')
-                .groupBy('creator.id')
-                .getRawMany<{ developerId: string; count: string }>(),
-            collectionRepo
-                .createQueryBuilder('collection')
-                .innerJoin('collection.creator', 'creator')
-                .select('creator.id', 'developerId')
-                .addSelect('COUNT(collection.id)', 'count')
-                .where('creator.id IN (:...developerIds)', { developerIds })
-                .andWhere('collection.isPrivate = :isPrivate', { isPrivate: false })
-                .andWhere('collection.deletedAt IS NULL')
-                .groupBy('creator.id')
-                .getRawMany<{ developerId: string; count: string }>(),
-            tagRepo
-                .createQueryBuilder('tag')
-                .innerJoin('tag.addedBy', 'developer')
-                .select('developer.id', 'developerId')
-                .addSelect('tag.id', 'id')
-                .addSelect('tag.value', 'value')
-                .addSelect('tag.usageCount', 'usageCount')
-                .where('developer.id IN (:...developerIds)', { developerIds })
-                .orderBy('tag.value', 'ASC')
-                .getRawMany<{
-                    developerId: string;
-                    id: string;
-                    value: string;
-                    usageCount: number;
-                }>(),
+            this.snippetService.countDevelopersSnippets(ctx, developerIds, options),
+            this.collectionService.countDevelopersCollections(ctx, developerIds, options),
+            this.tagService.countDevelopersTags(ctx, developerIds),
         ]);
 
         const snippetCountsByDeveloper = new Map(
@@ -728,5 +657,50 @@ export class DeveloperService implements OnApplicationBootstrap {
         }));
 
         return { items: enrichedItems, itemsCount };
+    }
+
+    public async getProfileActivityStats(
+        ctx: RequestContext,
+        developerId: string,
+        options?: { includePrivate?: boolean; includeSoftDeleted?: boolean },
+    ) {
+        const [snippetsCount, collectionsCount, forkedSnippetsCount, forkedCollectionsCount, friendships] =
+            await Promise.all([
+                this.snippetService
+                    .countDevelopersSnippets(ctx, [developerId], {
+                        includePrivateSnippets: options?.includePrivate,
+                        includeSoftDeleted: options?.includeSoftDeleted,
+                    })
+                    .then(data => data[0]?.count),
+                this.collectionService
+                    .countDevelopersCollections(ctx, [developerId], {
+                        includePrivateCollections: options?.includePrivate,
+                        includeSoftDeleted: options?.includeSoftDeleted,
+                    })
+                    .then(data => data[0]?.count),
+                this.snippetService
+                    .countDevelopersForkedSnippets(ctx, [developerId], {
+                        includePrivateSnippets: options?.includePrivate,
+                        includeSoftDeleted: options?.includeSoftDeleted,
+                    })
+                    .then(data => data[0]?.count),
+                this.collectionService
+                    .countDevelopersForkedCollections(ctx, [developerId], {
+                        includePrivateCollections: options?.includePrivate,
+                        includeSoftDeleted: options?.includeSoftDeleted,
+                    })
+                    .then(data => data[0]?.count),
+                this.friendshipService.countDeveloperFriendships(ctx, developerId),
+            ]);
+
+        return {
+            snippetsCount,
+            collectionsCount,
+            forkedSnippetsCount,
+            forkedCollectionsCount,
+            friendsCount: friendships.friendsCount,
+            friendsInboxCount: friendships.friendsInboxCount,
+            friendsOutboxCount: friendships.friendsOutboxCount,
+        };
     }
 }

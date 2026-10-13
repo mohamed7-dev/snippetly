@@ -16,6 +16,7 @@ import { DefaultVerificationTokenStrategy } from './auth/default-verification-to
 import { NativeAuthenticationStrategy } from './auth/native-auth.strategy';
 import { InMemoryCacheStrategy } from './system/cache/in-memory-cache.strategy';
 import { NodemailerStrategy } from './system/email/nodemailer.strategy';
+import { DummyJobQueueStrategy } from './system/job-queue/dummy-job-queue.strategy';
 import { StdoutLoggerStrategy } from './system/logger/stdout-logger.strategy';
 
 export const defaultAppConfig: RuntimeAppConfig = {
@@ -50,6 +51,7 @@ export const defaultAppConfig: RuntimeAppConfig = {
         },
         loggerStrategy: new StdoutLoggerStrategy(),
         cacheStrategy: new InMemoryCacheStrategy(),
+        jobQueueStrategy: new DummyJobQueueStrategy(),
     },
     auth: {
         authTokenHeaderKey: AUTH_TOKEN_HEADER_KEY,

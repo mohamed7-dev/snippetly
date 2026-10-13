@@ -376,9 +376,8 @@ export class UserService {
     public async softDelete(ctx: RequestContext, id: string): Promise<void> {
         // SessionService is imported dynamically to avoid circular dependency
         // since SessionService depends on UserService
-        const { SessionService } = await import('./session.service.js');
-        const sessionService =
-            moduleRef.getProvider<import('./session.service').SessionService>(SessionService);
+        const { SessionService } = require('./session.service') as typeof import('./session.service');
+        const sessionService = moduleRef.getProvider<InstanceType<typeof SessionService>>(SessionService);
         await sessionService.deleteSessionsByUser(ctx, new User({ id }));
 
         const user = await this.getUserById(ctx, id, { roles: false, authenticationMethods: false });

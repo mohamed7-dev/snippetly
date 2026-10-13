@@ -2,13 +2,17 @@ import { ErrorBoundaryFallback } from '@/components/feedback/error-boundary-fall
 import { InfiniteLoader } from '@/components/feedback/infinite-loader';
 import { SectionLoader } from '@/components/feedback/section-loader';
 import { StatusCard } from '@/components/feedback/status-card';
+import { FilterQueryDialog } from '@/components/shared/list-query-builder/filter-query-dialog';
+import { SortQueryDialog } from '@/components/shared/list-query-builder/sort-query-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DiscoverCollectionsList } from '@/features/collection-listing/components/sections/discover-collections-list';
 import { DiscoverSnippetsList } from '@/features/snippet-listing/components/sections/discover-snippets-list';
 import { formatDeveloperInfo } from '@/lib/format-developer-info';
+import { developerListDto } from '@snippetly/common/dto';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import React from 'react';
@@ -17,7 +21,7 @@ import { discoverDevelopersQueryOptions } from '../../lib/discover-query-options
 
 export function DiscoverPageTabs() {
     const { tab } = useSearch({
-        from: '/(protected)/dashboard/_dashboard-layout/_boundary/discover/',
+        from: '/(public)/discover/',
     });
 
     const navigate = useNavigate();
@@ -26,21 +30,21 @@ export function DiscoverPageTabs() {
             <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger
                     value="developers"
-                    onClick={() => navigate({ to: '.', search: { tab: 'developers' } })}
+                    onClick={() => navigate({ to: '.', search: prev => ({ ...prev, tab: 'developers' }) })}
                     className="text-xs sm:text-sm font-bold sm:font-semibold"
                 >
                     Developers
                 </TabsTrigger>
                 <TabsTrigger
                     value="snippets"
-                    onClick={() => navigate({ to: '.', search: { tab: 'snippets' } })}
+                    onClick={() => navigate({ to: '.', search: prev => ({ ...prev, tab: 'snippets' }) })}
                     className="text-xs sm:text-sm font-bold sm:font-semibold"
                 >
                     Trending Snippets
                 </TabsTrigger>
                 <TabsTrigger
                     value="collections"
-                    onClick={() => navigate({ to: '.', search: { tab: 'collections' } })}
+                    onClick={() => navigate({ to: '.', search: prev => ({ ...prev, tab: 'collections' }) })}
                     className="text-xs sm:text-sm font-bold sm:font-semibold"
                 >
                     Collections
@@ -74,8 +78,14 @@ export function DiscoverPageTabs() {
 }
 
 function DevelopersTabContent() {
+    const { developers: developersSearch } = useSearch({
+        from: '/(public)/discover/',
+    });
+    const { sort, filter, filterOperator } = developersSearch ?? {};
+    const queryKeys = [sort, filter, filterOperator];
+    const navigate = useNavigate();
     const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery(
-        discoverDevelopersQueryOptions(),
+        discoverDevelopersQueryOptions({ sort, filter, filterOperator }, queryKeys),
     );
     const developers = data.pages?.flatMap(p => p.items) ?? [];
 
@@ -88,10 +98,32 @@ function DevelopersTabContent() {
 
     return (
         <React.Fragment>
+            <div className="flex items-center gap-2">
+                <FilterQueryDialog
+                    schema={developerListDto.input.shape.filter}
+                    value={{ filter }}
+                    onApply={val =>
+                        navigate({
+                            to: '.',
+                            search: prev => ({ ...prev, developers: { ...prev.developers, ...val } }),
+                        })
+                    }
+                />
+                <SortQueryDialog
+                    sortSchema={developerListDto.input.shape.sort}
+                    value={{ sort }}
+                    onApply={val =>
+                        navigate({
+                            to: '.',
+                            search: prev => ({ ...prev, developers: { ...prev.developers, sort: val.sort } }),
+                        })
+                    }
+                />
+            </div>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {developers.map(developer => (
                     <Card key={developer.id} className="hover:shadow-md transition-shadow">
-                        <CardHeader className="pb-3">
+                        <CardHeader>
                             <div className="flex items-start justify-between">
                                 <div className="flex items-center gap-3">
                                     <Avatar className="h-12 w-12">
@@ -101,22 +133,20 @@ function DevelopersTabContent() {
                                         />
                                         <AvatarFallback>{getNameFallback(developer)}</AvatarFallback>
                                     </Avatar>
-                                    <div>
-                                        <Link
-                                            to={'/profile/$id'}
-                                            params={{ id: developer.id }}
-                                            className="font-semibold hover:text-primary"
-                                        >
-                                            {getFullName(developer)}
-                                        </Link>
-                                    </div>
+                                    <Link
+                                        to={'/profile/$id'}
+                                        params={{ id: developer.id }}
+                                        className="font-semibold hover:text-primary capitalize"
+                                    >
+                                        {getFullName(developer)}
+                                    </Link>
                                 </div>
                                 <Badge variant="secondary">
                                     joined {new Date(developer.createdAt).toLocaleDateString()}
                                 </Badge>
                             </div>
                         </CardHeader>
-                        <CardContent className="space-y-3">
+                        <CardContent className="space-y-4">
                             <p className="text-sm text-muted-foreground">{developer.bio}</p>
 
                             <div className="flex gap-4 text-sm capitalize">
@@ -138,6 +168,13 @@ function DevelopersTabContent() {
                                 ))}
                             </div>
                         </CardContent>
+                        <CardFooter>
+                            <Button variant={'outline'} asChild>
+                                <Link to={'/profile/$id'} params={{ id: developer.id }}>
+                                    Visit {developer.firstName}'s Profile
+                                </Link>
+                            </Button>
+                        </CardFooter>
                     </Card>
                 ))}
             </div>

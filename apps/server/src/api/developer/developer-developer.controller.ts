@@ -53,17 +53,19 @@ export class DeveloperDeveloperController implements AppRouter {
                 query: developerListDto.input,
                 response: developerListDto.output,
                 handler: async (req, res) => {
-                    // if there is a session,and developer account -> filter out current developer from the results
-                    // always display non private profiles
-                    const developer = await this.developerService.getActiveDeveloper(req.getRequestContext());
-                    const result = await this.developerService.find(req.getRequestContext(), {
-                        ...req.query,
-                        filter: {
-                            ...req.query.filter,
-                            ...(developer ? { id: { notEquals: developer.id } } : {}),
-                            isPrivate: { equals: false },
-                        },
-                    });
+                    let result = await this.developerService.find(
+                        req.getRequestContext(),
+                        req.query,
+                        undefined,
+                        { includePrivateDevelopers: false, includeSoftDeleted: false },
+                    );
+
+                    result = await this.developerService.attachStatsToDevelopersList(
+                        req.getRequestContext(),
+                        result.items,
+                        result.itemsCount,
+                        { includePrivateCollections: false, includePrivateSnippets: false },
+                    );
 
                     res.status(200).json(result);
                 },
@@ -91,6 +93,10 @@ export class DeveloperDeveloperController implements AppRouter {
                                     roles: true,
                                     authenticationMethods: true,
                                 },
+                            },
+                            {
+                                includeSoftDeleted: false,
+                                includePrivateDevelopers: false,
                             },
                         );
                         if (developer) {
@@ -127,12 +133,16 @@ export class DeveloperDeveloperController implements AppRouter {
                                     authenticationMethods: true,
                                 },
                             },
+                            {
+                                includePrivateDevelopers: false,
+                                includeSoftDeleted: false,
+                            },
                         );
                         if (developer) {
-                            const stats = await this.developerService.getProfileStats(
+                            const stats = await this.developerService.getProfileActivityStats(
                                 req.getRequestContext(),
                                 developer.id,
-                                true,
+                                { includePrivate: true, includeSoftDeleted: false },
                             );
                             res.status(200).json({ ...stats, id: developer.id });
                         } else {
@@ -153,9 +163,14 @@ export class DeveloperDeveloperController implements AppRouter {
                 response: findOneDeveloperDto.output,
                 handler: async (req, res) => {
                     const ctx = req.getRequestContext();
-                    const result = await this.developerService.findOne(ctx, req.params.id, {
-                        user: { roles: true, authenticationMethods: true },
-                    });
+                    const result = await this.developerService.findOne(
+                        ctx,
+                        req.params,
+                        {
+                            user: { roles: true, authenticationMethods: true },
+                        },
+                        { includePrivateDevelopers: true, includeSoftDeleted: false },
+                    );
 
                     const isOwner = ctx.activeUserId === result?.user.id ? true : false;
 
@@ -173,7 +188,11 @@ export class DeveloperDeveloperController implements AppRouter {
                         result.id,
                         currentDeveloper?.id,
                     );
-                    const profileStats = await this.developerService.getProfileStats(ctx, result.id, isOwner);
+                    const profileStats = await this.developerService.getProfileActivityStats(ctx, result.id, {
+                        includePrivate: isOwner,
+                        includeSoftDeleted: false,
+                    });
+
                     const profile = isOwner
                         ? result
                         : omit(result, ['isPrivate', 'updatedAt', 'deletedAt', 'user']);

@@ -14,12 +14,15 @@ export class Developer extends AppEntity implements SoftDeletable {
         super(input);
     }
 
-    @OneToOne(() => User, { eager: true })
+    @OneToOne(() => User, { eager: true, onDelete: 'CASCADE' })
     @JoinColumn()
     user: User;
 
     @Column({ nullable: true, type: 'date' })
     deletedAt: Date | null;
+
+    @Column({ nullable: true, type: 'timestamp' })
+    scheduledDeletionAt: Date | null;
 
     @Column()
     emailAddress: string;

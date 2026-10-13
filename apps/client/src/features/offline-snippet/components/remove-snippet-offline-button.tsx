@@ -27,7 +27,7 @@ export function RemoveSnippetOfflineButton({
     const handleOfflineRemove = async (e: React.MouseEvent<HTMLButtonElement>) => {
         onClick?.(e);
         if (!e.isDefaultPrevented()) {
-            await mutate(snippet).then(() => onSuccess?.());
+            if (await mutate(snippet)) onSuccess?.();
         }
     };
 
