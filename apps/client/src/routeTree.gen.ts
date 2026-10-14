@@ -40,6 +40,7 @@ import { Route as protectedDashboardDashboardLayoutBoundaryCollectionsIndexRoute
 import { Route as protectedDashboardDashboardLayoutBoundaryFriendsIndexRouteImport } from './routes/(protected)/dashboard/_dashboard-layout/_boundary/friends/index'
 import { Route as protectedDashboardDashboardLayoutBoundaryRequestsIndexRouteImport } from './routes/(protected)/dashboard/_dashboard-layout/_boundary/requests/index'
 import { Route as protectedDashboardDashboardLayoutBoundarySnippetsIndexRouteImport } from './routes/(protected)/dashboard/_dashboard-layout/_boundary/snippets/index'
+import { Route as protectedDashboardDashboardLayoutBoundaryTrashIndexRouteImport } from './routes/(protected)/dashboard/_dashboard-layout/_boundary/trash/index'
 import { Route as protectedDashboardCollectionsIdEditIndexRouteImport } from './routes/(protected)/dashboard/collections/$id/edit/index'
 import { Route as protectedDashboardSnippetsIdEditIndexRouteImport } from './routes/(protected)/dashboard/snippets/$id/edit/index'
 
@@ -215,6 +216,12 @@ const protectedDashboardDashboardLayoutBoundarySnippetsIndexRoute =
     path: '/snippets/',
     getParentRoute: () => protectedDashboardDashboardLayoutBoundaryRouteRoute,
   } as any)
+const protectedDashboardDashboardLayoutBoundaryTrashIndexRoute =
+  protectedDashboardDashboardLayoutBoundaryTrashIndexRouteImport.update({
+    id: '/trash/',
+    path: '/trash/',
+    getParentRoute: () => protectedDashboardDashboardLayoutBoundaryRouteRoute,
+  } as any)
 const protectedDashboardCollectionsIdEditIndexRoute =
   protectedDashboardCollectionsIdEditIndexRouteImport.update({
     id: '/edit/',
@@ -256,6 +263,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/friends/': typeof protectedDashboardDashboardLayoutBoundaryFriendsIndexRoute
   '/dashboard/requests/': typeof protectedDashboardDashboardLayoutBoundaryRequestsIndexRoute
   '/dashboard/snippets/': typeof protectedDashboardDashboardLayoutBoundarySnippetsIndexRoute
+  '/dashboard/trash/': typeof protectedDashboardDashboardLayoutBoundaryTrashIndexRoute
   '/dashboard/collections/$id/edit/': typeof protectedDashboardCollectionsIdEditIndexRoute
   '/dashboard/snippets/$id/edit/': typeof protectedDashboardSnippetsIdEditIndexRoute
 }
@@ -284,6 +292,7 @@ export interface FileRoutesByTo {
   '/dashboard/friends': typeof protectedDashboardDashboardLayoutBoundaryFriendsIndexRoute
   '/dashboard/requests': typeof protectedDashboardDashboardLayoutBoundaryRequestsIndexRoute
   '/dashboard/snippets': typeof protectedDashboardDashboardLayoutBoundarySnippetsIndexRoute
+  '/dashboard/trash': typeof protectedDashboardDashboardLayoutBoundaryTrashIndexRoute
   '/dashboard/collections/$id/edit': typeof protectedDashboardCollectionsIdEditIndexRoute
   '/dashboard/snippets/$id/edit': typeof protectedDashboardSnippetsIdEditIndexRoute
 }
@@ -320,6 +329,7 @@ export interface FileRoutesById {
   '/(protected)/dashboard/_dashboard-layout/_boundary/friends/': typeof protectedDashboardDashboardLayoutBoundaryFriendsIndexRoute
   '/(protected)/dashboard/_dashboard-layout/_boundary/requests/': typeof protectedDashboardDashboardLayoutBoundaryRequestsIndexRoute
   '/(protected)/dashboard/_dashboard-layout/_boundary/snippets/': typeof protectedDashboardDashboardLayoutBoundarySnippetsIndexRoute
+  '/(protected)/dashboard/_dashboard-layout/_boundary/trash/': typeof protectedDashboardDashboardLayoutBoundaryTrashIndexRoute
   '/(protected)/dashboard/collections/$id/edit/': typeof protectedDashboardCollectionsIdEditIndexRoute
   '/(protected)/dashboard/snippets/$id/edit/': typeof protectedDashboardSnippetsIdEditIndexRoute
 }
@@ -353,6 +363,7 @@ export interface FileRouteTypes {
     | '/dashboard/friends/'
     | '/dashboard/requests/'
     | '/dashboard/snippets/'
+    | '/dashboard/trash/'
     | '/dashboard/collections/$id/edit/'
     | '/dashboard/snippets/$id/edit/'
   fileRoutesByTo: FileRoutesByTo
@@ -381,6 +392,7 @@ export interface FileRouteTypes {
     | '/dashboard/friends'
     | '/dashboard/requests'
     | '/dashboard/snippets'
+    | '/dashboard/trash'
     | '/dashboard/collections/$id/edit'
     | '/dashboard/snippets/$id/edit'
   id:
@@ -416,6 +428,7 @@ export interface FileRouteTypes {
     | '/(protected)/dashboard/_dashboard-layout/_boundary/friends/'
     | '/(protected)/dashboard/_dashboard-layout/_boundary/requests/'
     | '/(protected)/dashboard/_dashboard-layout/_boundary/snippets/'
+    | '/(protected)/dashboard/_dashboard-layout/_boundary/trash/'
     | '/(protected)/dashboard/collections/$id/edit/'
     | '/(protected)/dashboard/snippets/$id/edit/'
   fileRoutesById: FileRoutesById
@@ -645,6 +658,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof protectedDashboardDashboardLayoutBoundarySnippetsIndexRouteImport
       parentRoute: typeof protectedDashboardDashboardLayoutBoundaryRouteRoute
     }
+    '/(protected)/dashboard/_dashboard-layout/_boundary/trash/': {
+      id: '/(protected)/dashboard/_dashboard-layout/_boundary/trash/'
+      path: '/trash'
+      fullPath: '/dashboard/trash/'
+      preLoaderRoute: typeof protectedDashboardDashboardLayoutBoundaryTrashIndexRouteImport
+      parentRoute: typeof protectedDashboardDashboardLayoutBoundaryRouteRoute
+    }
     '/(protected)/dashboard/collections/$id/edit/': {
       id: '/(protected)/dashboard/collections/$id/edit/'
       path: '/edit'
@@ -710,6 +730,7 @@ interface protectedDashboardDashboardLayoutBoundaryRouteRouteChildren {
   protectedDashboardDashboardLayoutBoundaryFriendsIndexRoute: typeof protectedDashboardDashboardLayoutBoundaryFriendsIndexRoute
   protectedDashboardDashboardLayoutBoundaryRequestsIndexRoute: typeof protectedDashboardDashboardLayoutBoundaryRequestsIndexRoute
   protectedDashboardDashboardLayoutBoundarySnippetsIndexRoute: typeof protectedDashboardDashboardLayoutBoundarySnippetsIndexRoute
+  protectedDashboardDashboardLayoutBoundaryTrashIndexRoute: typeof protectedDashboardDashboardLayoutBoundaryTrashIndexRoute
 }
 
 const protectedDashboardDashboardLayoutBoundaryRouteRouteChildren: protectedDashboardDashboardLayoutBoundaryRouteRouteChildren =
@@ -724,6 +745,8 @@ const protectedDashboardDashboardLayoutBoundaryRouteRouteChildren: protectedDash
       protectedDashboardDashboardLayoutBoundaryRequestsIndexRoute,
     protectedDashboardDashboardLayoutBoundarySnippetsIndexRoute:
       protectedDashboardDashboardLayoutBoundarySnippetsIndexRoute,
+    protectedDashboardDashboardLayoutBoundaryTrashIndexRoute:
+      protectedDashboardDashboardLayoutBoundaryTrashIndexRoute,
   }
 
 const protectedDashboardDashboardLayoutBoundaryRouteRouteWithChildren =

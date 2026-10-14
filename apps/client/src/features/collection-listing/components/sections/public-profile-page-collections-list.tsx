@@ -6,15 +6,20 @@ import { SortQueryDialog } from '@/components/shared/list-query-builder/sort-que
 import { TagFilterBar } from '@/components/shared/tag-filter-bar';
 import { Button } from '@/components/ui/button';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
-import { listCreatorCollectionsQueryOption } from '@/features/collection-listing/lib/collection-listing-query-options';
+import {
+    listCreatorCollectionsQueryOption,
+    listCurrentUserCollectionsQueryOptions,
+} from '@/features/collection-listing/lib/collection-listing-query-options';
 import { CollectionCard } from '@/features/collections/components/collection-card';
 import { collectionListDto, Permission } from '@snippetly/common/dto';
-import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { Link, useNavigate, useParams, useSearch } from '@tanstack/react-router';
 import { PlusIcon } from 'lucide-react';
 import React from 'react';
 
 export function PublicProfilePageCollectionsList() {
+    const qClient = useQueryClient();
+
     const { id } = useParams({ from: '/(public)/profile/$id' });
     const { collections: collectionsSearch } = useSearch({ from: '/(public)/profile/$id' });
     const { sort, filter, filterOperator, tags } = collectionsSearch ?? {};
@@ -30,6 +35,9 @@ export function PublicProfilePageCollectionsList() {
         ...new Set(collections.flatMap(collection => collection.tags ?? []).map(tag => tag.value)),
     ];
 
+    const onMutateSuccess = () => {
+        qClient.invalidateQueries(listCurrentUserCollectionsQueryOptions());
+    };
     return (
         <React.Fragment>
             <div className="flex items-center gap-2">
@@ -41,7 +49,7 @@ export function PublicProfilePageCollectionsList() {
                             to: '.',
                             search: previous => ({
                                 ...previous,
-                                collections: { ...previous.collections, filter: val },
+                                collections: { ...previous.collections, ...val },
                             }),
                         })
                     }
@@ -79,7 +87,13 @@ export function PublicProfilePageCollectionsList() {
             </div>
             <CollectionListLayout>
                 {collections.map(collection => (
-                    <CollectionCard key={collection.id} collection={collection} />
+                    <CollectionCard
+                        key={collection.id}
+                        collection={collection}
+                        forkCollection={{ onSuccess: onMutateSuccess }}
+                        deleteCollection={{ onSuccess: onMutateSuccess }}
+                        moveCollectionToTrash={{ onSuccess: onMutateSuccess }}
+                    />
                 ))}
             </CollectionListLayout>
             <InfiniteLoader

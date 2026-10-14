@@ -58,7 +58,7 @@ const authenticateDeveloperOutput = withServerErrors(
 );
 
 export const authenticateDeveloperDto = {
-    input: developerAuthInput,
+    input: developerAuthInput.partial(),
     output: authenticateDeveloperOutput,
 };
 

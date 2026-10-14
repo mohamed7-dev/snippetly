@@ -2,6 +2,7 @@ import {
     CreateCollectionDtoType,
     CreateSnippetDtoType,
     CurrentUserSnippetListDtoType,
+    CurrentUserTrashedSnippetListDtoType,
     DeleteSnippetDtoType,
     FindOneSnippetDtoType,
     ForkSnippetDtoType,
@@ -327,6 +328,28 @@ describe('Developer Snippet Workflows', () => {
                 const deletionResult = (await deletionRes.json()) as DeleteSnippetDtoType['output'];
 
                 expect(deletionResult.result).toBe('DELETED');
+
+                const trashRes = await developerClient.fetch('/snippets/trash', {
+                    method: 'GET',
+                });
+                const trashResult = (await trashRes.json()) as CurrentUserTrashedSnippetListDtoType['output'];
+                expect(trashResult.items.some(item => item.id === result.id)).toBe(true);
+
+                const restoreRes = await developerClient.fetch(`/snippets/${result.id}/restore`, {
+                    method: 'PATCH',
+                });
+                expect(restoreRes.status).toBe(200);
+
+                const deleteAgainRes = await developerClient.fetch(`/snippets/${result.id}`, {
+                    method: 'DELETE',
+                });
+                expect(deleteAgainRes.status).toBe(200);
+
+                const permanentDeleteRes = await developerClient.fetch(
+                    `/snippets/${result.id}/permanent`,
+                    { method: 'DELETE' },
+                );
+                expect(permanentDeleteRes.status).toBe(200);
             });
         });
     });

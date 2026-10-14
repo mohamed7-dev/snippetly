@@ -24,6 +24,11 @@ export const developerAuthInput = z.object({
                 rememberMe:z.boolean().optional(),
             })
         ,
+  google: 
+            z.object({
+                token: z.string().nonempty(),
+            })
+        ,
 });
 
 

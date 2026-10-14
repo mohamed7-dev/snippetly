@@ -11,6 +11,7 @@ import {
     InferDtoType,
     inputIdSchema,
     sortDirection,
+    successResponse,
     stringFilterOperators,
 } from '../shared/common-schemas.js';
 import { developer } from '../shared/developer.type.js';
@@ -89,6 +90,20 @@ export const deleteSnippetDto = {
 };
 
 export type DeleteSnippetDtoType = InferDtoType<typeof deleteSnippetDto>;
+
+const restoreSnippetInput = inputIdSchema;
+const restoreSnippetOutput = withServerErrors(successResponse, [
+    userInputErrorSchema,
+    forbiddenErrorSchema,
+    entityNotFoundErrorSchema,
+]);
+
+export const restoreSnippetDto = {
+    input: restoreSnippetInput,
+    output: restoreSnippetOutput,
+};
+
+export type RestoreSnippetDtoType = InferDtoType<typeof restoreSnippetDto>;
 
 //########################### Fork ########################################
 const forkSnippetInput = inputIdSchema.extend({
@@ -289,6 +304,12 @@ export const currentUserSnippetListDto = {
 };
 
 export type CurrentUserSnippetListDtoType = InferDtoType<typeof currentUserSnippetListDto>;
+
+export const currentUserTrashedSnippetListDto = currentUserSnippetListDto;
+
+export type CurrentUserTrashedSnippetListDtoType = InferDtoType<
+    typeof currentUserTrashedSnippetListDto
+>;
 
 //########################### List User Friends Snippets ########################################
 const userFriendsSnippetsListItem = snippetListItem.pick({

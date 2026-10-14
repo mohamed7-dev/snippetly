@@ -15,12 +15,13 @@ export function useDeleteCollection(callbacks?: DeleteCollectionMutationCallback
     return useMutation({
         mutationFn: async (input: DeleteCollectionDtoType['input']) => {
             return await developerApiClient.fetch<DeleteCollectionDtoType['output']>(
-                apiEndpoints.collections.delete.url(input.id),
+                apiEndpoints.collections.permanentlyDelete.url(input.id),
                 {
-                    method: apiEndpoints.collections.delete.method,
+                    method: apiEndpoints.collections.permanentlyDelete.method,
                 },
             );
         },
+        ...callbacks,
         onSuccess: data => {
             toast.success('Collection was deleted successfully');
             callbacks?.onSuccess?.(data);

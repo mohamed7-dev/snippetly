@@ -9,13 +9,14 @@ import { PermissionGuard } from '@/features/auth/components/shared/permission-gu
 import { SnippetCard } from '@/features/snippets/components/snippet-card';
 import { formatDeveloperInfo } from '@/lib/format-developer-info';
 import { Permission, userFriendsSnippetsListDto } from '@snippetly/common/dto';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import { PlusIcon } from 'lucide-react';
 import React from 'react';
 import {
     listCreatorSnippetsQueryOptions,
     listCurrentUserFriendsSnippetsQueryOptions,
+    listCurrentUserSnippetsQueryOptions,
 } from '../../lib/snippet-listing-query-options';
 
 export function CurrentUserFriendsSnippets({
@@ -25,9 +26,11 @@ export function CurrentUserFriendsSnippets({
     friendId?: string;
     onClearingFriendId?: () => void;
 }) {
+    const qClient = useQueryClient();
     const { snippets: snippetSearch } = useSearch({
         from: '/(protected)/dashboard/_dashboard-layout/_boundary/friends/',
     });
+
     const { sort, filter, filterOperator, tags } = snippetSearch ?? {};
 
     const queryKeys = [sort, filter, filterOperator, tags];
@@ -68,6 +71,10 @@ export function CurrentUserFriendsSnippets({
         ),
     ];
 
+    const onMutateSuccess = () => {
+        qClient.invalidateQueries(listCurrentUserSnippetsQueryOptions());
+    };
+
     return (
         <React.Fragment>
             <div className="flex items-center justify-between">
@@ -100,7 +107,7 @@ export function CurrentUserFriendsSnippets({
                                 to: '.',
                                 search: prev => ({
                                     ...prev,
-                                    snippets: { ...prev.snippets, filter: val },
+                                    snippets: { ...prev.snippets, ...val },
                                 }),
                             })
                         }
@@ -130,7 +137,7 @@ export function CurrentUserFriendsSnippets({
                         key={snippet.id}
                         requiredPermissions={[Permission.Authenticated, Permission.ReadSnippet]}
                     >
-                        <SnippetCard snippet={snippet} />
+                        <SnippetCard snippet={snippet} forkSnippet={{ onSuccess: onMutateSuccess }} />
                     </PermissionGuard>
                 ))}
             </SnippetListLayout>

@@ -1,9 +1,12 @@
+import { StatusCard } from '@/components/feedback/status-card';
 import { SnippetListLayout } from '@/components/shared/snippet-list-layout';
+import { Button } from '@/components/ui/button';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import { listCurrentUserSnippetsQueryOptions } from '@/features/snippet-listing/lib/snippet-listing-query-options';
 import { SnippetCard } from '@/features/snippets/components/snippet-card';
 import { Permission } from '@snippetly/common/dto';
 import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import { Link } from '@tanstack/react-router';
 
 export function InsightsPageSnippetsList() {
     const { data } = useSuspenseInfiniteQuery(listCurrentUserSnippetsQueryOptions({ take: 5 }));
@@ -13,8 +16,24 @@ export function InsightsPageSnippetsList() {
     const qClient = useQueryClient();
 
     const onMutateSnippetSuccess = async () => {
-        await qClient.invalidateQueries(listCurrentUserSnippetsQueryOptions({ take: 5 }));
+        await qClient.invalidateQueries(listCurrentUserSnippetsQueryOptions());
     };
+
+    if (!snippets.length) {
+        return (
+            <StatusCard
+                variant="empty"
+                title="No snippets yet"
+                description="Start creating your first snippet and you will see it here."
+                layout="section"
+                actions={[
+                    <Button variant={'default'} asChild>
+                        <Link to="/dashboard/snippets/new">Create Snippet</Link>
+                    </Button>,
+                ]}
+            />
+        );
+    }
 
     return (
         <PermissionGuard
@@ -30,6 +49,9 @@ export function InsightsPageSnippetsList() {
                             onSuccess: onMutateSnippetSuccess,
                         }}
                         forkSnippet={{
+                            onSuccess: onMutateSnippetSuccess,
+                        }}
+                        moveSnippetToTrash={{
                             onSuccess: onMutateSnippetSuccess,
                         }}
                     />

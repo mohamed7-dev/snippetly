@@ -2,12 +2,13 @@ import { LoadingButton } from '@/components/inputs/loading-button';
 import { CardContent, CardFooter } from '@/components/ui/card';
 import { Field } from '@/components/ui/field';
 import type { UserType } from '@/lib/types';
-import { Link } from '@tanstack/react-router';
+import { Link, useSearch } from '@tanstack/react-router';
 import React from 'react';
 import { toast } from 'sonner';
 import { useAuth } from '../../hooks/use-auth';
 import { SignInFormContent } from '../forms/sign-in-form';
 import { AuthCard } from '../shared/auth-card';
+import { GoogleAuthButton } from '../shared/google-auth-button';
 
 export function SignInCard({
     userType,
@@ -19,6 +20,7 @@ export function SignInCard({
     isPending: boolean;
 }) {
     const { errorMessage } = useAuth();
+    const { redirect } = useSearch({ from: '/(auth)/_auth-layout/sign-in' });
 
     React.useEffect(() => {
         if (errorMessage && !isVerifying) {
@@ -43,10 +45,11 @@ export function SignInCard({
                         </Link>
                     </div>
                 )}
-                <Field orientation={'horizontal'}>
+                <Field orientation={'vertical'}>
                     <LoadingButton isLoading={isPending} type="submit" className="w-full">
                         Sign In
                     </LoadingButton>
+                    <GoogleAuthButton redirect={redirect} />
                 </Field>
             </CardFooter>
         </AuthCard>

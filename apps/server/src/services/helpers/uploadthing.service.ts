@@ -27,26 +27,34 @@ export class UploadthingService {
                 })
                 .onUploadComplete(async ({ metadata, file }) => {
                     if (metadata.userId) {
-                        const { DeveloperService } = await import('../domain/developer.service.js');
-                        const developerService =
-                            moduleRef.getProvider<import('../domain/developer.service').DeveloperService>(
-                                DeveloperService,
-                            );
-                        const developer = await developerService.getOneByUserId(metadata.userId);
-                        if (!developer) {
-                            throw new ForbiddenError();
-                        }
-
                         const { RequestContextService } =
                             await import('../helpers/request-context.service.js');
                         const requestContextService =
                             moduleRef.getProvider<
                                 import('../helpers/request-context.service').RequestContextService
                             >(RequestContextService);
+
+                        const { DeveloperService } = await import('../domain/developer.service.js');
+                        const developerService =
+                            moduleRef.getProvider<import('../domain/developer.service').DeveloperService>(
+                                DeveloperService,
+                            );
+
+                        const developer = await developerService.getOneByUserId(
+                            requestContextService.create({ apiType: 'developer' }),
+                            metadata.userId,
+                            undefined,
+                            { includePrivateDevelopers: true, includeSoftDeleted: false },
+                        );
+                        if (!developer) {
+                            throw new ForbiddenError();
+                        }
+
                         const ctx = requestContextService.create({
                             apiType: 'developer',
                             user: developer.user,
                         });
+
                         await developerService.update(ctx, {
                             id: developer.id,
                             image: file.ufsUrl,

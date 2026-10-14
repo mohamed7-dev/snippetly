@@ -11,7 +11,7 @@ export function useAuthenticateDeveloper(callbacks?: AuthenticateDeveloperMutati
     const { login } = useAuth();
 
     return useMutation({
-        mutationFn: async (input: AuthenticateDeveloperDtoType['input']) => {
+        mutationFn: async (input: Partial<AuthenticateDeveloperDtoType['input']>) => {
             await login(input, 'developer');
         },
         ...callbacks,

@@ -21,7 +21,7 @@ export class Developer extends AppEntity implements SoftDeletable {
     @Column({ nullable: true, type: 'date' })
     deletedAt: Date | null;
 
-    @Column({ nullable: true, type: 'timestamp' })
+    @Column({ nullable: true, type: 'date' })
     scheduledDeletionAt: Date | null;
 
     @Column()

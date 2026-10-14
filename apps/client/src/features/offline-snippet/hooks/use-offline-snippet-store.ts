@@ -52,7 +52,7 @@ export function useOfflineSnippetStore() {
         setStatus(prev => ({ ...prev, isUpdating: true }));
 
         try {
-            await updateOfflineSnippet(input);
+            await updateOfflineSnippet({ ...input, savedBy });
             toast.success('Offline snippet was updated successfully');
             return true;
         } catch (e) {
@@ -67,7 +67,7 @@ export function useOfflineSnippetStore() {
         setStatus(prev => ({ ...prev, isRemoving: true }));
 
         try {
-            await removeOfflineSnippet(input);
+            await removeOfflineSnippet({ ...input, savedBy });
             toast.success('Snippet was removed from the offline store.');
             return true;
         } catch (e) {

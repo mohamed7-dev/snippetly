@@ -8,12 +8,14 @@ import { Button } from '@/components/ui/button';
 import { CollectionCard } from '@/features/collections/components/collection-card';
 import { discoverCollectionsQueryOptions } from '@/features/discover/lib/discover-query-options';
 import { collectionListDto } from '@snippetly/common/dto';
-import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import { PlusIcon } from 'lucide-react';
 import React from 'react';
+import { listCurrentUserCollectionsQueryOptions } from '../../lib/collection-listing-query-options';
 
 export function DiscoverCollectionsList() {
+    const qClient = useQueryClient();
     const { collections: collectionsSearch } = useSearch({
         from: '/(public)/discover/',
     });
@@ -29,6 +31,10 @@ export function DiscoverCollectionsList() {
     const availableTags = [
         ...new Set(collections.flatMap(collection => collection.tags ?? []).map(tag => tag.value)),
     ];
+
+    const onMutateSuccess = () => {
+        qClient.invalidateQueries(listCurrentUserCollectionsQueryOptions());
+    };
 
     return (
         <React.Fragment>
@@ -79,7 +85,11 @@ export function DiscoverCollectionsList() {
             </div>
             <CollectionListLayout>
                 {collections.map(collection => (
-                    <CollectionCard key={collection.id} collection={collection} />
+                    <CollectionCard
+                        key={collection.id}
+                        collection={collection}
+                        forkCollection={{ onSuccess: onMutateSuccess }}
+                    />
                 ))}
             </CollectionListLayout>
             <InfiniteLoader

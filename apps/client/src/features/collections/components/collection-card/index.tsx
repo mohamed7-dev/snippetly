@@ -6,11 +6,14 @@ import { Permission, type CollectionListDtoType } from '@snippetly/common/dto';
 import { Link } from '@tanstack/react-router';
 import { CollectionActionMenu, type CollectionActionMenuProps } from '../shared/collection-action-menu';
 
-interface CollectionCardProps extends Pick<CollectionActionMenuProps, 'deleteCollection' | 'forkCollection'> {
+interface CollectionCardProps extends Pick<
+    CollectionActionMenuProps,
+    'deleteCollection' | 'forkCollection' | 'moveCollectionToTrash'
+> {
     collection: ApiSuccess<CollectionListDtoType['output']>['items'][number];
 }
 
-export function CollectionCard({ collection }: CollectionCardProps) {
+export function CollectionCard({ collection, ...props }: CollectionCardProps) {
     const updatedAt = 'updatedAt' in collection ? collection.updatedAt : undefined;
     const isPrivate = 'isPrivate' in collection ? collection.isPrivate : false;
     return (
@@ -35,7 +38,7 @@ export function CollectionCard({ collection }: CollectionCardProps) {
                             </CardDescription>
                         </div>
                     </div>
-                    <CollectionActionMenu collection={collection} />
+                    <CollectionActionMenu collection={collection} {...props} />
                 </div>
 
                 <div className="flex items-center flex-wrap gap-4 sm:gap-2 mt-3">

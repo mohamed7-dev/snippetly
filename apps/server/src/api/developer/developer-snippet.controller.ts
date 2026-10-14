@@ -1,10 +1,12 @@
 import {
     createSnippetDto,
     currentUserSnippetListDto,
+    currentUserTrashedSnippetListDto,
     deleteSnippetDto,
     findOneSnippetDto,
     forkSnippetDto,
     Permission,
+    restoreSnippetDto,
     snippetListDto,
     updateSnippetDto,
     userFriendsSnippetsListDto,
@@ -115,6 +117,46 @@ export class DeveloperSnippetController implements AppRouter {
             }),
         );
 
+        router.patch(
+            '/:id/restore',
+            ...defineRoutePipeline({
+                before: [
+                    this.snippetWriteLimiter,
+                    authGuard({ permissions: [Permission.Authenticated, Permission.Owner] }),
+                ],
+                params: restoreSnippetDto.input,
+                response: restoreSnippetDto.output,
+                interceptors: [transactionInterceptor()],
+                handler: async (req, res) => {
+                    const result = await this.snippetService.restoreFromTrash(
+                        req.getRequestContext(),
+                        req.params,
+                    );
+                    res.status(200).json(result);
+                },
+            }),
+        );
+
+        router.delete(
+            '/:id/permanent',
+            ...defineRoutePipeline({
+                before: [
+                    this.snippetWriteLimiter,
+                    authGuard({ permissions: [Permission.Authenticated, Permission.Owner] }),
+                ],
+                params: deleteSnippetDto.input,
+                response: deleteSnippetDto.output,
+                interceptors: [transactionInterceptor()],
+                handler: async (req, res) => {
+                    const result = await this.snippetService.permanentlyDeleteFromTrash(
+                        req.getRequestContext(),
+                        req.params,
+                    );
+                    res.status(200).json(result);
+                },
+            }),
+        );
+
         router.post(
             '/:id/forks',
             ...defineRoutePipeline({
@@ -218,6 +260,38 @@ export class DeveloperSnippetController implements AppRouter {
                         { includePrivateSnippets: true },
                     );
 
+                    res.status(200).json(result);
+                },
+            }),
+        );
+
+        router.get(
+            '/trash',
+            ...defineRoutePipeline({
+                before: [
+                    this.snippetReadLimiter,
+                    authGuard({
+                        permissions: [Permission.Authenticated, Permission.ReadSnippet, Permission.Owner],
+                    }),
+                ],
+                query: currentUserTrashedSnippetListDto.input,
+                response: currentUserTrashedSnippetListDto.output,
+                handler: async (req, res) => {
+                    const developer = await this.requireDeveloperForCurrentUser(req.getRequestContext());
+                    const result = await this.snippetService.find(
+                        req.getRequestContext(),
+                        {
+                            ...req.query,
+                            creator: developer.id,
+                        },
+                        {
+                            creator: true,
+                            collection: true,
+                            tags: true,
+                            forkedFrom: { creator: true },
+                        },
+                        { includePrivateSnippets: true, onlySoftDeleted: true },
+                    );
                     res.status(200).json(result);
                 },
             }),

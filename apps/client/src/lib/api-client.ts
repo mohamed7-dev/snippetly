@@ -63,6 +63,12 @@ export class ApiClient {
     }
 
     async asUserWithCredentials(identifier: string, password: string) {
+        return this.asUserWithAuthInput({
+            native: { identifier, password },
+        });
+    }
+
+    async asUserWithAuthInput(authInput: Partial<AuthenticateDeveloperDtoType['input']>) {
         // first log out as the current user
         if (this.getAuthToken()) {
             await this.fetch<LogoutDeveloperDtoType['output']>(apiEndpoints.auth.logout.url, {
@@ -71,9 +77,7 @@ export class ApiClient {
         }
         return this.fetch<AuthenticateDeveloperDtoType['output']>(apiEndpoints.auth.authenticate.url, {
             method: apiEndpoints.auth.authenticate.method,
-            body: JSON.stringify({
-                native: { identifier, password },
-            } as AuthenticateDeveloperDtoType['input']),
+            body: JSON.stringify(authInput),
         });
     }
 

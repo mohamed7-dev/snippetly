@@ -13,6 +13,7 @@ import { BcryptPasswordHashingStrategy } from './auth/bcrypt-hashing.strategy';
 import { DefaultPasswordValidationStrategy } from './auth/default-password-validation.strategy';
 import { DefaultSessionCacheStrategy } from './auth/default-session-cache.strategy';
 import { DefaultVerificationTokenStrategy } from './auth/default-verification-token.strategy';
+import { GoogleAuthenticationStrategy } from './auth/google-auth.strategy';
 import { NativeAuthenticationStrategy } from './auth/native-auth.strategy';
 import { InMemoryCacheStrategy } from './system/cache/in-memory-cache.strategy';
 import { NodemailerStrategy } from './system/email/nodemailer.strategy';
@@ -68,6 +69,9 @@ export const defaultAppConfig: RuntimeAppConfig = {
         passwordHashingStrategy: new BcryptPasswordHashingStrategy(),
         verificationTokenStrategy: new DefaultVerificationTokenStrategy(),
         adminAuthenticationStrategies: [new NativeAuthenticationStrategy()],
-        developerAuthenticationStrategies: [new NativeAuthenticationStrategy()],
+        developerAuthenticationStrategies: [
+            new NativeAuthenticationStrategy(),
+            new GoogleAuthenticationStrategy({ googleClientId: process.env.GOOGLE_CLIENT_ID! }),
+        ],
     },
 };

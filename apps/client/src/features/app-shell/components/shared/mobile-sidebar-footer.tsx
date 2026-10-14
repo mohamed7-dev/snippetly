@@ -2,12 +2,12 @@ import { LoadingButton } from '@/components/inputs/loading-button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/hooks/use-auth';
-import { Link } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
 import { LogOutIcon } from 'lucide-react';
 
 export function MobileSidebarFooter() {
-    const { user, logout, isActiveAuthMutationInProgress, status } = useAuth();
-    const isPending = status === 'authenticated' && isActiveAuthMutationInProgress;
+    const { user, logout, isActiveAuthMutationInProgress } = useAuth();
+    const navigate = useNavigate();
     // logout
     const fallback = user?.firstName.slice(0, 1) + ' ' + user?.lastName.slice(0, 1);
     return (
@@ -29,11 +29,11 @@ export function MobileSidebarFooter() {
                 </Button>
             )}
             <LoadingButton
-                isLoading={isPending}
+                isLoading={isActiveAuthMutationInProgress}
                 className="w-full"
                 variant={'outline'}
-                disabled={isPending}
-                onClick={() => logout('developer')}
+                disabled={isActiveAuthMutationInProgress}
+                onClick={() => logout('developer', () => navigate({ to: '/' }))}
             >
                 <LogOutIcon />
                 <span>Logout</span>

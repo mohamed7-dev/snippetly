@@ -8,9 +8,10 @@ import { Button } from '@/components/ui/button';
 import { discoverSnippetsQueryOptions } from '@/features/discover/lib/discover-query-options';
 import { SnippetCard } from '@/features/snippets/components/snippet-card';
 import { snippetListDto } from '@snippetly/common/dto';
-import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import { PlusIcon } from 'lucide-react';
+import { listCurrentUserSnippetsQueryOptions } from '../../lib/snippet-listing-query-options';
 
 export function DiscoverSnippetsList() {
     const { snippets: snippetsSearch } = useSearch({
@@ -19,7 +20,7 @@ export function DiscoverSnippetsList() {
     const { sort, filter, filterOperator, tags } = snippetsSearch ?? {};
     const queryKeys = [sort, filter, filterOperator, tags];
     const navigate = useNavigate();
-
+    const qClient = useQueryClient();
     const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery(
         discoverSnippetsQueryOptions({ sort, filter, filterOperator, tags }, queryKeys),
     );
@@ -27,6 +28,11 @@ export function DiscoverSnippetsList() {
     const snippets = data.pages?.flatMap(p => p.items) ?? [];
 
     const availableTags = [...new Set(snippets.flatMap(snippet => snippet.tags ?? []).map(tag => tag.value))];
+
+    const onSnippetMutateSuccess = () => {
+        qClient.invalidateQueries(listCurrentUserSnippetsQueryOptions());
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-3">
@@ -76,7 +82,11 @@ export function DiscoverSnippetsList() {
             </div>
             <SnippetListLayout>
                 {snippets.map(snippet => (
-                    <SnippetCard key={snippet.id} snippet={snippet} />
+                    <SnippetCard
+                        key={snippet.id}
+                        snippet={snippet}
+                        forkSnippet={{ onSuccess: onSnippetMutateSuccess }}
+                    />
                 ))}
             </SnippetListLayout>
             <InfiniteLoader

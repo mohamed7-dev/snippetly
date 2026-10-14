@@ -81,4 +81,22 @@ describe('ApiClient', () => {
 
         expect(result).toEqual({ success: true });
     });
+
+    it('sends Google credentials to the authentication endpoint', async () => {
+        const fetchMock = vi.fn().mockResolvedValue(
+            new Response(JSON.stringify({ identifier: 'developer@example.test' }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' },
+            }),
+        );
+        vi.stubGlobal('fetch', fetchMock);
+
+        const client = new ApiClient('https://api.example.test');
+
+        await client.asUserWithAuthInput({ google: { token: 'google-id-token' } });
+
+        expect(fetchMock.mock.calls[0]?.[1]?.body).toBe(
+            JSON.stringify({ google: { token: 'google-id-token' } }),
+        );
+    });
 });

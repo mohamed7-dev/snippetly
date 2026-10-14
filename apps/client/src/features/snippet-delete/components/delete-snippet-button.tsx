@@ -2,7 +2,7 @@ import { LoadingButton } from '@/components/inputs/loading-button';
 import { Button } from '@/components/ui/button';
 import { useDeleteConfirmation } from '@/hooks/use-delete-confirmation';
 import { cn } from '@/lib/utils';
-import { Trash2Icon } from 'lucide-react';
+import { DeleteIcon } from 'lucide-react';
 import type React from 'react';
 import { useDeleteSnippet, type DeleteSnippetAsyncActionCallbacks } from '../hooks/use-delete-snippet';
 
@@ -33,7 +33,7 @@ export function DeleteSnippetButton({
         onClick?.(e);
         if (!e.isDefaultPrevented()) {
             confirm({
-                title: 'Delete snippet',
+                title: 'Delete Snippet',
                 description: "Are you sure you want to delete this snippet? this action can't be undone.",
                 isPending: isPending,
                 onConfirm: async () => await mutateAsync({ id: snippetId }),
@@ -47,7 +47,7 @@ export function DeleteSnippetButton({
             onClick={handleDelete}
             isLoading={isPending}
         >
-            <Trash2Icon className="mr-2 h-4 w-4" />
+            <DeleteIcon className="stroke-destructive mr-2 h-4 w-4" />
             {label}
         </LoadingButton>
     );

@@ -27,7 +27,7 @@ export function CollectionsPageMainContent() {
 
     const qClient = useQueryClient();
 
-    const onDeleteSuccess = async () => {
+    const onMutateSuccess = async () => {
         await qClient.invalidateQueries(listCurrentUserCollectionsQueryOptions(undefined, queryKey));
     };
 
@@ -47,7 +47,13 @@ export function CollectionsPageMainContent() {
                         <CollectionCard
                             collection={collection}
                             deleteCollection={{
-                                onSuccess: onDeleteSuccess,
+                                onSuccess: onMutateSuccess,
+                            }}
+                            moveCollectionToTrash={{
+                                onSuccess: onMutateSuccess,
+                            }}
+                            forkCollection={{
+                                onSuccess: onMutateSuccess,
                             }}
                         />
                     </PermissionGuard>

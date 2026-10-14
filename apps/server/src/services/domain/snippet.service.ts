@@ -1,15 +1,17 @@
 import {
     CreateSnippetDtoType,
+    DeletionResponse,
     DeleteSnippetDtoType,
     FilterGroupOperator,
     FindOneSnippetDtoType,
     ForkSnippetDtoType,
     SnippetListDtoType,
+    SuccessResponse,
     UpdateSnippetDtoType,
     UserFriendsSnippetsListDtoType,
 } from '@snippetly/common/dto';
 import { omit } from '@snippetly/common/lib';
-import { Brackets, FindOptionsRelations, In, IsNull } from 'typeorm';
+import { Brackets, FindOptionsRelations, In, IsNull, Not } from 'typeorm';
 import { RequestContext } from '../../api/request-context/request-context';
 import { EntityNotFoundError } from '../../common/errors/errors';
 import { Collection } from '../../entities/collections/collection.entity';
@@ -68,6 +70,7 @@ export class SnippetService {
             includePrivateSnippetsForCreatorId?: string;
             includePrivateSnippets?: boolean;
             includeSoftDeleted?: boolean;
+            onlySoftDeleted?: boolean;
         },
     ) {
         const qb = this.listQueryBuilder.build(Snippet, input as any, {
@@ -77,7 +80,11 @@ export class SnippetService {
             },
             alias: 's',
             where: {
-                ...(options?.includeSoftDeleted ? {} : { deletedAt: IsNull() }),
+                ...(options?.onlySoftDeleted
+                    ? { deletedAt: Not(IsNull()) }
+                    : options?.includeSoftDeleted
+                      ? {}
+                      : { deletedAt: IsNull() }),
                 ...(options?.includePrivateSnippets ? {} : { isPrivate: false }),
             },
         });
@@ -352,6 +359,49 @@ export class SnippetService {
         await repo.save(snippet);
         await this.eventBus.publish(new SnippetEvent(ctx, snippet, 'deleted', input));
 
+        return { result: 'DELETED', message: '' };
+    }
+
+    public async restoreFromTrash(
+        ctx: RequestContext,
+        input: DeleteSnippetDtoType['input'],
+    ): Promise<SuccessResponse> {
+        const repo = this.databaseService.getRepository(ctx, Snippet);
+        const snippet = await this.findOne(
+            ctx,
+            input,
+            { creator: { user: true } },
+            { includePrivateSnippet: true, includeSoftDeleted: true },
+        );
+
+        if (!snippet?.deletedAt || (ctx.isAuthorizedAsOwnerOnly && snippet.creator.user.id !== ctx.activeUserId)) {
+            throw new EntityNotFoundError({ entityName: 'Snippet', entityId: input.id });
+        }
+
+        snippet.deletedAt = null;
+        await repo.save(snippet);
+        await this.eventBus.publish(new SnippetEvent(ctx, snippet, 'restored', input));
+        return { success: true };
+    }
+
+    public async permanentlyDeleteFromTrash(
+        ctx: RequestContext,
+        input: DeleteSnippetDtoType['input'],
+    ): Promise<DeletionResponse> {
+        const repo = this.databaseService.getRepository(ctx, Snippet);
+        const snippet = await this.findOne(
+            ctx,
+            input,
+            { creator: { user: true } },
+            { includePrivateSnippet: true, includeSoftDeleted: true },
+        );
+
+        if (!snippet?.deletedAt || (ctx.isAuthorizedAsOwnerOnly && snippet.creator.user.id !== ctx.activeUserId)) {
+            throw new EntityNotFoundError({ entityName: 'Snippet', entityId: input.id });
+        }
+
+        await repo.remove(snippet);
+        await this.eventBus.publish(new SnippetEvent(ctx, snippet, 'permanently-deleted', input));
         return { result: 'DELETED', message: '' };
     }
 

@@ -22,7 +22,7 @@ export function SnippetsPageMainContent() {
     const snippets = data.pages?.flatMap(page => page.items) ?? [];
     const qClient = useQueryClient();
 
-    const onDeleteSuccess = async () => {
+    const onMutateSuccess = async () => {
         await qClient.invalidateQueries(listCurrentUserSnippetsQueryOptions(undefined, queryKeys));
     };
 
@@ -41,8 +41,14 @@ export function SnippetsPageMainContent() {
                     >
                         <SnippetCard
                             snippet={snippet}
+                            moveSnippetToTrash={{
+                                onSuccess: onMutateSuccess,
+                            }}
                             deleteSnippet={{
-                                onSuccess: onDeleteSuccess,
+                                onSuccess: onMutateSuccess,
+                            }}
+                            forkSnippet={{
+                                onSuccess: onMutateSuccess,
                             }}
                         />
                     </PermissionGuard>

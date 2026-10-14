@@ -2,10 +2,12 @@ import {
     collectionListDto,
     createCollectionDto,
     currentUserCollectionListDto,
+    currentUserTrashedCollectionListDto,
     deleteCollectionDto,
     findOneCollectionDto,
     forkCollectionDto,
     Permission,
+    restoreCollectionDto,
     updateCollectionDto,
 } from '@snippetly/common/dto';
 import { omit } from '@snippetly/common/lib';
@@ -82,6 +84,46 @@ export class DeveloperCollectionController implements AppRouter {
                         throw new ForbiddenError();
                     }
                     const result = await this.collectionService.softDelete(
+                        req.getRequestContext(),
+                        req.params,
+                    );
+                    res.status(200).json(result);
+                },
+            }),
+        );
+
+        router.patch(
+            '/:id/restore',
+            ...defineRoutePipeline({
+                before: [
+                    this.collectionWriteLimiter,
+                    authGuard({ permissions: [Permission.Authenticated, Permission.Owner] }),
+                ],
+                params: restoreCollectionDto.input,
+                response: restoreCollectionDto.output,
+                interceptors: [transactionInterceptor()],
+                handler: async (req, res) => {
+                    const result = await this.collectionService.restoreFromTrash(
+                        req.getRequestContext(),
+                        req.params,
+                    );
+                    res.status(200).json(result);
+                },
+            }),
+        );
+
+        router.delete(
+            '/:id/permanent',
+            ...defineRoutePipeline({
+                before: [
+                    this.collectionWriteLimiter,
+                    authGuard({ permissions: [Permission.Authenticated, Permission.Owner] }),
+                ],
+                params: deleteCollectionDto.input,
+                response: deleteCollectionDto.output,
+                interceptors: [transactionInterceptor()],
+                handler: async (req, res) => {
+                    const result = await this.collectionService.permanentlyDeleteFromTrash(
                         req.getRequestContext(),
                         req.params,
                     );
@@ -232,6 +274,47 @@ export class DeveloperCollectionController implements AppRouter {
                     };
 
                     res.status(200).json(result);
+                },
+            }),
+        );
+
+        router.get(
+            '/trash',
+            ...defineRoutePipeline({
+                before: [
+                    this.collectionReadLimiter,
+                    authGuard({ permissions: [Permission.Authenticated, Permission.ReadCollection] }),
+                ],
+                query: currentUserTrashedCollectionListDto.input,
+                response: currentUserTrashedCollectionListDto.output,
+                handler: async (req, res) => {
+                    const developer = await this.developerService.getActiveDeveloper(
+                        req.getRequestContext(),
+                        true,
+                    );
+                    const result = await this.collectionService.find(
+                        req.getRequestContext(),
+                        {
+                            ...req.query,
+                            creator: developer.id,
+                        },
+                        { creator: true, tags: true },
+                        { includePrivateCollections: true, onlySoftDeleted: true },
+                    );
+                    const { snippetCountByCollection, snippetsByCollection } =
+                        await this.collectionService.addSnippetsPreview(
+                            req.getRequestContext(),
+                            result.items,
+                            { includePrivateSnippets: true },
+                        );
+                    res.status(200).json({
+                        items: result.items.map(item => ({
+                            ...item,
+                            snippetCount: snippetCountByCollection.get(item.id) ?? 0,
+                            snippets: snippetsByCollection.get(item.id) ?? [],
+                        })),
+                        itemsCount: result.itemsCount,
+                    });
                 },
             }),
         );

@@ -1,6 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
+import { formatDeveloperInfo } from '@/lib/format-developer-info';
 import { Permission } from '@snippetly/common/dto';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from '@tanstack/react-router';
@@ -24,10 +25,7 @@ export function CollectionPageMainContent() {
         qClient.invalidateQueries(getCollectionQueryOptions(params.id));
     };
 
-    const avatarFallback =
-        collection.creator.firstName.slice(0, 1) + ' ' + collection.creator.lastName.slice(0, 1);
-
-    const fullName = collection.creator.firstName + ' ' + collection.creator.lastName;
+    const { fullName, initials } = formatDeveloperInfo(collection.creator);
 
     return (
         <div className="space-y-4 mb-6">
@@ -72,7 +70,7 @@ export function CollectionPageMainContent() {
                                 src={collection.creator.image || '/placeholder.svg'}
                                 alt={collection.creator.firstName}
                             />
-                            <AvatarFallback>{avatarFallback}</AvatarFallback>
+                            <AvatarFallback>{initials}</AvatarFallback>
                         </Avatar>
                     </Link>
                     <span className="text-sm text-muted-foreground">

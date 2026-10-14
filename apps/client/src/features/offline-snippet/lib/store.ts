@@ -24,14 +24,16 @@ export interface OfflineSnippetItem extends Pick<
 }
 
 export type InsertOfflineSnippetInput = Omit<OfflineSnippetItem, 'savedAt'>;
-export type RemoveOfflineSnippetInput = { id: string };
+export type RemoveOfflineSnippetInput = { id: string; savedBy?: string };
 export type UpdateOfflineSnippetInput = Partial<Omit<OfflineSnippetItem, 'id' | 'savedAt' | 'savedBy'>> & {
     id: string;
+    savedBy?: string;
 };
 export type GetOfflineSnippetInput = { id: string; savedBy?: string };
 
 class OfflineSnippetsDatabase extends Dexie {
     snippets!: Table<OfflineSnippetItem, string>;
+    userSnippets!: Table<OfflineSnippetItem, [string, string]>;
 
     constructor() {
         super(SNIPPETS_OFFLINE_DB_NAME);
@@ -42,39 +44,55 @@ class OfflineSnippetsDatabase extends Dexie {
         this.version(2).stores({
             snippets: '&id,savedBy,language,collectionId,createdAt,collection.name',
         });
+        this.version(3)
+            .stores({
+                snippets: '&id,savedBy,language,collectionId,createdAt,collection.name',
+                userSnippets: '&[id+savedBy],id,savedBy,language,collectionId,createdAt,collection.name',
+            })
+            .upgrade(async transaction => {
+                const existingSnippets = await transaction.table('snippets').toArray();
+                await transaction.table('userSnippets').bulkPut(
+                    existingSnippets.map(snippet => ({
+                        ...snippet,
+                        savedBy: snippet.savedBy ?? DEFAULT_SAVED_BY,
+                    })),
+                );
+            });
     }
 }
 
 export const offlineSnippetsDb = new OfflineSnippetsDatabase();
 
 export async function insertOfflineSnippet(snippet: InsertOfflineSnippetInput): Promise<void> {
-    await offlineSnippetsDb.transaction('rw', offlineSnippetsDb.snippets, async () => {
-        const current = await offlineSnippetsDb.snippets.get(snippet.id);
+    const savedBy = snippet.savedBy ?? DEFAULT_SAVED_BY;
+    await offlineSnippetsDb.transaction('rw', offlineSnippetsDb.userSnippets, async () => {
+        const current = await offlineSnippetsDb.userSnippets.get([snippet.id, savedBy]);
         if (current) return;
 
-        await offlineSnippetsDb.snippets.add({
+        await offlineSnippetsDb.userSnippets.add({
             ...snippet,
             savedAt: new Date(),
-            savedBy: snippet.savedBy ?? DEFAULT_SAVED_BY,
+            savedBy,
         });
     });
 }
 
 export async function removeOfflineSnippet(input: RemoveOfflineSnippetInput): Promise<void> {
-    await offlineSnippetsDb.snippets.delete(input.id);
+    await offlineSnippetsDb.userSnippets.delete([input.id, input.savedBy ?? DEFAULT_SAVED_BY]);
 }
 
 export async function updateOfflineSnippet(patch: UpdateOfflineSnippetInput): Promise<void> {
-    await offlineSnippetsDb.transaction('rw', offlineSnippetsDb.snippets, async () => {
-        const current = await offlineSnippetsDb.snippets.get(patch.id);
+    const savedBy = patch.savedBy ?? DEFAULT_SAVED_BY;
+    await offlineSnippetsDb.transaction('rw', offlineSnippetsDb.userSnippets, async () => {
+        const current = await offlineSnippetsDb.userSnippets.get([patch.id, savedBy]);
         if (!current) return;
 
-        await offlineSnippetsDb.snippets.put({
+        await offlineSnippetsDb.userSnippets.put({
             ...current,
             ...patch,
             id: current.id,
-            savedAt: current.savedAt,
             savedBy: current.savedBy ?? DEFAULT_SAVED_BY,
+            savedAt: current.savedAt,
         });
     });
 }
@@ -82,13 +100,12 @@ export async function updateOfflineSnippet(patch: UpdateOfflineSnippetInput): Pr
 export async function getOfflineSnippet(
     input: GetOfflineSnippetInput,
 ): Promise<OfflineSnippetItem | undefined> {
-    const snippet = await offlineSnippetsDb.snippets.get(input.id);
     const savedBy = input.savedBy ?? DEFAULT_SAVED_BY;
-    return snippet?.savedBy === savedBy ? snippet : undefined;
+    return offlineSnippetsDb.userSnippets.get([input.id, savedBy]);
 }
 
 export async function listOfflineSnippets(activeUserId?: string): Promise<OfflineSnippetItem[]> {
-    return offlineSnippetsDb.snippets
+    return offlineSnippetsDb.userSnippets
         .where('savedBy')
         .equals(activeUserId ?? DEFAULT_SAVED_BY)
         .toArray();

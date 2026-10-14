@@ -24,7 +24,7 @@ export function AuthCard({ cardDescription, cardTitle, children }: AuthCardProps
 
             <Card className="border-border">
                 <CardHeader className="text-center gap-4">
-                    <div className="flex gap-4 items-center">
+                    <div className="flex flex-wrap justify-center gap-3 items-center">
                         <Link to="/" className="flex items-center justify-center gap-2">
                             <Code2Icon className="h-8 w-8 text-primary" />
                             <span className="font-heading font-bold text-xl">{APP_NAME}</span>

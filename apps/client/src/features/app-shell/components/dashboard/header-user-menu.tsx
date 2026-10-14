@@ -17,10 +17,9 @@ import { Link, useNavigate } from '@tanstack/react-router';
 import { BrushIcon, LibraryIcon, LogOutIcon, UserCog2Icon, UsersIcon } from 'lucide-react';
 
 export function HeaderUserMenu() {
-    const { isAuthenticated, user, logout, status, isActiveAuthMutationInProgress } = useAuth();
+    const { user, logout, isActiveAuthMutationInProgress } = useAuth();
     const navigate = useNavigate();
 
-    const isPending = status === 'authenticated' && isActiveAuthMutationInProgress;
     const { fullName, initials: avatarFallback } = formatDeveloperInfo({
         firstName: user?.firstName || '',
         lastName: user?.lastName || '',
@@ -28,11 +27,6 @@ export function HeaderUserMenu() {
 
     // logout
     const handleLogout = async () => {
-        if (!isAuthenticated) {
-            return navigate({
-                to: '/sign-in',
-            });
-        }
         await logout('developer', () => navigate({ to: '/' }));
     };
 
@@ -120,7 +114,7 @@ export function HeaderUserMenu() {
                 </PermissionGuard>
                 <DropdownMenuSeparator />
                 <PermissionGuard requiredPermissions={[Permission.Authenticated]}>
-                    <DropdownMenuItem disabled={isPending} onClick={handleLogout}>
+                    <DropdownMenuItem disabled={isActiveAuthMutationInProgress} onClick={handleLogout}>
                         <LogOutIcon className="mr-2 h-4 w-4" />
                         <span>Log out</span>
                     </DropdownMenuItem>

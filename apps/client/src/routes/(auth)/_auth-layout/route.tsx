@@ -12,7 +12,6 @@ export const Route = createFileRoute('/(auth)/_auth-layout')({
         // Allow password reset page even if authenticated
         const isPasswordReset = location.pathname.includes('/password-reset');
         const isAccountVerification = location.pathname.includes('/account-verification');
-        console.log({ isAccountVerification, isPasswordReset, isAuth: auth.isAuthenticated });
 
         if (!isPasswordReset && !isAccountVerification && auth.isAuthenticated) {
             // Already authenticated, redirect away from auth pages

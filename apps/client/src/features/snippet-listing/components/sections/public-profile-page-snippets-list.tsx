@@ -6,10 +6,11 @@ import { SnippetListLayout } from '@/components/shared/snippet-list-layout';
 import { TagFilterBar } from '@/components/shared/tag-filter-bar';
 import { Button } from '@/components/ui/button';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
+import { getDeveloperProfileQueryOptions } from '@/features/public-profile/lib/public-profile-query-options';
 import { listCreatorSnippetsQueryOptions } from '@/features/snippet-listing/lib/snippet-listing-query-options';
 import { SnippetCard } from '@/features/snippets/components/snippet-card';
 import { Permission, snippetListDto } from '@snippetly/common/dto';
-import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { Link, useNavigate, useParams, useSearch } from '@tanstack/react-router';
 import { PlusIcon } from 'lucide-react';
 
@@ -17,6 +18,7 @@ export function PublicProfilePageSnippetsList() {
     const { snippets: snippetsSearch } = useSearch({ from: '/(public)/profile/$id' });
     const { id } = useParams({ from: '/(public)/profile/$id' });
     const navigate = useNavigate();
+    const qClient = useQueryClient();
     const { sort, filter, filterOperator, tags } = snippetsSearch ?? {};
     const queryKeys = [sort, filter, filterOperator, tags];
 
@@ -27,6 +29,10 @@ export function PublicProfilePageSnippetsList() {
 
     const availableTags = [...new Set(snippets.flatMap(snippet => snippet.tags ?? []).map(tag => tag.value))];
 
+    const onMutateSnippetSuccess = () => {
+        qClient.invalidateQueries(getDeveloperProfileQueryOptions(id));
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-2">
@@ -36,7 +42,7 @@ export function PublicProfilePageSnippetsList() {
                     onApply={val =>
                         navigate({
                             to: '.',
-                            search: prev => ({ ...prev, snippets: { ...prev.snippets, filter: val } }),
+                            search: prev => ({ ...prev, snippets: { ...prev.snippets, ...val } }),
                         })
                     }
                 />
@@ -70,7 +76,13 @@ export function PublicProfilePageSnippetsList() {
             </div>
             <SnippetListLayout>
                 {snippets.map(snippet => (
-                    <SnippetCard key={snippet.id} snippet={snippet} />
+                    <SnippetCard
+                        key={snippet.id}
+                        snippet={snippet}
+                        deleteSnippet={{ onSuccess: onMutateSnippetSuccess }}
+                        moveSnippetToTrash={{ onSuccess: onMutateSnippetSuccess }}
+                        forkSnippet={{ onSuccess: onMutateSnippetSuccess }}
+                    />
                 ))}
             </SnippetListLayout>
             <InfiniteLoader

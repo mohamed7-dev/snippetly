@@ -1,15 +1,16 @@
 import {
     CollectionListDtoType,
     CreateCollectionDtoType,
-    DeleteCollectionDtoType,
     DeletionResponse,
+    DeleteCollectionDtoType,
     FilterGroupOperator,
     FindOneCollectionDtoType,
     ForkCollectionDtoType,
+    SuccessResponse,
     UpdateCollectionDtoType,
 } from '@snippetly/common/dto';
 import { omit } from '@snippetly/common/lib';
-import { FindOptionsRelations, IsNull } from 'typeorm';
+import { FindOptionsRelations, IsNull, Not } from 'typeorm';
 import { RequestContext } from '../../api/request-context/request-context';
 import { EntityNotFoundError, ForbiddenError } from '../../common/errors/errors';
 import { OnApplicationBootstrap } from '../../common/types/lifecycle-hooks';
@@ -83,14 +84,22 @@ export class CollectionService implements OnApplicationBootstrap {
         ctx: RequestContext,
         input: CollectionListDtoType['input'],
         relations?: FindOptionsRelations<Collection>,
-        options?: { includePrivateCollections?: boolean; includeSoftDeleted?: boolean },
+        options?: {
+            includePrivateCollections?: boolean;
+            includeSoftDeleted?: boolean;
+            onlySoftDeleted?: boolean;
+        },
     ) {
         const qb = this.listQueryBuilder.build(Collection, input as any, {
             ctx,
             relations,
             alias: 'c',
             where: {
-                ...(options?.includeSoftDeleted ? {} : { deletedAt: IsNull() }),
+                ...(options?.onlySoftDeleted
+                    ? { deletedAt: Not(IsNull()) }
+                    : options?.includeSoftDeleted
+                      ? {}
+                      : { deletedAt: IsNull() }),
                 ...(options?.includePrivateCollections ? {} : { isPrivate: false }),
             },
         });
@@ -213,6 +222,16 @@ export class CollectionService implements OnApplicationBootstrap {
         items: Collection[],
         options: { includePrivateSnippets: boolean },
     ) {
+        if (items.length === 0) {
+            return {
+                snippetCountByCollection: new Map<string, number>(),
+                snippetsByCollection: new Map<
+                    string,
+                    Array<{ id: string; name: string; language: string }>
+                >(),
+            };
+        }
+
         const snippetsQuery = this.databaseService
             .getRepository(ctx, Snippet)
             .createQueryBuilder('snippet')
@@ -403,5 +422,54 @@ export class CollectionService implements OnApplicationBootstrap {
             result: 'DELETED',
             message: '',
         };
+    }
+
+    public async restoreFromTrash(
+        ctx: RequestContext,
+        input: DeleteCollectionDtoType['input'],
+    ): Promise<SuccessResponse> {
+        const repo = this.databaseService.getRepository(ctx, Collection);
+        const collection = await this.findOne(
+            ctx,
+            input,
+            { creator: { user: true } },
+            { includePrivateCollection: true, includeSoftDeleted: true },
+        );
+
+        if (
+            !collection?.deletedAt ||
+            (ctx.isAuthorizedAsOwnerOnly && collection.creator.user.id !== ctx.activeUserId)
+        ) {
+            throw new EntityNotFoundError({ entityName: 'Collection', entityId: input.id });
+        }
+
+        collection.deletedAt = null;
+        await repo.save(collection);
+        await this.eventBus.publish(new CollectionEvent(ctx, collection, 'restored', input));
+        return { success: true };
+    }
+
+    public async permanentlyDeleteFromTrash(
+        ctx: RequestContext,
+        input: DeleteCollectionDtoType['input'],
+    ): Promise<DeletionResponse> {
+        const repo = this.databaseService.getRepository(ctx, Collection);
+        const collection = await this.findOne(
+            ctx,
+            input,
+            { creator: { user: true } },
+            { includePrivateCollection: true, includeSoftDeleted: true },
+        );
+
+        if (
+            !collection?.deletedAt ||
+            (ctx.isAuthorizedAsOwnerOnly && collection.creator.user.id !== ctx.activeUserId)
+        ) {
+            throw new EntityNotFoundError({ entityName: 'Collection', entityId: input.id });
+        }
+
+        await repo.remove(collection);
+        await this.eventBus.publish(new CollectionEvent(ctx, collection, 'permanently-deleted', input));
+        return { result: 'DELETED', message: '' };
     }
 }

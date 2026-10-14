@@ -1,7 +1,6 @@
 import { PageLoadingView } from '@/components/views/page-loading-view';
 import { useAuth } from '@/features/auth/hooks/use-auth';
-import { createFileRoute, Outlet, redirect, useLocation } from '@tanstack/react-router';
-import { useEffect } from 'react';
+import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/(protected)/dashboard')({
     component: DashboardProtectedLayout,
@@ -15,18 +14,6 @@ export const Route = createFileRoute('/(protected)/dashboard')({
 
 function DashboardProtectedLayout() {
     const auth = useAuth();
-    const location = useLocation();
-    const navigate = Route.useNavigate();
-
-    useEffect(() => {
-        if (auth.status === 'unauthenticated') {
-            void navigate({
-                to: '/sign-in',
-                search: { redirect: location.href },
-                replace: true,
-            });
-        }
-    }, [auth.status, location.href, navigate]);
 
     if (auth.status !== 'authenticated' || !auth.isAuthenticated) {
         return <PageLoadingView />;

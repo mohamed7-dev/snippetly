@@ -4,7 +4,10 @@ import { SortQueryDialog } from '@/components/shared/list-query-builder/sort-que
 import { SnippetListLayout } from '@/components/shared/snippet-list-layout';
 import { Button } from '@/components/ui/button';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
-import { listCollectionSnippetsQueryOptions } from '@/features/snippet-listing/lib/snippet-listing-query-options';
+import {
+    listCollectionSnippetsQueryOptions,
+    listCurrentUserSnippetsQueryOptions,
+} from '@/features/snippet-listing/lib/snippet-listing-query-options';
 import { SnippetCard } from '@/features/snippets/components/snippet-card';
 import { Permission, snippetListDto } from '@snippetly/common/dto';
 import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
@@ -30,6 +33,7 @@ export function CollectionPageSnippetsList() {
 
     const onSnippetMutationSuccess = () => {
         qClient.invalidateQueries(listCollectionSnippetsQueryOptions(params.id, undefined, queryKeys));
+        qClient.invalidateQueries(listCurrentUserSnippetsQueryOptions());
     };
 
     return (
@@ -67,6 +71,9 @@ export function CollectionPageSnippetsList() {
                                 onSuccess: onSnippetMutationSuccess,
                             }}
                             forkSnippet={{
+                                onSuccess: onSnippetMutationSuccess,
+                            }}
+                            moveSnippetToTrash={{
                                 onSuccess: onSnippetMutationSuccess,
                             }}
                         />

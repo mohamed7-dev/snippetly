@@ -1,13 +1,14 @@
+import { GoToButton } from '@/components/inputs/goto-button';
 import { LoadingButton } from '@/components/inputs/loading-button';
 import { Button } from '@/components/ui/button';
 import { HeaderWrapper } from '@/features/app-shell/components/header-wrapper';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
-import { DeleteSnippetButton } from '@/features/snippet-delete/components/delete-snippet-button';
+import { MoveSnippetToTrashButton } from '@/features/snippet-delete/components/move-snippet-to-trash-button';
 import { getSnippetQueryOptions } from '@/features/snippets/lib/snippet-query-options';
 import { Permission } from '@snippetly/common/dto';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from '@tanstack/react-router';
-import { ArrowLeftIcon, EyeIcon, SaveIcon } from 'lucide-react';
+import { EyeIcon, SaveIcon } from 'lucide-react';
 
 export function UpdateSnippetPageHeader({ isPending }: { isPending: boolean }) {
     const params = useParams({
@@ -21,12 +22,7 @@ export function UpdateSnippetPageHeader({ isPending }: { isPending: boolean }) {
     return (
         <HeaderWrapper className="justify-between flex-wrap gap-4">
             <div className="flex items-center gap-4">
-                <Button variant="ghost" type="button" asChild>
-                    <Link to={'/dashboard/snippets'} className="flex items-center gap-2">
-                        <ArrowLeftIcon className="h-4 w-4" />
-                        Back to Snippets
-                    </Link>
-                </Button>
+                <GoToButton label="Back to Snippets" to="/dashboard/snippets" />
                 <h1 className="font-heading font-semibold text-lg">Edit Snippet</h1>
             </div>
 
@@ -50,7 +46,7 @@ export function UpdateSnippetPageHeader({ isPending }: { isPending: boolean }) {
                     ]}
                     ownerId={snippet.creator.id}
                 >
-                    <DeleteSnippetButton
+                    <MoveSnippetToTrashButton
                         snippetId={snippet.id}
                         mutationCallbacks={{
                             onSuccess: () => {

@@ -1,3 +1,4 @@
+import { GoToButton } from '@/components/inputs/goto-button';
 import { Button } from '@/components/ui/button';
 import { HeaderWrapper } from '@/features/app-shell/components/header-wrapper';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
@@ -8,7 +9,7 @@ import type { OfflineSnippetItem } from '@/features/offline-snippet/lib/store';
 import { Permission } from '@snippetly/common/dto';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Link, useParams } from '@tanstack/react-router';
-import { ArrowLeftIcon, EditIcon } from 'lucide-react';
+import { EditIcon } from 'lucide-react';
 import React from 'react';
 import { getSnippetQueryOptions } from '../../lib/snippet-query-options';
 import { CopyButton } from '../shared/copy-button';
@@ -35,14 +36,7 @@ export function SnippetPageHeader() {
 
     return (
         <HeaderWrapper className="justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-4">
-                <Button variant="ghost" size="sm" asChild>
-                    <Link to="/dashboard" className="flex items-center gap-2">
-                        <ArrowLeftIcon className="h-4 w-4" />
-                        Back to Dashboard
-                    </Link>
-                </Button>
-            </div>
+            <GoToButton label="Back To Snippets" to="/dashboard/snippets" />
 
             <div className="w-full sm:w-auto flex items-center justify-center gap-3">
                 <CopyButton variant={'outline'} code={snippet.code} />

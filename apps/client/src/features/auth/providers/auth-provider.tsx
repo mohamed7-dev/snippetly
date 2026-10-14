@@ -9,7 +9,7 @@ import React from 'react';
 
 const ACTIVE_USER_QUERY_KEY = 'activeUser';
 
-type Credentials = AuthenticateDeveloperDtoType['input'];
+type Credentials = Partial<AuthenticateDeveloperDtoType['input']>;
 
 export interface AuthContextType {
     isAuthenticated: boolean;
@@ -21,7 +21,7 @@ export interface AuthContextType {
         userType: UserType,
         onSuccess?: () => void | Promise<void>,
     ) => Promise<void>;
-    logout: (userType: UserType, onSuccess?: () => void) => Promise<void>;
+    logout: (userType: UserType, onSuccess?: () => void | Promise<void>) => Promise<void>;
     refreshActiveUser: () => void;
     /**
      * @description
@@ -62,21 +62,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
     });
 
     const login = React.useCallback(
-        async (
-            credentials: Credentials,
-            _userType: UserType,
-            onSuccess?: () => void | Promise<void>,
-        ) => {
-            if (!credentials.native) return;
+        async (credentials: Credentials, _userType: UserType, onSuccess?: () => void | Promise<void>) => {
+            if (!credentials.native && !credentials.google) {
+                throw new Error('Authentication credentials are required');
+            }
 
             setIsActiveAuthMutationInProgress(true);
             setAuthStatus('verifying');
 
             try {
-                const data = await developerApiClient.asUserWithCredentials(
-                    credentials.native.identifier,
-                    credentials.native.password,
-                );
+                const data = await developerApiClient.asUserWithAuthInput(credentials);
                 if (!data?.identifier) {
                     throw new Error('Authentication response did not include the signed-in user');
                 }
@@ -103,19 +98,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
     );
 
     const logout = React.useCallback(
-        async (userType: UserType, onLogoutSuccess?: () => void) => {
+        async (_userType: UserType, onLogoutSuccess?: () => void | Promise<void>) => {
             setIsActiveAuthMutationInProgress(true);
             setAuthStatus('verifying');
-            developerApiClient
-                .asAnonymousUser()
-                .then(async () => {
-                    localStorage.removeItem(LOCAL_STORAGE_SESSION_TOKEN_KEY);
-                    queryClient.clear();
-                    setAuthStatus('unauthenticated');
-                    setIsActiveAuthMutationInProgress(false);
-                    onLogoutSuccess?.();
-                })
-                .catch(toastApiError);
+
+            try {
+                await developerApiClient.asAnonymousUser();
+                localStorage.removeItem(LOCAL_STORAGE_SESSION_TOKEN_KEY);
+                queryClient.clear();
+                setAuthStatus('unauthenticated');
+                await onLogoutSuccess?.();
+            } catch (error) {
+                toastApiError(error);
+            } finally {
+                setIsActiveAuthMutationInProgress(false);
+            }
         },
         [queryClient],
     );

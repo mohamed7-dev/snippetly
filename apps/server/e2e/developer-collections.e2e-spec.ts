@@ -2,6 +2,7 @@ import {
     CollectionListDtoType,
     CreateCollectionDtoType,
     CurrentUserCollectionListDtoType,
+    CurrentUserTrashedCollectionListDtoType,
     DeleteCollectionDtoType,
     FindOneCollectionDtoType,
     ForkCollectionDtoType,
@@ -206,6 +207,28 @@ describe('Developer Collection Workflows', () => {
                 const deletionResult = (await deletionRes.json()) as DeleteCollectionDtoType['output'];
 
                 expect(deletionResult.result).toBe('DELETED');
+
+                const trashRes = await developerClient.fetch('/collections/trash', {
+                    method: 'GET',
+                });
+                const trashResult = (await trashRes.json()) as CurrentUserTrashedCollectionListDtoType['output'];
+                expect(trashResult.items.some(item => item.id === result.id)).toBe(true);
+
+                const restoreRes = await developerClient.fetch(`/collections/${result.id}/restore`, {
+                    method: 'PATCH',
+                });
+                expect(restoreRes.status).toBe(200);
+
+                const deleteAgainRes = await developerClient.fetch(`/collections/${result.id}`, {
+                    method: 'DELETE',
+                });
+                expect(deleteAgainRes.status).toBe(200);
+
+                const permanentDeleteRes = await developerClient.fetch(
+                    `/collections/${result.id}/permanent`,
+                    { method: 'DELETE' },
+                );
+                expect(permanentDeleteRes.status).toBe(200);
             });
         });
     });

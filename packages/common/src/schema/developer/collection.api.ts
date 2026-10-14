@@ -4,12 +4,14 @@ import {
     booleanFilterOperators,
     createPaginatedListInputSchema,
     createPaginatedListOutputSchema,
+    dateTimeFilterOperators,
     deletionResponse,
     filterGroupOperator,
     idSchema,
     InferDtoType,
     inputIdSchema,
     sortDirection,
+    successResponse,
     stringFilterOperators,
 } from '../shared/common-schemas.js';
 import { developer } from '../shared/developer.type.js';
@@ -83,6 +85,20 @@ export const deleteCollectionDto = {
 
 export type DeleteCollectionDtoType = InferDtoType<typeof deleteCollectionDto>;
 
+const restoreCollectionInput = inputIdSchema;
+const restoreCollectionOutput = withServerErrors(successResponse, [
+    userInputErrorSchema,
+    forbiddenErrorSchema,
+    entityNotFoundErrorSchema,
+]);
+
+export const restoreCollectionDto = {
+    input: restoreCollectionInput,
+    output: restoreCollectionOutput,
+};
+
+export type RestoreCollectionDtoType = InferDtoType<typeof restoreCollectionDto>;
+
 //########################### Fork ########################################
 const forkCollectionInput = inputIdSchema;
 
@@ -149,6 +165,7 @@ const filterSchema = z
         description: stringFilterOperators,
         isPrivate: booleanFilterOperators,
         allowForking: booleanFilterOperators,
+        deletedAt: dateTimeFilterOperators,
     })
     .partial();
 
@@ -160,6 +177,7 @@ const sortSchema = z
         description: sortDirection,
         isPrivate: sortDirection,
         allowForking: sortDirection,
+        deletedAt: sortDirection,
     })
     .partial();
 
@@ -243,3 +261,9 @@ export const currentUserCollectionListDto = {
 };
 
 export type CurrentUserCollectionListDtoType = InferDtoType<typeof currentUserCollectionListDto>;
+
+export const currentUserTrashedCollectionListDto = currentUserCollectionListDto;
+
+export type CurrentUserTrashedCollectionListDtoType = InferDtoType<
+    typeof currentUserTrashedCollectionListDto
+>;

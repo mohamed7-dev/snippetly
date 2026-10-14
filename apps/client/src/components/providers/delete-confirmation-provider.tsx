@@ -16,6 +16,7 @@ type ConfirmationOptions = {
     description?: string;
     onConfirm?: () => void | Promise<any>;
     isPending?: boolean;
+    actionButtonLabel?: string;
 };
 
 type DeleteConfirmationContextType = {
@@ -64,7 +65,7 @@ export function DeleteConfirmationProvider({ children }: { children: React.React
                                 disabled={options.isPending}
                                 onClick={handleConfirm}
                             >
-                                Delete
+                                {options.actionButtonLabel ?? 'Delete'}
                             </LoadingButton>
                         </AlertDialogAction>
                     </AlertDialogFooter>

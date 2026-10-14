@@ -14,6 +14,8 @@ import {
     currentUserInboxListDto,
     currentUserOutboxListDto,
     currentUserSnippetListDto,
+    currentUserTrashedCollectionListDto,
+    currentUserTrashedSnippetListDto,
     deleteCollectionDto,
     deleteDeveloperAccountDto,
     deleteSnippetDto,
@@ -30,6 +32,8 @@ import {
     refreshVerificationTokenDto,
     registerDeveloperAccountDto,
     rejectFriendshipRequestDto,
+    restoreCollectionDto,
+    restoreSnippetDto,
     requestEmailAddressChangeDto,
     requestPasswordResetDto,
     resetPasswordDto,
@@ -210,6 +214,14 @@ registry.registerComponent('securitySchemes', bearerAuth, {
 
 registerRoute({
     method: 'post',
+    path: '/developer/jobs/',
+    tag: 'Jobs Queue',
+    summary: 'Execute job in the queue',
+    body: z.object(),
+    response: z.object(),
+});
+registerRoute({
+    method: 'post',
     path: '/developer/auth/accounts',
     tag: 'Authentication',
     summary: 'Register a developer account',
@@ -355,6 +367,24 @@ registerRoute({
     authenticated: true,
 });
 registerRoute({
+    method: 'patch',
+    path: '/developer/collections/{id}/restore',
+    tag: 'Collections',
+    summary: 'Restore a collection from trash',
+    params: restoreCollectionDto.input,
+    response: restoreCollectionDto.output,
+    authenticated: true,
+});
+registerRoute({
+    method: 'delete',
+    path: '/developer/collections/{id}/permanent',
+    tag: 'Collections',
+    summary: 'Permanently delete a collection from trash',
+    params: deleteCollectionDto.input,
+    response: deleteCollectionDto.output,
+    authenticated: true,
+});
+registerRoute({
     method: 'post',
     path: '/developer/collections/{id}/forks',
     tag: 'Collections',
@@ -388,6 +418,15 @@ registerRoute({
     summary: 'List the current developer collections',
     query: currentUserCollectionListDto.input,
     response: collectionListDto.output,
+    authenticated: true,
+});
+registerRoute({
+    method: 'get',
+    path: '/developer/collections/trash',
+    tag: 'Collections',
+    summary: 'List the current developer trashed collections',
+    query: currentUserTrashedCollectionListDto.input,
+    response: currentUserTrashedCollectionListDto.output,
     authenticated: true,
 });
 registerRoute({
@@ -428,6 +467,24 @@ registerRoute({
     authenticated: true,
 });
 registerRoute({
+    method: 'patch',
+    path: '/developer/snippets/{id}/restore',
+    tag: 'Snippets',
+    summary: 'Restore a snippet from trash',
+    params: restoreSnippetDto.input,
+    response: restoreSnippetDto.output,
+    authenticated: true,
+});
+registerRoute({
+    method: 'delete',
+    path: '/developer/snippets/{id}/permanent',
+    tag: 'Snippets',
+    summary: 'Permanently delete a snippet from trash',
+    params: deleteSnippetDto.input,
+    response: deleteSnippetDto.output,
+    authenticated: true,
+});
+registerRoute({
     method: 'post',
     path: '/developer/snippets/{id}/forks',
     tag: 'Snippets',
@@ -451,6 +508,15 @@ registerRoute({
     summary: 'List the current developer snippets',
     query: currentUserSnippetListDto.input,
     response: currentUserSnippetListDto.output,
+    authenticated: true,
+});
+registerRoute({
+    method: 'get',
+    path: '/developer/snippets/trash',
+    tag: 'Snippets',
+    summary: 'List the current developer trashed snippets',
+    query: currentUserTrashedSnippetListDto.input,
+    response: currentUserTrashedSnippetListDto.output,
     authenticated: true,
 });
 registerRoute({

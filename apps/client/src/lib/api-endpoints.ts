@@ -89,6 +89,15 @@ export const apiEndpoints = {
             method: 'DELETE',
             contentType: null,
         },
+        restore: {
+            url: (id: string) => `snippets/${id}/restore`,
+            method: 'PATCH',
+        },
+        permanentlyDelete: {
+            url: (id: string) => `snippets/${id}/permanent`,
+            method: 'DELETE',
+            contentType: null,
+        },
         fork: {
             url: (id: string) => `snippets/${id}/forks`,
             method: 'POST',
@@ -105,6 +114,11 @@ export const apiEndpoints = {
         },
         listMine: {
             url: (searchParams: URLSearchParams) => `snippets/me?${searchParams.toString()}`,
+            method: 'GET',
+            contentType: null,
+        },
+        listTrash: {
+            url: (searchParams: URLSearchParams) => `snippets/trash?${searchParams.toString()}`,
             method: 'GET',
             contentType: null,
         },
@@ -128,6 +142,15 @@ export const apiEndpoints = {
             method: 'DELETE',
             contentType: null,
         },
+        restore: {
+            url: (id: string) => `collections/${id}/restore`,
+            method: 'PATCH',
+        },
+        permanentlyDelete: {
+            url: (id: string) => `collections/${id}/permanent`,
+            method: 'DELETE',
+            contentType: null,
+        },
         fork: {
             url: (id: string) => `collections/${id}/forks`,
             method: 'POST',
@@ -145,6 +168,11 @@ export const apiEndpoints = {
         },
         listMine: {
             url: (searchParams: URLSearchParams) => `collections/me?${searchParams.toString()}`,
+            method: 'GET',
+            contentType: null,
+        },
+        listTrash: {
+            url: (searchParams: URLSearchParams) => `collections/trash?${searchParams.toString()}`,
             method: 'GET',
             contentType: null,
         },

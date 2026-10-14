@@ -13,7 +13,9 @@ import { RemoveSnippetOfflineButton } from '@/features/offline-snippet/component
 import { SaveSnippetOfflineButton } from '@/features/offline-snippet/components/save-snippet-offline-button';
 import { useOfflineSnippetStore } from '@/features/offline-snippet/hooks/use-offline-snippet-store';
 import { DeleteSnippetButton } from '@/features/snippet-delete/components/delete-snippet-button';
+import { MoveSnippetToTrashButton } from '@/features/snippet-delete/components/move-snippet-to-trash-button';
 import type { DeleteSnippetAsyncActionCallbacks } from '@/features/snippet-delete/hooks/use-delete-snippet';
+import type { SoftDeleteSnippetAsyncActionCallbacks } from '@/features/snippet-delete/hooks/use-soft-delete-snippet';
 import { ForkSnippetButton } from '@/features/snippet-fork/components/fork-snippet-button';
 import { ForkSnippetToCollection } from '@/features/snippet-fork/components/fork-snippet-to-collection';
 import type { ForkSnippetMutationCallbacks } from '@/features/snippet-fork/hooks/use-fork-snippet';
@@ -28,6 +30,7 @@ import { CopyButton } from './copy-button';
 export interface SnippetActionsDropdownProps {
     snippet: ApiSuccess<SnippetListDtoType['output']>['items'][number];
     deleteSnippet?: DeleteSnippetAsyncActionCallbacks;
+    moveSnippetToTrash?: SoftDeleteSnippetAsyncActionCallbacks;
     forkSnippet?: ForkSnippetMutationCallbacks;
     Trigger?: React.ReactNode;
 }
@@ -35,6 +38,7 @@ export interface SnippetActionsDropdownProps {
 export function SnippetActionsDropdown({
     snippet,
     deleteSnippet,
+    moveSnippetToTrash,
     forkSnippet,
     Trigger,
 }: SnippetActionsDropdownProps) {
@@ -93,9 +97,35 @@ export function SnippetActionsDropdown({
                                     preload={false}
                                 >
                                     <EditIcon className="mr-2 h-4 w-4" />
-                                    Edit
+                                    Edit Snippet
                                 </Link>
                             </Button>
+                        </DropdownMenuItem>
+                    </PermissionGuard>
+                    <DropdownMenuSeparator />
+                </DropdownMenuGroup>
+                <DropdownMenuGroup>
+                    <PermissionGuard
+                        requiredPermissions={[
+                            Permission.Authenticated,
+                            Permission.Owner,
+                            Permission.DeleteSnippet,
+                        ]}
+                        ownerId={snippet.creator.id}
+                    >
+                        <DropdownMenuItem asChild>
+                            <MoveSnippetToTrashButton
+                                snippetId={snippet.id}
+                                variant={'ghost'}
+                                className="justify-start"
+                                mutationCallbacks={{
+                                    ...moveSnippetToTrash,
+                                    onSuccess: (...props) => {
+                                        setOpen(false);
+                                        moveSnippetToTrash?.onSuccess?.(...props);
+                                    },
+                                }}
+                            />
                         </DropdownMenuItem>
                     </PermissionGuard>
                     <PermissionGuard

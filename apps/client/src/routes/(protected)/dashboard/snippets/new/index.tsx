@@ -11,14 +11,24 @@ import { listCurrentUserSnippetsQueryOptions } from '@/features/snippet-listing/
 import { SnippetFormMainFields } from '@/features/snippets/components/forms/snippet-form-main-fields';
 import { SnippetFormSidebar } from '@/features/snippets/components/forms/snippet-form-sidebar';
 import { listPopularTagsQueryOptions } from '@/features/tags/lib/list-tags-query-options';
+import { redirectSchema } from '@/lib/zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Permission } from '@snippetly/common/dto';
+import { idSchema, Permission } from '@snippetly/common/dto';
 import { useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useForm } from 'react-hook-form';
+import z from 'zod';
+
+const searchSchema = redirectSchema
+    .extend({
+        collectionId: idSchema.optional(),
+        collectionName: z.string().optional(),
+    })
+    .partial();
 
 export const Route = createFileRoute('/(protected)/dashboard/snippets/new/')({
     component: CreateSnippetPage,
+    validateSearch: searchSchema,
     head: () => {
         return {
             meta: [
@@ -37,6 +47,7 @@ export const Route = createFileRoute('/(protected)/dashboard/snippets/new/')({
 function CreateSnippetPage() {
     const qClient = useQueryClient();
     const navigate = Route.useNavigate();
+    const { collectionId, collectionName } = Route.useSearch();
     const form = useForm<CreateSnippetFormSchemaType>({
         defaultValues: {
             name: '',
@@ -48,6 +59,7 @@ function CreateSnippetPage() {
             isPrivate: false,
             allowForking: true,
             tags: [],
+            collectionId: collectionId,
         },
         resolver: zodResolver(createSnippetFormSchema),
     });
@@ -68,7 +80,7 @@ function CreateSnippetPage() {
                         <div className="md:col-span-2 space-y-6">
                             <SnippetFormMainFields isPending={isPending} />
                         </div>
-                        <SnippetFormSidebar isPending={isPending} />
+                        <SnippetFormSidebar isPending={isPending} selectedCollectionName={collectionName} />
                     </div>
                 </main>
             </PermissionGuard>

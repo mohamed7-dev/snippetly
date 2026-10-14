@@ -7,6 +7,7 @@ import {
     PaletteIcon,
     SearchIcon,
     ShieldIcon,
+    Trash2Icon,
     UserIcon,
     UsersIcon,
 } from 'lucide-react';
@@ -84,6 +85,14 @@ export const DASHBOARD_NAV_ITEMS = [
         title: 'Requests',
         href: '/dashboard/requests',
         icon: BellIcon,
+        requiredPermissions: [Permission.Authenticated],
+        exact: false,
+    },
+    {
+        id: 'trash',
+        title: 'Trash',
+        href: '/dashboard/trash',
+        icon: Trash2Icon,
         requiredPermissions: [Permission.Authenticated],
         exact: false,
     },
