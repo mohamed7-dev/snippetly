@@ -19,11 +19,7 @@ export function CopyButton({ code, children, ...props }: CopyButtonProps) {
                 children
             ) : (
                 <>
-                    {isCopied ? (
-                        <CopyCheckIcon className="h-4 w-4 mr-2" />
-                    ) : (
-                        <CopyIcon className="h-4 w-4 mr-2" />
-                    )}
+                    {isCopied ? <CopyCheckIcon /> : <CopyIcon />}
                     {isCopied ? 'Copied' : 'Copy Code'}
                 </>
             )}

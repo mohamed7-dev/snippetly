@@ -16,9 +16,10 @@ import { listCurrentUserCollectionsQueryOptions } from '../../lib/collection-lis
 
 export function DiscoverCollectionsList() {
     const qClient = useQueryClient();
-    const { collections: collectionsSearch } = useSearch({
-        from: '/(public)/discover/',
-    });
+    const { collections: collectionsSearch } =
+        useSearch({
+            from: '/(public)/discover/',
+        }) ?? {};
     const { sort, filter, filterOperator, tags } = collectionsSearch ?? {};
     const queryKeys = [sort, filter, filterOperator, tags];
     const navigate = useNavigate();
@@ -47,7 +48,7 @@ export function DiscoverCollectionsList() {
                             to: '.',
                             search: prev => ({
                                 ...prev,
-                                collections: { ...prev.collections, ...val },
+                                collections: { ...prev?.collections, ...val },
                             }),
                         })
                     }
@@ -60,7 +61,7 @@ export function DiscoverCollectionsList() {
                             to: '.',
                             search: prev => ({
                                 ...prev,
-                                collections: { ...prev.collections, sort: val.sort },
+                                collections: { ...prev?.collections, sort: val.sort },
                             }),
                         })
                     }
@@ -75,7 +76,7 @@ export function DiscoverCollectionsList() {
                             search: previous => ({
                                 ...previous,
                                 collections: {
-                                    ...previous.collections,
+                                    ...previous?.collections,
                                     tags: values.length ? { values, operator } : undefined,
                                 },
                             }),
@@ -89,6 +90,26 @@ export function DiscoverCollectionsList() {
                         key={collection.id}
                         collection={collection}
                         forkCollection={{ onSuccess: onMutateSuccess }}
+                        addCollectionToFavourites={{
+                            onSuccess: () => {
+                                // update discover collections query cache manually
+                                // to reflect state optimistically, set {isFavouritedByCurrentUser: true}
+                            },
+                            onError: () => {
+                                // update discover collections query cache manually
+                                // to reflect state optimistically, set {isFavouritedByCurrentUser: false}
+                            },
+                        }}
+                        removeCollectionFromFavourites={{
+                            onSuccess: () => {
+                                // update discover collections query cache manually
+                                // to reflect state optimistically, set {isFavouritedByCurrentUser: false}
+                            },
+                            onError: () => {
+                                // update discover collections query cache manually
+                                // to reflect state optimistically, set {isFavouritedByCurrentUser: true}
+                            },
+                        }}
                     />
                 ))}
             </CollectionListLayout>

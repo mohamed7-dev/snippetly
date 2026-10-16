@@ -3,6 +3,7 @@ import { Column, Entity, JoinColumn, OneToMany, OneToOne } from 'typeorm';
 import { SoftDeletable } from '../../common/types/soft-deletable.interface';
 import { AppEntity } from '../../infra/database/app-entity';
 import { Collection } from '../collections/collection.entity';
+import { Favourite } from '../favourites/favourite.entity';
 import { Friendship } from '../friendships/friendship.entity';
 import { Snippet } from '../snippets/snippet.entity';
 import { Tag } from '../tags/tag.entity';
@@ -59,4 +60,10 @@ export class Developer extends AppEntity implements SoftDeletable {
 
     @OneToMany(() => Friendship, friendship => friendship.addressee)
     friendshipsReceived: Friendship[];
+
+    @OneToMany(() => Favourite, favourite => favourite.developer)
+    favourites: Favourite[];
+
+    @OneToMany(() => Favourite, favourite => favourite.favoritedDeveloper)
+    favouritedBy: Favourite[];
 }

@@ -3,6 +3,7 @@ import {
     acceptFriendshipRequestDto,
     activeDeveloperAccountStatsDto,
     activeDeveloperDto,
+    addFavouriteDto,
     authenticateDeveloperDto,
     cancelFriendshipRequestDto,
     changeEmailAddressDto,
@@ -21,6 +22,9 @@ import {
     deleteSnippetDto,
     developerListDto,
     developerUserMeDto,
+    favouriteCollectionsListDto,
+    favouriteDevelopersListDto,
+    favouriteSnippetsListDto,
     findOneCollectionDto,
     findOneDeveloperDto,
     findOneSnippetDto,
@@ -32,12 +36,14 @@ import {
     refreshVerificationTokenDto,
     registerDeveloperAccountDto,
     rejectFriendshipRequestDto,
-    restoreCollectionDto,
-    restoreSnippetDto,
+    removeFavouriteDto,
     requestEmailAddressChangeDto,
     requestPasswordResetDto,
     resetPasswordDto,
+    restoreCollectionDto,
+    restoreSnippetDto,
     revokeSessionDto,
+    searchDto,
     sendFriendshipRequestDto,
     snippetListDto,
     updateCollectionDto,
@@ -439,6 +445,15 @@ registerRoute({
 });
 
 registerRoute({
+    method: 'get',
+    path: '/developer/search',
+    tag: 'Search',
+    summary: 'Search snippets, collections, developers, and tags',
+    query: searchDto.input,
+    response: searchDto.output,
+});
+
+registerRoute({
     method: 'post',
     path: '/developer/snippets',
     tag: 'Snippets',
@@ -648,6 +663,52 @@ registerRoute({
     summary: 'List outgoing friendship requests',
     query: currentUserOutboxListDto.input,
     response: currentUserOutboxListDto.output,
+    authenticated: true,
+});
+
+registerRoute({
+    method: 'post',
+    path: '/developer/favourites/{resourceType}/{id}',
+    tag: 'Favourites',
+    summary: 'Add a snippet, collection, or developer to favourites',
+    params: addFavouriteDto.input,
+    response: addFavouriteDto.output,
+    authenticated: true,
+});
+registerRoute({
+    method: 'delete',
+    path: '/developer/favourites/{resourceType}/{id}',
+    tag: 'Favourites',
+    summary: 'Remove a snippet, collection, or developer from favourites',
+    params: removeFavouriteDto.input,
+    response: removeFavouriteDto.output,
+    authenticated: true,
+});
+registerRoute({
+    method: 'get',
+    path: '/developer/favourites/snippets',
+    tag: 'Favourites',
+    summary: 'List the current developer favourite snippets',
+    query: favouriteSnippetsListDto.input,
+    response: favouriteSnippetsListDto.output,
+    authenticated: true,
+});
+registerRoute({
+    method: 'get',
+    path: '/developer/favourites/collections',
+    tag: 'Favourites',
+    summary: 'List the current developer favourite collections',
+    query: favouriteCollectionsListDto.input,
+    response: favouriteCollectionsListDto.output,
+    authenticated: true,
+});
+registerRoute({
+    method: 'get',
+    path: '/developer/favourites/developers',
+    tag: 'Favourites',
+    summary: 'List the current developer favourite developers',
+    query: favouriteDevelopersListDto.input,
+    response: favouriteDevelopersListDto.output,
     authenticated: true,
 });
 

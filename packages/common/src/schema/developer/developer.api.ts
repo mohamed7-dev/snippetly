@@ -44,7 +44,10 @@ export type ActiveDeveloperAccountStatsDtoType = InferDtoType<typeof activeDevel
 
 //############################ Get Active Developer Account ############################
 
-const activeDeveloperOutput = withServerErrors(developer.nullable(), [forbiddenErrorSchema]);
+const activeDeveloperOutput = withServerErrors(
+    developer.extend({ isFavouritedByCurrentUser: z.boolean() }).nullable(),
+    [forbiddenErrorSchema],
+);
 
 export const activeDeveloperDto = {
     input: z.null(),
@@ -93,6 +96,7 @@ export type DeleteDeveloperAccountDtoType = InferDtoType<typeof deleteDeveloperA
 const findOneDeveloperInput = inputIdSchema;
 
 const developerProfileInfo = z.object({
+    isFavouritedByCurrentUser: z.boolean(),
     friendCount: z.number().int().nonnegative(),
     friendshipInfo: z.object({
         isCurrentUserAFriend: z.boolean(),
@@ -173,9 +177,14 @@ const developerListItem = developer.pick({
 });
 
 const discoverDeveloperListItem = developerListItem.extend({
+    isFavouritedByCurrentUser: z.boolean(),
     snippetsCount: z.number().int().nonnegative().optional(),
     collectionsCount: z.number().int().nonnegative().optional(),
     tags: z.array(tag.pick({ id: true, value: true, usageCount: true })).optional(),
+    friendshipInfo: z.object({
+        isFriendWithCurrentUser: z.boolean(),
+        friendshipStatus: friendshipStatusSchema.nullable(),
+    }),
 });
 
 const developerListOutput = withServerErrors(createPaginatedListOutputSchema(discoverDeveloperListItem), [

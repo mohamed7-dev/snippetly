@@ -1,7 +1,6 @@
 import { LoadingButton } from '@/components/inputs/loading-button';
 import { useDeleteConfirmation } from '@/hooks/use-delete-confirmation';
-import { cn } from '@/lib/utils';
-import { Trash2Icon } from 'lucide-react';
+import { DeleteIcon } from 'lucide-react';
 import type React from 'react';
 import { useDeleteCollection } from '../hooks/use-delete-collection';
 import { type SoftDeleteCollectionMutationCallbacks } from '../hooks/use-soft-delete-collection';
@@ -16,7 +15,6 @@ interface MoveCollectionToTrashButtonProps extends Omit<
 }
 
 export function DeleteCollectionButton({
-    className,
     label = 'delete collection',
     collectionId,
     onClick,
@@ -44,8 +42,8 @@ export function DeleteCollectionButton({
         }
     };
     return (
-        <LoadingButton {...props} className={cn(className)} onClick={handleDelete} isLoading={isPending}>
-            <Trash2Icon />
+        <LoadingButton {...props} onClick={handleDelete} isLoading={isPending}>
+            <DeleteIcon />
             {label}
         </LoadingButton>
     );

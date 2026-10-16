@@ -7,25 +7,24 @@ import { collectionListDto, snippetListDto } from '@snippetly/common/dto';
 import { createFileRoute } from '@tanstack/react-router';
 import z from 'zod';
 
-const tabsSchema = z.object({
-    tab: z.enum(['snippets', 'collections']).default('snippets').catch('snippets'),
-    snippets: z
-        .object({
-            sort: snippetListDto.input.shape.sort.default({}).catch({}),
-            filter: snippetListDto.input.shape.filter.default({}).catch({}),
+const tabsSchema = z
+    .object({
+        tab: z.enum(['snippets', 'collections']).default('snippets').catch('snippets'),
+        snippets: z.object({
+            sort: snippetListDto.input.shape.sort,
+            filter: snippetListDto.input.shape.filter,
             filterOperator: snippetListDto.input.shape.filterOperator,
-            tags: snippetListDto.input.shape.tags.optional(),
-        })
-        .optional(),
-    collections: z
-        .object({
-            sort: collectionListDto.input.shape.sort.default({}).catch({}),
-            filter: collectionListDto.input.shape.filter.default({}).catch({}),
+            tags: snippetListDto.input.shape.tags,
+        }),
+        collections: z.object({
+            sort: collectionListDto.input.shape.sort,
+            filter: collectionListDto.input.shape.filter,
             filterOperator: collectionListDto.input.shape.filterOperator,
-            tags: collectionListDto.input.shape.tags.optional(),
-        })
-        .optional(),
-});
+            tags: collectionListDto.input.shape.tags,
+        }),
+    })
+    .partial()
+    .optional();
 
 export const Route = createFileRoute('/(public)/profile/$id')({
     component: ProfilePage,
@@ -49,7 +48,7 @@ export const Route = createFileRoute('/(public)/profile/$id')({
             ],
         };
     },
-    loaderDeps: ({ search: { snippets } }) => ({ ...snippets }),
+    loaderDeps: ({ search: { snippets } = {} }) => ({ ...snippets }),
     loader: async ({ context: { queryClient }, params: { id }, deps }) => {
         await queryClient.infiniteQuery({
             ...listCreatorSnippetsQueryOptions(id, deps, Object.values(deps)),

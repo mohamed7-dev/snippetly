@@ -14,10 +14,18 @@ import type { DeleteCollectionMutationCallbacks } from '@/features/collection-de
 import type { SoftDeleteCollectionMutationCallbacks } from '@/features/collection-delete/hooks/use-soft-delete-collection';
 import { ForkCollectionButton } from '@/features/collection-fork/components/fork-collection-button';
 import type { ForkCollectionMutationCallbacks } from '@/features/collection-fork/hooks/use-fork-collection';
+import { AddToFavouritesButton } from '@/features/favourites/components/shared/add-to-favourites-button';
+import { RemoveFromFavouritesButton } from '@/features/favourites/components/shared/remove-from-favourites-button';
+import type {
+    AddToFavouritesMutationCallbacks,
+    RemoveFromFavouritesMutationCallbacks,
+} from '@/features/favourites/hooks/use-favourite-mutation';
+import { favouriteCollectionsQueryOptions } from '@/features/favourites/lib/favourites-query-options';
 import type { ApiSuccess } from '@/lib/api-client';
 import { Permission, type CollectionListDtoType } from '@snippetly/common/dto';
+import { useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { EditIcon, EyeIcon, MoreHorizontalIcon } from 'lucide-react';
+import { EditIcon, EyeIcon, MoreHorizontalIcon, PlusIcon } from 'lucide-react';
 import React from 'react';
 
 export type CollectionActionMenuProps = {
@@ -25,120 +33,223 @@ export type CollectionActionMenuProps = {
     deleteCollection?: DeleteCollectionMutationCallbacks;
     moveCollectionToTrash?: SoftDeleteCollectionMutationCallbacks;
     forkCollection?: ForkCollectionMutationCallbacks;
+    addCollectionToFavourites?: AddToFavouritesMutationCallbacks;
+    removeCollectionFromFavourites?: RemoveFromFavouritesMutationCallbacks;
+    showViewButton?: boolean;
+    showEditButton?: boolean;
+    showAddSnippetButton?: boolean;
+    showDeleteButton?: boolean;
+    showMoveToTrashButton?: boolean;
+    showForkButton?: boolean;
+    showAddToFavButton?: boolean;
+    showRemoveFromFavButton?: boolean;
 };
 export function CollectionActionMenu({
     collection,
     deleteCollection,
     moveCollectionToTrash,
     forkCollection,
+    addCollectionToFavourites,
+    removeCollectionFromFavourites,
+    showViewButton = true,
+    showEditButton = true,
+    showAddSnippetButton = true,
+    showDeleteButton = true,
+    showMoveToTrashButton = true,
+    showForkButton = true,
+    showAddToFavButton = true,
+    showRemoveFromFavButton = true,
 }: CollectionActionMenuProps) {
     const [open, setOpen] = React.useState(false);
+    const qClient = useQueryClient();
 
     return (
         <DropdownMenu open={open} onOpenChange={setOpen}>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm">
-                    <MoreHorizontalIcon className="h-4 w-4" />
+                <Button variant="ghost">
+                    <MoreHorizontalIcon />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-                <DropdownMenuGroup>
-                    <DropdownMenuItem asChild>
-                        <Button variant={'ghost'} className="justify-start" asChild>
-                            <Link to={'/dashboard/collections/$id'} params={{ id: collection.id }}>
-                                <EyeIcon className="mr-2 h-4 w-4" />
-                                View Collection
-                            </Link>
-                        </Button>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                </DropdownMenuGroup>
-                <DropdownMenuGroup>
-                    <PermissionGuard
-                        requiredPermissions={[
-                            Permission.Authenticated,
-                            Permission.Owner,
-                            Permission.DeleteCollection,
-                        ]}
-                        ownerId={collection.creator.id}
-                    >
-                        <DropdownMenuItem asChild>
-                            <Button variant={'ghost'} className="justify-start" asChild>
-                                <Link to={'/dashboard/collections/$id/edit'} params={{ id: collection.id }}>
-                                    <EditIcon className="mr-2 h-4 w-4" />
-                                    Edit Collection
-                                </Link>
-                            </Button>
-                        </DropdownMenuItem>
-                    </PermissionGuard>
-                    <PermissionGuard
-                        requiredPermissions={[Permission.Authenticated, Permission.CreateCollection]}
-                    >
-                        <DropdownMenuItem onSelect={e => e.preventDefault()} asChild>
-                            <ForkCollectionButton
-                                variant={'ghost'}
-                                collectionId={collection.id}
-                                mutationCallbacks={{
-                                    ...forkCollection,
-                                    onSuccess: (...props) => {
-                                        setOpen(false);
-                                        forkCollection?.onSuccess?.(...props);
-                                    },
-                                }}
-                                className="justify-start"
-                            />
-                        </DropdownMenuItem>
-                    </PermissionGuard>
-                    <DropdownMenuSeparator />
-                </DropdownMenuGroup>
-                <DropdownMenuGroup>
-                    <PermissionGuard
-                        requiredPermissions={[
-                            Permission.Authenticated,
-                            Permission.Owner,
-                            Permission.DeleteCollection,
-                        ]}
-                        ownerId={collection.creator.id}
-                    >
-                        <DropdownMenuItem onSelect={e => e.preventDefault()} asChild>
-                            <MoveCollectionToTrashButton
-                                collectionId={collection.id}
-                                mutationCallbacks={{
-                                    ...moveCollectionToTrash,
-                                    onSuccess: (...props) => {
-                                        setOpen(false);
-                                        moveCollectionToTrash?.onSuccess?.(...props);
-                                    },
-                                }}
-                                className="justify-start"
-                                variant={'ghost'}
-                            />
-                        </DropdownMenuItem>
-                    </PermissionGuard>
-                    <PermissionGuard
-                        requiredPermissions={[
-                            Permission.Authenticated,
-                            Permission.Owner,
-                            Permission.DeleteCollection,
-                        ]}
-                        ownerId={collection.creator.id}
-                    >
-                        <DropdownMenuItem onSelect={e => e.preventDefault()} asChild>
-                            <DeleteCollectionButton
-                                collectionId={collection.id}
-                                mutationCallbacks={{
-                                    ...deleteCollection,
-                                    onSuccess: (...props) => {
-                                        setOpen(false);
-                                        deleteCollection?.onSuccess?.(...props);
-                                    },
-                                }}
-                                className="justify-start w-full"
-                                variant={'ghost'}
-                            />
-                        </DropdownMenuItem>
-                    </PermissionGuard>
-                </DropdownMenuGroup>
+                {(showViewButton || showAddToFavButton || showRemoveFromFavButton) && (
+                    <DropdownMenuGroup>
+                        {showViewButton && (
+                            <DropdownMenuItem asChild>
+                                <Button variant={'ghost'} className="w-full justify-start" asChild>
+                                    <Link to={'/collections/$id'} params={{ id: collection.id }}>
+                                        <EyeIcon />
+                                        View Collection
+                                    </Link>
+                                </Button>
+                            </DropdownMenuItem>
+                        )}
+
+                        <PermissionGuard requiredPermissions={[Permission.Authenticated]}>
+                            <DropdownMenuItem asChild>
+                                {showRemoveFromFavButton && collection.isFavouritedByCurrentUser ? (
+                                    <RemoveFromFavouritesButton
+                                        resourceType="collections"
+                                        resourceId={collection.id}
+                                        variant="ghost"
+                                        type="button"
+                                        className="w-full justify-start"
+                                        mutationCallbacks={{
+                                            ...removeCollectionFromFavourites,
+                                            onSuccess: (...props) => {
+                                                setOpen(false);
+                                                qClient.invalidateQueries(favouriteCollectionsQueryOptions());
+                                                removeCollectionFromFavourites?.onSuccess?.(...props);
+                                            },
+                                        }}
+                                    />
+                                ) : (
+                                    <React.Fragment>
+                                        {showAddToFavButton && (
+                                            <AddToFavouritesButton
+                                                resourceType="collections"
+                                                resourceId={collection.id}
+                                                variant="ghost"
+                                                type="button"
+                                                className="w-full justify-start"
+                                                mutationCallbacks={{
+                                                    ...addCollectionToFavourites,
+                                                    onSuccess: (...props) => {
+                                                        setOpen(false);
+                                                        qClient.invalidateQueries(
+                                                            favouriteCollectionsQueryOptions(),
+                                                        );
+                                                        addCollectionToFavourites?.onSuccess?.(...props);
+                                                    },
+                                                }}
+                                            />
+                                        )}
+                                    </React.Fragment>
+                                )}
+                            </DropdownMenuItem>
+                        </PermissionGuard>
+                        <DropdownMenuSeparator />
+                    </DropdownMenuGroup>
+                )}
+
+                {(showAddSnippetButton ||
+                    showEditButton ||
+                    showForkButton ||
+                    showMoveToTrashButton ||
+                    showDeleteButton) && (
+                    <DropdownMenuGroup>
+                        {showAddSnippetButton && (
+                            <PermissionGuard
+                                requiredPermissions={[
+                                    Permission.Authenticated,
+                                    Permission.Owner,
+                                    Permission.CreateSnippet,
+                                ]}
+                                ownerId={collection.creator.id}
+                            >
+                                <DropdownMenuItem asChild>
+                                    <Button variant={'ghost'} className="w-full justify-start" asChild>
+                                        <Link
+                                            to={'/dashboard/snippets/new'}
+                                            search={{
+                                                collectionId: collection.id,
+                                                collectionName: collection.name,
+                                            }}
+                                        >
+                                            <PlusIcon />
+                                            Add New Snippet To Collection
+                                        </Link>
+                                    </Button>
+                                </DropdownMenuItem>
+                            </PermissionGuard>
+                        )}
+                        {showEditButton && (
+                            <PermissionGuard
+                                requiredPermissions={[
+                                    Permission.Authenticated,
+                                    Permission.Owner,
+                                    Permission.UpdateCollection,
+                                ]}
+                                ownerId={collection.creator.id}
+                            >
+                                <DropdownMenuItem asChild>
+                                    <Button variant={'ghost'} className="w-full justify-start" asChild>
+                                        <Link
+                                            to={'/dashboard/collections/$id/edit'}
+                                            params={{ id: collection.id }}
+                                        >
+                                            <EditIcon />
+                                            Edit Collection
+                                        </Link>
+                                    </Button>
+                                </DropdownMenuItem>
+                            </PermissionGuard>
+                        )}
+                        {showForkButton && (
+                            <PermissionGuard
+                                requiredPermissions={[Permission.Authenticated, Permission.CreateCollection]}
+                                ownerId={collection.creator.id}
+                                preventOwner={true}
+                            >
+                                <DropdownMenuItem onSelect={e => e.preventDefault()} asChild>
+                                    <ForkCollectionButton
+                                        variant={'ghost'}
+                                        collectionId={collection.id}
+                                        mutationCallbacks={{
+                                            ...forkCollection,
+                                            onSuccess: (...props) => {
+                                                setOpen(false);
+                                                forkCollection?.onSuccess?.(...props);
+                                            },
+                                        }}
+                                        className="w-full justify-start"
+                                    />
+                                </DropdownMenuItem>
+                            </PermissionGuard>
+                        )}
+
+                        <PermissionGuard
+                            requiredPermissions={[
+                                Permission.Authenticated,
+                                Permission.Owner,
+                                Permission.DeleteCollection,
+                            ]}
+                            ownerId={collection.creator.id}
+                        >
+                            {showMoveToTrashButton && (
+                                <DropdownMenuItem onSelect={e => e.preventDefault()} asChild>
+                                    <MoveCollectionToTrashButton
+                                        collectionId={collection.id}
+                                        mutationCallbacks={{
+                                            ...moveCollectionToTrash,
+                                            onSuccess: (...props) => {
+                                                setOpen(false);
+                                                moveCollectionToTrash?.onSuccess?.(...props);
+                                            },
+                                        }}
+                                        className="justify-start"
+                                        variant={'ghost'}
+                                    />
+                                </DropdownMenuItem>
+                            )}
+                            {showDeleteButton && (
+                                <DropdownMenuItem onSelect={e => e.preventDefault()} asChild>
+                                    <DeleteCollectionButton
+                                        collectionId={collection.id}
+                                        mutationCallbacks={{
+                                            ...deleteCollection,
+                                            onSuccess: (...props) => {
+                                                setOpen(false);
+                                                deleteCollection?.onSuccess?.(...props);
+                                            },
+                                        }}
+                                        className="justify-start w-full"
+                                        variant={'ghost'}
+                                    />
+                                </DropdownMenuItem>
+                            )}
+                        </PermissionGuard>
+                    </DropdownMenuGroup>
+                )}
             </DropdownMenuContent>
         </DropdownMenu>
     );

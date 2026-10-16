@@ -11,8 +11,8 @@ import {
     InferDtoType,
     inputIdSchema,
     sortDirection,
-    successResponse,
     stringFilterOperators,
+    successResponse,
 } from '../shared/common-schemas.js';
 import { developer } from '../shared/developer.type.js';
 import {
@@ -22,6 +22,7 @@ import {
     withServerErrors,
 } from '../shared/errors.js';
 import { tag } from '../shared/tag.type.js';
+import { disallowedCollectionOwnerForkError } from './errors.js';
 
 const collectionActionOutput = collection.omit({ creator: true, tags: true }).extend({
     creator: developer.pick({ id: true, firstName: true, lastName: true, image: true }),
@@ -102,11 +103,10 @@ export type RestoreCollectionDtoType = InferDtoType<typeof restoreCollectionDto>
 //########################### Fork ########################################
 const forkCollectionInput = inputIdSchema;
 
-const forkCollectionOutput = withServerErrors(collectionActionOutput, [
-    userInputErrorSchema,
-    forbiddenErrorSchema,
-    entityNotFoundErrorSchema,
-]);
+const forkCollectionOutput = withServerErrors(
+    z.union([collectionActionOutput, disallowedCollectionOwnerForkError]),
+    [userInputErrorSchema, forbiddenErrorSchema, entityNotFoundErrorSchema],
+);
 
 export const forkCollectionDto = {
     input: forkCollectionInput,
@@ -119,6 +119,7 @@ export type ForkCollectionDtoType = InferDtoType<typeof forkCollectionDto>;
 const findOneCollectionInput = inputIdSchema;
 
 const collectionItem = collection.omit({ creator: true, tags: true }).extend({
+    isFavouritedByCurrentUser: z.boolean(),
     creator: developer.pick({
         id: true,
         firstName: true,
@@ -139,6 +140,7 @@ const publicCollectionItem = collectionItem.pick({
     color: true,
     description: true,
     allowForking: true,
+    isFavouritedByCurrentUser: true,
     tags: true,
     creator: true,
     snippetCount: true,
@@ -202,6 +204,7 @@ const collectionListInput = createPaginatedListInputSchema(filterSchema, sortSch
     .partial();
 
 const collectionListItem = collection.omit({ tags: true, creator: true }).extend({
+    isFavouritedByCurrentUser: z.boolean(),
     tags: z.array(tag.pick({ value: true })).optional(),
     creator: developer.pick({
         id: true,
@@ -229,6 +232,7 @@ const publicCollectionListItem = collectionListItem.pick({
     color: true,
     description: true,
     allowForking: true,
+    isFavouritedByCurrentUser: true,
     tags: true,
     creator: true,
     snippetCount: true,

@@ -107,3 +107,13 @@ export const invalidFriendshipActionError = z.object({
     message: z.string().nonempty(),
     reason: z.string().optional(),
 });
+
+/**
+ * @description
+ * Represents the shape of an error that gets thrown when attempting to fork a collection by its creator.
+ */
+export const disallowedCollectionOwnerForkError = z.object({
+    code: z.literal('DISALLOWED_COLLECTION_OWNER_FORK_ERROR'),
+    httpStatusCode: z.literal(400),
+    message: z.string().nonempty(),
+});

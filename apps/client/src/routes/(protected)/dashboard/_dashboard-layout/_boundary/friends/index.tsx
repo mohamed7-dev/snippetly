@@ -12,25 +12,28 @@ import {
 import { createFileRoute } from '@tanstack/react-router';
 import z from 'zod';
 
-const searchSchema = z.object({
-    tab: z.enum(['friends', 'snippets']).default('friends').catch('friends'),
-    friends: z
-        .object({
-            sort: currentUserFriendsListDto.input.shape.sort.optional().default({}).catch({}),
-            filter: currentUserFriendsListDto.input.shape.filter.optional().default({}).catch({}),
-            filterOperator: currentUserFriendsListDto.input.shape.filterOperator,
-        })
-        .optional(),
-    snippets: z
-        .object({
-            sort: userFriendsSnippetsListDto.input.shape.sort.optional().default({}).catch({}),
-            filter: userFriendsSnippetsListDto.input.shape.filter.optional().default({}).catch({}),
-            filterOperator: userFriendsSnippetsListDto.input.shape.filterOperator,
-            friendId: idSchema.optional(),
-            tags: userFriendsSnippetsListDto.input.shape.tags.optional(),
-        })
-        .optional(),
-});
+const searchSchema = z
+    .object({
+        tab: z.enum(['friends', 'snippets']).default('friends').catch('friends'),
+        friends: z
+            .object({
+                sort: currentUserFriendsListDto.input.shape.sort,
+                filter: currentUserFriendsListDto.input.shape.filter,
+                filterOperator: currentUserFriendsListDto.input.shape.filterOperator,
+            })
+            .partial(),
+        snippets: z
+            .object({
+                sort: userFriendsSnippetsListDto.input.shape.sort,
+                filter: userFriendsSnippetsListDto.input.shape.filter,
+                filterOperator: userFriendsSnippetsListDto.input.shape.filterOperator,
+                friendId: idSchema,
+                tags: userFriendsSnippetsListDto.input.shape.tags,
+            })
+            .partial(),
+    })
+    .partial()
+    .optional();
 
 export const Route = createFileRoute('/(protected)/dashboard/_dashboard-layout/_boundary/friends/')({
     component: FriendsPage,
@@ -44,7 +47,7 @@ export const Route = createFileRoute('/(protected)/dashboard/_dashboard-layout/_
         };
     },
     validateSearch: searchSchema,
-    loaderDeps: ({ search: { friends } }) => ({ ...friends }),
+    loaderDeps: ({ search: { friends } = {} }) => ({ ...friends }),
     loader: async ({ context: { queryClient }, deps }) => {
         await queryClient.infiniteQuery({
             ...listCurrentUserFriendsQueryOptions(deps, Object.values(deps)),

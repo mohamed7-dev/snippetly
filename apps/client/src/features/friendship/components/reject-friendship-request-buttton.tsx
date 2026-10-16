@@ -38,7 +38,7 @@ export function RejectFriendshipRequestButton({
             isLoading={isPending || (props?.isLoading ? props.isLoading : isPending)}
             onClick={handleSending}
         >
-            <XIcon className="h-4 w-4 mr-2" />
+            <XIcon />
             {label}
         </LoadingButton>
     );

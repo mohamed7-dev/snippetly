@@ -10,12 +10,15 @@ import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import z from 'zod';
 
-const searchSchema = z.object({
-    filter: currentUserCollectionListDto.input.shape.filter.optional().default({}).catch({}),
-    sort: currentUserCollectionListDto.input.shape.sort.optional().default({}).catch({}),
-    filterOperator: currentUserCollectionListDto.input.shape.filterOperator,
-    tags: currentUserCollectionListDto.input.shape.tags.optional(),
-});
+const searchSchema = z
+    .object({
+        filter: currentUserCollectionListDto.input.shape.filter,
+        sort: currentUserCollectionListDto.input.shape.sort,
+        filterOperator: currentUserCollectionListDto.input.shape.filterOperator,
+        tags: currentUserCollectionListDto.input.shape.tags,
+    })
+    .partial()
+    .optional();
 
 export const Route = createFileRoute('/(protected)/dashboard/_dashboard-layout/_boundary/collections/')({
     component: CollectionsPage,
@@ -29,7 +32,7 @@ export const Route = createFileRoute('/(protected)/dashboard/_dashboard-layout/_
             ],
         };
     },
-    loaderDeps: ({ search: { sort, filter, filterOperator, tags } }) => ({
+    loaderDeps: ({ search: { sort, filter, filterOperator, tags } = {} }) => ({
         sort,
         filter,
         filterOperator,

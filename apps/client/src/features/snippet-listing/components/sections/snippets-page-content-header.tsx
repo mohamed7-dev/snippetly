@@ -13,7 +13,7 @@ export function SnippetsPageContentHeader() {
     const search = useSearch({
         from: '/(protected)/dashboard/_dashboard-layout/_boundary/snippets/',
     });
-    const { sort, filter, filterOperator, tags } = search;
+    const { sort, filter, filterOperator, tags } = search ?? {};
     const navigate = useNavigate();
     const queryKey = [sort, filter, filterOperator, tags];
 
@@ -42,7 +42,7 @@ export function SnippetsPageContentHeader() {
                         onApply={val => {
                             navigate({
                                 to: '.',
-                                search: previous => ({ ...previous, filter: val }),
+                                search: previous => ({ ...previous, ...val }),
                             });
                         }}
                     />

@@ -293,7 +293,18 @@ export class FriendshipService {
             orderBy: {
                 updatedAt: 'DESC',
             },
+            customPropsMap: {
+                friendFirstName:
+                    'CASE WHEN {requester}.id = :friendDeveloperId THEN {addressee}.firstName ELSE {requester}.firstName END',
+                friendLastName:
+                    'CASE WHEN {requester}.id = :friendDeveloperId THEN {addressee}.lastName ELSE {requester}.lastName END',
+                friendEmailAddress:
+                    'CASE WHEN {requester}.id = :friendDeveloperId THEN {addressee}.emailAddress ELSE {requester}.emailAddress END',
+                friendId:
+                    'CASE WHEN {requester}.id = :friendDeveloperId THEN {addressee}.id ELSE {requester}.id END',
+            },
         });
+        qb.setParameter('friendDeveloperId', developerId);
         const [items, itemsCount] = await qb.getManyAndCount();
 
         return { items, itemsCount };
@@ -428,6 +439,11 @@ export class FriendshipService {
             orderBy: {
                 createdAt: 'DESC',
             },
+            customPropsMap: {
+                requesterFirstName: 'requester.firstName',
+                requesterLastName: 'requester.lastName',
+                requesterId: 'requester.id',
+            },
         });
         const [items, itemsCount] = await qb.getManyAndCount();
         return { items, itemsCount };
@@ -450,6 +466,11 @@ export class FriendshipService {
             },
             orderBy: {
                 createdAt: 'DESC',
+            },
+            customPropsMap: {
+                addresseeFirstName: 'addressee.firstName',
+                addresseeLastName: 'addressee.lastName',
+                addresseeId: 'addressee.id',
             },
         });
         const [items, itemsCount] = await qb.getManyAndCount();

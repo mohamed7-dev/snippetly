@@ -8,30 +8,26 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/features/auth/hooks/use-auth';
+import { DeveloperActionsDropdown } from '@/features/developer-actions/components/developer-actions-dropdown';
 import { CurrentUserFriendsSnippets } from '@/features/snippet-listing/components/sections/current-user-friends-snippets';
 import { getCurrentDeveloperActivityStats } from '@/features/stats/lib/stats-query-options';
 import { formatDeveloperInfo } from '@/lib/format-developer-info';
 import { currentUserFriendsListDto } from '@snippetly/common/dto';
 import { omit } from '@snippetly/common/lib';
-import { useQuery, useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
-import { EyeIcon, MoreHorizontalIcon, PlusIcon } from 'lucide-react';
+import { PlusIcon } from 'lucide-react';
 import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { listCurrentUserFriendsQueryOptions } from '../../lib/friendships-listing-query-options';
 
 export function FriendsPageTabs() {
-    const { tab, snippets } = useSearch({
+    const search = useSearch({
         from: '/(protected)/dashboard/_dashboard-layout/_boundary/friends/',
     });
+    const { tab, snippets } = search ?? {};
     const friendId = snippets?.friendId;
     const navigate = useNavigate();
 
@@ -41,13 +37,13 @@ export function FriendsPageTabs() {
             <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger
                     value="friends"
-                    onClick={() => navigate({ to: '.', search: { tab: 'friends' } })}
+                    onClick={() => navigate({ to: '.', search: prev => ({ ...prev, tab: 'friends' }) })}
                 >
                     My Friends ({data?.friendsCount ?? 0})
                 </TabsTrigger>
                 <TabsTrigger
                     value="snippets"
-                    onClick={() => navigate({ to: '.', search: { tab: 'snippets' } })}
+                    onClick={() => navigate({ to: '.', search: prev => ({ ...prev, tab: 'snippets' }) })}
                 >
                     Friends' Snippets
                 </TabsTrigger>
@@ -84,13 +80,15 @@ export function FriendsPageTabs() {
 }
 
 function FriendsTabContent() {
-    const { snippets, friends, ...search } = useSearch({
+    const search = useSearch({
         from: '/(protected)/dashboard/_dashboard-layout/_boundary/friends/',
     });
-    const queryKeys = Object.values(friends ?? {});
+    const { filter, filterOperator, sort } = search?.friends ?? {};
+    const queryKeys = [filter, filterOperator, sort];
     const navigate = useNavigate();
+    const qClient = useQueryClient();
     const { data, isFetchingNextPage, hasNextPage, fetchNextPage } = useSuspenseInfiniteQuery(
-        listCurrentUserFriendsQueryOptions(friends, queryKeys),
+        listCurrentUserFriendsQueryOptions({ filter, filterOperator, sort }, queryKeys),
     );
     const { user } = useAuth();
 
@@ -113,26 +111,32 @@ function FriendsTabContent() {
         return formatDeveloperInfo(developer).fullName;
     };
 
+    const onMutateFavSuccess = (actionType: 'add' | 'remove') => {
+        // TODO: update qClient cache to achieve optimistic update to the isFavouritedByCurrentUser prop
+        // and revert to the previous state otherwise, also trigger the re-invalidation
+        qClient.invalidateQueries(listCurrentUserFriendsQueryOptions(undefined, queryKeys));
+    };
+
     return (
         <React.Fragment>
             <div className="flex items-center gap-4 my-6">
-                <SortQueryDialog
-                    sortSchema={currentUserFriendsListDto.input.shape.sort}
-                    value={{ sort: friends?.sort }}
+                <FilterQueryDialog
+                    schema={currentUserFriendsListDto.input.shape.filter}
+                    value={{ filter, filterOperator }}
                     onApply={val =>
                         navigate({
                             to: '.',
-                            search: { ...search, snippets, friends: { ...friends, sort: val.sort } },
+                            search: prev => ({ ...prev, friends: { ...prev?.friends, ...val } }),
                         })
                     }
                 />
-                <FilterQueryDialog
-                    schema={currentUserFriendsListDto.input.shape.filter}
-                    value={{ filter: friends?.filter, filterOperator: friends?.filterOperator }}
+                <SortQueryDialog
+                    sortSchema={currentUserFriendsListDto.input.shape.sort}
+                    value={{ sort }}
                     onApply={val =>
                         navigate({
                             to: '.',
-                            search: { ...search, snippets, friends: { ...friends, ...val } },
+                            search: prev => ({ ...prev, friends: { ...prev?.friends, sort: val.sort } }),
                         })
                     }
                 />
@@ -158,23 +162,25 @@ function FriendsTabContent() {
                                         </CardTitle>
                                     </div>
                                 </div>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                            <MoreHorizontalIcon className="h-4 w-4" />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                        <DropdownMenuItem asChild>
-                                            <Button variant={'ghost'} asChild>
-                                                <Link to="/profile/$id" params={{ id: item.friend.id }}>
-                                                    <EyeIcon className="mr-2 h-4 w-4" />
-                                                    View Profile
-                                                </Link>
-                                            </Button>
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
+                                <DeveloperActionsDropdown
+                                    developer={item.friend}
+                                    friendshipInfo={{
+                                        isFriendWithCurrentUser: true,
+                                        friendshipStatus: item.status,
+                                    }}
+                                    favouriteInfo={{
+                                        isFavouritedByCurrentUser: item.friend.isFavouritedByCurrentUser,
+                                    }}
+                                    showAddToFavourites={true}
+                                    showRemoveFromFavourites={true}
+                                    showViewProfile={true}
+                                    addDeveloperToFavourites={{
+                                        onSuccess: () => onMutateFavSuccess('add'),
+                                    }}
+                                    removeDeveloperFromFavourites={{
+                                        onSuccess: () => onMutateFavSuccess('remove'),
+                                    }}
+                                />
                             </div>
                             <p className="text-sm text-muted-foreground text-pretty">{item.friend.bio}</p>
                         </CardHeader>
@@ -211,12 +217,11 @@ function FriendsTabContent() {
                                 <Button size="sm" variant="outline">
                                     <Link
                                         to="."
-                                        search={{
-                                            ...search,
-                                            friends,
+                                        search={prev => ({
+                                            ...prev,
                                             tab: 'snippets',
-                                            snippets: { ...snippets, friendId: item.friend.id },
-                                        }}
+                                            snippets: { ...prev?.snippets, friendId: item.friend.id },
+                                        })}
                                     >
                                         View Snippets
                                     </Link>

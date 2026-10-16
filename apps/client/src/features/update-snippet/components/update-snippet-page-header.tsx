@@ -32,7 +32,7 @@ export function UpdateSnippetPageHeader({ isPending }: { isPending: boolean }) {
                     ownerId={snippet.creator.id}
                 >
                     <Button disabled={isPending} type="button" variant="outline" asChild>
-                        <Link to="/dashboard/snippets/$id" params={{ id: params.id }}>
+                        <Link to="/snippets/$id" params={{ id: params.id }}>
                             <EyeIcon className="h-4 w-4 sm:mr-2" />
                             Preview
                         </Link>

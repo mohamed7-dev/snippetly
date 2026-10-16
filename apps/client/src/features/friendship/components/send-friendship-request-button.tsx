@@ -38,7 +38,7 @@ export function SendFriendshipRequestButton({
             isLoading={isPending || (props?.isLoading ? props.isLoading : isPending)}
             onClick={handleSending}
         >
-            <UsersIcon className="h-4 w-4 mr-2" />
+            <UsersIcon />
             {label}
         </LoadingButton>
     );

@@ -1,5 +1,5 @@
 import { LoadingButton } from '@/components/inputs/loading-button';
-import { CheckIcon } from 'lucide-react';
+import { XIcon } from 'lucide-react';
 import type React from 'react';
 import {
     useCancelFriendshipRequest,
@@ -16,7 +16,7 @@ interface CancelFriendshipRequestButtonProps extends Omit<
     cancelFriendshipRequestMutationCallbacks?: CancelFriendshipRequestMutationCallbacks;
 }
 
-export function AcceptFriendshipRequestButton({
+export function CancelFriendshipRequestButton({
     label = 'cancel request',
     onClick,
     friendId,
@@ -38,7 +38,7 @@ export function AcceptFriendshipRequestButton({
             isLoading={isPending || (props?.isLoading ? props.isLoading : isPending)}
             onClick={handleSending}
         >
-            <CheckIcon className="h-4 w-4 mr-2" />
+            <XIcon />
             {label}
         </LoadingButton>
     );

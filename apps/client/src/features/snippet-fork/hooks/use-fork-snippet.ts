@@ -1,3 +1,4 @@
+import { getCurrentDeveloperActivityStats } from '@/features/stats/lib/stats-query-options';
 import { ApiClientError, developerApiClient, type ApiSuccess } from '@/lib/api-client';
 import { apiEndpoints } from '@/lib/api-endpoints';
 import { toastApiError } from '@/lib/toast-api-error';
@@ -23,8 +24,11 @@ export function useForkSnippet(callbacks?: ForkSnippetMutationCallbacks) {
                 },
             );
         },
+        ...callbacks,
         onSuccess: data => {
             toast.success('Snippet was forked successfully');
+            qClient.invalidateQueries(getCurrentDeveloperActivityStats());
+
             callbacks?.onSuccess?.(data);
         },
         onError: e => {

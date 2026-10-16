@@ -23,7 +23,7 @@ export function ProfilePageTabs() {
                   forkedCollectionsCount: 0,
               };
 
-    const { tab } = useSearch({ from: '/(public)/profile/$id' });
+    const { tab } = useSearch({ from: '/(public)/profile/$id' }) ?? {};
     const navigate = useNavigate();
 
     return (

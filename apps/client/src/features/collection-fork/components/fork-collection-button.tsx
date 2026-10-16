@@ -1,5 +1,4 @@
 import { LoadingButton } from '@/components/inputs/loading-button';
-import { cn } from '@/lib/utils';
 import { GitForkIcon } from 'lucide-react';
 import type React from 'react';
 import { toast } from 'sonner';
@@ -12,7 +11,6 @@ interface ForkCollectionButtonProps extends Omit<React.ComponentProps<typeof Loa
 }
 
 export function ForkCollectionButton({
-    className,
     label = 'fork collection',
     mutationCallbacks,
     onClick,
@@ -34,13 +32,8 @@ export function ForkCollectionButton({
         }
     };
     return (
-        <LoadingButton
-            {...props}
-            className={cn('w-full', className)}
-            onClick={handleForking}
-            isLoading={isPending}
-        >
-            <GitForkIcon className="mr-2 h-4 w-4" />
+        <LoadingButton {...props} onClick={handleForking} isLoading={isPending}>
+            <GitForkIcon />
             {label}
         </LoadingButton>
     );

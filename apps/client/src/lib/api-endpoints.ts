@@ -208,6 +208,13 @@ export const apiEndpoints = {
             contentType: null,
         },
     },
+    search: {
+        query: {
+            url: (searchParams: URLSearchParams) => `search?${searchParams.toString()}`,
+            method: 'GET',
+            contentType: null,
+        },
+    },
     tags: {
         popularList: {
             url: (searchParams: URLSearchParams) => `tags/popular?${searchParams.toString()}`,
@@ -248,6 +255,32 @@ export const apiEndpoints = {
         },
         listCurrentUserOutbox: {
             url: (searchParams: URLSearchParams) => `friendships/outbox?${searchParams.toString()}`,
+            method: 'GET',
+            contentType: null,
+        },
+    },
+    favourites: {
+        add: {
+            url: (resourceType: string, id: string) => `favourites/${resourceType}/${id}`,
+            method: 'POST',
+        },
+        remove: {
+            url: (resourceType: string, id: string) => `favourites/${resourceType}/${id}`,
+            method: 'DELETE',
+            contentType: null,
+        },
+        snippets: {
+            url: (searchParams: URLSearchParams) => `favourites/snippets?${searchParams.toString()}`,
+            method: 'GET',
+            contentType: null,
+        },
+        collections: {
+            url: (searchParams: URLSearchParams) => `favourites/collections?${searchParams.toString()}`,
+            method: 'GET',
+            contentType: null,
+        },
+        developers: {
+            url: (searchParams: URLSearchParams) => `favourites/developers?${searchParams.toString()}`,
             method: 'GET',
             contentType: null,
         },

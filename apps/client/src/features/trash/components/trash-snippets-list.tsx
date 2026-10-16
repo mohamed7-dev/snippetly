@@ -12,10 +12,10 @@ import { useNavigate, useSearch } from '@tanstack/react-router';
 import { useRestoreSnippet } from '../hooks/use-restore-snippet';
 
 export function TrashSnippetsList() {
-    const { snippets: snippetsSearch } = useSearch({
+    const search = useSearch({
         from: '/(protected)/dashboard/_dashboard-layout/_boundary/trash/',
     });
-    const { sort, filter, filterOperator, tags } = snippetsSearch ?? {};
+    const { sort, filter, filterOperator, tags } = search?.snippets ?? {};
     const queryKeys = [sort, filter, filterOperator, tags];
     const navigate = useNavigate();
     const qClient = useQueryClient();
@@ -74,7 +74,7 @@ export function TrashSnippetsList() {
                             to: '.',
                             search: prev => ({
                                 ...prev,
-                                snippets: { ...prev.snippets, ...val },
+                                snippets: { ...prev?.snippets, ...val },
                             }),
                         })
                     }
@@ -87,7 +87,7 @@ export function TrashSnippetsList() {
                             to: '.',
                             search: prev => ({
                                 ...prev,
-                                snippets: { ...prev.snippets, sort: val.sort },
+                                snippets: { ...prev?.snippets, sort: val.sort },
                             }),
                         })
                     }
@@ -102,7 +102,7 @@ export function TrashSnippetsList() {
                             search: previous => ({
                                 ...previous,
                                 snippets: {
-                                    ...previous.snippets,
+                                    ...previous?.snippets,
                                     tags: values.length ? { values, operator } : undefined,
                                 },
                             }),

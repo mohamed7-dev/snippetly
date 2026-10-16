@@ -1,10 +1,11 @@
+import { getCurrentDeveloperActivityStats } from '@/features/stats/lib/stats-query-options';
 import { ApiClientError, developerApiClient, type ApiSuccess } from '@/lib/api-client';
 import { apiEndpoints } from '@/lib/api-endpoints';
 import { toastApiError } from '@/lib/toast-api-error';
 import type { AsyncActionCallback } from '@/lib/types';
 import type { UpdateCollectionDtoType } from '@snippetly/common/dto';
 import { omit } from '@snippetly/common/lib';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 export type UpdateCollectionMutationCallbacks = AsyncActionCallback<
@@ -13,6 +14,8 @@ export type UpdateCollectionMutationCallbacks = AsyncActionCallback<
 >;
 
 export function useUpdateCollection(mutationCallbacks?: UpdateCollectionMutationCallbacks) {
+    const qClient = useQueryClient();
+
     return useMutation({
         mutationFn: async (input: UpdateCollectionDtoType['input']) => {
             return await developerApiClient.fetch<UpdateCollectionDtoType['output']>(
@@ -26,6 +29,7 @@ export function useUpdateCollection(mutationCallbacks?: UpdateCollectionMutation
         ...mutationCallbacks,
         onSuccess: data => {
             toast.success('Collection was updated successfully');
+            qClient.invalidateQueries(getCurrentDeveloperActivityStats());
             mutationCallbacks?.onSuccess?.(data);
         },
         onError: e => {

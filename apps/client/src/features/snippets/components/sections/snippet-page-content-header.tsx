@@ -1,19 +1,26 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { formatDeveloperInfo } from '@/lib/format-developer-info';
+import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { Link, useParams } from '@tanstack/react-router';
 import { GitForkIcon, GlobeIcon, LockIcon } from 'lucide-react';
 import { getSnippetQueryOptions } from '../../lib/snippet-query-options';
+import { SnippetActionsDropdown } from '../shared/snippet-actions-dropdown';
 
 export function SnippetPageContentHeader() {
-    const params = useParams({ from: '/(protected)/dashboard/snippets/$id/' });
+    const params = useParams({ from: '/(public)/snippets/$id' });
+    const queryClient = useQueryClient();
 
     const { data: snippet } = useSuspenseQuery(getSnippetQueryOptions(params.id));
 
     const isPrivate = 'isPrivate' in snippet ? snippet.isPrivate : false;
-    const nameFallback = snippet.creator.firstName.slice(0, 1) + ' ' + snippet.creator.lastName.slice(0, 1);
-    const fullName = snippet.creator.firstName + ' ' + snippet.creator.lastName;
 
+    const { fullName, initials } = formatDeveloperInfo(snippet.creator);
+
+    const onMutateSuccess = (_data?: any, actionType?: 'add' | 'remove') => {
+        // TODO: update fav info in the cache optimistically
+        queryClient.invalidateQueries(getSnippetQueryOptions(params.id));
+    };
     return (
         <div className="space-y-4">
             <div className="flex items-start justify-between">
@@ -25,17 +32,43 @@ export function SnippetPageContentHeader() {
                         {snippet.description}
                     </p>
                 </div>
+                <SnippetActionsDropdown
+                    snippet={snippet}
+                    deleteSnippet={{
+                        onSuccess: () => {
+                            onMutateSuccess();
+                        },
+                    }}
+                    moveSnippetToTrash={{
+                        onSuccess: () => {
+                            onMutateSuccess();
+                        },
+                    }}
+                    forkSnippet={{
+                        onSuccess: () => {
+                            onMutateSuccess();
+                        },
+                    }}
+                    addSnippetToFavourites={{
+                        onSuccess: data => {
+                            onMutateSuccess(data, 'add');
+                        },
+                    }}
+                    removeSnippetFromFavourites={{
+                        onSuccess: data => {
+                            onMutateSuccess(data, 'remove');
+                        },
+                    }}
+                    showViewButton={false}
+                />
             </div>
 
             <div className="flex items-center gap-4 flex-wrap">
                 <div className="flex items-center gap-2">
                     <Link to="/profile/$id" params={{ id: snippet.creator.id }}>
                         <Avatar className="h-8 w-8">
-                            <AvatarImage
-                                src={snippet.creator.image || '/placeholder.svg'}
-                                alt={nameFallback}
-                            />
-                            <AvatarFallback>{nameFallback}</AvatarFallback>
+                            <AvatarImage src={snippet.creator.image || '/placeholder.svg'} alt={initials} />
+                            <AvatarFallback>{initials}</AvatarFallback>
                         </Avatar>
                     </Link>
                     <div>

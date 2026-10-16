@@ -10,12 +10,15 @@ import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import z from 'zod';
 
-const searchSchema = z.object({
-    filter: currentUserSnippetListDto.input.shape.filter.optional().default({}).catch({}),
-    sort: currentUserSnippetListDto.input.shape.sort.optional().default({}).catch({}),
-    filterOperator: currentUserSnippetListDto.input.shape.filterOperator,
-    tags: currentUserSnippetListDto.input.shape.tags.optional(),
-});
+const searchSchema = z
+    .object({
+        filter: currentUserSnippetListDto.input.shape.filter,
+        sort: currentUserSnippetListDto.input.shape.sort,
+        filterOperator: currentUserSnippetListDto.input.shape.filterOperator,
+        tags: currentUserSnippetListDto.input.shape.tags,
+    })
+    .partial()
+    .optional();
 
 export const Route = createFileRoute('/(protected)/dashboard/_dashboard-layout/_boundary/snippets/')({
     component: RouteComponent,
@@ -29,7 +32,7 @@ export const Route = createFileRoute('/(protected)/dashboard/_dashboard-layout/_
             ],
         };
     },
-    loaderDeps: ({ search: { sort, filter, filterOperator, tags } }) => ({
+    loaderDeps: ({ search: { sort, filter, filterOperator, tags } = {} }) => ({
         sort,
         filter,
         filterOperator,

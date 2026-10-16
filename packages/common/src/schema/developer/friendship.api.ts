@@ -86,34 +86,24 @@ export type CancelFriendshipRequestDtoType = InferDtoType<typeof cancelFriendshi
 // ############################## Friends #############################
 const filterSchema = z.object({
     acceptedAt: dateTimeFilterOperators,
-    rejectedAt: dateTimeFilterOperators,
-    cancelledAt: dateTimeFilterOperators,
-    status: stringFilterOperators,
     friendFirstName: stringFilterOperators,
     friendLastName: stringFilterOperators,
-    friendEmailAddress: stringFilterOperators,
     friendId: idFilterOperators,
 });
 
 const sortSchema = z.object({
     acceptedAt: sortDirection,
-    rejectedAt: sortDirection,
-    cancelledAt: sortDirection,
-    status: sortDirection,
     friendFirstName: sortDirection,
     friendLastName: sortDirection,
-    friendEmailAddress: sortDirection,
     friendId: sortDirection,
 });
 
-const currentUserFriendsListInput = createPaginatedListInputSchema(
-    filterSchema.pick({ acceptedAt: true }),
-    sortSchema.pick({ acceptedAt: true }),
-)
+const currentUserFriendsListInput = createPaginatedListInputSchema(filterSchema, sortSchema)
     .unwrap()
     .partial();
 
 const currentUserFriendParticipant = friendshipParticipant.extend({
+    isFavouritedByCurrentUser: z.boolean(),
     snippetsCount: z.number().int().nonnegative().optional(),
     recentSnippets: z
         .array(
@@ -145,24 +135,31 @@ export const currentUserFriendsListDto = {
 export type CurrentUserFriendsListDtoType = InferDtoType<typeof currentUserFriendsListDto>;
 
 // ############################## Inbox #############################
+const currentUserRequestParticipant = friendshipParticipant.extend({
+    isFavouritedByCurrentUser: z.boolean(),
+});
+
+const currentUserRequestItem = friendshipItem.extend({
+    requester: currentUserRequestParticipant,
+    addressee: currentUserRequestParticipant,
+});
+
 const currentUserInboxListInput = createPaginatedListInputSchema(
     z.object({
         requesterFirstName: stringFilterOperators,
         requesterLastName: stringFilterOperators,
-        requesterEmailAddress: stringFilterOperators,
         requesterId: idFilterOperators,
     }),
     z.object({
         requesterFirstName: sortDirection,
         requesterLastName: sortDirection,
-        requesterEmailAddress: sortDirection,
         requesterId: sortDirection,
     }),
 )
     .unwrap()
     .partial();
 
-const currentUserInboxListOutput = withServerErrors(createPaginatedListOutputSchema(friendshipItem), [
+const currentUserInboxListOutput = withServerErrors(createPaginatedListOutputSchema(currentUserRequestItem), [
     userInputErrorSchema,
     forbiddenErrorSchema,
 ]);
@@ -179,23 +176,21 @@ const currentUserOutboxListInput = createPaginatedListInputSchema(
     z.object({
         addresseeFirstName: stringFilterOperators,
         addresseeLastName: stringFilterOperators,
-        addresseeEmailAddress: stringFilterOperators,
         addresseeId: idFilterOperators,
     }),
     z.object({
         addresseeFirstName: sortDirection,
         addresseeLastName: sortDirection,
-        addresseeEmailAddress: sortDirection,
         addresseeId: sortDirection,
     }),
 )
     .unwrap()
     .partial();
 
-const currentUserOutboxListOutput = withServerErrors(createPaginatedListOutputSchema(friendshipItem), [
-    userInputErrorSchema,
-    forbiddenErrorSchema,
-]);
+const currentUserOutboxListOutput = withServerErrors(
+    createPaginatedListOutputSchema(currentUserRequestItem),
+    [userInputErrorSchema, forbiddenErrorSchema],
+);
 
 export const currentUserOutboxListDto = {
     input: currentUserOutboxListInput,

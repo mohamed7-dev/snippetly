@@ -1,7 +1,7 @@
 import {
     CreateSnippetDtoType,
-    DeletionResponse,
     DeleteSnippetDtoType,
+    DeletionResponse,
     FilterGroupOperator,
     FindOneSnippetDtoType,
     ForkSnippetDtoType,
@@ -25,6 +25,7 @@ import { normalizeDeveloperCounts } from '../helpers/normalize-developer-counts'
 import { SlugValidator } from '../helpers/slug-validator.service';
 import { CollectionService } from './collection.service';
 import { DeveloperService } from './developer.service';
+import { FavouriteService } from './favourite.service';
 import { FriendshipService } from './friendship.service';
 import { TagService } from './tag.service';
 
@@ -39,7 +40,20 @@ export class SnippetService {
         private readonly listQueryBuilder: ListQueryBuilder,
         private readonly friendshipService: FriendshipService,
         private readonly eventBus: EventBus,
+        private readonly favouriteService: FavouriteService,
     ) {}
+
+    public async attachFavouriteStatus<T extends { id: string }>(ctx: RequestContext, items: T[]) {
+        const statusById = await this.favouriteService.getFavouriteStatusMap(
+            ctx,
+            items.map(({ id }) => id),
+            'snippets',
+        );
+        return items.map(item => ({
+            ...item,
+            isFavouritedByCurrentUser: statusById.get(item.id) ?? false,
+        }));
+    }
 
     public async findOne(
         ctx: RequestContext,
@@ -75,6 +89,11 @@ export class SnippetService {
     ) {
         const qb = this.listQueryBuilder.build(Snippet, input as any, {
             ctx,
+            customPropsMap: {
+                creatorFirstName: 'creator.firstName',
+                creatorLastName: 'creator.lastName',
+                collectionName: 'collection.name',
+            },
             relations: {
                 ...relations,
             },
@@ -374,7 +393,10 @@ export class SnippetService {
             { includePrivateSnippet: true, includeSoftDeleted: true },
         );
 
-        if (!snippet?.deletedAt || (ctx.isAuthorizedAsOwnerOnly && snippet.creator.user.id !== ctx.activeUserId)) {
+        if (
+            !snippet?.deletedAt ||
+            (ctx.isAuthorizedAsOwnerOnly && snippet.creator.user.id !== ctx.activeUserId)
+        ) {
             throw new EntityNotFoundError({ entityName: 'Snippet', entityId: input.id });
         }
 
@@ -396,7 +418,10 @@ export class SnippetService {
             { includePrivateSnippet: true, includeSoftDeleted: true },
         );
 
-        if (!snippet?.deletedAt || (ctx.isAuthorizedAsOwnerOnly && snippet.creator.user.id !== ctx.activeUserId)) {
+        if (
+            !snippet?.deletedAt ||
+            (ctx.isAuthorizedAsOwnerOnly && snippet.creator.user.id !== ctx.activeUserId)
+        ) {
             throw new EntityNotFoundError({ entityName: 'Snippet', entityId: input.id });
         }
 

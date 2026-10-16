@@ -1,7 +1,6 @@
 import { ErrorBoundaryFallback } from '@/components/feedback/error-boundary-fallback';
 import { InfiniteLoader } from '@/components/feedback/infinite-loader';
 import { SectionLoader } from '@/components/feedback/section-loader';
-import { LoadingButton } from '@/components/inputs/loading-button';
 import { FilterQueryDialog } from '@/components/shared/list-query-builder/filter-query-dialog';
 import { SortQueryDialog } from '@/components/shared/list-query-builder/sort-query-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -9,9 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AcceptFriendshipRequestButton } from '@/features/friendship/components/accept-friendship-request-button';
-import { RejectFriendshipRequestButton } from '@/features/friendship/components/reject-friendship-request-buttton';
-import { useCancelFriendshipRequest } from '@/features/friendship/hooks/use-cancel-friendship-request';
+import { DeveloperActionsDropdown } from '@/features/developer-actions/components/developer-actions-dropdown';
 import { getCurrentDeveloperActivityStats } from '@/features/stats/lib/stats-query-options';
 import type { ApiSuccess } from '@/lib/api-client';
 import { formatDeveloperInfo } from '@/lib/format-developer-info';
@@ -22,7 +19,7 @@ import {
 } from '@snippetly/common/dto';
 import { useQuery, useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
-import { ClockIcon, MailIcon, UserPlusIcon, XIcon } from 'lucide-react';
+import { ClockIcon, MailIcon, UserPlusIcon } from 'lucide-react';
 import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import {
@@ -54,11 +51,14 @@ export function RequestsPageTabs() {
             <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger
                     value="incoming"
-                    onClick={() => navigate({ to: '.', search: { tab: 'incoming' } })}
+                    onClick={() => navigate({ to: '.', search: prev => ({ ...prev, tab: 'incoming' }) })}
                 >
                     Incoming ({stats.friendsInboxCount})
                 </TabsTrigger>
-                <TabsTrigger value="sent" onClick={() => navigate({ to: '.', search: { tab: 'sent' } })}>
+                <TabsTrigger
+                    value="sent"
+                    onClick={() => navigate({ to: '.', search: prev => ({ ...prev, tab: 'sent' }) })}
+                >
                     Sent ({stats.friendsOutboxCount})
                 </TabsTrigger>
             </TabsList>
@@ -92,44 +92,43 @@ interface TabContentProps {
 }
 
 function InboxTabContent({ getNameFallback, getFullName }: TabContentProps) {
-    const { incoming, ...search } = useSearch({
+    const { incoming } = useSearch({
         from: '/(protected)/dashboard/_dashboard-layout/_boundary/requests/',
     });
     const navigate = useNavigate();
-
-    const queryKeys = Object.values(incoming ?? {});
-
-    const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery(
-        listCurrentUserInboxQueryOptions(incoming, queryKeys),
-    );
-    const inboxFriendships = data.pages?.flatMap(p => p.items) ?? [];
-
     const qClient = useQueryClient();
 
-    const onMutationSuccess = () => {
+    const { filter, filterOperator, sort } = incoming ?? {};
+
+    const queryKeys = [filter, filterOperator, sort];
+
+    const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery(
+        listCurrentUserInboxQueryOptions({ filter, filterOperator, sort }, queryKeys),
+    );
+    const inboxFriendships = data.pages?.flatMap(p => p.items) ?? [];
+    const onMutateSuccess = () => {
         qClient.invalidateQueries(listCurrentUserInboxQueryOptions(undefined, queryKeys));
     };
-
     return (
         <React.Fragment>
             <div className="flex items-center gap-4 my-6">
-                <SortQueryDialog
-                    sortSchema={currentUserInboxListDto.input.shape.sort}
-                    value={{ sort: incoming?.sort }}
+                <FilterQueryDialog
+                    schema={currentUserInboxListDto.input.shape.filter}
+                    value={{ filter, filterOperator }}
                     onApply={val =>
                         navigate({
                             to: '.',
-                            search: { ...search, incoming: { ...incoming, sort: val.sort } },
+                            search: prev => ({ ...prev, incoming: { ...prev?.incoming, ...val } }),
                         })
                     }
                 />
-                <FilterQueryDialog
-                    schema={currentUserInboxListDto.input.shape.filter}
-                    value={incoming}
+                <SortQueryDialog
+                    sortSchema={currentUserInboxListDto.input.shape.sort}
+                    value={{ sort }}
                     onApply={val =>
                         navigate({
                             to: '.',
-                            search: { ...search, incoming: { ...incoming, ...val } },
+                            search: prev => ({ ...prev, incoming: { ...prev?.incoming, sort: val.sort } }),
                         })
                     }
                 />
@@ -155,37 +154,44 @@ function InboxTabContent({ getNameFallback, getFullName }: TabContentProps) {
                                         >
                                             {getFullName(request.requester)}
                                         </Link>
-                                        <Badge variant="secondary" className="text-xs absolute top-0 right-0">
-                                            Sent {new Date(request.createdAt)?.toLocaleDateString()}
-                                        </Badge>
+                                        <div className="absolute top-0 right-0 flex items-center gap-2">
+                                            <Badge variant="secondary" className="text-xs">
+                                                Sent {new Date(request.createdAt)?.toLocaleDateString()}
+                                            </Badge>
+                                            <DeveloperActionsDropdown
+                                                developer={request.requester}
+                                                friendshipInfo={{
+                                                    isFriendWithCurrentUser: false,
+                                                    friendshipStatus: request.status,
+                                                }}
+                                                favouriteInfo={{
+                                                    isFavouritedByCurrentUser:
+                                                        request.requester.isFavouritedByCurrentUser,
+                                                }}
+                                                showAcceptFriendshipRequest={true}
+                                                showRejectFriendshipRequest={true}
+                                                showAddToFavourites={true}
+                                                showRemoveFromFavourites={true}
+                                                showViewProfile={true}
+                                                addDeveloperToFavourites={{
+                                                    onSuccess: onMutateSuccess,
+                                                }}
+                                                removeDeveloperFromFavourites={{
+                                                    onSuccess: onMutateSuccess,
+                                                }}
+                                                acceptFriendshipRequest={{
+                                                    onSuccess: onMutateSuccess,
+                                                }}
+                                                rejectFriendshipRequest={{
+                                                    onSuccess: onMutateSuccess,
+                                                }}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                             <div className="flex-1 space-y-3">
                                 <p className="text-sm text-muted-foreground mt-1">{request.requester.bio}</p>
-
-                                <div className="flex gap-2 flex-wrap">
-                                    <AcceptFriendshipRequestButton
-                                        friendId={request.requester.id}
-                                        variant={'outline'}
-                                        acceptFriendshipRequestMutationCallbacks={{
-                                            onSuccess: onMutationSuccess,
-                                        }}
-                                    />
-                                    <RejectFriendshipRequestButton
-                                        friendId={request.requester.id}
-                                        variant={'destructive-outline'}
-                                        rejectFriendshipRequestMutationCallbacks={{
-                                            onSuccess: onMutationSuccess,
-                                        }}
-                                    />
-
-                                    <Button variant="ghost" className="capitalize" asChild>
-                                        <Link to={'/profile/$id'} params={{ id: request.requester.id }}>
-                                            View {request.requester.firstName}'s Profile
-                                        </Link>
-                                    </Button>
-                                </div>
                             </div>
                         </CardContent>
                     </Card>
@@ -218,45 +224,43 @@ function InboxTabContent({ getNameFallback, getFullName }: TabContentProps) {
 }
 
 export function OutboxTabContent({ getNameFallback, getFullName }: TabContentProps) {
-    const { sent, ...search } = useSearch({
+    const { sent } = useSearch({
         from: '/(protected)/dashboard/_dashboard-layout/_boundary/requests/',
     });
     const navigate = useNavigate();
+    const qClient = useQueryClient();
 
-    const queryKeys = Object.values(sent ?? {});
+    const { filter, filterOperator, sort } = sent ?? {};
+    const queryKeys = [filter, filterOperator, sort];
     const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery(
-        listCurrentUserOutboxQueryOptions(sent, queryKeys),
+        listCurrentUserOutboxQueryOptions({ filter, filterOperator, sort }, queryKeys),
     );
     const outboxFriendships = data.pages?.flatMap(p => p.items) ?? [];
 
-    const qClient = useQueryClient();
-
-    const { mutateAsync: cancelRequest, isPending: isCancelling } = useCancelFriendshipRequest({
-        onSuccess: () => {
-            qClient.invalidateQueries(listCurrentUserOutboxQueryOptions(undefined, queryKeys));
-        },
-    });
+    const onMutateSuccess = () => {
+        qClient.invalidateQueries(listCurrentUserOutboxQueryOptions(undefined, queryKeys));
+    };
 
     return (
         <React.Fragment>
             <div className="flex items-center gap-4 my-6">
-                <SortQueryDialog
-                    sortSchema={currentUserOutboxListDto.input.shape.sort}
-                    value={{ sort: sent?.sort }}
+                <FilterQueryDialog
+                    schema={currentUserOutboxListDto.input.shape.filter}
+                    value={{ filter, filterOperator }}
                     onApply={val =>
                         navigate({
                             to: '.',
-                            search: { ...search, sent: { ...sent, sort: val.sort } },
+                            search: prev => ({ ...prev, sent: { ...prev?.sent, ...val } }),
                         })
                     }
                 />
-                <FilterQueryDialog
-                    schema={currentUserOutboxListDto.input.shape.filter}
-                    value={sent}
+                <SortQueryDialog
+                    sortSchema={currentUserOutboxListDto.input.shape.sort}
+                    value={{ sort }}
                     onApply={val =>
                         navigate({
                             to: '.',
-                            search: { ...search, sent: { ...sent, ...val } },
+                            search: prev => ({ ...prev, sent: { ...prev?.sent, sort: val.sort } }),
                         })
                     }
                 />
@@ -282,32 +286,41 @@ export function OutboxTabContent({ getNameFallback, getFullName }: TabContentPro
                                         >
                                             {getFullName(request.addressee)}
                                         </Link>
-                                        <Badge variant="secondary" className="text-xs absolute top-0 right-0">
-                                            Sent {new Date(request.createdAt)?.toLocaleDateString()}
-                                        </Badge>
+                                        <div className="absolute top-0 right-0 flex items-center gap-2">
+                                            <Badge variant="secondary" className="text-xs">
+                                                Sent {new Date(request.createdAt)?.toLocaleDateString()}
+                                            </Badge>
+                                            <DeveloperActionsDropdown
+                                                developer={request.addressee}
+                                                friendshipInfo={{
+                                                    isFriendWithCurrentUser: false,
+                                                    friendshipStatus: request.status,
+                                                }}
+                                                favouriteInfo={{
+                                                    isFavouritedByCurrentUser:
+                                                        request.addressee.isFavouritedByCurrentUser,
+                                                }}
+                                                showCancelFriendshipRequest={true}
+                                                showAddToFavourites={true}
+                                                showRemoveFromFavourites={true}
+                                                showViewProfile={true}
+                                                addDeveloperToFavourites={{
+                                                    onSuccess: onMutateSuccess,
+                                                }}
+                                                removeDeveloperFromFavourites={{
+                                                    onSuccess: onMutateSuccess,
+                                                }}
+                                                cancelFriendshipRequest={{
+                                                    onSuccess: onMutateSuccess,
+                                                }}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
                             <div className="flex-1 space-y-3">
                                 <p className="text-sm text-muted-foreground mt-1">{request.addressee.bio}</p>
-                                <div className="flex gap-2">
-                                    <LoadingButton
-                                        isLoading={isCancelling}
-                                        size="sm"
-                                        variant="destructive-outline"
-                                        disabled={isCancelling}
-                                        onClick={() => cancelRequest({ friendId: request.addressee.id })}
-                                    >
-                                        <XIcon className="h-4 w-4 mr-1" />
-                                        Cancel Request
-                                    </LoadingButton>
-                                    <Link to={`/profile/$id`} params={{ id: request.addressee.id }}>
-                                        <Button size="sm" variant="ghost">
-                                            View {request.addressee.firstName}'s Profile
-                                        </Button>
-                                    </Link>
-                                </div>
                             </div>
                         </CardContent>
                     </Card>

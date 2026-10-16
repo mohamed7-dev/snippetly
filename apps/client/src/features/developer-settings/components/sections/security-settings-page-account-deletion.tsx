@@ -39,20 +39,18 @@ export function SecuritySettingsPageAccountDeletion() {
                     <Trash2Icon className="h-5 w-5" />
                     Delete Account
                 </CardTitle>
-                <CardDescription>
-                    Permanently delete your account and all associated data. This action cannot be undone.
-                </CardDescription>
+                <CardDescription>Delete your account and all associated data.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
                 <ProcessStatus
-                    variant={'destructive'}
+                    variant={'info'}
                     showCloseButton={false}
                     title="Account Deletion"
                     description={
                         <p>
-                            <strong>Warning:</strong> Deleting your account will schedule removal of all your
-                            snippets, collections, and profile data after <b>30 days</b>. during this period
-                            you can sign-in and your account will be reactivated again
+                            Deleting your account will schedule removal of all your snippets, collections, and
+                            profile data after <b>30 days</b>. during this period you can sign-in and your
+                            account will be reactivated again
                         </p>
                     }
                 />

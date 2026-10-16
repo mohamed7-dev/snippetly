@@ -1,11 +1,11 @@
-import { useOfflineSnippetStore } from '@/features/offline-snippet/hooks/use-offline-snippet-store';
+import { getCurrentDeveloperActivityStats } from '@/features/stats/lib/stats-query-options';
 import { ApiClientError, developerApiClient, type ApiSuccess } from '@/lib/api-client';
 import { apiEndpoints } from '@/lib/api-endpoints';
 import { toastApiError } from '@/lib/toast-api-error';
 import type { AsyncActionCallback } from '@/lib/types';
 import type { UpdateSnippetDtoType } from '@snippetly/common/dto';
 import { omit } from '@snippetly/common/lib';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 export type UpdateSnippetMutationCallbacks = AsyncActionCallback<
@@ -14,7 +14,7 @@ export type UpdateSnippetMutationCallbacks = AsyncActionCallback<
 >;
 
 export function useUpdateSnippet(mutationCallbacks?: UpdateSnippetMutationCallbacks) {
-    const { update: updateOfflineSnippet } = useOfflineSnippetStore();
+    const qClient = useQueryClient();
 
     return useMutation({
         mutationFn: async (input: UpdateSnippetDtoType['input']) => {
@@ -29,8 +29,7 @@ export function useUpdateSnippet(mutationCallbacks?: UpdateSnippetMutationCallba
         ...mutationCallbacks,
         onSuccess: async data => {
             toast.success('Snippet was updated successfully');
-            updateOfflineSnippet.mutate({ ...data, tags: data.tags ?? [] });
-
+            qClient.invalidateQueries(getCurrentDeveloperActivityStats());
             mutationCallbacks?.onSuccess?.(data);
         },
         onError: e => {

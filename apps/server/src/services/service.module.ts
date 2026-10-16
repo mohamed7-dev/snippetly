@@ -8,6 +8,7 @@ import { AdministratorService } from './domain/administrator.service';
 import { AuthService } from './domain/auth.service';
 import { CollectionService } from './domain/collection.service';
 import { DeveloperService } from './domain/developer.service';
+import { FavouriteService } from './domain/favourite.service';
 import { FriendshipService } from './domain/friendship.service';
 import { JobRunner } from './domain/job-runner.service';
 import { RoleService } from './domain/role.service';
@@ -28,6 +29,7 @@ import { RequestContextService } from './helpers/request-context.service';
 import { SlugValidator } from './helpers/slug-validator.service';
 import { SlugService } from './helpers/slug.service';
 import { VerificationTokenGenerator } from './helpers/verification-token-generator.service';
+import { SearchService } from './search/search.service';
 
 const helpers = [
     RequestContextService,
@@ -52,9 +54,11 @@ const services = [
     AdministratorService,
     DeveloperService,
     SnippetService,
+    SearchService,
     CollectionService,
     TagService,
     FriendshipService,
+    FavouriteService,
     JobRunner,
 ];
 

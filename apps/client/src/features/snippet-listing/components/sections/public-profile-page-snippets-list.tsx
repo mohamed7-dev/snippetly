@@ -15,7 +15,7 @@ import { Link, useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import { PlusIcon } from 'lucide-react';
 
 export function PublicProfilePageSnippetsList() {
-    const { snippets: snippetsSearch } = useSearch({ from: '/(public)/profile/$id' });
+    const { snippets: snippetsSearch } = useSearch({ from: '/(public)/profile/$id' }) ?? {};
     const { id } = useParams({ from: '/(public)/profile/$id' });
     const navigate = useNavigate();
     const qClient = useQueryClient();
@@ -42,7 +42,7 @@ export function PublicProfilePageSnippetsList() {
                     onApply={val =>
                         navigate({
                             to: '.',
-                            search: prev => ({ ...prev, snippets: { ...prev.snippets, ...val } }),
+                            search: prev => ({ ...prev, snippets: { ...prev?.snippets, ...val } }),
                         })
                     }
                 />
@@ -52,7 +52,7 @@ export function PublicProfilePageSnippetsList() {
                     onApply={val =>
                         navigate({
                             to: '.',
-                            search: prev => ({ ...prev, snippets: { ...prev.snippets, sort: val.sort } }),
+                            search: prev => ({ ...prev, snippets: { ...prev?.snippets, sort: val.sort } }),
                         })
                     }
                 />
@@ -66,7 +66,7 @@ export function PublicProfilePageSnippetsList() {
                             search: previous => ({
                                 ...previous,
                                 snippets: {
-                                    ...previous.snippets,
+                                    ...previous?.snippets,
                                     tags: values.length ? { values, operator } : undefined,
                                 },
                             }),

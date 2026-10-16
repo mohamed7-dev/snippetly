@@ -1,7 +1,6 @@
 import { LoadingButton } from '@/components/inputs/loading-button';
 import { Button } from '@/components/ui/button';
 import { useDeleteConfirmation } from '@/hooks/use-delete-confirmation';
-import { cn } from '@/lib/utils';
 import { Trash2Icon } from 'lucide-react';
 import type React from 'react';
 import {
@@ -16,7 +15,6 @@ interface MoveSnippetToTrashButtonProps extends React.ComponentProps<typeof Butt
 }
 
 export function MoveSnippetToTrashButton({
-    className,
     label = 'move snippet to trash',
     snippetId,
     onClick,
@@ -45,13 +43,8 @@ export function MoveSnippetToTrashButton({
         }
     };
     return (
-        <LoadingButton
-            {...props}
-            className={cn('w-full', className)}
-            onClick={handleDelete}
-            isLoading={isPending}
-        >
-            <Trash2Icon className="mr-2 h-4 w-4" />
+        <LoadingButton {...props} onClick={handleDelete} isLoading={isPending}>
+            <Trash2Icon />
             {label}
         </LoadingButton>
     );

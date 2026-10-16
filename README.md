@@ -30,39 +30,40 @@ A modern full‑stack app to share, manage, and discover code snippets. Built wi
 
 - **Authentication & Profiles**
 
-  - Email/password auth, verification, password reset
-  - User profiles with avatars
+    - Email/password auth, verification, password reset
+    - User profiles with avatars
 
 - **Snippets**
 
-  - Create, edit, delete, fork, and discover snippets
-  - Syntax highlighting and code editor UX
-  - Save snippets for offline viewing
+    - Create, edit, delete, fork, and discover snippets
+    - Syntax highlighting and code editor UX
+    - Save snippets for offline viewing
 
 - **Collections & Tags**
 
-  - Organize snippets into collections
-  - Tagging, popular tags, and discovery feeds
+    - Organize snippets into collections
+    - Tagging, popular tags, and discovery feeds
 
 - **Social & Friends**
 
-  - Send/cancel/accept/reject friend requests
-  - View inbox, outbox, and friends lists
+    - Send/cancel/accept/reject friend requests
+    - View inbox, outbox, and friends lists
 
 - **Search & Pagination**
 
-  - Cursor-based pagination for efficient browsing
-  - Filter and search by user, tag, and collection
+    - Cursor-based pagination for efficient browsing
+    - Filter and search by user, tag, and collection
+    - Public `GET /api/v1/developer/search` returns paginated snippet, collection, and developer results with matching tag counts. PostgreSQL uses weighted full-text ranking; SQLite uses weighted `LIKE` matching. Tag filters accept `AND` (default) or `OR`.
 
 - **PWA & Offline**
 
-  - Installable PWA with app icons and screenshots
-  - Offline page and saved snippets
+    - Installable PWA with app icons and screenshots
+    - Offline page and saved snippets
 
 - **Robust Server**
-  - Node/Express API with TypeScript
-  - Drizzle ORM (Neon/Postgres)
-  - Structured logging and error handling
+    - Node/Express API with TypeScript
+    - Drizzle ORM (Neon/Postgres)
+    - Structured logging and error handling
 
 ## Tech Stack
 
@@ -74,48 +75,48 @@ A modern full‑stack app to share, manage, and discover code snippets. Built wi
 
 - **Requirements**
 
-  - Node 20+
-  - pnpm 10+
+    - Node 20+
+    - pnpm 10+
 
 - **Clone & Install**
 
-  ```bash
-  git clone https://github.com/mohamed7-dev/snippetly.git
-  cd snippetly/client
-  pnpm install
-  cd ../server
-  pnpm install
-  ```
+    ```bash
+    git clone https://github.com/mohamed7-dev/snippetly.git
+    cd snippetly/client
+    pnpm install
+    cd ../server
+    pnpm install
+    ```
 
 - **Environment Variables**
 
-  - Create `server/.env` and add required keys.
-  - Create `client/.env.development` and add required keys.
-  - Configure `QSTASH_TOKEN`, `QSTASH_CURRENT_SIGNING_KEY`, `QSTASH_NEXT_SIGNING_KEY`, and `QSTASH_JOBS_CALLBACK_URL` for server background jobs. The callback URL must be the public HTTPS URL for `/api/v1/developer/jobs` (adjust the path if the developer API prefix is customized). Account deletion is rechecked on rolling delays and runs after 30 days; collection snippet copies are queued after a collection fork.
+    - Create `server/.env` and add required keys.
+    - Create `client/.env.development` and add required keys.
+    - Configure `QSTASH_TOKEN`, `QSTASH_CURRENT_SIGNING_KEY`, `QSTASH_NEXT_SIGNING_KEY`, and `QSTASH_JOBS_CALLBACK_URL` for server background jobs. The callback URL must be the public HTTPS URL for `/api/v1/developer/jobs` (adjust the path if the developer API prefix is customized). Account deletion is rechecked on rolling delays and runs after 30 days; collection snippet copies are queued after a collection fork.
 
 - **Run API**
 
-  ```bash
-  cd server
-  pnpm dev
-  ```
+    ```bash
+    cd server
+    pnpm dev
+    ```
 
 - **Run Client**
 
-  ```bash
-  cd client
-  pnpm dev
-  ```
+    ```bash
+    cd client
+    pnpm dev
+    ```
 
 - **Build**
 
-  ```bash
-  # Client
-  cd client && pnpm build
+    ```bash
+    # Client
+    cd client && pnpm build
 
-  # Server (TypeScript → dist)
-  cd ../server && pnpm build
-  ```
+    # Server (TypeScript → dist)
+    cd ../server && pnpm build
+    ```
 
 ## Deployment
 

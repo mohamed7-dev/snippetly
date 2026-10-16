@@ -39,7 +39,7 @@ export function UpdateCollectionPageHeader({ isPending }: { isPending: boolean }
                     ownerId={data?.creator.id}
                 >
                     <Button type="button" variant={'outline'} disabled={isSubmitting || !isValid} asChild>
-                        <Link to={'/dashboard/collections/$id'} params={{ id }}>
+                        <Link to={'/collections/$id'} params={{ id }}>
                             <EyeIcon />
                             Preview
                         </Link>

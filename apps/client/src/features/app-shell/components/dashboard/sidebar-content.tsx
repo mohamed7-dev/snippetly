@@ -61,7 +61,7 @@ export function SidebarContent() {
                                 ownerId={collection.creator.id}
                             >
                                 <Link
-                                    to={'/dashboard/collections/$id'}
+                                    to={'/collections/$id'}
                                     params={{ id: collection.id }}
                                     className="flex items-center gap-3 px-3 py-2 text-sm rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
                                 >

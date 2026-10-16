@@ -12,10 +12,10 @@ import { useNavigate, useSearch } from '@tanstack/react-router';
 import { useRestoreCollection } from '../hooks/use-restore-collection';
 
 export function TrashCollectionList() {
-    const { collections: collectionSearch } = useSearch({
+    const search = useSearch({
         from: '/(protected)/dashboard/_dashboard-layout/_boundary/trash/',
     });
-    const { sort, filter, filterOperator, tags } = collectionSearch ?? {};
+    const { sort, filter, filterOperator, tags } = search?.collections ?? {};
     const queryKeys = [sort, filter, filterOperator, tags];
     const navigate = useNavigate();
 
@@ -76,7 +76,7 @@ export function TrashCollectionList() {
                             to: '.',
                             search: prev => ({
                                 ...prev,
-                                snippets: { ...prev.snippets, ...val },
+                                snippets: { ...prev?.snippets, ...val },
                             }),
                         })
                     }
@@ -89,7 +89,7 @@ export function TrashCollectionList() {
                             to: '.',
                             search: prev => ({
                                 ...prev,
-                                snippets: { ...prev.snippets, sort: val.sort },
+                                snippets: { ...prev?.snippets, sort: val.sort },
                             }),
                         })
                     }
@@ -104,7 +104,7 @@ export function TrashCollectionList() {
                             search: previous => ({
                                 ...previous,
                                 snippets: {
-                                    ...previous.snippets,
+                                    ...previous?.snippets,
                                     tags: values.length ? { values, operator } : undefined,
                                 },
                             }),

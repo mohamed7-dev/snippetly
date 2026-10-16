@@ -47,8 +47,9 @@ export const Route = createFileRoute('/(protected)/dashboard/snippets/$id/edit/'
             });
         }
     },
-    loader: async ({ context: { queryClient } }) => {
+    loader: async ({ context: { queryClient }, params }) => {
         queryClient.query(listPopularTagsQueryOptions()).catch();
+        return await queryClient.query({ ...getSnippetQueryOptions(params.id), staleTime: 'static' });
     },
 });
 

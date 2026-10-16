@@ -13,6 +13,7 @@ import {
 import { omit } from '@snippetly/common/lib';
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
+import { isApiError } from '../../common/errors/api-error';
 import { EntityNotFoundError, ForbiddenError } from '../../common/errors/errors';
 import { AppRouter } from '../../common/types/app-router.interface';
 import { Collection, Snippet } from '../../entities';
@@ -144,6 +145,7 @@ export class DeveloperCollectionController implements AppRouter {
                 interceptors: [transactionInterceptor()],
                 handler: async (req, res) => {
                     const result = await this.collectionService.fork(req.getRequestContext(), req.params);
+                    if (isApiError(result)) return res.status(result.httpStatusCode).json(result);
                     res.status(200).json(result);
                 },
             }),
@@ -222,6 +224,11 @@ export class DeveloperCollectionController implements AppRouter {
                         result.items = omit(result.items, ['isPrivate', 'updatedAt', 'deletedAt'], true);
                     }
 
+                    result.items = await this.collectionService.attachFavouriteStatus(
+                        req.getRequestContext(),
+                        result.items,
+                    );
+
                     res.status(200).json(result);
                 },
             }),
@@ -273,6 +280,11 @@ export class DeveloperCollectionController implements AppRouter {
                         itemsCount: result.itemsCount,
                     };
 
+                    result.items = await this.collectionService.attachFavouriteStatus(
+                        req.getRequestContext(),
+                        result.items,
+                    );
+
                     res.status(200).json(result);
                 },
             }),
@@ -307,12 +319,16 @@ export class DeveloperCollectionController implements AppRouter {
                             result.items,
                             { includePrivateSnippets: true },
                         );
-                    res.status(200).json({
-                        items: result.items.map(item => ({
+                    const items = await this.collectionService.attachFavouriteStatus(
+                        req.getRequestContext(),
+                        result.items.map(item => ({
                             ...item,
                             snippetCount: snippetCountByCollection.get(item.id) ?? 0,
                             snippets: snippetsByCollection.get(item.id) ?? [],
                         })),
+                    );
+                    res.status(200).json({
+                        items,
                         itemsCount: result.itemsCount,
                     });
                 },
@@ -343,13 +359,9 @@ export class DeveloperCollectionController implements AppRouter {
                         throw new EntityNotFoundError({ entityName: 'Collection', entityId: req.params.id });
                     }
 
-                    let finalResult;
-
-                    if (result) {
-                        finalResult = isOwner
-                            ? result
-                            : omit(result, ['isPrivate', 'updatedAt', 'deletedAt']);
-                    }
+                    const visibleCollection = isOwner
+                        ? result
+                        : omit(result, ['isPrivate', 'updatedAt', 'deletedAt']);
 
                     const snippetCountResult = await this.snippetService.countSnippetsInCollection(
                         req.getRequestContext(),
@@ -357,11 +369,15 @@ export class DeveloperCollectionController implements AppRouter {
                         { includePrivateSnippets: isOwner, includeSoftDeleted: false },
                     );
 
-                    finalResult = {
-                        ...finalResult,
+                    const collectionWithSnippetCount = {
+                        ...visibleCollection,
                         snippetCount: snippetCountResult.snippetCount,
                     };
-                    res.status(200).json(finalResult);
+                    const [resultWithFavouriteStatus] = await this.collectionService.attachFavouriteStatus(
+                        req.getRequestContext(),
+                        [collectionWithSnippetCount],
+                    );
+                    res.status(200).json(resultWithFavouriteStatus);
                 },
             }),
         );

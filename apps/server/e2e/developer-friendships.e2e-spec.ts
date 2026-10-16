@@ -35,6 +35,7 @@ describe('Developer Friendship Workflows', () => {
         mergeConfig(
             {
                 auth: {
+                    requireVerification: false,
                     passwordValidationStrategy: new TestPasswordValidationStrategy(),
                 },
                 system: {
@@ -656,6 +657,41 @@ describe('Developer Friendship Workflows', () => {
                     language: expect.any(String),
                 });
             }
+        });
+
+        it('sorts and filters by the friend regardless of relationship side', async () => {
+            const sortedParams = transformInputToSearchParams({
+                sort: { friendFirstName: 'ASC' },
+                take: 50,
+            } satisfies CurrentUserFriendsListDtoType['input']);
+            const sortedRes = await developerClient.fetch(
+                `/friendships/current?${sortedParams.toString()}`,
+                { method: 'GET' },
+            );
+            const sortedResult = (await sortedRes.json()) as CurrentUserFriendsListDtoType['output'];
+            expect(sortedResult.items.length).toBeGreaterThan(0);
+
+            const firstFriendship = sortedResult.items[0];
+            const friend =
+                firstFriendship.requester.id === authenticatedDeveloper.id
+                    ? firstFriendship.addressee
+                    : firstFriendship.requester;
+            const filteredParams = transformInputToSearchParams({
+                filter: { friendId: { equals: friend.id } },
+                take: 50,
+            } satisfies CurrentUserFriendsListDtoType['input']);
+            const filteredRes = await developerClient.fetch(
+                `/friendships/current?${filteredParams.toString()}`,
+                { method: 'GET' },
+            );
+            const filteredResult = (await filteredRes.json()) as CurrentUserFriendsListDtoType['output'];
+
+            expect(filteredResult.items).toHaveLength(1);
+            expect(
+                filteredResult.items[0].requester.id === authenticatedDeveloper.id
+                    ? filteredResult.items[0].addressee.id
+                    : filteredResult.items[0].requester.id,
+            ).toBe(friend.id);
         });
     });
 });

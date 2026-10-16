@@ -27,11 +27,11 @@ export function CurrentUserFriendsSnippets({
     onClearingFriendId?: () => void;
 }) {
     const qClient = useQueryClient();
-    const { snippets: snippetSearch } = useSearch({
+    const search = useSearch({
         from: '/(protected)/dashboard/_dashboard-layout/_boundary/friends/',
     });
 
-    const { sort, filter, filterOperator, tags } = snippetSearch ?? {};
+    const { sort, filter, filterOperator, tags } = search?.snippets ?? {};
 
     const queryKeys = [sort, filter, filterOperator, tags];
     const navigate = useNavigate();
@@ -92,7 +92,7 @@ export function CurrentUserFriendsSnippets({
                                 search: previous => ({
                                     ...previous,
                                     snippets: {
-                                        ...previous.snippets,
+                                        ...previous?.snippets,
                                         tags: values.length ? { values, operator } : undefined,
                                     },
                                 }),
@@ -107,7 +107,7 @@ export function CurrentUserFriendsSnippets({
                                 to: '.',
                                 search: prev => ({
                                     ...prev,
-                                    snippets: { ...prev.snippets, ...val },
+                                    snippets: { ...prev?.snippets, ...val },
                                 }),
                             })
                         }
@@ -120,7 +120,7 @@ export function CurrentUserFriendsSnippets({
                                 to: '.',
                                 search: prev => ({
                                     ...prev,
-                                    snippets: { ...prev.snippets, sort: val.sort },
+                                    snippets: { ...prev?.snippets, sort: val.sort },
                                 }),
                             })
                         }

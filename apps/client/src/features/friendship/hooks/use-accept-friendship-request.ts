@@ -1,9 +1,10 @@
+import { getCurrentDeveloperActivityStats } from '@/features/stats/lib/stats-query-options';
 import { ApiClientError, developerApiClient, type ApiSuccess } from '@/lib/api-client';
 import { apiEndpoints } from '@/lib/api-endpoints';
 import { toastApiError } from '@/lib/toast-api-error';
 import type { AsyncActionCallback } from '@/lib/types';
 import type { AcceptFriendshipRequestDtoType } from '@snippetly/common/dto';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 export type AcceptFriendshipRequestMutationCallbacks = AsyncActionCallback<
@@ -12,6 +13,7 @@ export type AcceptFriendshipRequestMutationCallbacks = AsyncActionCallback<
 >;
 
 export function useAcceptFriendshipRequest(mutationCallbacks?: AcceptFriendshipRequestMutationCallbacks) {
+    const qClient = useQueryClient();
     return useMutation({
         mutationFn: async (input: AcceptFriendshipRequestDtoType['input']) => {
             return await developerApiClient.fetch<AcceptFriendshipRequestDtoType['output']>(
@@ -22,6 +24,7 @@ export function useAcceptFriendshipRequest(mutationCallbacks?: AcceptFriendshipR
         ...mutationCallbacks,
         onSuccess: data => {
             toast.success('Friendship request was accepted successfully');
+            qClient.invalidateQueries(getCurrentDeveloperActivityStats());
             mutationCallbacks?.onSuccess?.(data);
         },
         onError: e => {

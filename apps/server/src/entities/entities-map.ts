@@ -6,6 +6,7 @@ import {
 } from './authentication-method/authentication-method.entity';
 import { Collection } from './collections/collection.entity';
 import { Developer } from './developer/developer.entity';
+import { Favourite } from './favourites/favourite.entity';
 import { Friendship } from './friendships/friendship.entity';
 import { Role } from './role/role.entity';
 import { Session } from './session/session.entity';
@@ -22,6 +23,7 @@ export const entitiesMap = {
     NativeAuthenticationMethod,
     ExternalAuthenticationMethod,
     Friendship,
+    Favourite,
     Collection,
     Snippet,
     Tag,

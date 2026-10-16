@@ -35,7 +35,7 @@ export function ForkSnippetToCollection({
                         label="fork to collection"
                         {...props}
                         isLoading={isPending}
-                        className={cn('justify-start', props.className)}
+                        className={cn('w-full justify-start', props.className)}
                         snippetId={snippetId}
                         onClick={e => {
                             props.onClick?.(e);

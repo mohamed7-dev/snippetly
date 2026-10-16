@@ -6,10 +6,10 @@ import { FilterQueryDialog } from '@/components/shared/list-query-builder/filter
 import { SortQueryDialog } from '@/components/shared/list-query-builder/sort-query-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DiscoverCollectionsList } from '@/features/collection-listing/components/sections/discover-collections-list';
+import { DeveloperActionsDropdown } from '@/features/developer-actions/components/developer-actions-dropdown';
 import { DiscoverSnippetsList } from '@/features/snippet-listing/components/sections/discover-snippets-list';
 import { formatDeveloperInfo } from '@/lib/format-developer-info';
 import { developerListDto } from '@snippetly/common/dto';
@@ -20,9 +20,10 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { discoverDevelopersQueryOptions } from '../../lib/discover-query-options';
 
 export function DiscoverPageTabs() {
-    const { tab } = useSearch({
-        from: '/(public)/discover/',
-    });
+    const { tab } =
+        useSearch({
+            from: '/(public)/discover/',
+        }) ?? {};
 
     const navigate = useNavigate();
     return (
@@ -78,9 +79,10 @@ export function DiscoverPageTabs() {
 }
 
 function DevelopersTabContent() {
-    const { developers: developersSearch } = useSearch({
-        from: '/(public)/discover/',
-    });
+    const { developers: developersSearch } =
+        useSearch({
+            from: '/(public)/discover/',
+        }) ?? {};
     const { sort, filter, filterOperator } = developersSearch ?? {};
     const queryKeys = [sort, filter, filterOperator];
     const navigate = useNavigate();
@@ -105,7 +107,7 @@ function DevelopersTabContent() {
                     onApply={val =>
                         navigate({
                             to: '.',
-                            search: prev => ({ ...prev, developers: { ...prev.developers, ...val } }),
+                            search: prev => ({ ...prev, developers: { ...prev?.developers, ...val } }),
                         })
                     }
                 />
@@ -115,7 +117,10 @@ function DevelopersTabContent() {
                     onApply={val =>
                         navigate({
                             to: '.',
-                            search: prev => ({ ...prev, developers: { ...prev.developers, sort: val.sort } }),
+                            search: prev => ({
+                                ...prev,
+                                developers: { ...prev?.developers, sort: val.sort },
+                            }),
                         })
                     }
                 />
@@ -141,9 +146,22 @@ function DevelopersTabContent() {
                                         {getFullName(developer)}
                                     </Link>
                                 </div>
-                                <Badge variant="secondary">
-                                    joined {new Date(developer.createdAt).toLocaleDateString()}
-                                </Badge>
+                                <div className="flex items-center gap-2">
+                                    <Badge variant="secondary">
+                                        joined {new Date(developer.createdAt).toLocaleDateString()}
+                                    </Badge>
+                                    <DeveloperActionsDropdown
+                                        developer={developer}
+                                        friendshipInfo={developer.friendshipInfo}
+                                        favouriteInfo={{
+                                            isFavouritedByCurrentUser: developer.isFavouritedByCurrentUser,
+                                        }}
+                                        showRequestFriendship={true}
+                                        showViewProfile={true}
+                                        showAddToFavourites={true}
+                                        showRemoveFromFavourites={true}
+                                    />
+                                </div>
                             </div>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -168,13 +186,6 @@ function DevelopersTabContent() {
                                 ))}
                             </div>
                         </CardContent>
-                        <CardFooter>
-                            <Button variant={'outline'} asChild>
-                                <Link to={'/profile/$id'} params={{ id: developer.id }}>
-                                    Visit {developer.firstName}'s Profile
-                                </Link>
-                            </Button>
-                        </CardFooter>
                     </Card>
                 ))}
             </div>

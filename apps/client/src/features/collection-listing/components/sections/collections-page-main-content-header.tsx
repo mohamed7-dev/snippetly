@@ -13,7 +13,7 @@ export function CollectionsPageMainContentHeader() {
     const search = useSearch({
         from: '/(protected)/dashboard/_dashboard-layout/_boundary/collections/',
     });
-    const { sort, filter, filterOperator, tags } = search;
+    const { sort, filter, filterOperator, tags } = search ?? {};
     const navigate = useNavigate();
     const queryKey = [sort, filter, filterOperator, tags];
     const { data } = useSuspenseInfiniteQuery(
@@ -45,7 +45,7 @@ export function CollectionsPageMainContentHeader() {
                         onApply={val =>
                             navigate({
                                 to: '.',
-                                search: previous => ({ ...previous, filter: val }),
+                                search: previous => ({ ...previous, ...val }),
                             })
                         }
                     />

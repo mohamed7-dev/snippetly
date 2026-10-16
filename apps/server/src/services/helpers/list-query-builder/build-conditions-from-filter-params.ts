@@ -32,6 +32,7 @@ export function buildConditionFromFilterParams<Entity extends AppEntity>(
     filterParams: FilterParameter<Entity>,
     entityType: ClassType<Entity>,
     dataSource: DataSource,
+    customPropsMap?: Record<string, string>,
     entityAlias?: string,
 ) {
     const { columns, alias: defaultAlias } = getEntityMetadata(dataSource, entityType);
@@ -66,6 +67,8 @@ export function buildConditionFromFilterParams<Entity extends AppEntity>(
         let columnPath: string;
         if (matchingColumn) {
             columnPath = `${alias}.${matchingColumn.propertyPath}`;
+        } else if (customPropsMap?.[filterProp]) {
+            columnPath = customPropsMap[filterProp];
         } else {
             throw new UserInputError(`Filtering by (${filterProp}) failed.`);
         }

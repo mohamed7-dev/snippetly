@@ -1,7 +1,6 @@
 import { LoadingButton } from '@/components/inputs/loading-button';
 import { Button } from '@/components/ui/button';
 import { useDeleteConfirmation } from '@/hooks/use-delete-confirmation';
-import { cn } from '@/lib/utils';
 import { DeleteIcon } from 'lucide-react';
 import type React from 'react';
 import { useDeleteSnippet, type DeleteSnippetAsyncActionCallbacks } from '../hooks/use-delete-snippet';
@@ -13,7 +12,6 @@ interface DeleteSnippetButtonProps extends React.ComponentProps<typeof Button> {
 }
 
 export function DeleteSnippetButton({
-    className,
     label = 'delete snippet',
     snippetId,
     onClick,
@@ -41,13 +39,8 @@ export function DeleteSnippetButton({
         }
     };
     return (
-        <LoadingButton
-            {...props}
-            className={cn('w-full', className)}
-            onClick={handleDelete}
-            isLoading={isPending}
-        >
-            <DeleteIcon className="stroke-destructive mr-2 h-4 w-4" />
+        <LoadingButton {...props} onClick={handleDelete} isLoading={isPending}>
+            <DeleteIcon />
             {label}
         </LoadingButton>
     );

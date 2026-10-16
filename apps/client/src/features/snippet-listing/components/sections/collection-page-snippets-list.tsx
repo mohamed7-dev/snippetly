@@ -2,6 +2,7 @@ import { InfiniteLoader } from '@/components/feedback/infinite-loader';
 import { FilterQueryDialog } from '@/components/shared/list-query-builder/filter-query-dialog';
 import { SortQueryDialog } from '@/components/shared/list-query-builder/sort-query-dialog';
 import { SnippetListLayout } from '@/components/shared/snippet-list-layout';
+import { TagFilterBar } from '@/components/shared/tag-filter-bar';
 import { Button } from '@/components/ui/button';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import {
@@ -16,9 +17,10 @@ import { Code2Icon, PlusIcon } from 'lucide-react';
 
 export function CollectionPageSnippetsList() {
     const params = useParams({
-        from: '/(protected)/dashboard/collections/$id/',
+        from: '/(public)/collections/$id',
     });
-    const { filter, sort, filterOperator } = useSearch({ from: '/(protected)/dashboard/collections/$id/' });
+    const search = useSearch({ from: '/(public)/collections/$id' });
+    const { sort, filter, filterOperator, tags } = search ?? {};
     const navigate = useNavigate();
     const queryKeys = [filter, sort, filterOperator];
     // snippets
@@ -31,20 +33,37 @@ export function CollectionPageSnippetsList() {
 
     const qClient = useQueryClient();
 
-    const onSnippetMutationSuccess = () => {
+    const onSnippetMutationSuccess = (_data?: any, actionType?: 'add' | 'remove') => {
+        // TODO: update cache optimistically
         qClient.invalidateQueries(listCollectionSnippetsQueryOptions(params.id, undefined, queryKeys));
         qClient.invalidateQueries(listCurrentUserSnippetsQueryOptions());
     };
+
+    const availableTags = [...new Set(snippets.flatMap(snippet => snippet.tags ?? []).map(tag => tag.value))];
 
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <h2 className="font-heading font-semibold text-xl">Snippets ({total})</h2>
                 <div className="flex items-center gap-2">
+                    <TagFilterBar
+                        tags={availableTags}
+                        selectedTags={tags?.values ?? []}
+                        operator={tags?.operator}
+                        onChange={(values, operator) =>
+                            navigate({
+                                to: '.',
+                                search: previous => ({
+                                    ...previous,
+                                    tags: values.length ? { values, operator } : undefined,
+                                }),
+                            })
+                        }
+                    />
                     <FilterQueryDialog
                         schema={snippetListDto.input.shape.filter}
-                        value={{ filter }}
-                        onApply={val => navigate({ to: '.', search: prev => ({ ...prev, filter: val }) })}
+                        value={{ filter, filterOperator }}
+                        onApply={val => navigate({ to: '.', search: prev => ({ ...prev, ...val }) })}
                     />
                     <SortQueryDialog
                         sortSchema={snippetListDto.input.shape.sort}
@@ -58,12 +77,7 @@ export function CollectionPageSnippetsList() {
                 {snippets.map(snippet => (
                     <PermissionGuard
                         key={snippet.id}
-                        requiredPermissions={[
-                            Permission.Authenticated,
-                            Permission.ReadSnippet,
-                            Permission.Owner,
-                        ]}
-                        ownerId={snippet.creator.id}
+                        requiredPermissions={[Permission.Authenticated, Permission.ReadSnippet]}
                     >
                         <SnippetCard
                             snippet={snippet}
@@ -75,6 +89,12 @@ export function CollectionPageSnippetsList() {
                             }}
                             moveSnippetToTrash={{
                                 onSuccess: onSnippetMutationSuccess,
+                            }}
+                            addSnippetToFavourites={{
+                                onSuccess: data => onSnippetMutationSuccess(data, 'add'),
+                            }}
+                            removeSnippetFromFavourites={{
+                                onSuccess: data => onSnippetMutationSuccess(data, 'remove'),
                             }}
                         />
                     </PermissionGuard>

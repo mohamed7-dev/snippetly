@@ -12,23 +12,25 @@ import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import z from 'zod';
 
-const searchSchema = z.object({
-    tab: z.enum(['incoming', 'sent']).default('incoming').catch('incoming'),
-    incoming: z
-        .object({
-            sort: currentUserInboxListDto.input.shape.sort.optional().default({}).catch({}),
-            filter: currentUserInboxListDto.input.shape.filter.optional().default({}).catch({}),
-            filterOperator: currentUserInboxListDto.input.shape.filterOperator,
-        })
-        .optional(),
-    sent: z
-        .object({
-            sort: currentUserOutboxListDto.input.shape.sort.optional().default({}).catch({}),
-            filter: currentUserOutboxListDto.input.shape.filter.optional().default({}).catch({}),
-            filterOperator: currentUserOutboxListDto.input.shape.filterOperator,
-        })
-        .optional(),
-});
+const searchSchema = z
+    .object({
+        tab: z.enum(['incoming', 'sent']).default('incoming').catch('incoming'),
+        incoming: z
+            .object({
+                sort: currentUserInboxListDto.input.shape.sort,
+                filter: currentUserInboxListDto.input.shape.filter,
+                filterOperator: currentUserInboxListDto.input.shape.filterOperator,
+            })
+            .partial(),
+        sent: z
+            .object({
+                sort: currentUserOutboxListDto.input.shape.sort,
+                filter: currentUserOutboxListDto.input.shape.filter,
+                filterOperator: currentUserOutboxListDto.input.shape.filterOperator,
+            })
+            .partial(),
+    })
+    .partial();
 
 export const Route = createFileRoute('/(protected)/dashboard/_dashboard-layout/_boundary/requests/')({
     component: RequestPage,

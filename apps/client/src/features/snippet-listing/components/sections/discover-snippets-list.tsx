@@ -14,9 +14,10 @@ import { PlusIcon } from 'lucide-react';
 import { listCurrentUserSnippetsQueryOptions } from '../../lib/snippet-listing-query-options';
 
 export function DiscoverSnippetsList() {
-    const { snippets: snippetsSearch } = useSearch({
-        from: '/(public)/discover/',
-    });
+    const { snippets: snippetsSearch } =
+        useSearch({
+            from: '/(public)/discover/',
+        }) ?? {};
     const { sort, filter, filterOperator, tags } = snippetsSearch ?? {};
     const queryKeys = [sort, filter, filterOperator, tags];
     const navigate = useNavigate();
@@ -44,7 +45,7 @@ export function DiscoverSnippetsList() {
                             to: '.',
                             search: prev => ({
                                 ...prev,
-                                snippets: { ...prev.snippets, ...val },
+                                snippets: { ...prev?.snippets, ...val },
                             }),
                         })
                     }
@@ -57,7 +58,7 @@ export function DiscoverSnippetsList() {
                             to: '.',
                             search: prev => ({
                                 ...prev,
-                                snippets: { ...prev.snippets, sort: val.sort },
+                                snippets: { ...prev?.snippets, sort: val.sort },
                             }),
                         })
                     }
@@ -72,7 +73,7 @@ export function DiscoverSnippetsList() {
                             search: previous => ({
                                 ...previous,
                                 snippets: {
-                                    ...previous.snippets,
+                                    ...previous?.snippets,
                                     tags: values.length ? { values, operator } : undefined,
                                 },
                             }),
@@ -86,6 +87,26 @@ export function DiscoverSnippetsList() {
                         key={snippet.id}
                         snippet={snippet}
                         forkSnippet={{ onSuccess: onSnippetMutateSuccess }}
+                        addSnippetToFavourites={{
+                            onSuccess: () => {
+                                // update discover snippets query cache manually
+                                // to reflect state optimistically, set {isFavouritedByCurrentUser: true}
+                            },
+                            onError: () => {
+                                // update discover snippets query cache manually
+                                // to reflect state optimistically, set {isFavouritedByCurrentUser: false}
+                            },
+                        }}
+                        removeSnippetFromFavourites={{
+                            onSuccess: () => {
+                                // update discover snippets query cache manually
+                                // to reflect state optimistically, set {isFavouritedByCurrentUser: false}
+                            },
+                            onError: () => {
+                                // update discover snippets query cache manually
+                                // to reflect state optimistically, set {isFavouritedByCurrentUser: true}
+                            },
+                        }}
                     />
                 ))}
             </SnippetListLayout>

@@ -32,7 +32,7 @@ export function SnippetCard({ snippet, ...props }: SnippetCardProps) {
                     <div className="flex-1 space-y-2">
                         <CardTitle className="text-lg font-heading hover:text-primary transition-colors">
                             <Link
-                                to={'/dashboard/snippets/$id'}
+                                to={'/snippets/$id'}
                                 params={{ id: snippet.id }}
                                 preload={false}
                                 className="capitalize"
@@ -47,7 +47,7 @@ export function SnippetCard({ snippet, ...props }: SnippetCardProps) {
                             >
                                 <GitForkIcon className="size-3 shrink-0" aria-hidden="true" />
                                 <Link
-                                    to="/dashboard/snippets/$id"
+                                    to="/snippets/$id"
                                     params={{ id: snippet.forkedFrom.id }}
                                     preload={false}
                                     className="max-w-36 truncate font-medium text-foreground/80 hover:text-primary"

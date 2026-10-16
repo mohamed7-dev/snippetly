@@ -1,9 +1,10 @@
+import { getCurrentDeveloperActivityStats } from '@/features/stats/lib/stats-query-options';
 import { ApiClientError, developerApiClient, type ApiSuccess } from '@/lib/api-client';
 import { apiEndpoints } from '@/lib/api-endpoints';
 import { toastApiError } from '@/lib/toast-api-error';
 import type { AsyncActionCallback } from '@/lib/types';
 import type { CancelFriendshipRequestDtoType } from '@snippetly/common/dto';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 export type CancelFriendshipRequestMutationCallbacks = AsyncActionCallback<
@@ -12,6 +13,8 @@ export type CancelFriendshipRequestMutationCallbacks = AsyncActionCallback<
 >;
 
 export function useCancelFriendshipRequest(mutationCallbacks?: CancelFriendshipRequestMutationCallbacks) {
+    const qClient = useQueryClient();
+
     return useMutation({
         mutationFn: async (input: CancelFriendshipRequestDtoType['input']) => {
             return await developerApiClient.fetch<CancelFriendshipRequestDtoType['output']>(
@@ -22,6 +25,8 @@ export function useCancelFriendshipRequest(mutationCallbacks?: CancelFriendshipR
         ...mutationCallbacks,
         onSuccess: data => {
             toast.success('Friendship request was cancelled successfully');
+            qClient.invalidateQueries(getCurrentDeveloperActivityStats());
+
             mutationCallbacks?.onSuccess?.(data);
         },
         onError: e => {

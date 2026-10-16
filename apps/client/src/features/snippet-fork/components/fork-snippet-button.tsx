@@ -1,5 +1,4 @@
 import { LoadingButton } from '@/components/inputs/loading-button';
-import { cn } from '@/lib/utils';
 import { GitForkIcon } from 'lucide-react';
 import type React from 'react';
 import { useForkSnippet, type ForkSnippetMutationCallbacks } from '../hooks/use-fork-snippet';
@@ -12,7 +11,6 @@ interface ForkSnippetButtonProps extends Omit<React.ComponentProps<typeof Loadin
 }
 
 export function ForkSnippetButton({
-    className,
     label = 'fork snippet',
     mutationCallbacks,
     onClick,
@@ -32,14 +30,11 @@ export function ForkSnippetButton({
     };
     return (
         <LoadingButton
-            variant={'ghost'}
-            size={'sm'}
             {...props}
-            className={cn('w-full', className)}
             onClick={handleForking}
             isLoading={isPending || isLoading !== undefined ? !!isLoading : isPending}
         >
-            <GitForkIcon className="mr-2 h-4 w-4" />
+            <GitForkIcon />
             {label}
         </LoadingButton>
     );

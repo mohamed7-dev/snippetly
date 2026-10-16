@@ -7,7 +7,10 @@ import { APP_NAME } from '@snippetly/common/lib';
 import { THEME_OPTIONS } from '../../lib/data';
 
 export function AppearanceSettingsPageThemeSettings() {
-    const { theme, setTheme } = useTheme();
+    const {
+        state: { theme },
+        actions: { setTheme },
+    } = useTheme();
     return (
         <Card>
             <CardHeader>

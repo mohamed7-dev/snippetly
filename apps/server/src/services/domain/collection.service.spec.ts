@@ -20,6 +20,7 @@ describe('CollectionService', () => {
             {} as never,
             {} as never,
             {} as never,
+            {} as any,
         );
 
         const previews = await service.addSnippetsPreview({} as never, [], {
@@ -30,5 +31,4 @@ describe('CollectionService', () => {
         expect(previews.snippetCountByCollection).toEqual(new Map());
         expect(previews.snippetsByCollection).toEqual(new Map());
     });
-
 });

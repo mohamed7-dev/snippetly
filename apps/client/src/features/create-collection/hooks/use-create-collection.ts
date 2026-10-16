@@ -1,9 +1,10 @@
+import { getCurrentDeveloperActivityStats } from '@/features/stats/lib/stats-query-options';
 import { ApiClientError, developerApiClient, type ApiSuccess } from '@/lib/api-client';
 import { apiEndpoints } from '@/lib/api-endpoints';
 import { toastApiError } from '@/lib/toast-api-error';
 import type { AsyncActionCallback } from '@/lib/types';
 import type { CreateCollectionDtoType } from '@snippetly/common/dto';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 export type MutationCallbacks = AsyncActionCallback<
@@ -12,6 +13,7 @@ export type MutationCallbacks = AsyncActionCallback<
 >;
 
 export function useCreateCollection(mutationCallbacks?: MutationCallbacks) {
+    const qClient = useQueryClient();
     return useMutation({
         mutationFn: async (input: CreateCollectionDtoType['input']) => {
             return await developerApiClient.fetch<CreateCollectionDtoType['output']>(
@@ -25,6 +27,7 @@ export function useCreateCollection(mutationCallbacks?: MutationCallbacks) {
         ...mutationCallbacks,
         onSuccess: data => {
             toast.success('Collection was created successfully');
+            qClient.invalidateQueries(getCurrentDeveloperActivityStats());
             mutationCallbacks?.onSuccess?.(data);
         },
         onError: e => {

@@ -7,8 +7,10 @@ import { AdminDeveloperController } from './admin/admin-developer.controller';
 import { DeveloperAuthController } from './developer/developer-auth.controller';
 import { DeveloperCollectionController } from './developer/developer-collection.controller';
 import { DeveloperDeveloperController } from './developer/developer-developer.controller';
+import { DeveloperFavouriteController } from './developer/developer-favourite.controller';
 import { DeveloperFriendshipController } from './developer/developer-friendship.controller';
 import { DeveloperJobsController } from './developer/developer-jobs.controller';
+import { DeveloperSearchController } from './developer/developer-search.controller';
 import { DeveloperSlugController } from './developer/developer-slug.controller';
 import { DeveloperSnippetController } from './developer/developer-snippet.controller';
 import { DeveloperTagController } from './developer/developer-tag.controller';
@@ -31,8 +33,10 @@ class AdminApiModule {}
     controllers: [
         DeveloperAuthController,
         DeveloperSnippetController,
+        DeveloperSearchController,
         DeveloperCollectionController,
         DeveloperFriendshipController,
+        DeveloperFavouriteController,
         DeveloperJobsController,
         DeveloperTagController,
         DeveloperDeveloperController,

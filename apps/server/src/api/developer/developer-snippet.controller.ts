@@ -218,6 +218,11 @@ export class DeveloperSnippetController implements AppRouter {
                               },
                     );
 
+                    result.items = await this.snippetService.attachFavouriteStatus(
+                        req.getRequestContext(),
+                        result.items,
+                    );
+
                     if (restrictToPublic) {
                         result.items = omit(
                             result.items,
@@ -259,6 +264,10 @@ export class DeveloperSnippetController implements AppRouter {
                         },
                         { includePrivateSnippets: true },
                     );
+                    result.items = await this.snippetService.attachFavouriteStatus(
+                        req.getRequestContext(),
+                        result.items,
+                    );
 
                     res.status(200).json(result);
                 },
@@ -292,6 +301,10 @@ export class DeveloperSnippetController implements AppRouter {
                         },
                         { includePrivateSnippets: true, onlySoftDeleted: true },
                     );
+                    result.items = await this.snippetService.attachFavouriteStatus(
+                        req.getRequestContext(),
+                        result.items,
+                    );
                     res.status(200).json(result);
                 },
             }),
@@ -313,6 +326,10 @@ export class DeveloperSnippetController implements AppRouter {
                         req.getRequestContext(),
                         req.query.creator ?? developer.id,
                         req.query,
+                    );
+                    result.items = await this.snippetService.attachFavouriteStatus(
+                        req.getRequestContext(),
+                        result.items,
                     );
 
                     res.status(200).json(result);
@@ -356,7 +373,12 @@ export class DeveloperSnippetController implements AppRouter {
                             : omit(result, ['isPrivate', 'updatedAt', 'deletedAt', 'collection']);
                     }
 
-                    res.status(200).json(finalResult);
+                    const [resultWithFavouriteStatus] = await this.snippetService.attachFavouriteStatus(
+                        req.getRequestContext(),
+                        finalResult ? [finalResult] : [],
+                    );
+
+                    res.status(200).json(resultWithFavouriteStatus);
                 },
             }),
         );

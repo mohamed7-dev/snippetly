@@ -10,6 +10,8 @@ import { NotFoundPageView, type NotFoundMetaData } from './components/views/not-
 import { PageLoader } from './components/views/page-loading-view';
 import { useAuth } from './features/auth/hooks/use-auth';
 import { AuthProvider } from './features/auth/providers/auth-provider';
+import { DeveloperSettingsProvider } from './features/developer-settings/providers/developer-settings-provider';
+import { parseSearch, stringifySearch } from './lib/search-serializer';
 import { routeTree } from './routeTree.gen';
 
 export const router = createRouter({
@@ -21,6 +23,8 @@ export const router = createRouter({
         auth: undefined as any,
     },
     defaultPreload: 'intent',
+    parseSearch,
+    stringifySearch,
     scrollRestoration: true,
     defaultStructuralSharing: true,
     defaultPreloadStaleTime: 0,
@@ -91,12 +95,14 @@ export function App() {
         <React.Fragment>
             <TanstackQueryProvider>
                 <AuthProvider>
-                    <ThemeProvider defaultTheme="dark" storageKey="ui-theme">
-                        <DeleteConfirmationProvider>
-                            <InnerApp />
-                            {createPortal(<Toaster position="top-center" />, document.body)}
-                        </DeleteConfirmationProvider>
-                    </ThemeProvider>
+                    <DeveloperSettingsProvider>
+                        <ThemeProvider defaultTheme="dark">
+                            <DeleteConfirmationProvider>
+                                <InnerApp />
+                                {createPortal(<Toaster position="top-center" />, document.body)}
+                            </DeleteConfirmationProvider>
+                        </ThemeProvider>
+                    </DeveloperSettingsProvider>
                 </AuthProvider>
             </TanstackQueryProvider>
 

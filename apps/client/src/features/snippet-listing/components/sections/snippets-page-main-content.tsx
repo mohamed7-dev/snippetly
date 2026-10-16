@@ -12,9 +12,10 @@ import React from 'react';
 import { listCurrentUserSnippetsQueryOptions } from '../../lib/snippet-listing-query-options';
 
 export function SnippetsPageMainContent() {
-    const search = useSearch({
-        from: '/(protected)/dashboard/_dashboard-layout/_boundary/snippets/',
-    });
+    const search =
+        useSearch({
+            from: '/(protected)/dashboard/_dashboard-layout/_boundary/snippets/',
+        }) ?? {};
     const queryKeys = [search.sort, search.filter, search.filterOperator, search.tags];
     const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery(
         listCurrentUserSnippetsQueryOptions(search, queryKeys),
@@ -22,7 +23,10 @@ export function SnippetsPageMainContent() {
     const snippets = data.pages?.flatMap(page => page.items) ?? [];
     const qClient = useQueryClient();
 
-    const onMutateSuccess = async () => {
+    const onMutateSuccess = async (_data: any, actionType?: 'add' | 'remove') => {
+        if (actionType) {
+            // TODO: update the cache optimistically while triggering the invalidation
+        }
         await qClient.invalidateQueries(listCurrentUserSnippetsQueryOptions(undefined, queryKeys));
     };
 
@@ -49,6 +53,12 @@ export function SnippetsPageMainContent() {
                             }}
                             forkSnippet={{
                                 onSuccess: onMutateSuccess,
+                            }}
+                            addSnippetToFavourites={{
+                                onSuccess: data => onMutateSuccess(data, 'add'),
+                            }}
+                            removeSnippetFromFavourites={{
+                                onSuccess: data => onMutateSuccess(data, 'remove'),
                             }}
                         />
                     </PermissionGuard>

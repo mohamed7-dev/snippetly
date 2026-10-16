@@ -1,8 +1,8 @@
 import {
     CollectionListDtoType,
     CreateCollectionDtoType,
-    DeletionResponse,
     DeleteCollectionDtoType,
+    DeletionResponse,
     FilterGroupOperator,
     FindOneCollectionDtoType,
     ForkCollectionDtoType,
@@ -12,6 +12,7 @@ import {
 import { omit } from '@snippetly/common/lib';
 import { FindOptionsRelations, IsNull, Not } from 'typeorm';
 import { RequestContext } from '../../api/request-context/request-context';
+import { DisallowedCollectionOwnerForkError } from '../../common';
 import { EntityNotFoundError, ForbiddenError } from '../../common/errors/errors';
 import { OnApplicationBootstrap } from '../../common/types/lifecycle-hooks';
 import { Collection } from '../../entities/collections/collection.entity';
@@ -26,6 +27,7 @@ import { ListQueryBuilder } from '../helpers/list-query-builder/list-query-build
 import { normalizeDeveloperCounts } from '../helpers/normalize-developer-counts';
 import { SlugValidator } from '../helpers/slug-validator.service';
 import { DeveloperService } from './developer.service';
+import { FavouriteService } from './favourite.service';
 import { TagService } from './tag.service';
 
 @Injectable()
@@ -38,7 +40,20 @@ export class CollectionService implements OnApplicationBootstrap {
         private readonly tagService: TagService,
         private readonly eventBus: EventBus,
         private readonly jobQueue: JobQueue,
+        private readonly favouriteService: FavouriteService,
     ) {}
+
+    public async attachFavouriteStatus<T extends { id: string }>(ctx: RequestContext, items: T[]) {
+        const statusById = await this.favouriteService.getFavouriteStatusMap(
+            ctx,
+            items.map(({ id }) => id),
+            'collections',
+        );
+        return items.map(item => ({
+            ...item,
+            isFavouritedByCurrentUser: statusById.get(item.id) ?? false,
+        }));
+    }
 
     /**@internal */
     onApplicationBootstrap(): void {
@@ -341,6 +356,10 @@ export class CollectionService implements OnApplicationBootstrap {
 
         if ((!isOwner && source.isPrivate) || (!isOwner && !source.allowForking)) {
             throw new ForbiddenError();
+        }
+
+        if (source.creator.id === developer.id) {
+            return new DisallowedCollectionOwnerForkError();
         }
 
         const forkInput = {

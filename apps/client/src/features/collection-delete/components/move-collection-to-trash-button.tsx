@@ -1,6 +1,5 @@
 import { LoadingButton } from '@/components/inputs/loading-button';
 import { useDeleteConfirmation } from '@/hooks/use-delete-confirmation';
-import { cn } from '@/lib/utils';
 import { Trash2Icon } from 'lucide-react';
 import type React from 'react';
 import {
@@ -18,7 +17,6 @@ interface MoveCollectionToTrashButtonProps extends Omit<
 }
 
 export function MoveCollectionToTrashButton({
-    className,
     label = 'move collection to trash',
     collectionId,
     onClick,
@@ -47,7 +45,7 @@ export function MoveCollectionToTrashButton({
         }
     };
     return (
-        <LoadingButton {...props} className={cn(className)} onClick={handleDelete} isLoading={isPending}>
+        <LoadingButton {...props} onClick={handleDelete} isLoading={isPending}>
             <Trash2Icon />
             {label}
         </LoadingButton>

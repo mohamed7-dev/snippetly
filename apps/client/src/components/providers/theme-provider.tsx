@@ -1,61 +1,67 @@
-import React from 'react';
+import { useDeveloperSettings } from '@/features/developer-settings/hooks/use-developer-settings';
+import React, { createContext } from 'react';
 
 export type Theme = 'dark' | 'light' | 'system';
 
-type ThemeProviderProps = {
+export interface ThemeContextType {
+    state: {
+        theme: Theme;
+    };
+    actions: {
+        setTheme: (theme: Theme) => void;
+    };
+}
+
+export const ThemeContext = createContext<ThemeContextType | undefined>({
+    state: {
+        theme: 'system',
+    },
+    actions: {
+        setTheme: () => null,
+    },
+});
+
+interface ThemeProviderProps {
     children: React.ReactNode;
     defaultTheme?: Theme;
-    storageKey?: string;
-};
+}
 
-type ThemeProviderState = {
-    theme: Theme;
-    setTheme: (theme: Theme) => void;
-};
+export function ThemeProvider(props: ThemeProviderProps) {
+    const { defaultTheme = 'system', children } = props;
 
-const initialState: ThemeProviderState = {
-    theme: 'system',
-    setTheme: () => null,
-};
-
-export const ThemeContext = React.createContext<ThemeProviderState>(initialState);
-
-export function ThemeProvider({
-    children,
-    defaultTheme = 'system',
-    storageKey = 'vite-ui-theme',
-    ...props
-}: ThemeProviderProps) {
-    const [theme, setTheme] = React.useState<Theme>(
-        () => (localStorage.getItem(storageKey) as Theme) || defaultTheme,
-    );
+    const {
+        state: { settings },
+        actions: { setTheme },
+    } = useDeveloperSettings();
 
     React.useEffect(() => {
         const root = window.document.documentElement;
 
         root.classList.remove('light', 'dark');
 
-        if (theme === 'system') {
+        const activeTheme =
+            defaultTheme !== 'system' && settings.theme === 'system' ? defaultTheme : settings.theme;
+
+        if (activeTheme === 'system') {
             const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 
             root.classList.add(systemTheme);
             return;
         }
 
-        root.classList.add(theme);
-    }, [theme]);
+        root.classList.add(activeTheme);
+    }, [settings.theme, defaultTheme]);
 
-    const value = {
-        theme,
-        setTheme: (theme: Theme) => {
-            localStorage.setItem(storageKey, theme);
-            setTheme(theme);
-        },
-    };
+    const contextValue = React.useMemo(() => {
+        return {
+            state: {
+                theme: settings.theme,
+            },
+            actions: {
+                setTheme: setTheme,
+            },
+        } satisfies ThemeContextType;
+    }, [setTheme, settings.theme]);
 
-    return (
-        <ThemeContext.Provider {...props} value={value}>
-            {children}
-        </ThemeContext.Provider>
-    );
+    return <ThemeContext.Provider value={{ ...contextValue }}>{children}</ThemeContext.Provider>;
 }

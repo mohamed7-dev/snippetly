@@ -2,6 +2,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/features/auth/hooks/use-auth';
+import { DeveloperActionsDropdown } from '@/features/developer-actions/components/developer-actions-dropdown';
 import { SendFriendshipRequestButton } from '@/features/friendship/components/send-friendship-request-button';
 import { formatDeveloperInfo } from '@/lib/format-developer-info';
 import { FriendshipStatus } from '@snippetly/common/dto';
@@ -31,6 +32,11 @@ export function ProfilePageInfo() {
         friendshipInfo?.requestStatus === FriendshipStatus.Cancelled ||
         (friendshipInfo?.requestStatus !== FriendshipStatus.Pending && !friendshipInfo?.isCurrentUserAFriend);
 
+    const onMutateFavSuccess = (_data: any, actionType: 'add' | 'remove') => {
+        // TODO: update cache optimistically
+        qClient.invalidateQueries(getDeveloperProfileQueryOptions(id));
+    };
+
     return (
         <Card>
             <CardContent className="pt-6">
@@ -45,12 +51,34 @@ export function ProfilePageInfo() {
                             <h1 className="text-3xl capitalize font-bold">{fullName}</h1>
                         </div>
                         <p className="text-muted-foreground">{profile.bio}</p>
-                        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                                <CalendarIcon className="h-4 w-4" />
-                                Joined {new Date(profile.createdAt).toLocaleDateString()}
+                        <div className="flex flex-wrap gap-4 justify-between text-sm text-muted-foreground">
+                            <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-1">
+                                    <CalendarIcon className="h-4 w-4" />
+                                    Joined {new Date(profile.createdAt).toLocaleDateString()}
+                                </div>
+                                <Badge variant="secondary">{isPrivate ? 'Private' : 'Public'}</Badge>
                             </div>
-                            <Badge variant="secondary">{isPrivate ? 'Private' : 'Public'}</Badge>
+                            <DeveloperActionsDropdown
+                                developer={{ id: profile.id, firstName: profile.firstName }}
+                                friendshipInfo={{
+                                    isFriendWithCurrentUser: friendshipInfo?.isCurrentUserAFriend ?? false,
+                                    friendshipStatus: friendshipInfo?.requestStatus ?? null,
+                                }}
+                                favouriteInfo={{
+                                    isFavouritedByCurrentUser: profile.isFavouritedByCurrentUser,
+                                }}
+                                showRequestFriendship={shouldDisplaySendButton}
+                                showAddToFavourites={true}
+                                showRemoveFromFavourites={true}
+                                showEditProfile={true}
+                                addDeveloperToFavourites={{
+                                    onSuccess: data => onMutateFavSuccess(data, 'add'),
+                                }}
+                                removeDeveloperFromFavourites={{
+                                    onSuccess: data => onMutateFavSuccess(data, 'remove'),
+                                }}
+                            />
                         </div>
                         <div className="flex gap-6 text-sm">
                             <span>

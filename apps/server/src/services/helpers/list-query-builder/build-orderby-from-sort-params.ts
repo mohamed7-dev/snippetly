@@ -11,6 +11,7 @@ export function buildOrderbyFromSortParams<Entity extends AppEntity>(
     dataSource: DataSource,
     entityType: ClassType<Entity>,
     sortParams?: SortParameter<Entity> | null,
+    customPropsMap?: Record<string, string>,
     entityAlias?: string,
 ): OrderByCondition {
     if (!sortParams) return {};
@@ -25,6 +26,8 @@ export function buildOrderbyFromSortParams<Entity extends AppEntity>(
         const columnMatch = columns.find(col => col.propertyName === sortProp);
         if (columnMatch) {
             output[`${alias}.${columnMatch.propertyPath}`] = direction as any;
+        } else if (customPropsMap?.[sortProp]) {
+            output[customPropsMap[sortProp]] = direction as any;
         } else {
             throw new UserInputError('Invalid sort fields', {
                 fieldName: sortProp,

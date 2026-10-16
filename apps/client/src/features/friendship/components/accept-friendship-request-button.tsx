@@ -38,7 +38,7 @@ export function AcceptFriendshipRequestButton({
             isLoading={isPending || (props?.isLoading ? props.isLoading : isPending)}
             onClick={handleSending}
         >
-            <CheckIcon className="h-4 w-4 mr-2" />
+            <CheckIcon />
             {label}
         </LoadingButton>
     );

@@ -210,7 +210,7 @@ export function createPaginatedListInputSchema<Filter extends z.ZodRawShape, Sor
                     id: sortDirection,
                 })
                 .partial()
-                .extend(sortSchema.shape),
+                .extend(sortSchema.partial().shape),
         })
         .partial()
         .optional();

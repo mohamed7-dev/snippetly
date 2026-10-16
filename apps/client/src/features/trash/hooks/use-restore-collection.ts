@@ -1,9 +1,10 @@
+import { getCurrentDeveloperActivityStats } from '@/features/stats/lib/stats-query-options';
 import { ApiClientError, developerApiClient, type ApiSuccess } from '@/lib/api-client';
 import { apiEndpoints } from '@/lib/api-endpoints';
 import { toastApiError } from '@/lib/toast-api-error';
 import type { AsyncActionCallback } from '@/lib/types';
 import type { RestoreCollectionDtoType } from '@snippetly/common/dto';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 export type RestoreCollectionMutationCallbacks = AsyncActionCallback<
@@ -12,6 +13,8 @@ export type RestoreCollectionMutationCallbacks = AsyncActionCallback<
 >;
 
 export function useRestoreCollection(callbacks?: RestoreCollectionMutationCallbacks) {
+    const qClient = useQueryClient();
+
     return useMutation({
         mutationFn: async (input: RestoreCollectionDtoType['input']) => {
             const endpoint = apiEndpoints.collections.restore;
@@ -22,11 +25,8 @@ export function useRestoreCollection(callbacks?: RestoreCollectionMutationCallba
         ...callbacks,
         onSuccess: async data => {
             toast.success(`Collection restored successfully`);
+            qClient.invalidateQueries(getCurrentDeveloperActivityStats());
             callbacks?.onSuccess?.(data);
-            // await queryClient.invalidateQueries({ queryKey: ['trash'] });
-            // await queryClient.invalidateQueries({
-            //     queryKey: resource === 'snippet' ? ['snippets', 'current'] : ['collections', 'current'],
-            // });
         },
         onError: e => {
             toastApiError(e as ApiClientError);

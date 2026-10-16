@@ -12,7 +12,7 @@ import { CollectionActionMenu } from '../shared/collection-action-menu';
 export function CollectionPageMainContent() {
     const qClient = useQueryClient();
     const params = useParams({
-        from: '/(protected)/dashboard/collections/$id/',
+        from: '/(public)/collections/$id',
     });
     const { data: collection } = useSuspenseQuery(getCollectionQueryOptions(params.id));
 
@@ -21,7 +21,9 @@ export function CollectionPageMainContent() {
 
     const navigate = useNavigate();
 
-    const onCollectionMutationSuccess = () => {
+    const onCollectionMutationSuccess = (_data?: any, actionType?: 'add' | 'remove') => {
+        //TODO: update cache optimistically
+
         qClient.invalidateQueries(getCollectionQueryOptions(params.id));
     };
 
@@ -57,6 +59,17 @@ export function CollectionPageMainContent() {
                                 onCollectionMutationSuccess();
                             },
                         }}
+                        addCollectionToFavourites={{
+                            onSuccess: data => {
+                                onCollectionMutationSuccess(data, 'add');
+                            },
+                        }}
+                        removeCollectionFromFavourites={{
+                            onSuccess: data => {
+                                onCollectionMutationSuccess(data, 'remove');
+                            },
+                        }}
+                        showViewButton={false}
                     />
                 </div>
                 <p className="text-muted-foreground text-lg text-pretty mb-4">{collection.description}</p>

@@ -7,13 +7,28 @@
  * ---------------------------------------------------------
  */
 import { z } from "zod"
-import { identifierChangeTokenExpiredError,identifierChangeTokenInvalidError,invalidFriendshipActionError,missingPasswordError,notVerifiedAccountError,passwordResetTokenExpiredError,passwordResetTokenInvalidError,passwordValidationError,verificationTokenExpiredError,verificationTokenInvalidError,emailAddressConflictError,invalidCredentialsError,nativeAuthStrategyError } from "@snippetly/common/dto"
+import { disallowedCollectionOwnerForkError,identifierChangeTokenExpiredError,identifierChangeTokenInvalidError,invalidFriendshipActionError,missingPasswordError,notVerifiedAccountError,passwordResetTokenExpiredError,passwordResetTokenInvalidError,passwordValidationError,verificationTokenExpiredError,verificationTokenInvalidError,emailAddressConflictError,invalidCredentialsError,nativeAuthStrategyError } from "@snippetly/common/dto"
 export { ErrorCode } from "@snippetly/common/dto"
 export class ApiError {
   readonly code: string;
   readonly httpStatusCode: number;
   readonly message: string;
 }
+type DisallowedCollectionOwnerForkErrorData = z.infer<typeof disallowedCollectionOwnerForkError>;
+
+export class DisallowedCollectionOwnerForkError extends ApiError {
+    readonly code:DisallowedCollectionOwnerForkErrorData["code"] = 'DISALLOWED_COLLECTION_OWNER_FORK_ERROR';
+    readonly httpStatusCode:DisallowedCollectionOwnerForkErrorData["httpStatusCode"] = 400;
+    readonly message:DisallowedCollectionOwnerForkErrorData["message"] = 'DISALLOWED_COLLECTION_OWNER_FORK_ERROR';
+    
+
+    constructor( ) {
+        super();
+    
+        Object.setPrototypeOf(this, DisallowedCollectionOwnerForkError.prototype);
+  }
+}
+    
 type IdentifierChangeTokenExpiredErrorData = z.infer<typeof identifierChangeTokenExpiredError>;
 
 export class IdentifierChangeTokenExpiredError extends ApiError {

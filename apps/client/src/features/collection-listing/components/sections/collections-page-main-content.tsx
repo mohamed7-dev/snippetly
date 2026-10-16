@@ -27,7 +27,10 @@ export function CollectionsPageMainContent() {
 
     const qClient = useQueryClient();
 
-    const onMutateSuccess = async () => {
+    const onMutateSuccess = async (_data: any, actionType?: 'add' | 'remove') => {
+        if (actionType) {
+            // TODO: update the cache optimistically while triggering the invalidation
+        }
         await qClient.invalidateQueries(listCurrentUserCollectionsQueryOptions(undefined, queryKey));
     };
 
@@ -54,6 +57,12 @@ export function CollectionsPageMainContent() {
                             }}
                             forkCollection={{
                                 onSuccess: onMutateSuccess,
+                            }}
+                            addCollectionToFavourites={{
+                                onSuccess: data => onMutateSuccess(data, 'add'),
+                            }}
+                            removeCollectionFromFavourites={{
+                                onSuccess: data => onMutateSuccess(data, 'remove'),
                             }}
                         />
                     </PermissionGuard>

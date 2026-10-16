@@ -1,9 +1,9 @@
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
+import { SearchBar } from '@/features/search/components/search-bar';
 import { Permission } from '@snippetly/common/dto';
 import { Link } from '@tanstack/react-router';
-import { PlusIcon, SearchIcon } from 'lucide-react';
+import { PlusIcon } from 'lucide-react';
 import { HeaderWrapper } from '../header-wrapper';
 import { Logo } from '../logo';
 import { HeaderUserMenu } from './header-user-menu';
@@ -15,22 +15,18 @@ export function DashBoardHeader() {
             <MobileSidebar />
             <div className="flex items-center gap-4">
                 <Logo />
-                <div className="hidden lg:block relative w-96 max-w-sm">
-                    <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Search snippets..." className="pl-10 bg-muted/50 border-border" />
-                </div>
+                <SearchBar className="hidden w-96 max-w-sm lg:block" />
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
                 <PermissionGuard requiredPermissions={[Permission.Authenticated, Permission.CreateSnippet]}>
-                    <Button size="sm" className="" asChild>
+                    <Button asChild>
                         <Link to="/dashboard/snippets/new">
-                            <PlusIcon className="h-4 w-4 mr-2 sm:mr-1" />
+                            <PlusIcon />
                             New Snippet
                         </Link>
                     </Button>
                 </PermissionGuard>
-
                 <HeaderUserMenu />
             </div>
         </HeaderWrapper>

@@ -9,7 +9,7 @@ import { BookOpenIcon, CalendarIcon } from 'lucide-react';
 import { getSnippetQueryOptions } from '../../lib/snippet-query-options';
 
 export function SnippetPageSidebar() {
-    const params = useParams({ from: '/(protected)/dashboard/snippets/$id/' });
+    const params = useParams({ from: '/(public)/snippets/$id' });
 
     const { data: snippet } = useSuspenseQuery(getSnippetQueryOptions(params.id));
     const createdAt = 'createdAt' in snippet ? snippet.createdAt : undefined;
@@ -32,7 +32,7 @@ export function SnippetPageSidebar() {
                                     <BookOpenIcon className="h-4 w-4 text-muted-foreground" />
                                     <span className="text-muted-foreground">Collection:</span>
                                     <Button variant={'link'} asChild>
-                                        <Link to="/dashboard/collections/$id" params={{ id: collection.id }}>
+                                        <Link to="/collections/$id" params={{ id: collection.id }}>
                                             {collection.name}
                                         </Link>
                                     </Button>

@@ -25,7 +25,9 @@ function isEditorTheme(value: string): value is EditorTheme {
 }
 
 export function SnippetCodeBlock({ snippet, readOnly = true, onChange }: SnippetCodeBlockProps) {
-    const { theme: appTheme } = useTheme();
+    const {
+        state: { theme: appTheme },
+    } = useTheme();
     const [systemPrefersDark, setSystemPrefersDark] = React.useState(
         () => typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches,
     );

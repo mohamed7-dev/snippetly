@@ -18,6 +18,7 @@ import { FriendshipService } from '../../services/domain/friendship.service';
 import { authGuard } from '../middlewares/auth.guard';
 import { defineRoutePipeline } from '../middlewares/define-router-pipeline.mw';
 import { transactionInterceptor } from '../middlewares/transaction.interceptor';
+import { RequestContext } from '../request-context/request-context';
 
 @Controller({
     path: 'friendships',
@@ -194,7 +195,9 @@ export class DeveloperFriendshipController implements AppRouter {
                         );
                     }
 
-                    res.status(200).json(result);
+                    res.status(200).json(
+                        await this.attachFavouriteStatusToParticipants(req.getRequestContext(), result),
+                    );
                 },
             }),
         );
@@ -217,7 +220,9 @@ export class DeveloperFriendshipController implements AppRouter {
                         req.query,
                     );
 
-                    res.status(200).json(result);
+                    res.status(200).json(
+                        await this.attachFavouriteStatusToParticipants(req.getRequestContext(), result),
+                    );
                 },
             }),
         );
@@ -240,11 +245,39 @@ export class DeveloperFriendshipController implements AppRouter {
                         req.query,
                     );
 
-                    res.status(200).json(result);
+                    res.status(200).json(
+                        await this.attachFavouriteStatusToParticipants(req.getRequestContext(), result),
+                    );
                 },
             }),
         );
 
         return router;
+    }
+
+    private async attachFavouriteStatusToParticipants<
+        TItem extends { requester: { id: string }; addressee: { id: string } },
+    >(ctx: RequestContext, result: { items: TItem[]; itemsCount: number }) {
+        const participants = result.items.flatMap(({ requester, addressee }) => [requester, addressee]);
+        const participantsWithStatus = await this.developerService.attachFavouriteStatus(ctx, participants);
+        const statusByDeveloperId = new Map<string, boolean>();
+        for (const { id, isFavouritedByCurrentUser } of participantsWithStatus) {
+            statusByDeveloperId.set(id, isFavouritedByCurrentUser);
+        }
+
+        return {
+            ...result,
+            items: result.items.map(item => ({
+                ...item,
+                requester: {
+                    ...item.requester,
+                    isFavouritedByCurrentUser: statusByDeveloperId.get(item.requester.id) ?? false,
+                },
+                addressee: {
+                    ...item.addressee,
+                    isFavouritedByCurrentUser: statusByDeveloperId.get(item.addressee.id) ?? false,
+                },
+            })),
+        };
     }
 }

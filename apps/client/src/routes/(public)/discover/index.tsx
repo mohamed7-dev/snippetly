@@ -5,32 +5,29 @@ import { collectionListDto, developerListDto, snippetListDto } from '@snippetly/
 import { createFileRoute } from '@tanstack/react-router';
 import z from 'zod';
 
-const searchSchema = z.object({
-    tab: z.enum(['developers', 'snippets', 'collections']).default('developers').catch('developers'),
-    developers: z
-        .object({
-            sort: developerListDto.input.shape.sort.default({}).catch({}),
-            filter: developerListDto.input.shape.filter.default({}).catch({}),
+const searchSchema = z
+    .object({
+        tab: z.enum(['developers', 'snippets', 'collections']).default('developers').catch('developers'),
+        developers: z.object({
+            sort: developerListDto.input.shape.sort,
+            filter: developerListDto.input.shape.filter,
             filterOperator: developerListDto.input.shape.filterOperator,
-        })
-        .optional(),
-    snippets: z
-        .object({
-            sort: snippetListDto.input.shape.sort.default({}).catch({}),
-            filter: snippetListDto.input.shape.filter.default({}).catch({}),
+        }),
+        snippets: z.object({
+            sort: snippetListDto.input.shape.sort,
+            filter: snippetListDto.input.shape.filter,
             filterOperator: snippetListDto.input.shape.filterOperator,
-            tags: snippetListDto.input.shape.tags.optional(),
-        })
-        .optional(),
-    collections: z
-        .object({
-            sort: collectionListDto.input.shape.sort.default({}).catch({}),
-            filter: collectionListDto.input.shape.filter.default({}).catch({}),
+            tags: snippetListDto.input.shape.tags,
+        }),
+        collections: z.object({
+            sort: collectionListDto.input.shape.sort,
+            filter: collectionListDto.input.shape.filter,
             filterOperator: collectionListDto.input.shape.filterOperator,
-            tags: collectionListDto.input.shape.tags.optional(),
-        })
-        .optional(),
-});
+            tags: collectionListDto.input.shape.tags,
+        }),
+    })
+    .partial()
+    .optional();
 
 export const Route = createFileRoute('/(public)/discover/')({
     component: DiscoverPage,
@@ -44,7 +41,7 @@ export const Route = createFileRoute('/(public)/discover/')({
         };
     },
     validateSearch: searchSchema,
-    loaderDeps: ({ search: { developers } }) => ({ ...developers }),
+    loaderDeps: ({ search: { developers } = {} }) => ({ ...developers }),
     loader: ({ context: { queryClient }, deps }) => {
         queryClient.infiniteQuery(discoverDevelopersQueryOptions(deps, Object.values(deps))).catch();
     },

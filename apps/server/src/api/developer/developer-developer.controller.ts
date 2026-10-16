@@ -66,6 +66,10 @@ export class DeveloperDeveloperController implements AppRouter {
                         result.itemsCount,
                         { includePrivateCollections: false, includePrivateSnippets: false },
                     );
+                    result.items = await this.developerService.attachFavouriteStatus(
+                        req.getRequestContext(),
+                        result.items,
+                    );
 
                     res.status(200).json(result);
                 },
@@ -100,7 +104,11 @@ export class DeveloperDeveloperController implements AppRouter {
                             },
                         );
                         if (developer) {
-                            res.status(200).json({ ...developer });
+                            const [developerWithFavouriteStatus] =
+                                await this.developerService.attachFavouriteStatus(req.getRequestContext(), [
+                                    developer,
+                                ]);
+                            res.status(200).json(developerWithFavouriteStatus);
                         } else {
                             res.status(200).json(null);
                         }
@@ -197,11 +205,17 @@ export class DeveloperDeveloperController implements AppRouter {
                         ? result
                         : omit(result, ['isPrivate', 'updatedAt', 'deletedAt', 'user']);
 
-                    res.status(200).json({
+                    const profileWithStats = {
                         ...profile,
                         ...profileInfo,
                         stats: { ...profileStats, friendsCount: profileInfo.friendCount },
-                    });
+                    };
+                    const [profileWithFavouriteStatus] = await this.developerService.attachFavouriteStatus(
+                        ctx,
+                        [profileWithStats],
+                    );
+
+                    res.status(200).json(profileWithFavouriteStatus);
                 },
             }),
         );

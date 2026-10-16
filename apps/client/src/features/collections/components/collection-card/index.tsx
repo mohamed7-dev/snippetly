@@ -6,10 +6,7 @@ import { Permission, type CollectionListDtoType } from '@snippetly/common/dto';
 import { Link } from '@tanstack/react-router';
 import { CollectionActionMenu, type CollectionActionMenuProps } from '../shared/collection-action-menu';
 
-interface CollectionCardProps extends Pick<
-    CollectionActionMenuProps,
-    'deleteCollection' | 'forkCollection' | 'moveCollectionToTrash'
-> {
+interface CollectionCardProps extends CollectionActionMenuProps {
     collection: ApiSuccess<CollectionListDtoType['output']>['items'][number];
 }
 
@@ -29,7 +26,7 @@ export function CollectionCard({ collection, ...props }: CollectionCardProps) {
                         />
                         <div className="flex-1">
                             <CardTitle className="text-lg font-heading capitalize group-hover:text-primary transition-colors">
-                                <Link to={'/dashboard/collections/$id'} params={{ id: collection.id }}>
+                                <Link to={'/collections/$id'} params={{ id: collection.id }}>
                                     {collection.name}
                                 </Link>
                             </CardTitle>

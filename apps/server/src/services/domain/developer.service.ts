@@ -57,6 +57,7 @@ import { EmailClient } from '../helpers/email-client.service';
 import { JobQueue } from '../helpers/job-qeueue.service';
 import { ListQueryBuilder } from '../helpers/list-query-builder/list-query-builder.service';
 import type { CollectionService } from './collection.service';
+import { FavouriteService } from './favourite.service';
 import { FriendshipService } from './friendship.service';
 import type { SnippetService } from './snippet.service';
 import { TagService } from './tag.service';
@@ -85,7 +86,20 @@ export class DeveloperService implements OnApplicationBootstrap {
         private readonly eventBus: EventBus,
         private readonly jobQueue: JobQueue,
         private readonly emailClient: EmailClient,
+        private readonly favouriteService: FavouriteService,
     ) {}
+
+    public async attachFavouriteStatus<T extends { id: string }>(ctx: RequestContext, items: T[]) {
+        const statusById = await this.favouriteService.getFavouriteStatusMap(
+            ctx,
+            items.map(({ id }) => id),
+            'developers',
+        );
+        return items.map(item => ({
+            ...item,
+            isFavouritedByCurrentUser: statusById.get(item.id) ?? false,
+        }));
+    }
 
     /**@internal */
     onApplicationBootstrap() {
@@ -230,7 +244,55 @@ export class DeveloperService implements OnApplicationBootstrap {
 
         const [items, itemsCount] = await qb.getManyAndCount();
 
-        return { items, itemsCount };
+        const friendshipInfoByDeveloper = new Map<
+            string,
+            { isFriendWithCurrentUser: boolean; friendshipStatus: FriendshipStatus }
+        >();
+
+        if (activeDeveloper && items.length) {
+            const developerIds = items.map(({ id }) => id);
+            const friendships = await this.databaseService
+                .getRepository(ctx, Friendship)
+                .createQueryBuilder('friendship')
+                .innerJoin('friendship.requester', 'requester')
+                .innerJoin('friendship.addressee', 'addressee')
+                .select(
+                    'CASE WHEN requester.id = :activeDeveloperId THEN addressee.id ELSE requester.id END',
+                    'developerId',
+                )
+                .addSelect('friendship.status', 'friendshipStatus')
+                .where(
+                    new Brackets(query => {
+                        query
+                            .where(
+                                'requester.id = :activeDeveloperId AND addressee.id IN (:...developerIds)',
+                                { activeDeveloperId: activeDeveloper.id, developerIds },
+                            )
+                            .orWhere(
+                                'addressee.id = :activeDeveloperId AND requester.id IN (:...developerIds)',
+                                { activeDeveloperId: activeDeveloper.id, developerIds },
+                            );
+                    }),
+                )
+                .getRawMany<{ developerId: string; friendshipStatus: FriendshipStatus }>();
+
+            for (const { developerId, friendshipStatus } of friendships) {
+                friendshipInfoByDeveloper.set(developerId, {
+                    isFriendWithCurrentUser: friendshipStatus === FriendshipStatus.Accepted,
+                    friendshipStatus,
+                });
+            }
+        }
+
+        const enrichedItems = items.map(item => ({
+            ...item,
+            friendshipInfo: friendshipInfoByDeveloper.get(item.id) ?? {
+                isFriendWithCurrentUser: false,
+                friendshipStatus: null,
+            },
+        }));
+
+        return { items: enrichedItems, itemsCount };
     }
 
     public async findOne(
@@ -621,9 +683,9 @@ export class DeveloperService implements OnApplicationBootstrap {
         return developer;
     }
 
-    public async attachStatsToDevelopersList(
+    public async attachStatsToDevelopersList<T extends Developer>(
         ctx: RequestContext,
-        items: Developer[],
+        items: T[],
         itemsCount: number,
         options?: { includePrivateSnippets?: boolean; includePrivateCollections?: boolean },
     ) {

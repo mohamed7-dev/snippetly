@@ -1,7 +1,6 @@
 import { ErrorBoundaryFallback } from '@/components/feedback/error-boundary-fallback';
 import { SectionLoader } from '@/components/feedback/section-loader';
 import { queryClient } from '@/components/providers/tanstack-query-provider';
-import { CollectionPageHeader } from '@/features/collections/components/sections/collection-page-header';
 import { CollectionPageMainContent } from '@/features/collections/components/sections/collection-page-main-content';
 import { getCollectionQueryOptions } from '@/features/collections/lib/query-options';
 import { CollectionPageSnippetsList } from '@/features/snippet-listing/components/sections/collection-page-snippets-list';
@@ -12,13 +11,17 @@ import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import z from 'zod';
 
-const searchSchema = z.object({
-    sort: snippetListDto.input.shape.sort.default({}).catch({}),
-    filter: snippetListDto.input.shape.filter.default({}).catch({}),
-    filterOperator: snippetListDto.input.shape.filterOperator,
-});
+const searchSchema = z
+    .object({
+        sort: snippetListDto.input.shape.sort,
+        filter: snippetListDto.input.shape.filter,
+        filterOperator: snippetListDto.input.shape.filterOperator,
+        tags: snippetListDto.input.shape.tags,
+    })
+    .partial()
+    .optional();
 
-export const Route = createFileRoute('/(protected)/dashboard/collections/$id/')({
+export const Route = createFileRoute('/(public)/collections/$id')({
     component: CollectionPage,
     validateSearch: searchSchema,
     head: async ({ params }) => {
@@ -37,27 +40,26 @@ export const Route = createFileRoute('/(protected)/dashboard/collections/$id/')(
             ],
         };
     },
-    loaderDeps: ({ search: { sort, filter } }) => ({ sort, filter }),
+    loaderDeps: ({ search: { sort, filter, filterOperator } = {} }) => ({ sort, filter, filterOperator }),
     loader: async ({ context: { queryClient }, params: { id }, deps }) => {
-        await queryClient.infiniteQuery({
-            ...listCollectionSnippetsQueryOptions(id, deps, Object.values(deps)),
-            staleTime: 'static',
-        });
+        await queryClient.query({ ...getCollectionQueryOptions(id), staleTime: 'static' });
+        queryClient
+            .infiniteQuery({
+                ...listCollectionSnippetsQueryOptions(id, deps, Object.values(deps)),
+            })
+            .catch();
     },
 });
 
 function CollectionPage() {
     return (
-        <React.Fragment>
-            <CollectionPageHeader />
-            <main className="container mx-auto px-6 py-8 max-w-6xl">
-                <CollectionPageMainContent />
-                <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
-                    <React.Suspense fallback={<SectionLoader />}>
-                        <CollectionPageSnippetsList />
-                    </React.Suspense>
-                </ErrorBoundary>
-            </main>
-        </React.Fragment>
+        <main className="container mx-auto px-6 py-8 max-w-6xl">
+            <CollectionPageMainContent />
+            <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
+                <React.Suspense fallback={<SectionLoader />}>
+                    <CollectionPageSnippetsList />
+                </React.Suspense>
+            </ErrorBoundary>
+        </main>
     );
 }

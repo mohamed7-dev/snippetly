@@ -21,7 +21,7 @@ export function PublicProfilePageCollectionsList() {
     const qClient = useQueryClient();
 
     const { id } = useParams({ from: '/(public)/profile/$id' });
-    const { collections: collectionsSearch } = useSearch({ from: '/(public)/profile/$id' });
+    const { collections: collectionsSearch } = useSearch({ from: '/(public)/profile/$id' }) ?? {};
     const { sort, filter, filterOperator, tags } = collectionsSearch ?? {};
     const queryKeys = [sort, filter, filterOperator, tags];
 
@@ -49,7 +49,7 @@ export function PublicProfilePageCollectionsList() {
                             to: '.',
                             search: previous => ({
                                 ...previous,
-                                collections: { ...previous.collections, ...val },
+                                collections: { ...previous?.collections, ...val },
                             }),
                         })
                     }
@@ -62,7 +62,7 @@ export function PublicProfilePageCollectionsList() {
                             to: '.',
                             search: previous => ({
                                 ...previous,
-                                collections: { ...previous.collections, sort: val.sort },
+                                collections: { ...previous?.collections, sort: val.sort },
                             }),
                         })
                     }
@@ -77,7 +77,7 @@ export function PublicProfilePageCollectionsList() {
                             search: previous => ({
                                 ...previous,
                                 collections: {
-                                    ...previous.collections,
+                                    ...previous?.collections,
                                     tags: values.length ? { values, operator } : undefined,
                                 },
                             }),

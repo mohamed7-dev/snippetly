@@ -5,25 +5,28 @@ import { currentUserTrashedCollectionListDto, currentUserTrashedSnippetListDto }
 import { createFileRoute } from '@tanstack/react-router';
 import z from 'zod';
 
-const searchSchema = z.object({
-    tab: z.enum(['snippets', 'collections']).default('snippets').catch('snippets'),
-    snippets: z
-        .object({
-            sort: currentUserTrashedSnippetListDto.input.shape.sort.default({}).catch({}),
-            filter: currentUserTrashedSnippetListDto.input.shape.filter.default({}).catch({}),
-            filterOperator: currentUserTrashedSnippetListDto.input.shape.filterOperator,
-            tags: currentUserTrashedSnippetListDto.input.shape.tags.optional(),
-        })
-        .optional(),
-    collections: z
-        .object({
-            sort: currentUserTrashedCollectionListDto.input.shape.sort.default({}).catch({}),
-            filter: currentUserTrashedCollectionListDto.input.shape.filter.default({}).catch({}),
-            filterOperator: currentUserTrashedCollectionListDto.input.shape.filterOperator,
-            tags: currentUserTrashedCollectionListDto.input.shape.tags.optional(),
-        })
-        .optional(),
-});
+const searchSchema = z
+    .object({
+        tab: z.enum(['snippets', 'collections']).default('snippets').catch('snippets'),
+        snippets: z
+            .object({
+                sort: currentUserTrashedSnippetListDto.input.shape.sort,
+                filter: currentUserTrashedSnippetListDto.input.shape.filter,
+                filterOperator: currentUserTrashedSnippetListDto.input.shape.filterOperator,
+                tags: currentUserTrashedSnippetListDto.input.shape.tags,
+            })
+            .partial(),
+        collections: z
+            .object({
+                sort: currentUserTrashedCollectionListDto.input.shape.sort,
+                filter: currentUserTrashedCollectionListDto.input.shape.filter,
+                filterOperator: currentUserTrashedCollectionListDto.input.shape.filterOperator,
+                tags: currentUserTrashedCollectionListDto.input.shape.tags,
+            })
+            .partial(),
+    })
+    .partial()
+    .optional();
 
 export const Route = createFileRoute('/(protected)/dashboard/_dashboard-layout/_boundary/trash/')({
     component: TrashPage,
@@ -31,7 +34,7 @@ export const Route = createFileRoute('/(protected)/dashboard/_dashboard-layout/_
     head: () => ({
         meta: [{ title: 'Trash' }],
     }),
-    loaderDeps: ({ search: { snippets } }) => ({ ...snippets }),
+    loaderDeps: ({ search: { snippets } = {} }) => ({ ...snippets }),
     loader: ({ context: { queryClient }, deps }) => {
         queryClient.infiniteQuery(listTrashedSnippetsQueryOptions(deps, Object.values(deps))).catch();
     },

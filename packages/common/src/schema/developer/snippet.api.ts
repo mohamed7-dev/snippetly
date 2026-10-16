@@ -11,8 +11,8 @@ import {
     InferDtoType,
     inputIdSchema,
     sortDirection,
-    successResponse,
     stringFilterOperators,
+    successResponse,
 } from '../shared/common-schemas.js';
 import { developer } from '../shared/developer.type.js';
 import {
@@ -127,6 +127,7 @@ export type ForkSnippetDtoType = InferDtoType<typeof forkSnippetDto>;
 const findOneSnippetInput = inputIdSchema;
 
 const snippetItem = snippet.omit({ collection: true, tags: true, creator: true }).extend({
+    isFavouritedByCurrentUser: z.boolean(),
     creator: developer.pick({
         id: true,
         firstName: true,
@@ -164,6 +165,7 @@ const publicSnippetItem = snippetItem.pick({
     description: true,
     note: true,
     allowForking: true,
+    isFavouritedByCurrentUser: true,
     tags: true,
     creator: true,
     forkedFrom: true,
@@ -195,6 +197,8 @@ const filterSchema = z
         isPrivate: booleanFilterOperators,
         allowForking: booleanFilterOperators,
         deletedAt: dateTimeFilterOperators,
+        creatorFirstName: stringFilterOperators,
+        creatorLastName: stringFilterOperators,
     })
     .partial();
 
@@ -209,6 +213,8 @@ const sortSchema = z
         isPrivate: sortDirection,
         allowForking: sortDirection,
         deletedAt: sortDirection,
+        creatorFirstName: sortDirection,
+        creatorLastName: sortDirection,
     })
     .partial();
 
@@ -234,6 +240,7 @@ const snippetListInput = createPaginatedListInputSchema(filterSchema, sortSchema
     .partial();
 
 const snippetListItem = snippet.omit({ collection: true, tags: true, creator: true }).extend({
+    isFavouritedByCurrentUser: z.boolean(),
     creator: developer.pick({
         id: true,
         firstName: true,
@@ -271,6 +278,7 @@ const publicListSnippetItem = snippetListItem.pick({
     description: true,
     note: true,
     allowForking: true,
+    isFavouritedByCurrentUser: true,
     tags: true,
     creator: true,
     forkedFrom: true,
@@ -291,7 +299,24 @@ export const snippetListDto = {
 export type SnippetListDtoType = InferDtoType<typeof snippetListDto>;
 
 //########################### List Current User Snippets ########################################
-const currentUserSnippetListInput = snippetListInput.omit({ creator: true });
+const currentUserSnippetListInput = snippetListInput
+    .omit({ creator: true, discover: true, filter: true, sort: true })
+    .extend({
+        filter: filterSchema
+            .omit({ creatorFirstName: true, creatorLastName: true })
+            .extend({
+                collectionName: stringFilterOperators,
+            })
+            .partial()
+            .optional(),
+        sort: sortSchema
+            .omit({ creatorFirstName: true, creatorLastName: true })
+            .extend({
+                collectionName: sortDirection,
+            })
+            .partial()
+            .optional(),
+    });
 
 const currentUserSnippetListOutput = withServerErrors(createPaginatedListOutputSchema(snippetListItem), [
     userInputErrorSchema,
@@ -307,9 +332,7 @@ export type CurrentUserSnippetListDtoType = InferDtoType<typeof currentUserSnipp
 
 export const currentUserTrashedSnippetListDto = currentUserSnippetListDto;
 
-export type CurrentUserTrashedSnippetListDtoType = InferDtoType<
-    typeof currentUserTrashedSnippetListDto
->;
+export type CurrentUserTrashedSnippetListDtoType = InferDtoType<typeof currentUserTrashedSnippetListDto>;
 
 //########################### List User Friends Snippets ########################################
 const userFriendsSnippetsListItem = snippetListItem.pick({
@@ -321,6 +344,7 @@ const userFriendsSnippetsListItem = snippetListItem.pick({
     description: true,
     note: true,
     allowForking: true,
+    isFavouritedByCurrentUser: true,
     tags: true,
     creator: true,
     forkedFrom: true,
