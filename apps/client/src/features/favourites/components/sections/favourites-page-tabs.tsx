@@ -9,7 +9,7 @@ import { FavouriteCollectionsList, FavouriteDevelopersList, FavouriteSnippetsLis
 export function FavouritesPageTabs() {
     const { tab = 'snippets' } =
         useSearch({
-            from: '/(protected)/dashboard/_dashboard-layout/_boundary/favourites/',
+            from: '/(protected)/dashboard/_dashboard-layout/favourites/',
         }) ?? {};
 
     const navigate = useNavigate();

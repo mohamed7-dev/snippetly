@@ -2,24 +2,20 @@ import { useDeveloperSettings } from '@/features/developer-settings/hooks/use-de
 import React, { createContext } from 'react';
 
 export type Theme = 'dark' | 'light' | 'system';
+export type ColorScheme = 'classic' | 'retro' | 'coding';
 
 export interface ThemeContextType {
     state: {
         theme: Theme;
+        colorScheme: ColorScheme;
     };
     actions: {
         setTheme: (theme: Theme) => void;
+        setColorScheme: (colorScheme: ColorScheme) => void;
     };
 }
 
-export const ThemeContext = createContext<ThemeContextType | undefined>({
-    state: {
-        theme: 'system',
-    },
-    actions: {
-        setTheme: () => null,
-    },
-});
+export const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 interface ThemeProviderProps {
     children: React.ReactNode;
@@ -31,13 +27,14 @@ export function ThemeProvider(props: ThemeProviderProps) {
 
     const {
         state: { settings },
-        actions: { setTheme },
+        actions: { setTheme, setColorScheme },
     } = useDeveloperSettings();
 
     React.useEffect(() => {
         const root = window.document.documentElement;
 
         root.classList.remove('light', 'dark');
+        root.dataset.colorScheme = settings.colorScheme;
 
         const activeTheme =
             defaultTheme !== 'system' && settings.theme === 'system' ? defaultTheme : settings.theme;
@@ -50,18 +47,20 @@ export function ThemeProvider(props: ThemeProviderProps) {
         }
 
         root.classList.add(activeTheme);
-    }, [settings.theme, defaultTheme]);
+    }, [settings.colorScheme, settings.theme, defaultTheme]);
 
     const contextValue = React.useMemo(() => {
         return {
             state: {
                 theme: settings.theme,
+                colorScheme: settings.colorScheme,
             },
             actions: {
                 setTheme: setTheme,
+                setColorScheme: setColorScheme,
             },
         } satisfies ThemeContextType;
-    }, [setTheme, settings.theme]);
+    }, [setColorScheme, setTheme, settings.colorScheme, settings.theme]);
 
     return <ThemeContext.Provider value={{ ...contextValue }}>{children}</ThemeContext.Provider>;
 }

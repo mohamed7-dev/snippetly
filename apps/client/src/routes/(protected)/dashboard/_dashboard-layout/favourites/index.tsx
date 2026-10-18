@@ -38,7 +38,7 @@ const searchSchema = z
     .partial()
     .optional();
 
-export const Route = createFileRoute('/(protected)/dashboard/_dashboard-layout/_boundary/favourites/')({
+export const Route = createFileRoute('/(protected)/dashboard/_dashboard-layout/favourites/')({
     component: FavouritesPage,
     validateSearch: searchSchema,
     head: () => ({

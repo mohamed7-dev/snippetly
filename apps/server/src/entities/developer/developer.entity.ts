@@ -19,6 +19,10 @@ export class Developer extends AppEntity implements SoftDeletable {
     @JoinColumn()
     user: User;
 
+    get isVerified(): boolean {
+        return this.user.isVerified;
+    }
+
     @Column({ nullable: true, type: 'date' })
     deletedAt: Date | null;
 

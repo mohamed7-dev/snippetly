@@ -1,5 +1,6 @@
 import { Page } from '@/components/layout/page';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
+import { isOfflineCreationAvailable } from '@/features/offline-snippet/lib/offline-creation-access';
 import { listCurrentUserCollectionsQueryOptions } from '@/features/collection-listing/lib/collection-listing-query-options';
 import { CreateSnippetPageHeader } from '@/features/create-snippet/components/sections/create-snippet-page-header';
 import { useCreateSnippet } from '@/features/create-snippet/hooks/use-create-snippet';
@@ -40,7 +41,12 @@ export const Route = createFileRoute('/(protected)/dashboard/snippets/new/')({
     },
     loader: async ({ context: { queryClient } }) => {
         queryClient.query(listPopularTagsQueryOptions()).catch();
-        await queryClient.infiniteQuery({ ...listCurrentUserCollectionsQueryOptions(), staleTime: 'static' });
+        if (!isOfflineCreationAvailable()) {
+            await queryClient.infiniteQuery({
+                ...listCurrentUserCollectionsQueryOptions(),
+                staleTime: 'static',
+            });
+        }
     },
 });
 
@@ -66,15 +72,20 @@ function CreateSnippetPage() {
     const { mutateAsync, isPending } = useCreateSnippet({
         onSuccess: async data => {
             form.reset();
-            await navigate({ to: '../$id', params: { id: data.id } });
-            qClient.invalidateQueries(listCurrentUserSnippetsQueryOptions());
+            if (data.status === 'synced') {
+                await navigate({ to: '../$id', params: { id: data.data.id } });
+                void qClient.invalidateQueries(listCurrentUserSnippetsQueryOptions());
+            }
         },
     });
     return (
         <Page form={form} submitHandler={form.handleSubmit(values => mutateAsync(values))}>
             <CreateSnippetPageHeader isPending={isPending} />
 
-            <PermissionGuard requiredPermissions={[Permission.Authenticated, Permission.CreateSnippet]}>
+            <PermissionGuard
+                requiredPermissions={[Permission.Authenticated, Permission.CreateSnippet]}
+                isAvailableOffline
+            >
                 <main className="container mx-auto px-2 lg:px-6 py-8 max-w-6xl">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                         <div className="md:col-span-2 space-y-6">

@@ -89,7 +89,10 @@ export class DeveloperService implements OnApplicationBootstrap {
         private readonly favouriteService: FavouriteService,
     ) {}
 
-    public async attachFavouriteStatus<T extends { id: string }>(ctx: RequestContext, items: T[]) {
+    public async attachFavouriteStatus<T extends { id: string; isVerified: boolean }>(
+        ctx: RequestContext,
+        items: T[],
+    ) {
         const statusById = await this.favouriteService.getFavouriteStatusMap(
             ctx,
             items.map(({ id }) => id),
@@ -97,6 +100,7 @@ export class DeveloperService implements OnApplicationBootstrap {
         );
         return items.map(item => ({
             ...item,
+            isVerified: item.isVerified,
             isFavouritedByCurrentUser: statusById.get(item.id) ?? false,
         }));
     }
@@ -201,7 +205,7 @@ export class DeveloperService implements OnApplicationBootstrap {
     ) {
         const qb = this.listQueryBuilder.build(Developer, input as any, {
             ctx,
-            relations,
+            relations: { user: true, ...relations },
             where: {
                 ...(options?.includeSoftDeleted ? {} : { deletedAt: IsNull() }),
                 ...(options?.includePrivateDevelopers ? {} : { isPrivate: false }),
@@ -286,6 +290,7 @@ export class DeveloperService implements OnApplicationBootstrap {
 
         const enrichedItems = items.map(item => ({
             ...item,
+            isVerified: item.isVerified,
             friendshipInfo: friendshipInfoByDeveloper.get(item.id) ?? {
                 isFriendWithCurrentUser: false,
                 friendshipStatus: null,
@@ -308,9 +313,7 @@ export class DeveloperService implements OnApplicationBootstrap {
                 ...(options?.includeSoftDeleted ? {} : { deletedAt: IsNull() }),
                 ...(options?.includePrivateDevelopers ? {} : { isPrivate: false }),
             },
-            relations: {
-                ...relations,
-            },
+            relations,
         });
 
         return developer ?? undefined;
@@ -352,10 +355,15 @@ export class DeveloperService implements OnApplicationBootstrap {
             return undefined;
         }
 
-        const developer = await this.getOneByUserId(ctx, ctx.activeUserId, undefined, {
-            includeSoftDeleted: false,
-            includePrivateDevelopers: true,
-        });
+        const developer = await this.getOneByUserId(
+            ctx,
+            ctx.activeUserId,
+            { user: true },
+            {
+                includeSoftDeleted: false,
+                includePrivateDevelopers: true,
+            },
+        );
 
         if (maybeStrict && !developer) {
             throw new InternalServerError("errors.developer_account_can't_be_located_for_user");
@@ -713,6 +721,7 @@ export class DeveloperService implements OnApplicationBootstrap {
 
         const enrichedItems = items.map(item => ({
             ...item,
+            isVerified: item.isVerified,
             snippetsCount: snippetCountsByDeveloper.get(item.id) ?? 0,
             collectionsCount: collectionCountsByDeveloper.get(item.id) ?? 0,
             tags: tagsByDeveloper.get(item.id) ?? [],

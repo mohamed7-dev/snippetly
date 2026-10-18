@@ -12,11 +12,14 @@ export function InsightsPageSnippetsList() {
     const { data } = useSuspenseInfiniteQuery(listCurrentUserSnippetsQueryOptions({ take: 5 }));
 
     const snippets = data.pages.flatMap(p => p.items) ?? [];
-    const ownerId = snippets?.[0]?.creator.id;
     const qClient = useQueryClient();
 
-    const onMutateSnippetSuccess = async () => {
-        await qClient.invalidateQueries(listCurrentUserSnippetsQueryOptions());
+    const onMutateSnippetSuccess = async (_data?: any, actionType?: 'add' | 'remove') => {
+        if (actionType) {
+            // TODO: update the cache manually
+        } else {
+            await qClient.invalidateQueries(listCurrentUserSnippetsQueryOptions());
+        }
     };
 
     if (!snippets.length) {
@@ -27,36 +30,60 @@ export function InsightsPageSnippetsList() {
                 description="Start creating your first snippet and you will see it here."
                 layout="section"
                 actions={[
-                    <Button variant={'default'} asChild>
-                        <Link to="/dashboard/snippets/new">Create Snippet</Link>
-                    </Button>,
+                    <PermissionGuard
+                        requiredPermissions={[Permission.Authenticated, Permission.CreateSnippet]}
+                        isAvailableOffline={true}
+                    >
+                        <Button variant={'default'} asChild>
+                            <Link to="/dashboard/snippets/new">Create Snippet</Link>
+                        </Button>
+                    </PermissionGuard>,
                 ]}
             />
         );
     }
 
     return (
-        <PermissionGuard
-            requiredPermissions={[Permission.Authenticated, Permission.Owner, Permission.ReadSnippet]}
-            ownerId={ownerId}
-        >
+        <section className="space-y-6">
+            <div>
+                <h2 className="text-xl font-semibold font-heading">Recent Snippets</h2>
+                <p className="text-muted-foreground">
+                    A list of snippets that you have recently interacted with
+                </p>
+            </div>
             <SnippetListLayout>
                 {snippets?.map(snippet => (
-                    <SnippetCard
+                    <PermissionGuard
                         key={snippet.id}
-                        snippet={snippet}
-                        deleteSnippet={{
-                            onSuccess: onMutateSnippetSuccess,
-                        }}
-                        forkSnippet={{
-                            onSuccess: onMutateSnippetSuccess,
-                        }}
-                        moveSnippetToTrash={{
-                            onSuccess: onMutateSnippetSuccess,
-                        }}
-                    />
+                        requiredPermissions={[
+                            Permission.Authenticated,
+                            Permission.Owner,
+                            Permission.ReadSnippet,
+                        ]}
+                        ownerId={snippet.creator.id}
+                        isAvailableOffline={true}
+                    >
+                        <SnippetCard
+                            snippet={snippet}
+                            deleteSnippet={{
+                                onSuccess: onMutateSnippetSuccess,
+                            }}
+                            forkSnippet={{
+                                onSuccess: onMutateSnippetSuccess,
+                            }}
+                            moveSnippetToTrash={{
+                                onSuccess: onMutateSnippetSuccess,
+                            }}
+                            addSnippetToFavourites={{
+                                onSuccess: data => onMutateSnippetSuccess(data, 'add'),
+                            }}
+                            removeSnippetFromFavourites={{
+                                onSuccess: data => onMutateSnippetSuccess(data, 'remove'),
+                            }}
+                        />
+                    </PermissionGuard>
                 ))}
             </SnippetListLayout>
-        </PermissionGuard>
+        </section>
     );
 }

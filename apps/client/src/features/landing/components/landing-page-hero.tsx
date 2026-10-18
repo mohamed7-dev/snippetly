@@ -1,5 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { InstallAppButton } from '@/components/inputs/install-app-button';
 import { Link } from '@tanstack/react-router';
 import { ArrowRightIcon, SearchCodeIcon, StarIcon } from 'lucide-react';
 
@@ -34,6 +35,7 @@ export function LandingPageHero() {
                                 <SearchCodeIcon />
                             </Link>
                         </Button>
+                        <InstallAppButton size="lg" className="text-lg px-8" />
                     </div>
                 </div>
             </div>

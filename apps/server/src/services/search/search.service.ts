@@ -77,6 +77,7 @@ export class SearchService {
                         firstName: snippet.creator.firstName,
                         lastName: snippet.creator.lastName,
                         image: snippet.creator.image ?? null,
+                        isVerified: snippet.creator.isVerified,
                     },
                     collection:
                         snippet.collection && !snippet.collection.isPrivate && !snippet.collection.deletedAt
@@ -105,6 +106,7 @@ export class SearchService {
                         firstName: collection.creator.firstName,
                         lastName: collection.creator.lastName,
                         image: collection.creator.image ?? null,
+                        isVerified: collection.creator.isVerified,
                     },
                     tags: collection.tags.map(({ value }) => ({ value })),
                     score: collectionPage.scores.get(String(collection.id)) ?? 0,
@@ -119,6 +121,7 @@ export class SearchService {
                     lastName: developer.lastName,
                     bio: developer.bio ?? null,
                     image: developer.image ?? null,
+                    isVerified: developer.isVerified,
                     score: developerPage.scores.get(String(developer.id)) ?? 0,
                 })),
                 totalItems: developerPage.totalItems,
@@ -162,7 +165,7 @@ export class SearchService {
                     { expression: 'snippet.language', weight: 1 },
                     { expression: 'snippet.code', weight: 0.5 },
                 ],
-                relations: { creator: true, collection: true, tags: true },
+                relations: { creator: { user: true }, collection: true, tags: true },
             },
             collections: {
                 entity: Collection,
@@ -176,7 +179,7 @@ export class SearchService {
                     { expression: 'collection.description', weight: 2 },
                     { expression: 'collection.color', weight: 1 },
                 ],
-                relations: { creator: true, tags: true },
+                relations: { creator: { user: true }, tags: true },
             },
             developers: {
                 entity: Developer,
@@ -189,7 +192,7 @@ export class SearchService {
                     { expression: 'developer.lastName', weight: 4 },
                     { expression: 'developer.bio', weight: 2 },
                 ],
-                relations: { addedTags: true },
+                relations: { addedTags: true, user: true },
             },
         };
     }

@@ -10,9 +10,12 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/features/auth/hooks/use-auth';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { PlusIcon } from 'lucide-react';
+import { getOfflineOwnerId, listOfflineCollectionOptions } from '@/features/offline-snippet/lib/store';
 import { listCurrentUserCollectionsQueryOptions } from '../../lib/collection-listing-query-options';
 import { CollectionItem } from './collection-item';
 
@@ -28,10 +31,30 @@ export function CurrentUserCollectionsOverlay({
     isOpen,
     selectedCollectionId,
 }: CurrentUserCollectionsOverlayProps) {
-    const { data, fetchNextPage, isFetchingNextPage, hasNextPage } = useInfiniteQuery(
-        listCurrentUserCollectionsQueryOptions(),
+    const { user } = useAuth();
+    const ownerId = user?.id ?? getOfflineOwnerId();
+    const { data, fetchNextPage, isFetchingNextPage, hasNextPage } = useInfiniteQuery({
+        ...listCurrentUserCollectionsQueryOptions(),
+        enabled: !!user?.id && navigator.onLine,
+    });
+    const offlineCollections = useLiveQuery(
+        () => (ownerId ? listOfflineCollectionOptions(ownerId) : []),
+        [ownerId],
     );
-    const collections = data?.pages?.flatMap(p => p.items) ?? [];
+    const collectionMap = new Map(
+        (data?.pages?.flatMap(page => page.items) ?? []).map(collection => [
+            collection.id,
+            {
+                id: collection.id,
+                name: collection.name,
+                color: collection.color,
+            },
+        ]),
+    );
+    for (const collection of offlineCollections ?? []) {
+        collectionMap.set(collection.id, collection);
+    }
+    const collections = [...collectionMap.values()];
     const handleOpenChange = (open: boolean) => {
         onOpenChange?.(open);
     };
@@ -59,8 +82,8 @@ export function CurrentUserCollectionsOverlay({
                         />
                     ))}
                     <InfiniteLoader
-                        fetchNextPage={fetchNextPage}
-                        hasNextPage={hasNextPage}
+                        fetchNextPage={() => void fetchNextPage()}
+                        hasNextPage={navigator.onLine && !!hasNextPage}
                         isFetchingNextPage={isFetchingNextPage}
                         Content={
                             !collections?.length ? (

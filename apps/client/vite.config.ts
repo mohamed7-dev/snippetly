@@ -3,10 +3,26 @@ import { tanstackRouter } from '@tanstack/router-plugin/vite';
 import viteReact from '@vitejs/plugin-react';
 import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
-import { injectSWPrecache } from './src/lib/plugins/inject-sw-precache';
+import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
-    plugins: [tanstackRouter({ autoCodeSplitting: true }), viteReact(), tailwindcss(), injectSWPrecache()],
+    plugins: [
+        tanstackRouter({ autoCodeSplitting: true }),
+        viteReact(),
+        tailwindcss(),
+        VitePWA({
+            registerType: 'autoUpdate',
+            injectRegister: 'auto',
+            strategies: 'injectManifest',
+            manifest: false,
+            srcDir: 'src',
+            filename: 'sw.ts',
+            injectManifest: {
+                globPatterns: ['**/*'],
+                maximumFileSizeToCacheInBytes: 50 * 1024 * 1024,
+            },
+        }),
+    ],
     resolve: {
         alias: {
             '@': resolve(__dirname, './src'),

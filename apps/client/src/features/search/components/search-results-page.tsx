@@ -11,6 +11,9 @@ import { Link, useNavigate } from '@tanstack/react-router';
 import { LoaderCircleIcon } from 'lucide-react';
 import { searchQueryOptions } from '../lib/search-query-options';
 
+// TODO: replace any types in this component with the normally inferred types once
+// zod infers them correctly
+
 const resultTypes = ['snippets', 'collections', 'developers'] as const;
 type ResultType = (typeof resultTypes)[number];
 type SearchOutput = SearchDtoType['output'];
@@ -143,7 +146,7 @@ export function SearchResultsPage({ term, tags = [], types }: SearchResultsPageP
                                 <CardTitle className="text-base">Matching tags</CardTitle>
                             </CardHeader>
                             <CardContent className="flex flex-wrap gap-2">
-                                {firstPage.tagCounts.map(tag => (
+                                {firstPage.tagCounts.map((tag: any) => (
                                     <Button
                                         key={tag.value}
                                         disabled={tags.some(
@@ -232,7 +235,7 @@ function SearchResultGroup({ type, items, totalItems }: SearchResultGroupProps) 
             </div>
             <div className="grid gap-3">
                 {type === 'snippets' &&
-                    (items as SearchOutput['snippets']['items']).map(snippet => (
+                    (items as SearchOutput['snippets']['items']).map((snippet: any) => (
                         <Card key={snippet.id} className="hover:border-primary/40 hover:shadow-sm">
                             <CardHeader className="pb-3">
                                 <CardTitle className="text-lg">
@@ -267,7 +270,7 @@ function SearchResultGroup({ type, items, totalItems }: SearchResultGroupProps) 
                                         {snippet.collection.name}
                                     </Link>
                                 )}
-                                {snippet.tags.map(tag => (
+                                {snippet.tags.map((tag: any) => (
                                     <Badge key={tag.value} variant="outline">
                                         #{tag.value}
                                     </Badge>
@@ -276,7 +279,7 @@ function SearchResultGroup({ type, items, totalItems }: SearchResultGroupProps) 
                         </Card>
                     ))}
                 {type === 'collections' &&
-                    (items as SearchOutput['collections']['items']).map(collection => (
+                    (items as SearchOutput['collections']['items']).map((collection: any) => (
                         <Card key={collection.id} className="hover:border-primary/40 hover:shadow-sm">
                             <CardHeader className="pb-3">
                                 <CardTitle className="flex items-center gap-3 text-lg">
@@ -306,7 +309,7 @@ function SearchResultGroup({ type, items, totalItems }: SearchResultGroupProps) 
                                 >
                                     {formatDeveloperInfo(collection.creator).fullName}
                                 </Link>
-                                {collection.tags.map(tag => (
+                                {collection.tags.map((tag: any) => (
                                     <Badge key={tag.value} variant="outline">
                                         #{tag.value}
                                     </Badge>
@@ -315,7 +318,7 @@ function SearchResultGroup({ type, items, totalItems }: SearchResultGroupProps) 
                         </Card>
                     ))}
                 {type === 'developers' &&
-                    (items as SearchOutput['developers']['items']).map(developer => {
+                    (items as SearchOutput['developers']['items']).map((developer: any) => {
                         const { fullName, initials } = formatDeveloperInfo(developer);
 
                         return (

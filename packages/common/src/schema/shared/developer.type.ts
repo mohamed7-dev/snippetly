@@ -11,5 +11,6 @@ export const developer = node.extend({
     imageKey: z.string().nullable(),
     isPrivate: z.boolean(),
     deletedAt: z.coerce.date().nullable(),
-    user: user,
+    isVerified: z.boolean(),
+    user: user.omit({ isVerified: true }),
 });

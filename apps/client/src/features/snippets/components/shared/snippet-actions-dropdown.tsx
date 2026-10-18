@@ -15,6 +15,8 @@ import type { AddToFavouritesMutationCallbacks } from '@/features/favourites/hoo
 import { favouriteSnippetsQueryOptions } from '@/features/favourites/lib/favourites-query-options';
 import { RemoveSnippetOfflineButton } from '@/features/offline-snippet/components/remove-snippet-offline-button';
 import { SaveSnippetOfflineButton } from '@/features/offline-snippet/components/save-snippet-offline-button';
+import { useIsOnline } from '@/features/offline-snippet/hooks/use-is-online';
+import { useOfflineEntityAvailability } from '@/features/offline-snippet/hooks/use-offline-entity-availability';
 import { useOfflineSnippetStore } from '@/features/offline-snippet/hooks/use-offline-snippet-store';
 import { DeleteSnippetButton } from '@/features/snippet-delete/components/delete-snippet-button';
 import { MoveSnippetToTrashButton } from '@/features/snippet-delete/components/move-snippet-to-trash-button';
@@ -62,23 +64,38 @@ export function SnippetActionsDropdown({
     Trigger,
     showViewButton = true,
     showEditButton = true,
-    showDeleteButton = true,
-    showMoveToTrashButton = true,
-    showForkButton = true,
-    showForkToCollectionButton = true,
+    showDeleteButton: requestedShowDeleteButton = true,
+    showMoveToTrashButton: requestedShowMoveToTrashButton = true,
+    showForkButton: requestedShowForkButton = true,
+    showForkToCollectionButton: requestedShowForkToCollectionButton = true,
     showOfflineSaveButton: explicitlyShowOfflineSaveButton = true,
     showOfflineRemoveButton: explicitlyRemoveOfflineSaveButton = true,
     showCopyButton = true,
-    showAddToFavButton = true,
-    showRemoveFromFavButton = true,
+    showAddToFavButton: requestedShowAddToFavButton = true,
+    showRemoveFromFavButton: requestedShowRemoveFromFavButton = true,
 }: SnippetActionsDropdownProps) {
+    const isOnline = useIsOnline();
+    const isSnippetCachedOffline = useOfflineEntityAvailability('snippet-details', snippet.id);
     const qClient = useQueryClient();
     const [open, setOpen] = React.useState(false);
     const {
         getOne: { query: getOfflineSnippet, isPending },
     } = useOfflineSnippetStore();
     const [showSaveOfflineButton, setShowSaveOfflineButton] = React.useState(() => true);
+
     const collectionId = 'collection' in snippet ? snippet.collection?.id : undefined;
+    const canEditSnippet = showEditButton && (isOnline || isSnippetCachedOffline);
+    const showDeleteButton = isOnline && requestedShowDeleteButton;
+    const showMoveToTrashButton = isOnline && requestedShowMoveToTrashButton;
+    const showForkButton = isOnline && requestedShowForkButton && snippet.allowForking;
+    const showForkToCollectionButton =
+        isOnline && requestedShowForkToCollectionButton && snippet.allowForking;
+    const showAddToFavButton = isOnline && requestedShowAddToFavButton;
+    const showRemoveFromFavButton = isOnline && requestedShowRemoveFromFavButton;
+    const showOfflineSaveActions =
+        (showSaveOfflineButton && explicitlyShowOfflineSaveButton) || explicitlyRemoveOfflineSaveButton;
+    const showDeleteActions = showDeleteButton || showMoveToTrashButton || showOfflineSaveActions;
+    const showForkActions = showForkButton || showForkToCollectionButton;
 
     React.useEffect(() => {
         const query = async () => {
@@ -116,47 +133,51 @@ export function SnippetActionsDropdown({
                         )}
                         {/* TODO: use Permission.CreateFavourite when it gets generated  */}
 
-                        <PermissionGuard requiredPermissions={[Permission.Authenticated]}>
-                            <DropdownMenuItem asChild>
-                                {showRemoveFromFavButton && snippet.isFavouritedByCurrentUser ? (
-                                    <RemoveFromFavouritesButton
-                                        variant="ghost"
-                                        className="w-full justify-start"
-                                        resourceType="snippets"
-                                        resourceId={snippet.id}
-                                        mutationCallbacks={{
-                                            ...removeSnippetFromFavourites,
-                                            onSuccess: (...props) => {
-                                                setOpen(false);
-                                                qClient.invalidateQueries(favouriteSnippetsQueryOptions());
-                                                removeSnippetFromFavourites?.onSuccess?.(...props);
-                                            },
-                                        }}
-                                    />
-                                ) : (
-                                    <React.Fragment>
-                                        {showAddToFavButton && (
-                                            <AddToFavouritesButton
-                                                variant="ghost"
-                                                className="w-full justify-start"
-                                                resourceType="snippets"
-                                                resourceId={snippet.id}
-                                                mutationCallbacks={{
-                                                    ...addSnippetToFavourites,
-                                                    onSuccess: (...props) => {
-                                                        setOpen(false);
-                                                        qClient.invalidateQueries(
-                                                            favouriteSnippetsQueryOptions(),
-                                                        );
-                                                        addSnippetToFavourites?.onSuccess?.(...props);
-                                                    },
-                                                }}
-                                            />
-                                        )}
-                                    </React.Fragment>
-                                )}
-                            </DropdownMenuItem>
-                        </PermissionGuard>
+                        {(showRemoveFromFavButton || showAddToFavButton) && (
+                            <PermissionGuard requiredPermissions={[Permission.Authenticated]}>
+                                <DropdownMenuItem asChild>
+                                    {showRemoveFromFavButton && snippet.isFavouritedByCurrentUser ? (
+                                        <RemoveFromFavouritesButton
+                                            variant="ghost"
+                                            className="w-full justify-start"
+                                            resourceType="snippets"
+                                            resourceId={snippet.id}
+                                            mutationCallbacks={{
+                                                ...removeSnippetFromFavourites,
+                                                onSuccess: (...props) => {
+                                                    setOpen(false);
+                                                    qClient.invalidateQueries(
+                                                        favouriteSnippetsQueryOptions(),
+                                                    );
+                                                    removeSnippetFromFavourites?.onSuccess?.(...props);
+                                                },
+                                            }}
+                                        />
+                                    ) : (
+                                        <React.Fragment>
+                                            {showAddToFavButton && (
+                                                <AddToFavouritesButton
+                                                    variant="ghost"
+                                                    className="w-full justify-start"
+                                                    resourceType="snippets"
+                                                    resourceId={snippet.id}
+                                                    mutationCallbacks={{
+                                                        ...addSnippetToFavourites,
+                                                        onSuccess: (...props) => {
+                                                            setOpen(false);
+                                                            qClient.invalidateQueries(
+                                                                favouriteSnippetsQueryOptions(),
+                                                            );
+                                                            addSnippetToFavourites?.onSuccess?.(...props);
+                                                        },
+                                                    }}
+                                                />
+                                            )}
+                                        </React.Fragment>
+                                    )}
+                                </DropdownMenuItem>
+                            </PermissionGuard>
+                        )}
                         {showCopyButton && (
                             <DropdownMenuItem asChild>
                                 <CopyButton
@@ -168,9 +189,9 @@ export function SnippetActionsDropdown({
                         )}
                     </DropdownMenuGroup>
                 )}
-                {showEditButton && (
+                {canEditSnippet && (
                     <DropdownMenuGroup>
-                        {showEditButton && (
+                        {canEditSnippet && (
                             <PermissionGuard
                                 requiredPermissions={[
                                     Permission.Authenticated,
@@ -178,6 +199,7 @@ export function SnippetActionsDropdown({
                                     Permission.UpdateSnippet,
                                 ]}
                                 ownerId={snippet.creator.id}
+                                isAvailableOffline={!isOnline && isSnippetCachedOffline}
                             >
                                 <DropdownMenuItem asChild>
                                     <Button variant={'ghost'} className="w-full justify-start" asChild>
@@ -194,13 +216,10 @@ export function SnippetActionsDropdown({
                             </PermissionGuard>
                         )}
 
-                        <DropdownMenuSeparator />
+                        {(showDeleteActions || showForkActions) && <DropdownMenuSeparator />}
                     </DropdownMenuGroup>
                 )}
-                {(showDeleteButton ||
-                    showMoveToTrashButton ||
-                    explicitlyShowOfflineSaveButton ||
-                    explicitlyRemoveOfflineSaveButton) && (
+                {showDeleteActions && (
                     <DropdownMenuGroup>
                         <PermissionGuard
                             requiredPermissions={[
@@ -266,11 +285,11 @@ export function SnippetActionsDropdown({
                                 </React.Fragment>
                             )}
                         </DropdownMenuItem>
-                        <DropdownMenuSeparator />
+                        {showForkActions && <DropdownMenuSeparator />}
                     </DropdownMenuGroup>
                 )}
 
-                {(showForkButton || showForkToCollectionButton) && (
+                {showForkActions && (
                     <PermissionGuard
                         requiredPermissions={[Permission.Authenticated, Permission.CreateSnippet]}
                     >

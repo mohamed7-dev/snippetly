@@ -1,5 +1,7 @@
 import { developerApiClient } from '@/lib/api-client';
 import { apiEndpoints } from '@/lib/api-endpoints';
+import { fetchAndCacheDashboardData } from '@/features/offline-snippet/lib/offline-dashboard-cache';
+import { getOfflineOwnerId } from '@/features/offline-snippet/lib/store';
 import { createSkipPagination } from '@/lib/skip-pagination';
 import type {
     CurrentUserSnippetListDtoType,
@@ -69,16 +71,21 @@ export const listCurrentUserSnippetsQueryOptions = (
     const { initialSkip, getNextPageParam, take } = createSkipPagination(input.skip, input.take);
 
     return infiniteQueryOptions({
-        queryKey: ['snippets', 'current', ...(queryKey ?? [])],
+        queryKey: ['snippets', 'current', getOfflineOwnerId(), ...(queryKey ?? [])],
         queryFn: async ({ pageParam }) => {
             const searchParams = transformInputToSearchParams({
                 ...input,
                 take,
                 skip: pageParam,
             });
-            return await developerApiClient.fetch<CurrentUserSnippetListDtoType['output']>(
-                apiEndpoints.snippets.listMine.url(searchParams),
-                { method: apiEndpoints.snippets.listMine.method },
+            const url = apiEndpoints.snippets.listMine.url(searchParams);
+            return fetchAndCacheDashboardData(
+                'snippets',
+                url,
+                () =>
+                    developerApiClient.fetch<CurrentUserSnippetListDtoType['output']>(url, {
+                        method: apiEndpoints.snippets.listMine.method,
+                    }),
             );
         },
         initialPageParam: initialSkip,

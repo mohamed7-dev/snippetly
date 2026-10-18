@@ -22,6 +22,7 @@ const targetDeveloper = developer.pick({
     firstName: true,
     lastName: true,
     image: true,
+    isVerified: true,
 });
 
 const tagsInListInput = z.object({
@@ -197,6 +198,7 @@ const favouriteDeveloper = developer.pick({
     lastName: true,
     image: true,
     bio: true,
+    isVerified: true,
 });
 
 export const favouriteDevelopersListDto = {

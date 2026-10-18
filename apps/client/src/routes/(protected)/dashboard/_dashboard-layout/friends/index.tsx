@@ -35,7 +35,7 @@ const searchSchema = z
     .partial()
     .optional();
 
-export const Route = createFileRoute('/(protected)/dashboard/_dashboard-layout/_boundary/friends/')({
+export const Route = createFileRoute('/(protected)/dashboard/_dashboard-layout/friends/')({
     component: FriendsPage,
     head: () => {
         return {

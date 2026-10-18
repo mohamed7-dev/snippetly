@@ -59,26 +59,6 @@ export function ProfilePageInfo() {
                                 </div>
                                 <Badge variant="secondary">{isPrivate ? 'Private' : 'Public'}</Badge>
                             </div>
-                            <DeveloperActionsDropdown
-                                developer={{ id: profile.id, firstName: profile.firstName }}
-                                friendshipInfo={{
-                                    isFriendWithCurrentUser: friendshipInfo?.isCurrentUserAFriend ?? false,
-                                    friendshipStatus: friendshipInfo?.requestStatus ?? null,
-                                }}
-                                favouriteInfo={{
-                                    isFavouritedByCurrentUser: profile.isFavouritedByCurrentUser,
-                                }}
-                                showRequestFriendship={shouldDisplaySendButton}
-                                showAddToFavourites={true}
-                                showRemoveFromFavourites={true}
-                                showEditProfile={true}
-                                addDeveloperToFavourites={{
-                                    onSuccess: data => onMutateFavSuccess(data, 'add'),
-                                }}
-                                removeDeveloperFromFavourites={{
-                                    onSuccess: data => onMutateFavSuccess(data, 'remove'),
-                                }}
-                            />
                         </div>
                         <div className="flex gap-6 text-sm">
                             <span>
@@ -121,6 +101,27 @@ export function ProfilePageInfo() {
                             </div>
                         )}
                     </div>
+
+                    <DeveloperActionsDropdown
+                        developer={{ id: profile.id, firstName: profile.firstName }}
+                        friendshipInfo={{
+                            isFriendWithCurrentUser: friendshipInfo?.isCurrentUserAFriend ?? false,
+                            friendshipStatus: friendshipInfo?.requestStatus ?? null,
+                        }}
+                        favouriteInfo={{
+                            isFavouritedByCurrentUser: profile.isFavouritedByCurrentUser,
+                        }}
+                        showRequestFriendship={shouldDisplaySendButton}
+                        showAddToFavourites={true}
+                        showRemoveFromFavourites={true}
+                        showEditProfile={true}
+                        addDeveloperToFavourites={{
+                            onSuccess: data => onMutateFavSuccess(data, 'add'),
+                        }}
+                        removeDeveloperFromFavourites={{
+                            onSuccess: data => onMutateFavSuccess(data, 'remove'),
+                        }}
+                    />
                 </div>
             </CardContent>
         </Card>

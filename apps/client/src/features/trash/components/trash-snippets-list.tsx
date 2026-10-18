@@ -13,7 +13,7 @@ import { useRestoreSnippet } from '../hooks/use-restore-snippet';
 
 export function TrashSnippetsList() {
     const search = useSearch({
-        from: '/(protected)/dashboard/_dashboard-layout/_boundary/trash/',
+        from: '/(protected)/dashboard/_dashboard-layout/trash/',
     });
     const { sort, filter, filterOperator, tags } = search?.snippets ?? {};
     const queryKeys = [sort, filter, filterOperator, tags];

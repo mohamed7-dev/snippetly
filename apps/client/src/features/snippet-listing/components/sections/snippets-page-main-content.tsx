@@ -14,7 +14,7 @@ import { listCurrentUserSnippetsQueryOptions } from '../../lib/snippet-listing-q
 export function SnippetsPageMainContent() {
     const search =
         useSearch({
-            from: '/(protected)/dashboard/_dashboard-layout/_boundary/snippets/',
+            from: '/(protected)/dashboard/_dashboard-layout/snippets/',
         }) ?? {};
     const queryKeys = [search.sort, search.filter, search.filterOperator, search.tags];
     const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery(
@@ -23,11 +23,12 @@ export function SnippetsPageMainContent() {
     const snippets = data.pages?.flatMap(page => page.items) ?? [];
     const qClient = useQueryClient();
 
-    const onMutateSuccess = async (_data: any, actionType?: 'add' | 'remove') => {
+    const onMutateSuccess = async (_data?: any, actionType?: 'add' | 'remove') => {
         if (actionType) {
-            // TODO: update the cache optimistically while triggering the invalidation
+            // TODO: update the cache optimistically
+        } else {
+            await qClient.invalidateQueries(listCurrentUserSnippetsQueryOptions(undefined, queryKeys));
         }
-        await qClient.invalidateQueries(listCurrentUserSnippetsQueryOptions(undefined, queryKeys));
     };
 
     return (
@@ -42,6 +43,7 @@ export function SnippetsPageMainContent() {
                             Permission.ReadSnippet,
                         ]}
                         ownerId={snippet.creator.id}
+                        isAvailableOffline={true}
                     >
                         <SnippetCard
                             snippet={snippet}
@@ -79,6 +81,7 @@ export function SnippetsPageMainContent() {
                             actions={
                                 <PermissionGuard
                                     requiredPermissions={[Permission.Authenticated, Permission.CreateSnippet]}
+                                    isAvailableOffline={true}
                                 >
                                     <Button asChild>
                                         <Link to={'/dashboard/snippets/new'}>

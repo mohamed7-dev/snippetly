@@ -28,7 +28,7 @@ const searchSchema = z
     .partial()
     .optional();
 
-export const Route = createFileRoute('/(protected)/dashboard/_dashboard-layout/_boundary/trash/')({
+export const Route = createFileRoute('/(protected)/dashboard/_dashboard-layout/trash/')({
     component: TrashPage,
     validateSearch: searchSchema,
     head: () => ({

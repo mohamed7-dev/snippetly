@@ -11,7 +11,7 @@ import { listCurrentUserSnippetsQueryOptions } from '../../lib/snippet-listing-q
 
 export function SnippetsPageContentHeader() {
     const search = useSearch({
-        from: '/(protected)/dashboard/_dashboard-layout/_boundary/snippets/',
+        from: '/(protected)/dashboard/_dashboard-layout/snippets/',
     });
     const { sort, filter, filterOperator, tags } = search ?? {};
     const navigate = useNavigate();
@@ -35,49 +35,52 @@ export function SnippetsPageContentHeader() {
             </div>
 
             <div className="flex items-center justify-between flex-wrap gap-4">
-                <div className="flex items-center gap-2">
-                    <FilterQueryDialog
-                        schema={currentUserSnippetListDto.input.shape.filter}
-                        value={{ filter, filterOperator }}
-                        onApply={val => {
-                            navigate({
-                                to: '.',
-                                search: previous => ({ ...previous, ...val }),
-                            });
-                        }}
-                    />
-                    <SortQueryDialog
-                        sortSchema={currentUserSnippetListDto.input.shape.sort}
-                        value={{ sort }}
-                        onApply={val => {
-                            navigate({
-                                to: '.',
-                                search: previous => ({ ...previous, sort: val.sort }),
-                            });
-                        }}
-                    />
-                    <TagFilterBar
-                        tags={availableTags}
-                        selectedTags={tags?.values ?? []}
-                        operator={tags?.operator}
-                        onChange={(values, operator) =>
-                            navigate({
-                                to: '.',
-                                search: previous => ({
-                                    ...previous,
-                                    tags: values.length ? { values, operator } : undefined,
-                                }),
-                            })
-                        }
-                    />
-                </div>
+                <PermissionGuard requiredPermissions={[Permission.Authenticated]}>
+                    <div className="flex items-center gap-2">
+                        <FilterQueryDialog
+                            schema={currentUserSnippetListDto.input.shape.filter}
+                            value={{ filter, filterOperator }}
+                            onApply={val => {
+                                navigate({
+                                    to: '.',
+                                    search: previous => ({ ...previous, ...val }),
+                                });
+                            }}
+                        />
+                        <SortQueryDialog
+                            sortSchema={currentUserSnippetListDto.input.shape.sort}
+                            value={{ sort }}
+                            onApply={val => {
+                                navigate({
+                                    to: '.',
+                                    search: previous => ({ ...previous, sort: val.sort }),
+                                });
+                            }}
+                        />
+                        <TagFilterBar
+                            tags={availableTags}
+                            selectedTags={tags?.values ?? []}
+                            operator={tags?.operator}
+                            onChange={(values, operator) =>
+                                navigate({
+                                    to: '.',
+                                    search: previous => ({
+                                        ...previous,
+                                        tags: values.length ? { values, operator } : undefined,
+                                    }),
+                                })
+                            }
+                        />
+                    </div>
+                </PermissionGuard>
                 <div className="flex items-center gap-3">
                     <PermissionGuard
                         requiredPermissions={[Permission.Authenticated, Permission.CreateSnippet]}
+                        isAvailableOffline={true}
                     >
                         <Button asChild>
-                            <Link to={'/dashboard/snippets/new'}>
-                                <PlusIcon className="h-4 w-4 mr-2" />
+                            <Link to={'/dashboard/snippets/new'} className="ms-auto">
+                                <PlusIcon />
                                 <span>New Snippet</span>
                             </Link>
                         </Button>

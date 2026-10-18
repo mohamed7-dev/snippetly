@@ -2,19 +2,23 @@ import { ErrorBoundaryFallback } from '@/components/feedback/error-boundary-fall
 import { InfiniteLoader } from '@/components/feedback/infinite-loader';
 import { SectionLoader } from '@/components/feedback/section-loader';
 import { StatusCard } from '@/components/feedback/status-card';
+import { DeveloperIdentity } from '@/components/shared/developer-identity';
 import { FilterQueryDialog } from '@/components/shared/list-query-builder/filter-query-dialog';
 import { SortQueryDialog } from '@/components/shared/list-query-builder/sort-query-dialog';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DiscoverCollectionsList } from '@/features/collection-listing/components/sections/discover-collections-list';
 import { DeveloperActionsDropdown } from '@/features/developer-actions/components/developer-actions-dropdown';
 import { DiscoverSnippetsList } from '@/features/snippet-listing/components/sections/discover-snippets-list';
-import { formatDeveloperInfo } from '@/lib/format-developer-info';
-import { developerListDto } from '@snippetly/common/dto';
-import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
-import { Link, useNavigate, useSearch } from '@tanstack/react-router';
+import type { ApiSuccess } from '@/lib/api-client';
+import {
+    developerListDto,
+    type DeveloperListDtoType,
+    type SendFriendshipRequestDtoType,
+} from '@snippetly/common/dto';
+import { useQueryClient, useSuspenseInfiniteQuery, type InfiniteData } from '@tanstack/react-query';
+import { useNavigate, useSearch } from '@tanstack/react-router';
 import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { discoverDevelopersQueryOptions } from '../../lib/discover-query-options';
@@ -79,6 +83,7 @@ export function DiscoverPageTabs() {
 }
 
 function DevelopersTabContent() {
+    const qClient = useQueryClient();
     const { developers: developersSearch } =
         useSearch({
             from: '/(public)/discover/',
@@ -91,11 +96,32 @@ function DevelopersTabContent() {
     );
     const developers = data.pages?.flatMap(p => p.items) ?? [];
 
-    const getNameFallback = (developer: { firstName: string; lastName: string }) => {
-        return formatDeveloperInfo(developer).initials;
-    };
-    const getFullName = (developer: { firstName: string; lastName: string }) => {
-        return formatDeveloperInfo(developer).fullName;
+    const onSendingFriendshipRequestSuccess = (data: ApiSuccess<SendFriendshipRequestDtoType['output']>) => {
+        qClient.setQueriesData<InfiniteData<ApiSuccess<DeveloperListDtoType['output']>>>(
+            { queryKey: ['discover', 'developers'] },
+            old => {
+                if (!old) return;
+
+                return {
+                    ...old,
+                    pages: old.pages.map(page => ({
+                        ...page,
+                        items: page.items.map(item => {
+                            if (item.id === data.addressee.id) {
+                                return {
+                                    ...item,
+                                    friendshipInfo: {
+                                        isFriendWithCurrentUser: false,
+                                        friendshipStatus: data.status,
+                                    },
+                                };
+                            }
+                            return item;
+                        }),
+                    })),
+                };
+            },
+        );
     };
 
     return (
@@ -130,22 +156,7 @@ function DevelopersTabContent() {
                     <Card key={developer.id} className="hover:shadow-md transition-shadow">
                         <CardHeader>
                             <div className="flex items-start justify-between">
-                                <div className="flex items-center gap-3">
-                                    <Avatar className="h-12 w-12">
-                                        <AvatarImage
-                                            src={developer.image || '/placeholder.svg'}
-                                            alt={getNameFallback(developer)}
-                                        />
-                                        <AvatarFallback>{getNameFallback(developer)}</AvatarFallback>
-                                    </Avatar>
-                                    <Link
-                                        to={'/profile/$id'}
-                                        params={{ id: developer.id }}
-                                        className="font-semibold hover:text-primary capitalize"
-                                    >
-                                        {getFullName(developer)}
-                                    </Link>
-                                </div>
+                                <DeveloperIdentity developerInfo={developer} />
                                 <div className="flex items-center gap-2">
                                     <Badge variant="secondary">
                                         joined {new Date(developer.createdAt).toLocaleDateString()}
@@ -160,6 +171,9 @@ function DevelopersTabContent() {
                                         showViewProfile={true}
                                         showAddToFavourites={true}
                                         showRemoveFromFavourites={true}
+                                        sendFriendshipRequest={{
+                                            onSuccess: onSendingFriendshipRequestSuccess,
+                                        }}
                                     />
                                 </div>
                             </div>

@@ -20,6 +20,7 @@ const friendshipParticipant = developer.pick({
     lastName: true,
     image: true,
     bio: true,
+    isVerified: true,
 });
 
 const friendshipItem = friendship.omit({ requester: true, addressee: true }).extend({

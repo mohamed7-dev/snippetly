@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ApiClient, ApiClientError } from './api-client';
+import { ApiClient, ApiClientError, OfflineNetworkError } from './api-client';
 
 describe('ApiClient', () => {
     beforeEach(() => {
@@ -80,6 +80,21 @@ describe('ApiClient', () => {
         const result = await client.fetch<{ success: boolean }>('/register');
 
         expect(result).toEqual({ success: true });
+    });
+
+    it('throws an informative offline error without making a request when the browser is offline', async () => {
+        const fetchMock = vi.fn();
+        vi.stubGlobal('fetch', fetchMock);
+        vi.stubGlobal('navigator', { onLine: false });
+
+        const client = new ApiClient('https://api.example.test');
+
+        await expect(client.fetch('/private')).rejects.toMatchObject({
+            name: 'OfflineNetworkError',
+            isOffline: true,
+            message: 'You are offline. Reconnect to access data that is not cached on this device.',
+        } satisfies Partial<OfflineNetworkError>);
+        expect(fetchMock).not.toHaveBeenCalled();
     });
 
     it('sends Google credentials to the authentication endpoint', async () => {

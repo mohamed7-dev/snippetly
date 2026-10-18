@@ -32,7 +32,7 @@ const searchSchema = z
     })
     .partial();
 
-export const Route = createFileRoute('/(protected)/dashboard/_dashboard-layout/_boundary/requests/')({
+export const Route = createFileRoute('/(protected)/dashboard/_dashboard-layout/requests/')({
     component: RequestPage,
     head: () => {
         return {

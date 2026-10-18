@@ -3,6 +3,7 @@ import {
     BellIcon,
     BookOpenIcon,
     CodeIcon,
+    DownloadIcon,
     HeartIcon,
     LayoutDashboardIcon,
     PaletteIcon,
@@ -14,6 +15,22 @@ import {
 } from 'lucide-react';
 
 export const SETTINGS_NAV_ITEMS = [
+    {
+        id: 'installation',
+        title: 'Install app',
+        href: '/dashboard/settings/',
+        icon: DownloadIcon,
+        description: 'Offline access and app installation',
+        requiredPermissions: [Permission.Authenticated],
+    },
+    {
+        id: 'appearance',
+        title: 'Appearance',
+        href: '/dashboard/settings/appearance',
+        icon: PaletteIcon,
+        description: 'Theme and display preferences',
+        requiredPermissions: [Permission.Authenticated],
+    },
     {
         id: 'profile',
         title: 'Profile',
@@ -28,14 +45,6 @@ export const SETTINGS_NAV_ITEMS = [
         href: '/dashboard/settings/security',
         icon: ShieldIcon,
         description: 'Password and email settings',
-        requiredPermissions: [Permission.Authenticated],
-    },
-    {
-        id: 'appearance',
-        title: 'Appearance',
-        href: '/dashboard/settings/appearance',
-        icon: PaletteIcon,
-        description: 'Theme and display preferences',
         requiredPermissions: [Permission.Authenticated],
     },
 ];

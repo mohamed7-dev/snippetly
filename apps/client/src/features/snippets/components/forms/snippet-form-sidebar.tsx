@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { CurrentUserCollectionsOverlay } from '@/features/collection-listing/components/current-user-collections-overlay';
 import { listPopularTagsQueryOptions } from '@/features/tags/lib/list-tags-query-options';
 import { useEnterTag } from '@/hooks/use-enter-tag';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { XIcon } from 'lucide-react';
 import React from 'react';
 import { useFormContext, type UseFormReturn } from 'react-hook-form';
@@ -34,8 +34,8 @@ export function SnippetFormSidebar({
         setInputValue('');
     };
     useEnterTag({ tags, inputElem: inputRef, onValueChange: handleTagChange });
-    const { data } = useSuspenseQuery(listPopularTagsQueryOptions());
-    const popularTags = data.items.filter(tag => !tags?.includes(tag.value));
+    const { data } = useQuery(listPopularTagsQueryOptions());
+    const popularTags = data?.items.filter(tag => !tags?.includes(tag.value)) ?? [];
 
     const [isCollectionsDialogOpen, setIsCollectionsDialogOpen] = React.useState(false);
 

@@ -114,6 +114,7 @@ const publicDeveloperItem = developerItem
         bio: true,
         createdAt: true,
         image: true,
+        isVerified: true,
     })
     .extend(developerProfileInfo.shape);
 
@@ -174,6 +175,7 @@ const developerListItem = developer.pick({
     createdAt: true,
     image: true,
     bio: true,
+    isVerified: true,
 });
 
 const discoverDeveloperListItem = developerListItem.extend({

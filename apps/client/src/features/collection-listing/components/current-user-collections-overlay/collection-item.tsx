@@ -1,11 +1,9 @@
 import { Button } from '@/components/ui/button';
-import type { ApiSuccess } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
-import type { CurrentUserCollectionListDtoType } from '@snippetly/common/dto';
 import type { CurrentUserCollectionsOverlayProps } from '.';
 
 type CollectionItemProps = {
-    collection: ApiSuccess<CurrentUserCollectionListDtoType['output']>['items'][number];
+    collection: { id: string; name: string; color: string; isPending?: boolean };
     onSelect: CurrentUserCollectionsOverlayProps['onSelect'];
     selectedItemId?: string;
 };
@@ -26,7 +24,12 @@ export function CollectionItem({ collection, onSelect, selectedItemId }: Collect
                         backgroundColor: collection.color,
                     }}
                 />
-                <span className="flex-1">{collection.name}</span>
+                <span className="flex-1">
+                    {collection.name}
+                    {collection.isPending && (
+                        <span className="ms-2 text-xs text-muted-foreground">Waiting to sync</span>
+                    )}
+                </span>
             </div>
             <Button className="rounded-full" onClick={() => onSelect(collection.id, collection.name)}>
                 {isSelected ? 'Selected' : 'Select'}

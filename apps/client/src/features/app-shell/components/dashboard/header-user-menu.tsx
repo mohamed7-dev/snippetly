@@ -25,7 +25,6 @@ export function HeaderUserMenu() {
         lastName: user?.lastName || '',
     });
 
-    // logout
     const handleLogout = async () => {
         await logout('developer', () => navigate({ to: '/' }));
     };
@@ -33,8 +32,8 @@ export function HeaderUserMenu() {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full hidden lg:flex">
-                    <Avatar className="h-8 w-8">
+                <Button variant="ghost" className="size-8 rounded-full hidden lg:flex">
+                    <Avatar className="size-8">
                         <AvatarImage src={user?.image ?? '/placeholder.svg'} alt="User" />
                         <AvatarFallback>{avatarFallback}</AvatarFallback>
                     </Avatar>
@@ -64,10 +63,10 @@ export function HeaderUserMenu() {
                         <Link to="/sign-in">
                             <div className="flex gap-4 items-center">
                                 <Avatar className="h-8 w-8">
-                                    <AvatarImage src={'/placeholder.svg'} alt="User" />
+                                    <AvatarImage src={'/placeholder.svg'} alt="user" />
                                     <AvatarFallback>{'user'}</AvatarFallback>
                                 </Avatar>
-                                <div className="flex flex-col space-y-1">Get Started</div>
+                                <div className="flex flex-col space-y-1">Login</div>
                             </div>
                         </Link>
                     </DropdownMenuLabel>
@@ -78,7 +77,7 @@ export function HeaderUserMenu() {
                         <DropdownMenuItem asChild>
                             <Button className="w-full justify-start" variant={'ghost'} asChild>
                                 <Link to={'/dashboard/settings/profile'}>
-                                    <UserCog2Icon className="mr-2 h-4 w-4" />
+                                    <UserCog2Icon />
                                     <span>Profile Settings</span>
                                 </Link>
                             </Button>
@@ -86,7 +85,7 @@ export function HeaderUserMenu() {
                         <DropdownMenuItem asChild>
                             <Button className="w-full justify-start" variant={'ghost'} asChild>
                                 <Link to={'/dashboard/settings/appearance'}>
-                                    <BrushIcon className="mr-2 h-4 w-4" />
+                                    <BrushIcon />
                                     <span>Appearance Settings</span>
                                 </Link>
                             </Button>
@@ -97,7 +96,7 @@ export function HeaderUserMenu() {
                 <DropdownMenuItem asChild>
                     <Button className="w-full justify-start" variant={'ghost'} asChild>
                         <Link to={'/offline'}>
-                            <LibraryIcon className="mr-2 h-4 w-4" />
+                            <LibraryIcon />
                             <span>Offline Library</span>
                         </Link>
                     </Button>
@@ -106,7 +105,7 @@ export function HeaderUserMenu() {
                     <DropdownMenuItem asChild>
                         <Button className="w-full justify-start" variant={'ghost'} asChild>
                             <Link to={'/dashboard/friends'}>
-                                <UsersIcon className="mr-2 h-4 w-4" />
+                                <UsersIcon />
                                 <span>Friends</span>
                             </Link>
                         </Button>
@@ -115,18 +114,10 @@ export function HeaderUserMenu() {
                 <DropdownMenuSeparator />
                 <PermissionGuard requiredPermissions={[Permission.Authenticated]}>
                     <DropdownMenuItem disabled={isActiveAuthMutationInProgress} onClick={handleLogout}>
-                        <LogOutIcon className="mr-2 h-4 w-4" />
+                        <LogOutIcon />
                         <span>Log out</span>
                     </DropdownMenuItem>
                 </PermissionGuard>
-                {!user && (
-                    <DropdownMenuItem>
-                        <Link to={'/sign-in'} className="flex items-center">
-                            <UsersIcon className="mr-2 h-4 w-4" />
-                            <span>Login</span>
-                        </Link>
-                    </DropdownMenuItem>
-                )}
             </DropdownMenuContent>
         </DropdownMenu>
     );

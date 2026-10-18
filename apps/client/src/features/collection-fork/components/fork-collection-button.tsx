@@ -1,7 +1,6 @@
 import { LoadingButton } from '@/components/inputs/loading-button';
 import { GitForkIcon } from 'lucide-react';
 import type React from 'react';
-import { toast } from 'sonner';
 import { useForkCollection, type ForkCollectionMutationCallbacks } from '../hooks/use-fork-collection';
 
 interface ForkCollectionButtonProps extends Omit<React.ComponentProps<typeof LoadingButton>, 'isLoading'> {
@@ -20,14 +19,13 @@ export function ForkCollectionButton({
     const { mutateAsync, isPending } = useForkCollection({
         ...mutationCallbacks,
         onSuccess: (...props) => {
-            toast.success('Collection was forked successfully');
             mutationCallbacks?.onSuccess?.(...props);
         },
     });
 
     const handleForking = async (e: React.MouseEvent<HTMLButtonElement>) => {
         onClick?.(e);
-        if (!e.isDefaultPrevented) {
+        if (!e.isDefaultPrevented()) {
             await mutateAsync({ id: collectionId });
         }
     };

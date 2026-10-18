@@ -13,7 +13,7 @@ import { listCurrentUserCollectionsQueryOptions } from '../../lib/collection-lis
 
 export function CollectionsPageMainContent() {
     const search = useSearch({
-        from: '/(protected)/dashboard/_dashboard-layout/_boundary/collections/',
+        from: '/(protected)/dashboard/_dashboard-layout/collections/',
     });
 
     const { sort, filter, filterOperator, tags } = search ?? {};
@@ -27,11 +27,12 @@ export function CollectionsPageMainContent() {
 
     const qClient = useQueryClient();
 
-    const onMutateSuccess = async (_data: any, actionType?: 'add' | 'remove') => {
+    const onMutateSuccess = async (_data?: any, actionType?: 'add' | 'remove') => {
         if (actionType) {
             // TODO: update the cache optimistically while triggering the invalidation
+        } else {
+            await qClient.invalidateQueries(listCurrentUserCollectionsQueryOptions(undefined, queryKey));
         }
-        await qClient.invalidateQueries(listCurrentUserCollectionsQueryOptions(undefined, queryKey));
     };
 
     return (
@@ -46,6 +47,7 @@ export function CollectionsPageMainContent() {
                             Permission.Owner,
                         ]}
                         ownerId={collection.creator.id}
+                        isAvailableOffline={true}
                     >
                         <CollectionCard
                             collection={collection}
@@ -86,6 +88,7 @@ export function CollectionsPageMainContent() {
                                         Permission.Authenticated,
                                         Permission.CreateCollection,
                                     ]}
+                                    isAvailableOffline={true}
                                 >
                                     <Button asChild>
                                         <Link to={'/dashboard/collections/new'}>

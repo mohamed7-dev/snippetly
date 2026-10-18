@@ -287,8 +287,8 @@ export class FriendshipService {
                 { addressee: { id: developerId, deletedAt: IsNull() }, status: FriendshipStatus.Accepted },
             ],
             relations: {
-                requester: true,
-                addressee: true,
+                requester: { user: true },
+                addressee: { user: true },
             },
             orderBy: {
                 updatedAt: 'DESC',
@@ -388,7 +388,7 @@ export class FriendshipService {
 
             return {
                 ...friendship,
-                [friendSide]: { ...friend, ...stats },
+                [friendSide]: { ...friend, isVerified: friend.isVerified, ...stats },
             };
         });
 
@@ -433,8 +433,8 @@ export class FriendshipService {
                 status: FriendshipStatus.Pending,
             },
             relations: {
-                requester: true,
-                addressee: true,
+                requester: { user: true },
+                addressee: { user: true },
             },
             orderBy: {
                 createdAt: 'DESC',
@@ -461,8 +461,8 @@ export class FriendshipService {
                 status: FriendshipStatus.Pending,
             },
             relations: {
-                requester: true,
-                addressee: true,
+                requester: { user: true },
+                addressee: { user: true },
             },
             orderBy: {
                 createdAt: 'DESC',

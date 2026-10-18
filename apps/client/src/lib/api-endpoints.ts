@@ -4,9 +4,11 @@ import type { UserType } from './types';
 
 export const apiUrl = (path: string, apiType?: UserType, apiVersion?: number) => {
     const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-    const normalizedApiUrl = (API_URL as string).endsWith('/')
-        ? (API_URL as string).slice(0, -1)
-        : (API_URL as string);
+
+    if (!API_URL) {
+        throw new Error('Missing API_URL env variable.');
+    }
+    const normalizedApiUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
     return `${normalizedApiUrl}${apiVersion ? '/v' + apiVersion : ''}${apiType ? (apiType === 'admin' ? '/' + DEFAULT_ADMIN_API_PATH_PREFIX : '/' + DEFAULT_DEVELOPER_API_PATH_PREFIX) : ''}${normalizedPath}`;
 };
 

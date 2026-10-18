@@ -21,6 +21,8 @@ import type {
     RemoveFromFavouritesMutationCallbacks,
 } from '@/features/favourites/hooks/use-favourite-mutation';
 import { favouriteCollectionsQueryOptions } from '@/features/favourites/lib/favourites-query-options';
+import { useIsOnline } from '@/features/offline-snippet/hooks/use-is-online';
+import { useOfflineEntityAvailability } from '@/features/offline-snippet/hooks/use-offline-entity-availability';
 import type { ApiSuccess } from '@/lib/api-client';
 import { Permission, type CollectionListDtoType } from '@snippetly/common/dto';
 import { useQueryClient } from '@tanstack/react-query';
@@ -54,14 +56,28 @@ export function CollectionActionMenu({
     showViewButton = true,
     showEditButton = true,
     showAddSnippetButton = true,
-    showDeleteButton = true,
-    showMoveToTrashButton = true,
-    showForkButton = true,
-    showAddToFavButton = true,
-    showRemoveFromFavButton = true,
+    showDeleteButton: requestedShowDeleteButton = true,
+    showMoveToTrashButton: requestedShowMoveToTrashButton = true,
+    showForkButton: requestedShowForkButton = true,
+    showAddToFavButton: requestedShowAddToFavButton = true,
+    showRemoveFromFavButton: requestedShowRemoveFromFavButton = true,
 }: CollectionActionMenuProps) {
+    const isOnline = useIsOnline();
+    const isCollectionCachedOffline = useOfflineEntityAvailability('collection-details', collection.id);
     const [open, setOpen] = React.useState(false);
     const qClient = useQueryClient();
+    const showAddToFavButton = isOnline && requestedShowAddToFavButton;
+    const showRemoveFromFavButton = isOnline && requestedShowRemoveFromFavButton;
+    const showDeleteButton = isOnline && requestedShowDeleteButton;
+    const showMoveToTrashButton = isOnline && requestedShowMoveToTrashButton;
+    const showForkButton = isOnline && requestedShowForkButton && collection.allowForking;
+    const canEditCollection = showEditButton && (isOnline || isCollectionCachedOffline);
+    const showManageActions =
+        showAddSnippetButton ||
+        canEditCollection ||
+        showForkButton ||
+        showMoveToTrashButton ||
+        showDeleteButton;
 
     return (
         <DropdownMenu open={open} onOpenChange={setOpen}>
@@ -84,58 +100,58 @@ export function CollectionActionMenu({
                             </DropdownMenuItem>
                         )}
 
-                        <PermissionGuard requiredPermissions={[Permission.Authenticated]}>
-                            <DropdownMenuItem asChild>
-                                {showRemoveFromFavButton && collection.isFavouritedByCurrentUser ? (
-                                    <RemoveFromFavouritesButton
-                                        resourceType="collections"
-                                        resourceId={collection.id}
-                                        variant="ghost"
-                                        type="button"
-                                        className="w-full justify-start"
-                                        mutationCallbacks={{
-                                            ...removeCollectionFromFavourites,
-                                            onSuccess: (...props) => {
-                                                setOpen(false);
-                                                qClient.invalidateQueries(favouriteCollectionsQueryOptions());
-                                                removeCollectionFromFavourites?.onSuccess?.(...props);
-                                            },
-                                        }}
-                                    />
-                                ) : (
-                                    <React.Fragment>
-                                        {showAddToFavButton && (
-                                            <AddToFavouritesButton
-                                                resourceType="collections"
-                                                resourceId={collection.id}
-                                                variant="ghost"
-                                                type="button"
-                                                className="w-full justify-start"
-                                                mutationCallbacks={{
-                                                    ...addCollectionToFavourites,
-                                                    onSuccess: (...props) => {
-                                                        setOpen(false);
-                                                        qClient.invalidateQueries(
-                                                            favouriteCollectionsQueryOptions(),
-                                                        );
-                                                        addCollectionToFavourites?.onSuccess?.(...props);
-                                                    },
-                                                }}
-                                            />
-                                        )}
-                                    </React.Fragment>
-                                )}
-                            </DropdownMenuItem>
-                        </PermissionGuard>
-                        <DropdownMenuSeparator />
+                        {(showRemoveFromFavButton || showAddToFavButton) && (
+                            <PermissionGuard requiredPermissions={[Permission.Authenticated]}>
+                                <DropdownMenuItem asChild>
+                                    {showRemoveFromFavButton && collection.isFavouritedByCurrentUser ? (
+                                        <RemoveFromFavouritesButton
+                                            resourceType="collections"
+                                            resourceId={collection.id}
+                                            variant="ghost"
+                                            type="button"
+                                            className="w-full justify-start"
+                                            mutationCallbacks={{
+                                                ...removeCollectionFromFavourites,
+                                                onSuccess: (...props) => {
+                                                    setOpen(false);
+                                                    qClient.invalidateQueries(
+                                                        favouriteCollectionsQueryOptions(),
+                                                    );
+                                                    removeCollectionFromFavourites?.onSuccess?.(...props);
+                                                },
+                                            }}
+                                        />
+                                    ) : (
+                                        <React.Fragment>
+                                            {showAddToFavButton && (
+                                                <AddToFavouritesButton
+                                                    resourceType="collections"
+                                                    resourceId={collection.id}
+                                                    variant="ghost"
+                                                    type="button"
+                                                    className="w-full justify-start"
+                                                    mutationCallbacks={{
+                                                        ...addCollectionToFavourites,
+                                                        onSuccess: (...props) => {
+                                                            setOpen(false);
+                                                            qClient.invalidateQueries(
+                                                                favouriteCollectionsQueryOptions(),
+                                                            );
+                                                            addCollectionToFavourites?.onSuccess?.(...props);
+                                                        },
+                                                    }}
+                                                />
+                                            )}
+                                        </React.Fragment>
+                                    )}
+                                </DropdownMenuItem>
+                            </PermissionGuard>
+                        )}
+                        {showManageActions && <DropdownMenuSeparator />}
                     </DropdownMenuGroup>
                 )}
 
-                {(showAddSnippetButton ||
-                    showEditButton ||
-                    showForkButton ||
-                    showMoveToTrashButton ||
-                    showDeleteButton) && (
+                {showManageActions && (
                     <DropdownMenuGroup>
                         {showAddSnippetButton && (
                             <PermissionGuard
@@ -145,6 +161,7 @@ export function CollectionActionMenu({
                                     Permission.CreateSnippet,
                                 ]}
                                 ownerId={collection.creator.id}
+                                isAvailableOffline={true}
                             >
                                 <DropdownMenuItem asChild>
                                     <Button variant={'ghost'} className="w-full justify-start" asChild>
@@ -162,7 +179,7 @@ export function CollectionActionMenu({
                                 </DropdownMenuItem>
                             </PermissionGuard>
                         )}
-                        {showEditButton && (
+                        {canEditCollection && (
                             <PermissionGuard
                                 requiredPermissions={[
                                     Permission.Authenticated,
@@ -170,6 +187,7 @@ export function CollectionActionMenu({
                                     Permission.UpdateCollection,
                                 ]}
                                 ownerId={collection.creator.id}
+                                isAvailableOffline={!isOnline && isCollectionCachedOffline}
                             >
                                 <DropdownMenuItem asChild>
                                     <Button variant={'ghost'} className="w-full justify-start" asChild>
@@ -226,7 +244,7 @@ export function CollectionActionMenu({
                                                 moveCollectionToTrash?.onSuccess?.(...props);
                                             },
                                         }}
-                                        className="justify-start"
+                                        className="w-full justify-start"
                                         variant={'ghost'}
                                     />
                                 </DropdownMenuItem>

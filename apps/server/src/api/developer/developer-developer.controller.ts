@@ -203,10 +203,14 @@ export class DeveloperDeveloperController implements AppRouter {
 
                     const profile = isOwner
                         ? result
-                        : omit(result, ['isPrivate', 'updatedAt', 'deletedAt', 'user']);
+                        : {
+                              ...omit(result, ['isPrivate', 'updatedAt', 'deletedAt', 'user']),
+                              isVerified: result.isVerified,
+                          };
 
                     const profileWithStats = {
                         ...profile,
+                        isVerified: result.isVerified,
                         ...profileInfo,
                         stats: { ...profileStats, friendsCount: profileInfo.friendCount },
                     };

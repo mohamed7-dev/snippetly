@@ -2,18 +2,17 @@ import { ErrorBoundaryFallback } from '@/components/feedback/error-boundary-fall
 import { InfiniteLoader } from '@/components/feedback/infinite-loader';
 import { SectionLoader } from '@/components/feedback/section-loader';
 import { StatusCard } from '@/components/feedback/status-card';
+import { DeveloperIdentity } from '@/components/shared/developer-identity';
 import { FilterQueryDialog } from '@/components/shared/list-query-builder/filter-query-dialog';
 import { SortQueryDialog } from '@/components/shared/list-query-builder/sort-query-dialog';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { DeveloperActionsDropdown } from '@/features/developer-actions/components/developer-actions-dropdown';
 import { CurrentUserFriendsSnippets } from '@/features/snippet-listing/components/sections/current-user-friends-snippets';
 import { getCurrentDeveloperActivityStats } from '@/features/stats/lib/stats-query-options';
-import { formatDeveloperInfo } from '@/lib/format-developer-info';
 import { currentUserFriendsListDto } from '@snippetly/common/dto';
 import { omit } from '@snippetly/common/lib';
 import { useQuery, useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
@@ -25,7 +24,7 @@ import { listCurrentUserFriendsQueryOptions } from '../../lib/friendships-listin
 
 export function FriendsPageTabs() {
     const search = useSearch({
-        from: '/(protected)/dashboard/_dashboard-layout/_boundary/friends/',
+        from: '/(protected)/dashboard/_dashboard-layout/friends/',
     });
     const { tab, snippets } = search ?? {};
     const friendId = snippets?.friendId;
@@ -81,7 +80,7 @@ export function FriendsPageTabs() {
 
 function FriendsTabContent() {
     const search = useSearch({
-        from: '/(protected)/dashboard/_dashboard-layout/_boundary/friends/',
+        from: '/(protected)/dashboard/_dashboard-layout/friends/',
     });
     const { filter, filterOperator, sort } = search?.friends ?? {};
     const queryKeys = [filter, filterOperator, sort];
@@ -103,13 +102,6 @@ function FriendsTabContent() {
             return { ...friendship, friend: requester };
         }
     });
-
-    const getNameFallback = (developer: { firstName: string; lastName: string }) => {
-        return formatDeveloperInfo(developer).initials;
-    };
-    const getFullName = (developer: { firstName: string; lastName: string }) => {
-        return formatDeveloperInfo(developer).fullName;
-    };
 
     const onMutateFavSuccess = (actionType: 'add' | 'remove') => {
         // TODO: update qClient cache to achieve optimistic update to the isFavouritedByCurrentUser prop
@@ -144,24 +136,9 @@ function FriendsTabContent() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {friendships.map(item => (
                     <Card key={item.id} className="border-border hover:shadow-lg transition-shadow">
-                        <CardHeader className="pb-3">
-                            <div className="flex items-start justify-between">
-                                <div className="flex items-center gap-3">
-                                    <Avatar className="h-12 w-12">
-                                        <AvatarImage
-                                            src={item.friend.image || '/placeholder.svg'}
-                                            alt={getNameFallback(item.friend)}
-                                        />
-                                        <AvatarFallback>{getNameFallback(item.friend)}</AvatarFallback>
-                                    </Avatar>
-                                    <div>
-                                        <CardTitle className="text-base font-heading hover:text-primary">
-                                            <Link to="/profile/$id" params={{ id: item.friend.id }}>
-                                                {getFullName(item.friend)}
-                                            </Link>
-                                        </CardTitle>
-                                    </div>
-                                </div>
+                        <CardHeader className="space-y-2">
+                            <div className="flex justify-between">
+                                <DeveloperIdentity developerInfo={item.friend} />
                                 <DeveloperActionsDropdown
                                     developer={item.friend}
                                     friendshipInfo={{
@@ -185,24 +162,22 @@ function FriendsTabContent() {
                             <p className="text-sm text-muted-foreground text-pretty">{item.friend.bio}</p>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <div className="grid grid-cols-3 gap-4 text-center">
-                                <div>
-                                    <p className="text-lg font-semibold">{item.friend.snippetsCount}</p>
-                                    <p className="text-xs text-muted-foreground">Snippets</p>
-                                </div>
-                            </div>
-
                             {!!item.friend.recentSnippets?.length && (
-                                <div className="space-y-2">
-                                    <p className="text-xs font-medium text-muted-foreground">
-                                        Recent Snippets
-                                    </p>
+                                <div className="space-y-4">
+                                    <p className="text-sm font-medium">Recent Snippets</p>
                                     {item.friend.recentSnippets?.map(snippet => (
                                         <div
                                             key={snippet.id}
-                                            className="flex items-center justify-between text-sm"
+                                            className="flex items-center justify-between gap-2 text-sm"
                                         >
-                                            <span className="truncate flex-1">{snippet.name}</span>
+                                            <Link
+                                                to={'/snippets/$id'}
+                                                params={{ id: snippet.id }}
+                                                className="flex items-center justify-between gap-2 text-sm hover:text-primary hover:underline"
+                                            >
+                                                <div className="h-2 w-2 rounded-full bg-muted-foreground/50" />
+                                                <span className="truncate flex-1">{snippet.name}</span>
+                                            </Link>
                                             <div className="flex items-center gap-1">
                                                 <Badge variant="outline" className="text-xs font-mono">
                                                     {snippet.language}

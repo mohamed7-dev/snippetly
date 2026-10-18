@@ -193,7 +193,8 @@ export class DeveloperCollectionController implements AppRouter {
                         req.getRequestContext(),
                         req.query,
                         {
-                            creator: true,
+                            creator: { user: true },
+                            forkedFrom: { creator: { user: true } },
                             tags: true,
                         },
                         { includePrivateCollections: !shouldRestrictToPublic },
@@ -220,16 +221,21 @@ export class DeveloperCollectionController implements AppRouter {
                         itemsCount: result.itemsCount,
                     };
 
-                    if (shouldRestrictToPublic) {
-                        result.items = omit(result.items, ['isPrivate', 'updatedAt', 'deletedAt'], true);
-                    }
-
                     result.items = await this.collectionService.attachFavouriteStatus(
                         req.getRequestContext(),
                         result.items,
                     );
 
-                    res.status(200).json(result);
+                    const response = shouldRestrictToPublic
+                        ? {
+                              ...result,
+                              items: result.items.map(item =>
+                                  omit(item, ['isPrivate', 'updatedAt', 'deletedAt']),
+                              ),
+                          }
+                        : result;
+
+                    res.status(200).json(response);
                 },
             }),
         );
@@ -255,7 +261,7 @@ export class DeveloperCollectionController implements AppRouter {
                             ...req.query,
                             creator: developer.id,
                         },
-                        { creator: true, tags: true },
+                        { creator: { user: true }, forkedFrom: { creator: { user: true } }, tags: true },
                         { includePrivateCollections: true },
                     );
 
@@ -310,7 +316,7 @@ export class DeveloperCollectionController implements AppRouter {
                             ...req.query,
                             creator: developer.id,
                         },
-                        { creator: true, tags: true },
+                        { creator: { user: true }, tags: true },
                         { includePrivateCollections: true, onlySoftDeleted: true },
                     );
                     const { snippetCountByCollection, snippetsByCollection } =
@@ -346,7 +352,8 @@ export class DeveloperCollectionController implements AppRouter {
                         req.getRequestContext(),
                         req.params,
                         {
-                            creator: true,
+                            creator: { user: true },
+                            forkedFrom: { creator: { user: true } },
                             tags: true,
                         },
                         { includePrivateCollection: true, includeSoftDeleted: false },

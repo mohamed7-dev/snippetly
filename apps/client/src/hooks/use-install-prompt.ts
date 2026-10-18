@@ -1,72 +1,95 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useCallback, useSyncExternalStore } from 'react';
+import { toast } from 'sonner';
 
-// Chrome-specific BeforeInstallPrompt event typing
 export type BeforeInstallPromptEvent = Event & {
-  prompt: () => Promise<void>
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>
+    prompt: () => Promise<void>;
+    userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+};
+
+type InstallPromptState = {
+    deferredPrompt: BeforeInstallPromptEvent | null;
+    isInstalled: boolean;
+};
+
+const serverSnapshot: InstallPromptState = {
+    deferredPrompt: null,
+    isInstalled: false,
+};
+
+function isAppInstalled() {
+    return (
+        window.matchMedia?.('(display-mode: standalone)').matches ||
+        (navigator as Navigator & { standalone?: boolean }).standalone === true
+    );
+}
+
+let state: InstallPromptState =
+    typeof window === 'undefined'
+        ? serverSnapshot
+        : { deferredPrompt: null, isInstalled: isAppInstalled() };
+
+const subscribers = new Set<() => void>();
+
+function notifySubscribers() {
+    subscribers.forEach(subscriber => subscriber());
+}
+
+function updateState(nextState: InstallPromptState) {
+    state = nextState;
+    notifySubscribers();
+}
+
+function subscribe(subscriber: () => void) {
+    subscribers.add(subscriber);
+    return () => subscribers.delete(subscriber);
+}
+
+if (typeof window !== 'undefined') {
+    window.addEventListener('beforeinstallprompt', event => {
+        event.preventDefault();
+        updateState({
+            ...state,
+            deferredPrompt: event as BeforeInstallPromptEvent,
+        });
+    });
+
+    window.addEventListener('appinstalled', () => {
+        updateState({ deferredPrompt: null, isInstalled: true });
+    });
+
+    const displayMode = window.matchMedia?.('(display-mode: standalone)');
+    displayMode?.addEventListener('change', event => {
+        updateState({ ...state, isInstalled: event.matches });
+    });
 }
 
 export function useInstallPrompt() {
-  const [supportsInstall, setSupportsInstall] = useState(false)
-  const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(
-    null,
-  )
-  const [isInstalled, setIsInstalled] = useState(false)
+    const { deferredPrompt, isInstalled } = useSyncExternalStore(
+        subscribe,
+        () => state,
+        () => serverSnapshot,
+    );
 
-  // Detect installed state
-  useEffect(() => {
-    const checkInstalled = () => {
-      const standalone =
-        window.matchMedia?.('(display-mode: standalone)').matches ||
-        // iOS Safari old heuristic
-        (navigator as any).standalone === true
-      setIsInstalled(standalone)
-    }
-    checkInstalled()
+    const promptInstall = useCallback(async () => {
+        if (!deferredPrompt) return;
 
-    const onAppInstalled = () => setIsInstalled(true)
-    window.addEventListener('appinstalled', onAppInstalled)
+        try {
+            await deferredPrompt.prompt();
+            await deferredPrompt.userChoice;
+            updateState({ ...state, deferredPrompt: null });
+        } catch (error) {
+            updateState({ ...state, deferredPrompt: null });
+            toast.error(
+                error instanceof Error
+                    ? `Could not open the install prompt: ${error.message}`
+                    : 'Could not open the install prompt. Please try again.',
+            );
+        }
+    }, [deferredPrompt]);
 
-    const mq = window.matchMedia?.('(display-mode: standalone)')
-    const onChange = () => checkInstalled()
-    mq?.addEventListener?.('change', onChange)
-
-    return () => {
-      window.removeEventListener('appinstalled', onAppInstalled)
-      mq?.removeEventListener?.('change', onChange)
-    }
-  }, [])
-
-  // Capture beforeinstallprompt
-  useEffect(() => {
-    const handler = (e: Event) => {
-      e.preventDefault()
-      setDeferred(e as BeforeInstallPromptEvent)
-      setSupportsInstall(true)
-    }
-    window.addEventListener('beforeinstallprompt', handler as any)
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handler as any)
-    }
-  }, [])
-
-  const promptInstall = useCallback(async () => {
-    if (!deferred) return
-    await deferred.prompt()
-    try {
-      await deferred.userChoice
-      // After user choice, clear our stored prompt and hide the button
-      setDeferred(null)
-      setSupportsInstall(false)
-    } catch {
-      setDeferred(null)
-      setSupportsInstall(false)
-    }
-  }, [deferred])
-
-  return {
-    isInstalled,
-    supportsInstall: supportsInstall && !isInstalled,
-    promptInstall,
-  }
+    return {
+        isInstalled,
+        supportsInstall: deferredPrompt !== null && !isInstalled,
+        promptInstall,
+    };
 }

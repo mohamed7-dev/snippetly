@@ -1,5 +1,4 @@
 import { Page } from '@/components/layout/page';
-import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import { listCurrentUserCollectionsQueryOptions } from '@/features/collection-listing/lib/collection-listing-query-options';
 import { CollectionForm } from '@/features/collections/components/forms/collection-form';
 import { CreateCollectionPageHeader } from '@/features/create-collection/components/sections/create-collection-page-header';
@@ -8,6 +7,7 @@ import {
     createCollectionFormSchema,
     type CreateCollectionFormSchemaType,
 } from '@/features/create-collection/lib/schema';
+import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import { listPopularTagsQueryOptions } from '@/features/tags/lib/list-tags-query-options';
 import { redirectSchema } from '@/lib/zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -50,8 +50,10 @@ function RouteComponent() {
     const { mutateAsync, isPending } = useCreateCollection({
         onSuccess: async data => {
             createCollectionForm.reset();
-            await navigate({ to: '../$id', params: { id: data.id } });
-            qClient.invalidateQueries(listCurrentUserCollectionsQueryOptions());
+            if (data.status === 'synced') {
+                await navigate({ to: '/collections/$id', params: { id: data.data.id } });
+                void qClient.invalidateQueries(listCurrentUserCollectionsQueryOptions());
+            }
         },
     });
     return (
@@ -60,7 +62,10 @@ function RouteComponent() {
             submitHandler={createCollectionForm.handleSubmit(values => mutateAsync(values))}
         >
             <CreateCollectionPageHeader isPending={isPending} />
-            <PermissionGuard requiredPermissions={[Permission.Authenticated, Permission.CreateCollection]}>
+            <PermissionGuard
+                requiredPermissions={[Permission.Authenticated, Permission.CreateCollection]}
+                isAvailableOffline
+            >
                 <main className="container mx-auto px-2 lg:px-6 py-8 max-w-2xl">
                     <CollectionForm isPending={isPending} />
                 </main>

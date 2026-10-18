@@ -1,8 +1,8 @@
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { MenuIcon } from 'lucide-react';
-import { MobileSidebarFooter } from '../shared/mobile-sidebar-footer';
 import { SidebarContent } from './sidebar-content';
+import { DashboardSidebarFooter } from './sidebar-footer';
 
 export function MobileSidebar() {
     return (
@@ -13,9 +13,11 @@ export function MobileSidebar() {
                     <span className="sr-only">open sidebar</span>
                 </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="px-2 py-4 flex flex-col justify-between">
-                <SidebarContent />
-                <MobileSidebarFooter />
+            <SheetContent side="left" className="flex flex-col justify-between px-2 py-4">
+                <div className="min-h-0 flex-1 overflow-y-auto">
+                    <SidebarContent />
+                </div>
+                <DashboardSidebarFooter />
             </SheetContent>
         </Sheet>
     );

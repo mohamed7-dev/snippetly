@@ -16,20 +16,18 @@ export class I18nService {
      * Translates the message of any error class that extends the {@link I18nError} class.
      */
     public translateError(error: I18nError, req: Request) {
-        const originalError = error;
-
-        if (error instanceof I18nError) {
-            let translatedMessage = error.message;
-            try {
-                const key = originalError.message;
-                translatedMessage = req.t(key, originalError.variables);
-            } catch (error: any) {
-                translatedMessage += `([ErrorTranslationFailure]: ${typeof error.message === 'string' ? error.message : JSON.stringify(error.message)})`;
-            }
-            error.message = translatedMessage;
-            delete (originalError as any).variables;
+        let translatedMessage = error.message;
+        try {
+            translatedMessage = req.t(error.message, error.variables);
+            translatedMessage = interpolateLegacyPlaceholders(translatedMessage, error.variables);
+        } catch (translationError: unknown) {
+            const errorMessage =
+                translationError instanceof Error
+                    ? translationError.message
+                    : JSON.stringify(translationError);
+            translatedMessage += `([ErrorTranslationFailure]: ${errorMessage})`;
         }
-        return error;
+        return { ...error, message: translatedMessage };
     }
 
     /**
@@ -47,4 +45,14 @@ export class I18nService {
         apiError.message = translatedMessage;
         return apiError;
     }
+}
+
+function interpolateLegacyPlaceholders(
+    message: string,
+    variables: Record<string, string | number>,
+): string {
+    return message.replace(/\{\{\s*([^{}]+?)\s*\}\}/g, (placeholder, key: string) => {
+        const value = variables[key];
+        return value === undefined ? placeholder : String(value);
+    });
 }

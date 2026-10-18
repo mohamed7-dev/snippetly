@@ -66,6 +66,7 @@ export function UpdateSnippetPageHeader({ isPending }: { isPending: boolean }) {
                         Permission.Owner,
                     ]}
                     ownerId={snippet.creator.id}
+                    isAvailableOffline
                 >
                     <LoadingButton isLoading={isPending} type="submit">
                         <SaveIcon className="h-4 w-4 sm:mr-2" />

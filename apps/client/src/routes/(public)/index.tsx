@@ -1,16 +1,26 @@
-import { LandingLayoutHeader } from '@/features/app-shell/components/landing/landing-layout-header';
 import { LandingPageCta } from '@/features/landing/components/landing-page-cta';
 import { LandingPageDemo } from '@/features/landing/components/landing-page-demo';
 import { LandingPageFeatures } from '@/features/landing/components/landing-page-features';
 import { LandingPageFooter } from '@/features/landing/components/landing-page-footer';
 import { LandingPageHero } from '@/features/landing/components/landing-page-hero';
 import { LandingPageTestimonials } from '@/features/landing/components/landing-page-testimonials';
+import { isOfflineDashboardAvailable } from '@/features/offline-snippet/lib/offline-creation-access';
 import { APP_NAME } from '@snippetly/common/lib';
-import { createFileRoute } from '@tanstack/react-router';
-import React from 'react';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/(public)/')({
     component: LandingPage,
+    beforeLoad: async ({ context: { auth } }) => {
+        const status =
+            auth.status === 'initial' || auth.status === 'verifying'
+                ? await auth.waitForAuthResolution()
+                : auth.status;
+
+        const shouldRedirect = status === 'authenticated' || isOfflineDashboardAvailable();
+        if (shouldRedirect) {
+            throw redirect({ to: '/dashboard' });
+        }
+    },
     head: () => {
         return {
             meta: [
@@ -24,27 +34,24 @@ export const Route = createFileRoute('/(public)/')({
 
 function LandingPage() {
     return (
-        <React.Fragment>
-            <LandingLayoutHeader />
-            <main>
-                {/* Hero Section */}
-                <LandingPageHero />
+        <main>
+            {/* Hero Section */}
+            <LandingPageHero />
 
-                {/* Features Section */}
-                <LandingPageFeatures />
+            {/* Features Section */}
+            <LandingPageFeatures />
 
-                {/* Demo Section */}
-                <LandingPageDemo />
+            {/* Demo Section */}
+            <LandingPageDemo />
 
-                {/* Testimonials */}
-                <LandingPageTestimonials />
+            {/* Testimonials */}
+            <LandingPageTestimonials />
 
-                {/* CTA Section */}
-                <LandingPageCta />
+            {/* CTA Section */}
+            <LandingPageCta />
 
-                {/* Footer */}
-                <LandingPageFooter />
-            </main>
-        </React.Fragment>
+            {/* Footer */}
+            <LandingPageFooter />
+        </main>
     );
 }

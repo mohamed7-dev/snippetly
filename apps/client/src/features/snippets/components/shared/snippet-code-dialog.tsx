@@ -6,9 +6,12 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import type { CodeEditorSettings } from '@/features/developer-settings/providers/developer-settings-provider';
 import { XIcon } from 'lucide-react';
 import { CopyButton } from './copy-button';
-import { SnippetCodeEditor, type EditorTheme } from './snippet-code-editor';
+import { SnippetCodeEditor } from './snippet-code-editor';
+import { SnippetCodeEditorSettings } from './snippet-code-editor-settings';
+import { SnippetCodeEditorShortcuts } from './snippet-code-editor-shortcuts';
 
 type SnippetCodeDialogProps = {
     open: boolean;
@@ -17,8 +20,12 @@ type SnippetCodeDialogProps = {
     language: string;
     code: string;
     readOnly: boolean;
-    theme: EditorTheme;
     isDarkMode: boolean;
+    settings: CodeEditorSettings;
+    hasLocalOverrides: boolean;
+    settingsOverride: Partial<CodeEditorSettings>;
+    onSettingsChange: (settings: Partial<CodeEditorSettings>) => void;
+    onResetSettings: () => void;
     onChange: (code: string) => void;
 };
 
@@ -29,8 +36,12 @@ export function SnippetCodeDialog({
     language,
     code,
     readOnly,
-    theme,
     isDarkMode,
+    settings,
+    hasLocalOverrides,
+    settingsOverride,
+    onSettingsChange,
+    onResetSettings,
     onChange,
 }: SnippetCodeDialogProps) {
     return (
@@ -44,6 +55,13 @@ export function SnippetCodeDialog({
                         {name.toLowerCase().replace(/\s+/g, '-')}.{language}
                     </AlertDialogTitle>
                     <div className="flex items-center gap-2">
+                        <SnippetCodeEditorSettings
+                            settings={settings}
+                            hasLocalOverrides={hasLocalOverrides}
+                            onChange={onSettingsChange}
+                            onReset={onResetSettings}
+                            triggerVariant="outline"
+                        />
                         <CopyButton code={code} variant="outline" size="sm" />
                         <AlertDialogCancel asChild>
                             <Button variant="ghost" size="icon" aria-label="Close fullscreen editor">
@@ -58,11 +76,12 @@ export function SnippetCodeDialog({
                         code={code}
                         language={language}
                         readOnly={readOnly}
-                        theme={theme}
                         isDarkMode={isDarkMode}
+                        settingsOverride={settingsOverride}
                         onChange={onChange}
                     />
                 </div>
+                <SnippetCodeEditorShortcuts />
             </AlertDialogContent>
         </AlertDialog>
     );

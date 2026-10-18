@@ -207,7 +207,12 @@ export class DeveloperSnippetController implements AppRouter {
                     const result = await this.snippetService.find(
                         req.getRequestContext(),
                         req.query,
-                        { creator: true, collection: true, tags: true, forkedFrom: { creator: true } },
+                        {
+                            collection: true,
+                            tags: true,
+                            creator: { user: true },
+                            forkedFrom: { creator: { user: true } },
+                        },
                         canReadPrivateCollectionSnippets && developer
                             ? {
                                   includePrivateSnippetsForCreatorId: developer.id,
@@ -223,15 +228,15 @@ export class DeveloperSnippetController implements AppRouter {
                         result.items,
                     );
 
-                    if (restrictToPublic) {
-                        result.items = omit(
-                            result.items,
-                            ['isPrivate', 'updatedAt', 'deletedAt', 'collection'],
-                            true,
-                        );
-                    }
-
-                    res.status(200).json(result);
+                    const response = restrictToPublic
+                        ? {
+                              ...result,
+                              items: result.items.map(item =>
+                                  omit(item, ['isPrivate', 'updatedAt', 'deletedAt', 'collection']),
+                              ),
+                          }
+                        : result;
+                    res.status(200).json(response);
                 },
             }),
         );
@@ -257,10 +262,10 @@ export class DeveloperSnippetController implements AppRouter {
                             creator: developer.id,
                         },
                         {
-                            creator: true,
                             collection: true,
                             tags: true,
-                            forkedFrom: { creator: true },
+                            creator: { user: true },
+                            forkedFrom: { creator: { user: true } },
                         },
                         { includePrivateSnippets: true },
                     );
@@ -294,10 +299,9 @@ export class DeveloperSnippetController implements AppRouter {
                             creator: developer.id,
                         },
                         {
-                            creator: true,
                             collection: true,
                             tags: true,
-                            forkedFrom: { creator: true },
+                            creator: { user: true },
                         },
                         { includePrivateSnippets: true, onlySoftDeleted: true },
                     );
@@ -348,14 +352,14 @@ export class DeveloperSnippetController implements AppRouter {
                         req.getRequestContext(),
                         req.params,
                         {
-                            creator: true,
                             collection: true,
                             tags: true,
+                            creator: { user: true },
                             forkedFrom: {
-                                creator: true,
+                                creator: { user: true },
                             },
                         },
-                        { includePrivateSnippet: true },
+                        { includePrivateSnippet: true, includeSoftDeleted: false },
                     );
 
                     const isOwner =

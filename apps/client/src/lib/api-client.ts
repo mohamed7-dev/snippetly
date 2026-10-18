@@ -1,5 +1,6 @@
 import { type AuthenticateDeveloperDtoType, type LogoutDeveloperDtoType } from '@snippetly/common/dto';
 import { AUTH_TOKEN_HEADER_KEY } from '@snippetly/common/lib';
+import { saveOfflineSyncCredential } from '../features/offline-snippet/lib/store';
 import { apiEndpoints, apiUrl } from './api-endpoints';
 import { LOCAL_STORAGE_SESSION_TOKEN_KEY } from './constants';
 
@@ -10,6 +11,28 @@ type ApiErrorPayload = {
 };
 
 export type ApiSuccess<TOutput> = TOutput extends ApiErrorPayload ? never : TOutput;
+
+export class OfflineNetworkError extends Error {
+    public readonly isOffline = true;
+
+    constructor(message = 'You are offline. Reconnect to access data that is not cached on this device.') {
+        super(message);
+        this.name = 'OfflineNetworkError';
+    }
+}
+
+export class OfflineDataUnavailableError extends OfflineNetworkError {
+    constructor() {
+        super(
+            'This data is not cached on this device. Reconnect to the internet and visit this section to make it available offline.',
+        );
+        this.name = 'OfflineDataUnavailableError';
+    }
+}
+
+export function isOfflineNetworkError(error: unknown): error is OfflineNetworkError {
+    return error instanceof OfflineNetworkError;
+}
 
 export function assertApiSuccess<TOutput>(
     response: Response,
@@ -52,14 +75,48 @@ function isApiErrorPayload(value: unknown): value is ApiErrorPayload {
 }
 
 export class ApiClient {
+    private offlineOwnerId?: string;
+
     constructor(private apiUrl: string = '') {}
 
     public setAuthToken(token: string) {
         localStorage.setItem(LOCAL_STORAGE_SESSION_TOKEN_KEY, token);
+        if (this.offlineOwnerId) {
+            void saveOfflineSyncCredential(this.offlineOwnerId, token).catch(error => {
+                console.error('Could not save session credentials for background sync.', error);
+            });
+        }
+    }
+
+    public setOfflineOwnerId(ownerId: string | undefined) {
+        this.offlineOwnerId = ownerId;
+        if (ownerId) {
+            const token = this.getAuthToken();
+            if (token) {
+                void saveOfflineSyncCredential(ownerId, token).catch(error => {
+                    console.error('Could not save session credentials for background sync.', error);
+                });
+            }
+        }
     }
 
     public getAuthToken(): string {
         return localStorage.getItem(LOCAL_STORAGE_SESSION_TOKEN_KEY) ?? '';
+    }
+
+    private async fetchResponse(url: string, options: RequestInit): Promise<Response> {
+        if (typeof navigator !== 'undefined' && !navigator.onLine) {
+            throw new OfflineNetworkError();
+        }
+
+        try {
+            return await fetch(url, options);
+        } catch (error) {
+            if (error instanceof TypeError || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+                throw new OfflineNetworkError();
+            }
+            throw error;
+        }
     }
 
     async asUserWithCredentials(identifier: string, password: string) {
@@ -69,6 +126,7 @@ export class ApiClient {
     }
 
     async asUserWithAuthInput(authInput: Partial<AuthenticateDeveloperDtoType['input']>) {
+        this.setOfflineOwnerId(undefined);
         // first log out as the current user
         if (this.getAuthToken()) {
             await this.fetch<LogoutDeveloperDtoType['output']>(apiEndpoints.auth.logout.url, {
@@ -82,6 +140,7 @@ export class ApiClient {
     }
 
     async asAnonymousUser(): Promise<void> {
+        this.setOfflineOwnerId(undefined);
         await this.fetch<LogoutDeveloperDtoType['output']>(apiEndpoints.auth.logout.url, {
             method: apiEndpoints.auth.logout.method,
         });
@@ -101,7 +160,7 @@ export class ApiClient {
         }
 
         const requestUrl = /^https?:\/\//.test(url) ? url : `${this.apiUrl}${url}`;
-        const response = await fetch(requestUrl, {
+        const response = await this.fetchResponse(requestUrl, {
             ...options,
             headers,
         });
@@ -109,6 +168,33 @@ export class ApiClient {
         if (authToken != null) {
             this.setAuthToken(authToken);
         }
+
+        let payload: unknown;
+        try {
+            payload = await response.json();
+        } catch {
+            throw new ApiClientError(response, undefined);
+        }
+
+        assertApiSuccess<TOutput>(response, payload);
+        return payload;
+    }
+
+    public async fetchWithToken<TOutput>(
+        url: string,
+        options: RequestInit,
+        token: string,
+        onTokenRefresh?: (token: string) => void | Promise<void>,
+    ): Promise<ApiSuccess<TOutput>> {
+        const headers = new Headers(options.headers);
+        if (!headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
+        if (token) headers.set('Authorization', `Bearer ${token}`);
+        else headers.delete('Authorization');
+
+        const requestUrl = /^https?:\/\//.test(url) ? url : `${this.apiUrl}${url}`;
+        const response = await this.fetchResponse(requestUrl, { ...options, headers });
+        const authToken = response.headers.get(AUTH_TOKEN_HEADER_KEY);
+        if (authToken !== null && onTokenRefresh) await onTokenRefresh(authToken);
 
         let payload: unknown;
         try {

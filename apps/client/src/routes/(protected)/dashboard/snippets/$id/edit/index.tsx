@@ -6,6 +6,7 @@ import { SnippetFormSidebar } from '@/features/snippets/components/forms/snippet
 import { getSnippetQueryOptions } from '@/features/snippets/lib/snippet-query-options';
 import { listPopularTagsQueryOptions } from '@/features/tags/lib/list-tags-query-options';
 import { UpdateSnippetPageHeader } from '@/features/update-snippet/components/update-snippet-page-header';
+import { getOfflineCreationOwnerId, isOfflineCreationAvailable } from '@/features/offline-snippet/lib/offline-creation-access';
 import { useUpdateSnippet } from '@/features/update-snippet/hooks/use-update-snippet';
 import {
     updateSnippetFormSchema,
@@ -39,8 +40,8 @@ export const Route = createFileRoute('/(protected)/dashboard/snippets/$id/edit/'
     },
     beforeLoad: async ({ params: { id }, context: { queryClient, auth } }) => {
         const data = await queryClient.query({ ...getSnippetQueryOptions(id) });
-        const { user } = auth;
-        if (user?.id !== data.creator.id) {
+        const ownerId = auth.user?.id ?? (isOfflineCreationAvailable() ? getOfflineCreationOwnerId() : undefined);
+        if (ownerId !== data.creator.id) {
             throw redirect({
                 to: '/profile/$id',
                 params: { id: data.creator.id },
@@ -84,6 +85,7 @@ function EditSnippetPage() {
             <PermissionGuard
                 requiredPermissions={[Permission.Authenticated, Permission.Owner, Permission.UpdateSnippet]}
                 ownerId={data.creator.id}
+                isAvailableOffline
             >
                 <main className="container mx-auto px-2 lg:px-6 py-8 max-w-6xl">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">

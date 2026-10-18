@@ -169,7 +169,7 @@ export class FavouriteService {
                 creatorFirstName: 'creator.firstName',
                 creatorLastName: 'creator.lastName',
             },
-            relations: { creator: true, tags: true },
+            relations: { creator: { user: true }, tags: true },
             where: { deletedAt: IsNull(), creator: { deletedAt: IsNull() } },
         });
         qb.innerJoin('s.creator', 'favouriteOwner').andWhere(
@@ -201,6 +201,7 @@ export class FavouriteService {
                     firstName: snippet.creator.firstName,
                     lastName: snippet.creator.lastName,
                     image: snippet.creator.image ?? null,
+                    isVerified: snippet.creator.isVerified,
                 },
                 tags: snippet.tags.map(({ value }) => ({ value })),
             })),
@@ -220,7 +221,7 @@ export class FavouriteService {
                 creatorFirstName: 'creator.firstName',
                 creatorLastName: 'creator.lastName',
             },
-            relations: { creator: true, tags: true },
+            relations: { creator: { user: true }, tags: true },
             where: { deletedAt: IsNull(), creator: { deletedAt: IsNull() } },
         });
         qb.innerJoin('c.creator', 'favouriteOwner').andWhere(
@@ -252,6 +253,7 @@ export class FavouriteService {
                     firstName: collection.creator.firstName,
                     lastName: collection.creator.lastName,
                     image: collection.creator.image ?? null,
+                    isVerified: collection.creator.isVerified,
                 },
                 tags: collection.tags.map(({ value }) => ({ value })),
             })),
@@ -275,6 +277,7 @@ export class FavouriteService {
             'favourite.favoritedDeveloperId = d.id AND favourite.developerId = :favouriteDeveloperId',
             { favouriteDeveloperId: developerId },
         );
+        qb.leftJoinAndSelect('d.user', 'user');
         const [developers, itemsCount] = await qb.getManyAndCount();
 
         return {
@@ -285,6 +288,7 @@ export class FavouriteService {
                 lastName: developer.lastName,
                 image: developer.image ?? null,
                 bio: developer.bio ?? null,
+                isVerified: developer.isVerified,
             })),
             itemsCount,
         };

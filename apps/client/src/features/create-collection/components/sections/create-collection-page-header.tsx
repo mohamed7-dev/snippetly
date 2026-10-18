@@ -20,7 +20,10 @@ export function CreateCollectionPageHeader({ isPending }: { isPending: boolean }
                 <h1 className="font-heading font-semibold text-lg">Create New Collection</h1>
             </div>
 
-            <PermissionGuard requiredPermissions={[Permission.Authenticated, Permission.CreateCollection]}>
+            <PermissionGuard
+                requiredPermissions={[Permission.Authenticated, Permission.CreateCollection]}
+                isAvailableOffline
+            >
                 <LoadingButton isLoading={isPending} type="submit">
                     <SaveIcon />
                     Create Collection

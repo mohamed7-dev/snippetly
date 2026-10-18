@@ -33,10 +33,11 @@ export function UpdateCollectionPageHeader({ isPending }: { isPending: boolean }
                 <PermissionGuard
                     requiredPermissions={[
                         Permission.Authenticated,
-                        Permission.DeleteCollection,
+                        Permission.UpdateCollection,
                         Permission.Owner,
                     ]}
                     ownerId={data?.creator.id}
+                    isAvailableOffline
                 >
                     <Button type="button" variant={'outline'} disabled={isSubmitting || !isValid} asChild>
                         <Link to={'/collections/$id'} params={{ id }}>

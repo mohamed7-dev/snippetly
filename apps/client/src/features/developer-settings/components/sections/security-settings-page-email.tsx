@@ -17,7 +17,7 @@ export function SecuritySettingsPageEmail() {
     const { user } = useAuth();
     const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
-    const isVerified = user?.user.isVerified ?? false;
+    const isVerified = user?.isVerified ?? false;
     const emailAddress = user?.emailAddress ?? '';
 
     return (

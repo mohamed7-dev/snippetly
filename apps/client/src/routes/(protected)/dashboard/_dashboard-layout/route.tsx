@@ -1,21 +1,46 @@
+import { StatusCard } from '@/components/feedback/status-card';
+import { Button } from '@/components/ui/button';
 import { DashboardLayout } from '@/features/app-shell/components/dashboard/dashboard-layout';
 import { listCurrentUserCollectionsQueryOptions } from '@/features/collection-listing/lib/collection-listing-query-options';
+import { isOfflineDashboardAvailable } from '@/features/offline-snippet/lib/offline-creation-access';
 import { getCurrentDeveloperActivityStats } from '@/features/stats/lib/stats-query-options';
 import { createFileRoute, Outlet } from '@tanstack/react-router';
+import { RefreshCwIcon } from 'lucide-react';
 
 export const Route = createFileRoute('/(protected)/dashboard/_dashboard-layout')({
     component: RouteComponent,
-    loader: async ({ context: { queryClient } }) => {
+    errorComponent: ({ error, reset }) => (
+        <DashboardLayout>
+            <StatusCard
+                variant="error"
+                title="Dashboard section unavailable"
+                description={
+                    error instanceof Error
+                        ? error.message
+                        : 'This dashboard section could not be loaded. Please try again.'
+                }
+                layout="section"
+                actions={
+                    <Button onClick={reset} size="lg">
+                        <RefreshCwIcon className="mr-2 size-4" />
+                        Try again
+                    </Button>
+                }
+            />
+        </DashboardLayout>
+    ),
+    loader: ({ context: { queryClient } }) => {
+        if (isOfflineDashboardAvailable()) return;
         queryClient
             .infiniteQuery({
                 ...listCurrentUserCollectionsQueryOptions({ take: 5 }),
             })
             .catch();
-
-        await queryClient.query({
-            ...getCurrentDeveloperActivityStats(),
-            staleTime: 'static',
-        });
+        void queryClient
+            .query({
+                ...getCurrentDeveloperActivityStats(),
+            })
+            .catch();
     },
 });
 

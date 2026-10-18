@@ -1,24 +1,29 @@
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useDeveloperSettings } from '@/features/developer-settings/hooks/use-developer-settings';
+import type {
+    CodeEditorSettings,
+    CodeEditorTheme,
+} from '@/features/developer-settings/providers/developer-settings-provider';
 import { indentWithTab } from '@codemirror/commands';
-import { LanguageDescription } from '@codemirror/language';
+import { indentUnit, LanguageDescription } from '@codemirror/language';
 import { languages } from '@codemirror/language-data';
 import { Compartment, EditorState } from '@codemirror/state';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { EditorView, keymap } from '@codemirror/view';
 import { basicSetup } from 'codemirror';
+import { InfoIcon } from 'lucide-react';
 import React from 'react';
 import { toast } from 'sonner';
 import { ayuLight, dracula } from 'thememirror';
-
-export type EditorTheme = 'system' | 'ayu-light' | 'one-dark' | 'dracula';
 
 type SnippetCodeEditorProps = {
     code: string;
     language: string;
     readOnly: boolean;
-    theme: EditorTheme;
     isDarkMode: boolean;
     onChange: (code: string) => void;
     className?: string;
+    settingsOverride?: Partial<CodeEditorSettings>;
 };
 
 const languageAliases: Record<string, string> = {
@@ -34,25 +39,39 @@ const languageAliases: Record<string, string> = {
     yml: 'yaml',
 };
 
-const editorBaseTheme = EditorView.theme({
-    '&': {
-        fontSize: '0.875rem',
-        height: '100%',
-    },
-    '.cm-content': {
-        padding: '1rem 0',
-    },
-    '.cm-line': {
-        padding: '0 1rem',
-    },
-    '.cm-scroller': {
-        fontFamily: 'var(--font-geist-mono, ui-monospace, monospace)',
-        height: '100%',
-        overflow: 'auto',
-    },
-});
+function editorBaseTheme(fontSize: number, fontFamily: 'geist-mono' | 'system-mono', lineNumbers: boolean) {
+    return EditorView.theme({
+        '&': {
+            fontSize: `${fontSize}px`,
+            height: '100%',
+        },
+        '.cm-gutters': {
+            display: lineNumbers ? 'block' : 'none',
+        },
+        '.cm-content': {
+            padding: '1rem 0',
+        },
+        '.cm-line': {
+            padding: '0 1rem',
+        },
+        '.cm-scroller': {
+            fontFamily:
+                fontFamily === 'geist-mono'
+                    ? 'var(--font-geist-mono, ui-monospace, monospace)'
+                    : 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+            height: '100%',
+            overflow: 'auto',
+        },
+    });
+}
 
-function themeExtension(theme: EditorTheme, isDarkMode: boolean) {
+function themeExtension(
+    theme: CodeEditorTheme,
+    isDarkMode: boolean,
+    fontSize: number,
+    fontFamily: 'geist-mono' | 'system-mono',
+    lineNumbers: boolean,
+) {
     const selectedTheme =
         theme === 'system'
             ? isDarkMode
@@ -63,7 +82,11 @@ function themeExtension(theme: EditorTheme, isDarkMode: boolean) {
               : theme === 'one-dark'
                 ? oneDark
                 : dracula;
-    return [editorBaseTheme, selectedTheme];
+    return [editorBaseTheme(fontSize, fontFamily, lineNumbers), selectedTheme];
+}
+
+function tabSizeExtension(tabSize: number) {
+    return [EditorState.tabSize.of(tabSize), indentUnit.of(' '.repeat(tabSize))];
 }
 
 function languageName(language: string) {
@@ -75,28 +98,41 @@ export function SnippetCodeEditor({
     code,
     language,
     readOnly,
-    theme,
     isDarkMode,
     onChange,
     className,
+    settingsOverride,
 }: SnippetCodeEditorProps) {
+    const {
+        state: {
+            settings: { codeEditor },
+        },
+    } = useDeveloperSettings();
+    const { theme, fontSize, fontFamily, tabSize, lineWrapping, lineNumbers } = {
+        ...codeEditor,
+        ...settingsOverride,
+    };
     const editorHostRef = React.useRef<HTMLDivElement | null>(null);
     const editorRef = React.useRef<EditorView | null>(null);
     const onChangeRef = React.useRef(onChange);
     const readOnlyRef = React.useRef(readOnly);
     const themeRef = React.useRef(theme);
     const isDarkModeRef = React.useRef(isDarkMode);
+    const editorSettingsRef = React.useRef({ fontSize, fontFamily, tabSize, lineWrapping, lineNumbers });
     const initialCodeRef = React.useRef(code);
     const languageRef = React.useRef(language);
     const externalUpdateRef = React.useRef(false);
     const themeCompartment = React.useMemo(() => new Compartment(), []);
     const readOnlyCompartment = React.useMemo(() => new Compartment(), []);
     const languageCompartment = React.useMemo(() => new Compartment(), []);
+    const wrappingCompartment = React.useMemo(() => new Compartment(), []);
+    const tabSizeCompartment = React.useMemo(() => new Compartment(), []);
 
     onChangeRef.current = onChange;
     readOnlyRef.current = readOnly;
     themeRef.current = theme;
     isDarkModeRef.current = isDarkMode;
+    editorSettingsRef.current = { fontSize, fontFamily, tabSize, lineWrapping, lineNumbers };
     initialCodeRef.current = code;
     languageRef.current = language;
 
@@ -119,7 +155,9 @@ export function SnippetCodeEditor({
                                 const originalCode = view.state.doc.toString();
                                 const editorLanguage = languageRef.current;
                                 void import('./format-snippet-code')
-                                    .then(({ formatSnippetCode }) => formatSnippetCode(originalCode, editorLanguage))
+                                    .then(({ formatSnippetCode }) =>
+                                        formatSnippetCode(originalCode, editorLanguage),
+                                    )
                                     .then(formattedCode => {
                                         if (view.state.doc.toString() !== originalCode) {
                                             toast.error('Code changed while formatting', {
@@ -164,8 +202,20 @@ export function SnippetCodeEditor({
                         EditorState.readOnly.of(readOnlyRef.current),
                         EditorView.editable.of(!readOnlyRef.current),
                     ]),
-                    themeCompartment.of(themeExtension(themeRef.current, isDarkModeRef.current)),
+                    themeCompartment.of(
+                        themeExtension(
+                            themeRef.current,
+                            isDarkModeRef.current,
+                            editorSettingsRef.current.fontSize,
+                            editorSettingsRef.current.fontFamily,
+                            editorSettingsRef.current.lineNumbers,
+                        ),
+                    ),
                     languageCompartment.of([]),
+                    wrappingCompartment.of(
+                        editorSettingsRef.current.lineWrapping ? EditorView.lineWrapping : [],
+                    ),
+                    tabSizeCompartment.of(tabSizeExtension(editorSettingsRef.current.tabSize)),
                 ],
             }),
             parent: editorHost,
@@ -176,7 +226,7 @@ export function SnippetCodeEditor({
             editor.destroy();
             editorRef.current = null;
         };
-    }, [languageCompartment, readOnlyCompartment, themeCompartment]);
+    }, [languageCompartment, readOnlyCompartment, tabSizeCompartment, themeCompartment, wrappingCompartment]);
 
     React.useEffect(() => {
         const editor = editorRef.current;
@@ -204,9 +254,23 @@ export function SnippetCodeEditor({
 
     React.useEffect(() => {
         editorRef.current?.dispatch({
-            effects: themeCompartment.reconfigure(themeExtension(theme, isDarkMode)),
+            effects: themeCompartment.reconfigure(
+                themeExtension(theme, isDarkMode, fontSize, fontFamily, lineNumbers),
+            ),
         });
-    }, [isDarkMode, theme, themeCompartment]);
+    }, [fontFamily, fontSize, isDarkMode, lineNumbers, theme, themeCompartment]);
+
+    React.useEffect(() => {
+        editorRef.current?.dispatch({
+            effects: wrappingCompartment.reconfigure(lineWrapping ? EditorView.lineWrapping : []),
+        });
+    }, [lineWrapping, wrappingCompartment]);
+
+    React.useEffect(() => {
+        editorRef.current?.dispatch({
+            effects: tabSizeCompartment.reconfigure(tabSizeExtension(tabSize)),
+        });
+    }, [tabSize, tabSizeCompartment]);
 
     React.useEffect(() => {
         const normalizedLanguage = languageName(language || 'plaintext');
@@ -246,5 +310,20 @@ export function SnippetCodeEditor({
         };
     }, [language, languageCompartment]);
 
-    return <div ref={editorHostRef} className={className} />;
+    const hasLanguage = language.trim() !== '' && languageName(language) !== 'plaintext';
+
+    return (
+        <div className="space-y-2">
+            {!hasLanguage && (
+                <Alert className="rounded-none border-x-0 border-t-0">
+                    <InfoIcon className="h-4 w-4 text-primary" />
+                    <AlertDescription>
+                        Specify a language for this snippet to enable formatting and language-specific editor
+                        features.
+                    </AlertDescription>
+                </Alert>
+            )}
+            <div ref={editorHostRef} className={className} />
+        </div>
+    );
 }

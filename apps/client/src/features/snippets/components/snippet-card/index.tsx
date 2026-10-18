@@ -1,10 +1,9 @@
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { DeveloperIdentity } from '@/components/shared/developer-identity';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import type { ApiSuccess } from '@/lib/api-client';
-import { formatDeveloperInfo } from '@/lib/format-developer-info';
 import { Permission, type SnippetListDtoType } from '@snippetly/common/dto';
 import { Link } from '@tanstack/react-router';
 import { EditIcon, GitForkIcon } from 'lucide-react';
@@ -19,7 +18,6 @@ interface SnippetCardProps extends Omit<SnippetActionsDropdownProps, 'snippet'> 
 
 export function SnippetCard({ snippet, ...props }: SnippetCardProps) {
     const creator = snippet.creator;
-    const { fullName, initials: avatarFallback } = formatDeveloperInfo(creator);
 
     const isPrivate = 'isPrivate' in snippet ? snippet.isPrivate : false;
     const createdAt = 'createdAt' in snippet ? snippet.createdAt : undefined;
@@ -27,7 +25,7 @@ export function SnippetCard({ snippet, ...props }: SnippetCardProps) {
     return (
         <Card className="group h-full overflow-hidden rounded-xl pt-0 transition-all duration-200 hover:border-primary/40 hover:shadow-lg">
             <div className="h-1.5 bg-linear-to-r from-primary via-primary/60 to-transparent" />
-            <CardHeader className="pb-3">
+            <CardHeader className="space-y-3">
                 <div className="flex items-start justify-between">
                     <div className="flex-1 space-y-2">
                         <CardTitle className="text-lg font-heading hover:text-primary transition-colors">
@@ -42,7 +40,7 @@ export function SnippetCard({ snippet, ...props }: SnippetCardProps) {
                         </CardTitle>
                         {snippet.forkedFrom && (
                             <div
-                                className="mt-2 inline-flex max-w-full items-center gap-1.5 rounded-full bg-muted/60 px-2 py-1 text-xs text-muted-foreground"
+                                className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-muted/60 px-2 py-1 text-xs text-muted-foreground"
                                 aria-label="Fork attribution"
                             >
                                 <GitForkIcon className="size-3 shrink-0" aria-hidden="true" />
@@ -56,51 +54,20 @@ export function SnippetCard({ snippet, ...props }: SnippetCardProps) {
                                     {snippet.forkedFrom.name}
                                 </Link>
                                 <span aria-hidden="true">·</span>
-                                <Link
-                                    to="/profile/$id"
-                                    params={{ id: snippet.forkedFrom.creator.id }}
-                                    preload={false}
-                                    className="inline-flex min-w-0 items-center gap-1 hover:text-primary"
-                                    title={`Original author: ${snippet.forkedFrom.creator.firstName} ${snippet.forkedFrom.creator.lastName}`}
-                                >
-                                    <Avatar className="size-4">
-                                        <AvatarImage
-                                            src={snippet.forkedFrom.creator.image || '/placeholder.svg'}
-                                            alt=""
-                                        />
-                                        <AvatarFallback className="text-[8px]">
-                                            {snippet.forkedFrom.creator.firstName.slice(0, 1)}
-                                            {snippet.forkedFrom.creator.lastName.slice(0, 1)}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <span className="max-w-24 truncate">
-                                        {snippet.forkedFrom.creator.firstName}{' '}
-                                        {snippet.forkedFrom.creator.lastName}
-                                    </span>
-                                </Link>
+                                <DeveloperIdentity developerInfo={snippet.forkedFrom.creator} size={'xs'} />
                             </div>
                         )}
                     </div>
                     <SnippetActionsDropdown snippet={snippet} {...props} />
                 </div>
+                {snippet.description && (
+                    <p className="text-sm text-muted-foreground text-pretty">{snippet.description}</p>
+                )}
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="flex items-center justify-between flex-wrap gap-2">
-                    <div className="flex items-center gap-3">
-                        <Avatar className="h-12 w-12">
-                            <AvatarImage src={creator.image || '/placeholder.svg'} alt={avatarFallback} />
-                            <AvatarFallback>{avatarFallback}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                            <Link
-                                to={'/profile/$id'}
-                                params={{ id: creator.id }}
-                                className="font-semibold hover:text-primary"
-                            >
-                                {fullName}
-                            </Link>
-                        </div>
-                    </div>
+                    <DeveloperIdentity developerInfo={creator} />
+
                     <div className="flex items-center gap-2 mt-3">
                         <Badge variant="secondary" className="text-xs font-mono">
                             {snippet.language}
@@ -144,6 +111,7 @@ export function SnippetCard({ snippet, ...props }: SnippetCardProps) {
                             Permission.UpdateSnippet,
                         ]}
                         ownerId={creator.id}
+                        isAvailableOffline={true}
                     >
                         <Button size="sm" variant="ghost" asChild>
                             <Link

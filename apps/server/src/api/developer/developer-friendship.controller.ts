@@ -256,7 +256,10 @@ export class DeveloperFriendshipController implements AppRouter {
     }
 
     private async attachFavouriteStatusToParticipants<
-        TItem extends { requester: { id: string }; addressee: { id: string } },
+        TItem extends {
+            requester: { id: string; isVerified: boolean };
+            addressee: { id: string; isVerified: boolean };
+        },
     >(ctx: RequestContext, result: { items: TItem[]; itemsCount: number }) {
         const participants = result.items.flatMap(({ requester, addressee }) => [requester, addressee]);
         const participantsWithStatus = await this.developerService.attachFavouriteStatus(ctx, participants);
@@ -271,10 +274,12 @@ export class DeveloperFriendshipController implements AppRouter {
                 ...item,
                 requester: {
                     ...item.requester,
+                    isVerified: item.requester.isVerified,
                     isFavouritedByCurrentUser: statusByDeveloperId.get(item.requester.id) ?? false,
                 },
                 addressee: {
                     ...item.addressee,
+                    isVerified: item.addressee.isVerified,
                     isFavouritedByCurrentUser: statusByDeveloperId.get(item.addressee.id) ?? false,
                 },
             })),

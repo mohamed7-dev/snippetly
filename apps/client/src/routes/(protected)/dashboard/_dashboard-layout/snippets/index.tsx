@@ -1,10 +1,11 @@
 import { ErrorBoundaryFallback } from '@/components/feedback/error-boundary-fallback';
 import { SectionLoader } from '@/components/feedback/section-loader';
-import { CollectionsPageMainContent } from '@/features/collection-listing/components/sections/collections-page-main-content';
-import { CollectionsPageMainContentHeader } from '@/features/collection-listing/components/sections/collections-page-main-content-header';
-import { CollectionsPageStats } from '@/features/collection-listing/components/sections/collections-page-stats';
-import { listCurrentUserCollectionsQueryOptions } from '@/features/collection-listing/lib/collection-listing-query-options';
-import { currentUserCollectionListDto } from '@snippetly/common/dto';
+import { SnippetsPageContentHeader } from '@/features/snippet-listing/components/sections/snippets-page-content-header';
+import { SnippetsPageMainContent } from '@/features/snippet-listing/components/sections/snippets-page-main-content';
+import { SnippetsPageStats } from '@/features/snippet-listing/components/sections/snippets-page-stats';
+import { listCurrentUserSnippetsQueryOptions } from '@/features/snippet-listing/lib/snippet-listing-query-options';
+import { isOfflineDashboardAvailable } from '@/features/offline-snippet/lib/offline-creation-access';
+import { currentUserSnippetListDto } from '@snippetly/common/dto';
 import { createFileRoute } from '@tanstack/react-router';
 import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -12,22 +13,22 @@ import z from 'zod';
 
 const searchSchema = z
     .object({
-        filter: currentUserCollectionListDto.input.shape.filter,
-        sort: currentUserCollectionListDto.input.shape.sort,
-        filterOperator: currentUserCollectionListDto.input.shape.filterOperator,
-        tags: currentUserCollectionListDto.input.shape.tags,
+        filter: currentUserSnippetListDto.input.shape.filter,
+        sort: currentUserSnippetListDto.input.shape.sort,
+        filterOperator: currentUserSnippetListDto.input.shape.filterOperator,
+        tags: currentUserSnippetListDto.input.shape.tags,
     })
     .partial()
     .optional();
 
-export const Route = createFileRoute('/(protected)/dashboard/_dashboard-layout/_boundary/collections/')({
-    component: CollectionsPage,
+export const Route = createFileRoute('/(protected)/dashboard/_dashboard-layout/snippets/')({
+    component: RouteComponent,
     validateSearch: searchSchema,
     head: () => {
         return {
             meta: [
                 {
-                    title: 'All Collections',
+                    title: 'All Snippets',
                 },
             ],
         };
@@ -39,8 +40,9 @@ export const Route = createFileRoute('/(protected)/dashboard/_dashboard-layout/_
         tags,
     }),
     loader: async ({ context: { queryClient }, deps }) => {
+        if (isOfflineDashboardAvailable()) return;
         await queryClient.infiniteQuery({
-            ...listCurrentUserCollectionsQueryOptions(deps, [
+            ...listCurrentUserSnippetsQueryOptions(deps, [
                 deps.sort,
                 deps.filter,
                 deps.filterOperator,
@@ -51,18 +53,19 @@ export const Route = createFileRoute('/(protected)/dashboard/_dashboard-layout/_
     },
 });
 
-function CollectionsPage() {
+function RouteComponent() {
     return (
         <React.Fragment>
-            <CollectionsPageMainContentHeader />
+            <SnippetsPageContentHeader />
             <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
                 <React.Suspense fallback={<SectionLoader />}>
-                    <CollectionsPageStats />
+                    <SnippetsPageStats />
                 </React.Suspense>
             </ErrorBoundary>
+
             <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
                 <React.Suspense fallback={<SectionLoader />}>
-                    <CollectionsPageMainContent />
+                    <SnippetsPageMainContent />
                 </React.Suspense>
             </ErrorBoundary>
         </React.Fragment>

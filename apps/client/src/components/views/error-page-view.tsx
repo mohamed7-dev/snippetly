@@ -1,4 +1,5 @@
 import { StatusCard } from '@/components/feedback/status-card';
+import { isOfflineNetworkError } from '@/lib/api-client';
 import { Link } from '@tanstack/react-router';
 import { HomeIcon, RefreshCwIcon } from 'lucide-react';
 import { Button } from '../ui/button';
@@ -12,11 +13,16 @@ export function ErrorPageView({
     reset: () => void;
     containerProps?: React.ComponentProps<'div'>;
 }) {
+    const isOffline = isOfflineNetworkError(error);
     return (
         <StatusCard
             variant="error"
-            title="Something went wrong"
-            description="We encountered an unexpected error. This has been logged and we'll look into it."
+            title={isOffline ? 'Unavailable offline' : 'Something went wrong'}
+            description={
+                isOffline
+                    ? error.message
+                    : "We encountered an unexpected error. This has been logged and we'll look into it."
+            }
             layout="page"
             containerProps={containerProps}
             actions={

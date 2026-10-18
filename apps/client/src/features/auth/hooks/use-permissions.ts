@@ -1,4 +1,4 @@
-import type { Permission } from '@snippetly/common/dto';
+import { Permission } from '@snippetly/common/dto';
 import React from 'react';
 import { useAuth } from './use-auth';
 

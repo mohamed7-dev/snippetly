@@ -1,10 +1,9 @@
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { DeveloperIdentity } from '@/components/shared/developer-identity';
 import { Badge } from '@/components/ui/badge';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
-import { formatDeveloperInfo } from '@/lib/format-developer-info';
 import { Permission } from '@snippetly/common/dto';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
-import { Link, useNavigate, useParams } from '@tanstack/react-router';
+import { useNavigate, useParams } from '@tanstack/react-router';
 import { CalendarIcon, Code2Icon, GlobeIcon, LockIcon } from 'lucide-react';
 import { getCollectionQueryOptions } from '../../lib/query-options';
 import { CollectionActionMenu } from '../shared/collection-action-menu';
@@ -26,8 +25,6 @@ export function CollectionPageMainContent() {
 
         qClient.invalidateQueries(getCollectionQueryOptions(params.id));
     };
-
-    const { fullName, initials } = formatDeveloperInfo(collection.creator);
 
     return (
         <div className="space-y-4 mb-6">
@@ -76,20 +73,7 @@ export function CollectionPageMainContent() {
             </div>
 
             <div className="flex items-center gap-4 flex-wrap w-full">
-                <div className="flex items-center gap-2">
-                    <Link to={'/profile/$id'} params={{ id: collection.creator.id }}>
-                        <Avatar className="h-6 w-6">
-                            <AvatarImage
-                                src={collection.creator.image || '/placeholder.svg'}
-                                alt={collection.creator.firstName}
-                            />
-                            <AvatarFallback>{initials}</AvatarFallback>
-                        </Avatar>
-                    </Link>
-                    <span className="text-sm text-muted-foreground">
-                        by <span className="font-medium text-foreground">{fullName}</span>
-                    </span>
-                </div>
+                <DeveloperIdentity developerInfo={collection.creator} />
 
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                     <div className="flex items-center gap-1">

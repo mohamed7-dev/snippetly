@@ -20,7 +20,10 @@ export function CreateSnippetPageHeader({ isPending: isMutating }: { isPending: 
                 <h1 className="font-heading font-semibold text-lg">Create New Snippet</h1>
             </div>
 
-            <PermissionGuard requiredPermissions={[Permission.Authenticated, Permission.CreateSnippet]}>
+            <PermissionGuard
+                requiredPermissions={[Permission.Authenticated, Permission.CreateSnippet]}
+                isAvailableOffline
+            >
                 <LoadingButton isLoading={isPending} type="submit">
                     <SaveIcon />
                     Create Snippet

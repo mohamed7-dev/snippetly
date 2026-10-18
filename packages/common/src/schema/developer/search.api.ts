@@ -41,7 +41,7 @@ const searchSnippet = snippet
         description: true,
     })
     .extend({
-        creator: developer.pick({ id: true, firstName: true, lastName: true, image: true }),
+        creator: developer.pick({ id: true, firstName: true, lastName: true, image: true, isVerified: true }),
         collection: collection.pick({ id: true, name: true, slug: true, color: true }).nullable(),
         tags: z.array(tag.pick({ value: true })),
         score: z.number(),
@@ -50,13 +50,21 @@ const searchSnippet = snippet
 const searchCollection = collection
     .pick({ id: true, createdAt: true, name: true, slug: true, color: true, description: true })
     .extend({
-        creator: developer.pick({ id: true, firstName: true, lastName: true, image: true }),
+        creator: developer.pick({ id: true, firstName: true, lastName: true, image: true, isVerified: true }),
         tags: z.array(tag.pick({ value: true })),
         score: z.number(),
     });
 
 const searchDeveloper = developer
-    .pick({ id: true, createdAt: true, firstName: true, lastName: true, bio: true, image: true })
+    .pick({
+        id: true,
+        createdAt: true,
+        firstName: true,
+        lastName: true,
+        bio: true,
+        image: true,
+        isVerified: true,
+    })
     .extend({ score: z.number() });
 
 const searchGroup = <T extends z.ZodType>(item: T) =>

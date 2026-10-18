@@ -15,7 +15,11 @@ export function SidebarContent() {
         <div>
             <nav className="space-y-2 p-6">
                 {DASHBOARD_NAV_ITEMS.map(item => (
-                    <PermissionGuard key={item.id} requiredPermissions={item.requiredPermissions}>
+                    <PermissionGuard
+                        key={item.id}
+                        requiredPermissions={item.requiredPermissions}
+                        isAvailableOffline={true}
+                    >
                         <Link
                             to={item.href}
                             activeProps={{
@@ -42,9 +46,15 @@ export function SidebarContent() {
                         description="Start creating your first collection."
                         layout="section"
                         actions={[
-                            <Button variant={'default'} asChild>
-                                <Link to="/dashboard/collections/new">Create Collection</Link>
-                            </Button>,
+                            <PermissionGuard
+                                requiredPermissions={[Permission.Authenticated, Permission.CreateCollection]}
+                                isAvailableOffline={true}
+                            >
+                                <Button variant={'default'} asChild>
+                                    <Link to="/dashboard/collections/new">Create Collection</Link>
+                                </Button>
+                                ,
+                            </PermissionGuard>,
                         ]}
                     />
                 )}
@@ -59,6 +69,7 @@ export function SidebarContent() {
                                     Permission.ReadCollection,
                                 ]}
                                 ownerId={collection.creator.id}
+                                isAvailableOffline={true}
                             >
                                 <Link
                                     to={'/collections/$id'}

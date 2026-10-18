@@ -25,7 +25,7 @@ import { snippet } from '../shared/snippet.type.js';
 import { tag } from '../shared/tag.type.js';
 
 const snippetActionOutput = snippet.omit({ creator: true, collection: true, tags: true }).extend({
-    creator: developer.pick({ id: true, firstName: true, lastName: true, image: true }),
+    creator: developer.pick({ id: true, firstName: true, lastName: true, image: true, isVerified: true }),
     tags: z.array(tag.pick({ value: true })).nullish(),
     collection: collection.pick({ id: true, name: true, slug: true, color: true }).nullish(),
 });
@@ -133,6 +133,7 @@ const snippetItem = snippet.omit({ collection: true, tags: true, creator: true }
         firstName: true,
         lastName: true,
         image: true,
+        isVerified: true,
     }),
     tags: z.array(tag.pick({ value: true })),
     collection: collection
@@ -151,6 +152,7 @@ const snippetItem = snippet.omit({ collection: true, tags: true, creator: true }
                 firstName: true,
                 lastName: true,
                 image: true,
+                isVerified: true,
             }),
         })
         .nullish(),
@@ -246,6 +248,7 @@ const snippetListItem = snippet.omit({ collection: true, tags: true, creator: tr
         firstName: true,
         lastName: true,
         image: true,
+        isVerified: true,
     }),
     tags: z.array(tag.pick({ value: true })),
     collection: collection
@@ -264,6 +267,7 @@ const snippetListItem = snippet.omit({ collection: true, tags: true, creator: tr
                 firstName: true,
                 lastName: true,
                 image: true,
+                isVerified: true,
             }),
         })
         .nullish(),

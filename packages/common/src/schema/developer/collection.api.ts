@@ -25,7 +25,7 @@ import { tag } from '../shared/tag.type.js';
 import { disallowedCollectionOwnerForkError } from './errors.js';
 
 const collectionActionOutput = collection.omit({ creator: true, tags: true }).extend({
-    creator: developer.pick({ id: true, firstName: true, lastName: true, image: true }),
+    creator: developer.pick({ id: true, firstName: true, lastName: true, image: true, isVerified: true }),
     tags: z.array(tag.pick({ value: true })).optional(),
 });
 
@@ -125,7 +125,20 @@ const collectionItem = collection.omit({ creator: true, tags: true }).extend({
         firstName: true,
         lastName: true,
         image: true,
+        isVerified: true,
     }),
+    forkedFrom: collection
+        .pick({ id: true, name: true, slug: true, color: true })
+        .extend({
+            creator: developer.pick({
+                id: true,
+                firstName: true,
+                lastName: true,
+                image: true,
+                isVerified: true,
+            }),
+        })
+        .nullish(),
     tags: z.array(tag.pick({ value: true })),
     snippetCount: z.number().int().nonnegative(),
 });
@@ -144,6 +157,7 @@ const publicCollectionItem = collectionItem.pick({
     tags: true,
     creator: true,
     snippetCount: true,
+    forkedFrom: true,
 });
 
 const findOneCollectionOutput = withServerErrors(z.union([privateCollectionItem, publicCollectionItem]), [
@@ -211,7 +225,20 @@ const collectionListItem = collection.omit({ tags: true, creator: true }).extend
         firstName: true,
         lastName: true,
         image: true,
+        isVerified: true,
     }),
+    forkedFrom: collection
+        .pick({ id: true, name: true, slug: true, color: true })
+        .extend({
+            creator: developer.pick({
+                id: true,
+                firstName: true,
+                lastName: true,
+                image: true,
+                isVerified: true,
+            }),
+        })
+        .nullish(),
     snippetCount: z.number().int().nonnegative(),
     snippets: z.array(
         z.object({
@@ -237,6 +264,7 @@ const publicCollectionListItem = collectionListItem.pick({
     creator: true,
     snippetCount: true,
     snippets: true,
+    forkedFrom: true,
 });
 
 const collectionListOutput = withServerErrors(

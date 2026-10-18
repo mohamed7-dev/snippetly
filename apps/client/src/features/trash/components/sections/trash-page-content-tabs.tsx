@@ -8,7 +8,7 @@ import { TrashCollectionList } from '../trash-collections-list';
 import { TrashSnippetsList } from '../trash-snippets-list';
 
 export function TrashPageContentTabs() {
-    const search = useSearch({ from: '/(protected)/dashboard/_dashboard-layout/_boundary/trash/' });
+    const search = useSearch({ from: '/(protected)/dashboard/_dashboard-layout/trash/' });
     const { tab } = search ?? {};
     const navigate = useNavigate();
     return (

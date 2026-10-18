@@ -1,8 +1,8 @@
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { DeveloperIdentity } from '@/components/shared/developer-identity';
 import { Badge } from '@/components/ui/badge';
 import { formatDeveloperInfo } from '@/lib/format-developer-info';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
-import { Link, useParams } from '@tanstack/react-router';
+import { useParams } from '@tanstack/react-router';
 import { GitForkIcon, GlobeIcon, LockIcon } from 'lucide-react';
 import { getSnippetQueryOptions } from '../../lib/snippet-query-options';
 import { SnippetActionsDropdown } from '../shared/snippet-actions-dropdown';
@@ -64,17 +64,7 @@ export function SnippetPageContentHeader() {
             </div>
 
             <div className="flex items-center gap-4 flex-wrap">
-                <div className="flex items-center gap-2">
-                    <Link to="/profile/$id" params={{ id: snippet.creator.id }}>
-                        <Avatar className="h-8 w-8">
-                            <AvatarImage src={snippet.creator.image || '/placeholder.svg'} alt={initials} />
-                            <AvatarFallback>{initials}</AvatarFallback>
-                        </Avatar>
-                    </Link>
-                    <div>
-                        <p className="text-sm font-medium">{fullName}</p>
-                    </div>
-                </div>
+                <DeveloperIdentity developerInfo={snippet.creator} />
 
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                     <div className="flex items-center gap-1">

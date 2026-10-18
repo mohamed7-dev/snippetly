@@ -1,3 +1,5 @@
+import { fetchAndCacheDashboardData } from '@/features/offline-snippet/lib/offline-dashboard-cache';
+import { getOfflineOwnerId } from '@/features/offline-snippet/lib/store';
 import { developerApiClient } from '@/lib/api-client';
 import { apiEndpoints } from '@/lib/api-endpoints';
 import { createSkipPagination } from '@/lib/skip-pagination';
@@ -16,12 +18,14 @@ export const favouriteSnippetsQueryOptions = (
     const { initialSkip, getNextPageParam, take } = createSkipPagination(input.skip, input.take);
 
     return infiniteQueryOptions({
-        queryKey: ['favourites', 'snippets', ...(queryKey ?? [])],
+        queryKey: ['favourites', 'snippets', getOfflineOwnerId(), ...(queryKey ?? [])],
         queryFn: async ({ pageParam }) => {
             const searchParams = transformInputToSearchParams({ ...input, take, skip: pageParam });
-            return developerApiClient.fetch<FavouriteSnippetsListDtoType['output']>(
-                apiEndpoints.favourites.snippets.url(searchParams),
-                { method: apiEndpoints.favourites.snippets.method },
+            const url = apiEndpoints.favourites.snippets.url(searchParams);
+            return fetchAndCacheDashboardData('favourite-snippets', url, () =>
+                developerApiClient.fetch<FavouriteSnippetsListDtoType['output']>(url, {
+                    method: apiEndpoints.favourites.snippets.method,
+                }),
             );
         },
         initialPageParam: initialSkip,
@@ -36,12 +40,14 @@ export const favouriteCollectionsQueryOptions = (
     const { initialSkip, getNextPageParam, take } = createSkipPagination(input.skip, input.take);
 
     return infiniteQueryOptions({
-        queryKey: ['favourites', 'collections', ...(queryKey ?? [])],
+        queryKey: ['favourites', 'collections', getOfflineOwnerId(), ...(queryKey ?? [])],
         queryFn: async ({ pageParam }) => {
             const searchParams = transformInputToSearchParams({ ...input, take, skip: pageParam });
-            return developerApiClient.fetch<FavouriteCollectionsListDtoType['output']>(
-                apiEndpoints.favourites.collections.url(searchParams),
-                { method: apiEndpoints.favourites.collections.method },
+            const url = apiEndpoints.favourites.collections.url(searchParams);
+            return fetchAndCacheDashboardData('favourite-collections', url, () =>
+                developerApiClient.fetch<FavouriteCollectionsListDtoType['output']>(url, {
+                    method: apiEndpoints.favourites.collections.method,
+                }),
             );
         },
         initialPageParam: initialSkip,
@@ -56,13 +62,13 @@ export const favouriteDevelopersQueryOptions = (
     const { initialSkip, getNextPageParam, take } = createSkipPagination(input.skip, input.take);
 
     return infiniteQueryOptions({
-        queryKey: ['favourites', 'developers', ...(queryKey ?? [])],
+        queryKey: ['favourites', 'developers', getOfflineOwnerId(), ...(queryKey ?? [])],
         queryFn: async ({ pageParam }) => {
             const searchParams = transformInputToSearchParams({ ...input, take, skip: pageParam });
-            return developerApiClient.fetch<FavouriteDevelopersListDtoType['output']>(
-                apiEndpoints.favourites.developers.url(searchParams),
-                { method: apiEndpoints.favourites.developers.method },
-            );
+            const url = apiEndpoints.favourites.developers.url(searchParams);
+            return developerApiClient.fetch<FavouriteDevelopersListDtoType['output']>(url, {
+                method: apiEndpoints.favourites.developers.method,
+            });
         },
         initialPageParam: initialSkip,
         getNextPageParam,

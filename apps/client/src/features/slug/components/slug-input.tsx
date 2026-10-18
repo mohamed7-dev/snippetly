@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { toastApiError } from '@/lib/toast-api-error';
 import { useDebounce } from '@uidotdev/usehooks';
 import { EditIcon, LockIcon, RefreshCwIcon } from 'lucide-react';
 import React from 'react';
@@ -25,6 +26,18 @@ export interface SlugInputProps extends FormComponentProps {
     entityId?: string;
     defaultReadonly?: boolean;
     className?: string;
+}
+
+function createOfflineSlug(value: string) {
+    const base = value
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+
+    return `${base || 'untitled'}-${crypto.randomUUID().slice(0, 8)}`;
 }
 
 export function SlugInput({
@@ -60,30 +73,46 @@ export function SlugInput({
     const fieldState = form.getFieldState(watchPath);
 
     const shouldAutoGenerate = readonly && !entityId && fieldState.isDirty && !!debouncedValue;
+    const lastGeneratedFor = React.useRef<string | undefined>(undefined);
 
     const { mutateAsync: generateSlug } = useGenerateSlugForEntity();
+    const createSlug = React.useCallback(
+        async (inputValue: string) => {
+            if (!navigator.onLine) return createOfflineSlug(inputValue);
+            try {
+                return await generateSlug({
+                    entityName,
+                    fieldName,
+                    inputValue,
+                    entityId,
+                });
+            } catch (error) {
+                if (error instanceof TypeError) return createOfflineSlug(inputValue);
+                throw error;
+            }
+        },
+        [entityId, entityName, fieldName, generateSlug],
+    );
 
     React.useEffect(() => {
-        if (!shouldAutoGenerate) {
+        if (!shouldAutoGenerate || lastGeneratedFor.current === debouncedValue) {
             return;
         }
 
         let cancelled = false;
+        lastGeneratedFor.current = debouncedValue;
 
         async function run() {
             try {
                 setLoading(true);
 
-                const slug = await generateSlug({
-                    entityName,
-                    fieldName,
-                    inputValue: debouncedValue,
-                    entityId,
-                });
+                const slug = await createSlug(debouncedValue);
 
                 if (!cancelled && slug !== value) {
                     onChange?.(slug);
                 }
+            } catch (error) {
+                if (!cancelled) toastApiError(error);
             } finally {
                 if (!cancelled) {
                     setLoading(false);
@@ -91,12 +120,12 @@ export function SlugInput({
             }
         }
 
-        run();
+        void run();
 
         return () => {
             cancelled = true;
         };
-    }, [shouldAutoGenerate, debouncedValue, entityName, fieldName, entityId, value, onChange]);
+    }, [shouldAutoGenerate, debouncedValue, entityName, fieldName, entityId, value, onChange, createSlug]);
 
     async function regenerate() {
         if (!watchedValue) {
@@ -106,14 +135,11 @@ export function SlugInput({
         try {
             setLoading(true);
 
-            const slug = await generateSlug({
-                entityName,
-                fieldName,
-                inputValue: watchedValue,
-                entityId,
-            });
+            const slug = await createSlug(watchedValue);
 
             onChange?.(slug);
+        } catch (error) {
+            toastApiError(error);
         } finally {
             setLoading(false);
         }

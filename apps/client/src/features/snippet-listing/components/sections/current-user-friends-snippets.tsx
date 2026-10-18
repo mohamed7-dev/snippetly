@@ -28,7 +28,7 @@ export function CurrentUserFriendsSnippets({
 }) {
     const qClient = useQueryClient();
     const search = useSearch({
-        from: '/(protected)/dashboard/_dashboard-layout/_boundary/friends/',
+        from: '/(protected)/dashboard/_dashboard-layout/friends/',
     });
 
     const { sort, filter, filterOperator, tags } = search?.snippets ?? {};

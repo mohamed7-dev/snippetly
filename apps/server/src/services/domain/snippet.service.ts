@@ -94,9 +94,7 @@ export class SnippetService {
                 creatorLastName: 'creator.lastName',
                 collectionName: 'collection.name',
             },
-            relations: {
-                ...relations,
-            },
+            relations,
             alias: 's',
             where: {
                 ...(options?.onlySoftDeleted
@@ -262,7 +260,12 @@ export class SnippetService {
 
         // validate collection
         if (input.collectionId) {
-            const collection = await this.collectionService.findOne(ctx, { id: input.collectionId });
+            const collection = await this.collectionService.findOne(
+                ctx,
+                { id: input.collectionId },
+                undefined,
+                { includePrivateCollection: true, includeSoftDeleted: false },
+            );
             if (!collection) {
                 throw new EntityNotFoundError({ entityName: 'Collection', entityId: input.collectionId });
             }
@@ -309,7 +312,7 @@ export class SnippetService {
                 collection: true,
                 tags: true,
                 forkedFrom: {
-                    creator: true,
+                    creator: { user: true },
                 },
             },
             orderBy: {
@@ -340,7 +343,10 @@ export class SnippetService {
         snippet = Object.assign(snippet, omit(snippetInput, ['id']));
 
         if (collectionId) {
-            const collection = await this.collectionService.findOne(ctx, { id: collectionId });
+            const collection = await this.collectionService.findOne(ctx, { id: collectionId }, undefined, {
+                includePrivateCollection: true,
+                includeSoftDeleted: false,
+            });
             if (!collection) {
                 throw new EntityNotFoundError({ entityName: 'Collection', entityId: collectionId });
             }

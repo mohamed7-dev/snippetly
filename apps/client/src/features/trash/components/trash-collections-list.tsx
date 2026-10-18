@@ -13,7 +13,7 @@ import { useRestoreCollection } from '../hooks/use-restore-collection';
 
 export function TrashCollectionList() {
     const search = useSearch({
-        from: '/(protected)/dashboard/_dashboard-layout/_boundary/trash/',
+        from: '/(protected)/dashboard/_dashboard-layout/trash/',
     });
     const { sort, filter, filterOperator, tags } = search?.collections ?? {};
     const queryKeys = [sort, filter, filterOperator, tags];

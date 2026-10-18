@@ -3,6 +3,10 @@ import { PermissionGuard } from '@/features/auth/components/shared/permission-gu
 import { listCurrentUserCollectionsQueryOptions } from '@/features/collection-listing/lib/collection-listing-query-options';
 import { CollectionForm } from '@/features/collections/components/forms/collection-form';
 import { getCollectionQueryOptions } from '@/features/collections/lib/query-options';
+import {
+    getOfflineCreationOwnerId,
+    isOfflineCreationAvailable,
+} from '@/features/offline-snippet/lib/offline-creation-access';
 import { listPopularTagsQueryOptions } from '@/features/tags/lib/list-tags-query-options';
 import { UpdateCollectionPageHeader } from '@/features/update-collection/components/sections/update-collection-page-header';
 import { useUpdateCollection } from '@/features/update-collection/hooks/use-update-collection';
@@ -39,8 +43,9 @@ export const Route = createFileRoute('/(protected)/dashboard/collections/$id/edi
     },
     beforeLoad: async ({ params: { id }, context: { queryClient, auth } }) => {
         const data = await queryClient.query({ ...getCollectionQueryOptions(id), staleTime: 'static' });
-        const { user } = auth;
-        if (user?.id !== data.creator.id) {
+        const ownerId =
+            auth.user?.id ?? (isOfflineCreationAvailable() ? getOfflineCreationOwnerId() : undefined);
+        if (ownerId !== data.creator.id) {
             throw redirect({
                 to: '/profile/$id',
                 params: { id: data.creator.id },
@@ -48,7 +53,7 @@ export const Route = createFileRoute('/(protected)/dashboard/collections/$id/edi
         }
     },
     loader: async ({ context: { queryClient }, params }) => {
-        queryClient.query(listPopularTagsQueryOptions());
+        void queryClient.query(listPopularTagsQueryOptions()).catch();
         return await queryClient.query({ ...getCollectionQueryOptions(params.id), staleTime: 'static' });
     },
 });
@@ -90,6 +95,7 @@ function UpdateCollectionPage() {
                     Permission.Owner,
                 ]}
                 ownerId={data.creator.id}
+                isAvailableOffline
             >
                 <main className="container mx-auto px-2 lg:px-6 py-8 max-w-2xl">
                     <CollectionForm isPending={isPending} />
