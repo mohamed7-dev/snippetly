@@ -20,6 +20,10 @@ export class ConfigService {
         return AppConfigUtils.getConfig().auth;
     }
 
+    get pushNotificationOptions(): NonNullable<RuntimeAppConfig['system']['pushNotifications']> {
+        return AppConfigUtils.getConfig().system.pushNotifications ?? {};
+    }
+
     get defaultLanguageCode(): RuntimeAppConfig['defaultLanguageCode'] {
         return AppConfigUtils.getConfig().defaultLanguageCode;
     }

@@ -44,6 +44,7 @@ import { Logger } from '../../infra';
 import { DatabaseService } from '../../infra/database/database.service';
 import { patchEntity } from '../../infra/database/patch-entity';
 import { EventBus } from '../../infra/event-bus/event-bus.service';
+import { AppJobEvent } from '../events/app-job.event';
 import { AccountRegistrationEvent } from '../../infra/event-bus/events/account-registration.eveny';
 import { AccountVerifiedEvent } from '../../infra/event-bus/events/account-verified.event';
 import { DeveloperEvent } from '../../infra/event-bus/events/developer.event';
@@ -55,6 +56,7 @@ import { Injectable } from '../../infra/ioc-container/injectable.decorator';
 import { moduleRef } from '../../infra/ioc-container/module-ref';
 import { EmailClient } from '../helpers/email-client.service';
 import { JobQueue } from '../helpers/job-qeueue.service';
+import type { AppJob } from '../jobs/app-job';
 import { ListQueryBuilder } from '../helpers/list-query-builder/list-query-builder.service';
 import type { CollectionService } from './collection.service';
 import { FavouriteService } from './favourite.service';
@@ -62,6 +64,8 @@ import { FriendshipService } from './friendship.service';
 import type { SnippetService } from './snippet.service';
 import { TagService } from './tag.service';
 import { UserService } from './user.service';
+
+const MAX_JOB_DELAY_SECONDS = 7 * 24 * 60 * 60 - 60;
 
 @Injectable()
 export class DeveloperService implements OnApplicationBootstrap {
@@ -110,16 +114,57 @@ export class DeveloperService implements OnApplicationBootstrap {
         this.subscribeToAccountRegistrationEvent();
         this.subscribeToPasswordResetRequestedEvent();
         this.subscribeToIdentifierChangeRequestedEvent();
-        this.subscribeToAccountDeletionEvent();
+        this.registerJobHandler();
+        this.registerAccountRegistrationJobHandler();
+        this.registerAccountDeletionJobHandler();
     }
 
-    private subscribeToAccountDeletionEvent() {
-        this.eventBus.ofType(DeveloperEvent).subscribe(event => {
-            Logger.debug(`Handling event 'DeveloperEvent[#deleted]'`);
-            const scheduledDeletionAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    private registerJobHandler() {
+        this.eventBus.registerSyncHandler({
+            event: AppJobEvent,
+            id: 'developer-service-job-handler',
+            handler: async appJobEvent => {
+                const { job } = appJobEvent;
+                switch (job.type) {
+                    case 'delete-developer-account':
+                        await this.processDeveloperAccountDeletionJob(job);
+                        break;
+                    case 'send-account-welcome-email':
+                        await this.sendAccountWelcomeEmail(job, appJobEvent);
+                        break;
+                    case 'send-account-goodbye-email':
+                        await this.sendAccountGoodbyeEmail(job, appJobEvent);
+                        break;
+                }
+            },
+        });
+    }
 
-            if (event.type === 'deleted' && event.entity.user) {
-                void this.jobQueue.enqueue(
+    private registerAccountRegistrationJobHandler() {
+        this.eventBus.registerSyncHandler({
+            event: AccountRegistrationEvent,
+            id: 'developer-service-welcome-email-scheduler',
+            handler: async event => {
+                await this.jobQueue.enqueue(
+                    { type: 'send-account-welcome-email', userId: event.user.id },
+                    10,
+                );
+            },
+        });
+    }
+
+    private registerAccountDeletionJobHandler() {
+        this.eventBus.registerSyncHandler({
+            event: DeveloperEvent,
+            id: 'developer-service-account-deletion-handler',
+            handler: async event => {
+                if (event.type !== 'deleted' || !event.entity.user) return;
+
+                const scheduledDeletionAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+                await this.databaseService
+                    .getRepository(event.ctx, Developer)
+                    .update({ id: event.entity.id }, { scheduledDeletionAt });
+                await this.jobQueue.enqueue(
                     {
                         type: 'delete-developer-account',
                         userId: event.entity.user.id,
@@ -127,10 +172,87 @@ export class DeveloperService implements OnApplicationBootstrap {
                     },
                     7 * 24 * 60 * 60,
                 );
-                void this.databaseService.dataSource
-                    .getRepository(Developer)
-                    .update({ id: event.entity.id }, { scheduledDeletionAt });
-            }
+                await this.jobQueue.enqueue(
+                    { type: 'send-account-goodbye-email', userId: event.entity.user.id },
+                    10,
+                );
+            },
+        });
+    }
+
+    private async processDeveloperAccountDeletionJob(
+        job: Extract<AppJob, { type: 'delete-developer-account' }>,
+    ) {
+        const userRepo = this.databaseService.getRepository(User);
+        const user = await userRepo.findOne({
+            where: { id: job.userId },
+            withDeleted: true,
+        });
+        if (!user?.deletedAt) return;
+
+        const developerRepo = this.databaseService.getRepository(Developer);
+        const developer = await developerRepo.findOne({
+            where: { user: { id: job.userId } },
+            withDeleted: true,
+        });
+        if (!developer?.deletedAt || developer.scheduledDeletionAt?.getTime() !== job.deleteAfter) return;
+
+        const remainingSeconds = Math.ceil((job.deleteAfter - Date.now()) / 1000);
+        if (remainingSeconds > 0) {
+            await this.jobQueue.enqueue(job, Math.min(remainingSeconds, MAX_JOB_DELAY_SECONDS));
+            return;
+        }
+
+        await userRepo.delete(job.userId);
+    }
+
+    private async sendAccountWelcomeEmail(
+        job: Extract<AppJob, { type: 'send-account-welcome-email' }>,
+        event: AppJobEvent,
+    ): Promise<void> {
+        const developer = await this.databaseService.getRepository(Developer).findOne({
+            where: { user: { id: job.userId }, deletedAt: IsNull() },
+            relations: { user: true },
+        });
+        if (!developer) return;
+
+        await this.emailClient.sendEmail({
+            event,
+            to: developer.user.identifier,
+            subject: 'Welcome to Snippetly',
+            html: `<p>Hi ${this.escapeHtml(developer.firstName)},</p><p>Welcome to Snippetly! Your account is ready. Start creating and sharing code snippets with your friends.</p>`,
+        });
+    }
+
+    private async sendAccountGoodbyeEmail(
+        job: Extract<AppJob, { type: 'send-account-goodbye-email' }>,
+        event: AppJobEvent,
+    ): Promise<void> {
+        const developer = await this.databaseService.getRepository(Developer).findOne({
+            where: { user: { id: job.userId } },
+            relations: { user: true },
+            withDeleted: true,
+        });
+        if (!developer) return;
+
+        await this.emailClient.sendEmail({
+            event,
+            to: developer.user.identifier,
+            subject: 'Your Snippetly account was deleted',
+            html: `<p>Hi ${this.escapeHtml(developer.firstName)},</p><p>Your Snippetly account has been deleted. We’re sorry to see you go.</p><p>If you changed your mind, you can restore your account within 30 days by signing in again.</p>`,
+        });
+    }
+
+    private escapeHtml(value: string): string {
+        return value.replace(/[&<>"']/g, character => {
+            const entities: Record<string, string> = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;',
+            };
+            return entities[character] ?? character;
         });
     }
 

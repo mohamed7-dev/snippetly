@@ -4,6 +4,7 @@ import {
     DeletionResponse,
     FilterGroupOperator,
     FindOneSnippetDtoType,
+    FriendshipStatus,
     ForkSnippetDtoType,
     SnippetListDtoType,
     SuccessResponse,
@@ -13,24 +14,29 @@ import {
 import { omit } from '@snippetly/common/lib';
 import { Brackets, FindOptionsRelations, In, IsNull, Not } from 'typeorm';
 import { RequestContext } from '../../api/request-context/request-context';
+import { OnApplicationBootstrap } from '../../common/types/lifecycle-hooks';
 import { EntityNotFoundError } from '../../common/errors/errors';
 import { Collection } from '../../entities/collections/collection.entity';
+import { Friendship } from '../../entities/friendships/friendship.entity';
 import { Snippet } from '../../entities/snippets/snippet.entity';
 import { DatabaseService } from '../../infra/database/database.service';
 import { EventBus } from '../../infra/event-bus/event-bus.service';
 import { SnippetEvent } from '../../infra/event-bus/events/snippet.event';
 import { Injectable } from '../../infra/ioc-container/injectable.decorator';
+import { AppJobEvent } from '../events/app-job.event';
 import { ListQueryBuilder } from '../helpers/list-query-builder/list-query-builder.service';
 import { normalizeDeveloperCounts } from '../helpers/normalize-developer-counts';
+import type { AppJob } from '../jobs/app-job';
 import { SlugValidator } from '../helpers/slug-validator.service';
 import { CollectionService } from './collection.service';
 import { DeveloperService } from './developer.service';
 import { FavouriteService } from './favourite.service';
 import { FriendshipService } from './friendship.service';
+import { PushNotificationService } from './push-notification.service';
 import { TagService } from './tag.service';
 
 @Injectable()
-export class SnippetService {
+export class SnippetService implements OnApplicationBootstrap {
     constructor(
         private readonly slugValidator: SlugValidator,
         private readonly developerService: DeveloperService,
@@ -41,7 +47,60 @@ export class SnippetService {
         private readonly friendshipService: FriendshipService,
         private readonly eventBus: EventBus,
         private readonly favouriteService: FavouriteService,
+        private readonly pushNotificationService: PushNotificationService,
     ) {}
+
+    onApplicationBootstrap(): void {
+        this.eventBus.registerSyncHandler({
+            event: AppJobEvent,
+            id: 'snippet-service-job-handler',
+            handler: async ({ job }) => {
+                if (job.type === 'notify-friends-of-published-snippet') {
+                    await this.processPublishedSnippetNotificationJob(job);
+                }
+            },
+        });
+    }
+
+    private async processPublishedSnippetNotificationJob(
+        job: Extract<AppJob, { type: 'notify-friends-of-published-snippet' }>,
+    ): Promise<void> {
+        const snippet = await this.databaseService.getRepository(Snippet).findOne({
+            where: {
+                id: job.snippetId,
+                creator: { id: job.authorId },
+                isPrivate: false,
+                deletedAt: IsNull(),
+            },
+            relations: { creator: true },
+        });
+        if (!snippet) return;
+
+        const friendships = await this.databaseService.getRepository(Friendship).find({
+            where: [
+                { requester: { id: job.authorId }, status: FriendshipStatus.Accepted },
+                { addressee: { id: job.authorId }, status: FriendshipStatus.Accepted },
+            ],
+            relations: { requester: true, addressee: true },
+        });
+        const friendIds = [
+            ...new Set(
+                friendships.map(friendship =>
+                    friendship.requester.id === job.authorId
+                        ? friendship.addressee.id
+                        : friendship.requester.id,
+                ),
+            ),
+        ];
+        if (!friendIds.length) return;
+
+        await this.pushNotificationService.sendToDevelopers(friendIds, {
+            title: `${snippet.creator.firstName} ${snippet.creator.lastName}`.trim() + ' published a snippet',
+            body: snippet.name,
+            url: `/snippets/${snippet.id}`,
+            tag: `snippet-${snippet.id}`,
+        });
+    }
 
     public async attachFavouriteStatus<T extends { id: string }>(ctx: RequestContext, items: T[]) {
         const statusById = await this.favouriteService.getFavouriteStatusMap(

@@ -93,6 +93,7 @@ A modern full‑stack app to share, manage, and discover code snippets. Built wi
     - Create `server/.env` and add required keys.
     - Create `client/.env.development` and add required keys.
     - Configure `QSTASH_TOKEN`, `QSTASH_CURRENT_SIGNING_KEY`, `QSTASH_NEXT_SIGNING_KEY`, and `QSTASH_JOBS_CALLBACK_URL` for server background jobs. The callback URL must be the public HTTPS URL for `/api/v1/developer/jobs` (adjust the path if the developer API prefix is customized). Account deletion is rechecked on rolling delays and runs after 30 days; collection snippet copies are queued after a collection fork.
+    - To enable Web Push notifications, configure `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT` on the server. Generate a key pair with `pnpm --filter @snippetly/server exec web-push generate-vapid-keys`; set `VAPID_SUBJECT` to a `mailto:` address or an HTTPS URL. Run the server database migrations after deployment. Users can opt in from Dashboard → Settings; they will be notified about new public snippets published by accepted friends.
 
 - **Run API**
 

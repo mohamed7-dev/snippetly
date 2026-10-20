@@ -11,15 +11,21 @@ import { InvalidFriendshipActionError } from '../../common/errors/generated-deve
 import { Developer } from '../../entities/developer/developer.entity';
 import { Friendship } from '../../entities/friendships/friendship.entity';
 import { Snippet } from '../../entities/snippets/snippet.entity';
+import { OnApplicationBootstrap } from '../../common/types/lifecycle-hooks';
 import { DatabaseService } from '../../infra/database/database.service';
 import { EventBus } from '../../infra/event-bus/event-bus.service';
 import { FriendshipEvent } from '../../infra/event-bus/events/friendship.event';
+import { AppJobEvent } from '../events/app-job.event';
 import { Injectable } from '../../infra/ioc-container/injectable.decorator';
 import { ListQueryBuilder } from '../helpers/list-query-builder/list-query-builder.service';
+import { JobQueue } from '../helpers/job-qeueue.service';
+import type { AppJob } from '../jobs/app-job';
+import { PushNotificationService } from './push-notification.service';
 
 type FriendshipSendInput = {
     requesterId: string;
     addresseeId: string;
+    actorId: string;
 };
 
 type FriendshipActionInput = {
@@ -29,12 +35,86 @@ type FriendshipActionInput = {
 };
 
 @Injectable()
-export class FriendshipService {
+export class FriendshipService implements OnApplicationBootstrap {
     constructor(
         private readonly databaseService: DatabaseService,
         private readonly listQueryBuilder: ListQueryBuilder,
         private readonly eventBus: EventBus,
+        private readonly jobQueue: JobQueue,
+        private readonly pushNotificationService: PushNotificationService,
     ) {}
+
+    onApplicationBootstrap(): void {
+        this.eventBus.registerSyncHandler({
+            event: FriendshipEvent,
+            id: 'friendship-service-job-scheduler',
+            handler: async event => {
+                if (!isFriendshipNotificationType(event.type) || !event.input?.actorId) {
+                    return;
+                }
+
+                const job: AppJob = {
+                    type: 'notify-friendship-change',
+                    eventType: event.type,
+                    requesterId: event.input.requesterId,
+                    addresseeId: event.input.addresseeId,
+                    actorId: event.input.actorId,
+                };
+                await this.jobQueue.enqueue(job, 10);
+            },
+        });
+        this.eventBus.registerSyncHandler({
+            event: AppJobEvent,
+            id: 'friendship-service-job-handler',
+            handler: async ({ job }) => {
+                if (job.type === 'notify-friendship-change') {
+                    await this.processFriendshipNotificationJob(job);
+                }
+            },
+        });
+    }
+
+    private async processFriendshipNotificationJob(
+        job: Extract<AppJob, { type: 'notify-friendship-change' }>,
+    ): Promise<void> {
+        const recipientId =
+            job.eventType === 'sent' || job.eventType === 'cancelled'
+                ? job.addresseeId
+                : job.requesterId;
+        const actor = await this.databaseService.getRepository(Developer).findOne({
+            where: { id: job.actorId, deletedAt: IsNull() },
+        });
+        if (!actor) return;
+
+        const actorName = `${actor.firstName} ${actor.lastName}`.trim();
+        const messages = {
+            sent: {
+                title: `${actorName} sent you a friend request`,
+                body: 'Open your requests to respond.',
+                url: '/dashboard/requests',
+            },
+            accepted: {
+                title: `${actorName} accepted your friend request`,
+                body: 'You are now friends.',
+                url: '/dashboard/friends',
+            },
+            cancelled: {
+                title: `${actorName} cancelled a friend request`,
+                body: 'The request is no longer pending.',
+                url: '/dashboard/requests',
+            },
+            rejected: {
+                title: `${actorName} declined your friend request`,
+                body: 'Your friend request was declined.',
+                url: '/dashboard/friends',
+            },
+        } as const;
+        const message = messages[job.eventType];
+        await this.pushNotificationService.sendToDevelopers([recipientId], {
+            ...message,
+            tag: `friendship-${job.eventType}-${job.requesterId}-${job.addresseeId}`,
+        });
+    }
 
     public async countDeveloperFriendships(ctx: RequestContext, developerId: string) {
         const friendshipRepo = this.databaseService.getRepository(ctx, Friendship);
@@ -138,7 +218,16 @@ export class FriendshipService {
             existingFriendship.rejectedAt = null;
             existingFriendship.cancelledAt = null;
 
-            return await this.databaseService.getRepository(ctx, Friendship).save(existingFriendship);
+            const updatedFriendship = await this.databaseService
+                .getRepository(ctx, Friendship)
+                .save(existingFriendship);
+            await this.eventBus.publish(
+                new FriendshipEvent(ctx, updatedFriendship, 'sent', {
+                    ...input,
+                    actorId: input.requesterId,
+                }),
+            );
+            return updatedFriendship;
         }
 
         const friendshipSides = await this.getFriendshipSides(ctx, input);
@@ -531,4 +620,11 @@ export class FriendshipService {
             });
         }
     }
+
+}
+
+function isFriendshipNotificationType(
+    type: string,
+): type is 'sent' | 'accepted' | 'cancelled' | 'rejected' {
+    return type === 'sent' || type === 'accepted' || type === 'cancelled' || type === 'rejected';
 }

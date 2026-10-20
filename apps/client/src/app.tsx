@@ -11,6 +11,8 @@ import { PageLoader } from './components/views/page-loading-view';
 import { useAuth } from './features/auth/hooks/use-auth';
 import { AuthProvider } from './features/auth/providers/auth-provider';
 import { DeveloperSettingsProvider } from './features/developer-settings/providers/developer-settings-provider';
+import { NotificationsProvider } from './features/notifications/providers/notifications-provider';
+import { registerDefaultNotifications } from './features/notifications/lib/default-notifications';
 import { parseSearch, stringifySearch } from './lib/search-serializer';
 import { routeTree } from './routeTree.gen';
 
@@ -91,19 +93,23 @@ function InnerApp() {
 }
 
 export function App() {
+    registerDefaultNotifications();
+
     return (
         <React.Fragment>
             <TanstackQueryProvider>
-                <AuthProvider>
-                    <DeveloperSettingsProvider>
-                        <ThemeProvider defaultTheme="dark">
-                            <DeleteConfirmationProvider>
-                                <InnerApp />
-                                {createPortal(<Toaster position="top-center" />, document.body)}
-                            </DeleteConfirmationProvider>
-                        </ThemeProvider>
-                    </DeveloperSettingsProvider>
-                </AuthProvider>
+                <NotificationsProvider>
+                    <AuthProvider>
+                        <DeveloperSettingsProvider>
+                            <ThemeProvider defaultTheme="dark">
+                                <DeleteConfirmationProvider>
+                                    <InnerApp />
+                                    {createPortal(<Toaster position="top-center" />, document.body)}
+                                </DeleteConfirmationProvider>
+                            </ThemeProvider>
+                        </DeveloperSettingsProvider>
+                    </AuthProvider>
+                </NotificationsProvider>
             </TanstackQueryProvider>
 
             <React.Suspense fallback={null}>

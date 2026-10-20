@@ -15,6 +15,7 @@ export * from './developer/developer.api.js';
 export * from './developer/errors.js';
 export * from './developer/favourite.api.js';
 export * from './developer/friendship.api.js';
+export * from './developer/push-notification.api.js';
 export * from './developer/search.api.js';
 export * from './developer/slug.api.js';
 export * from './developer/snippet.api.js';

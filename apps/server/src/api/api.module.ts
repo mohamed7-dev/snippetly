@@ -13,6 +13,7 @@ import { DeveloperJobsController } from './developer/developer-jobs.controller';
 import { DeveloperSearchController } from './developer/developer-search.controller';
 import { DeveloperSlugController } from './developer/developer-slug.controller';
 import { DeveloperSnippetController } from './developer/developer-snippet.controller';
+import { DeveloperPushNotificationController } from './developer/developer-push-notification.controller';
 import { DeveloperTagController } from './developer/developer-tag.controller';
 
 @Module({
@@ -33,6 +34,7 @@ class AdminApiModule {}
     controllers: [
         DeveloperAuthController,
         DeveloperSnippetController,
+        DeveloperPushNotificationController,
         DeveloperSearchController,
         DeveloperCollectionController,
         DeveloperFriendshipController,

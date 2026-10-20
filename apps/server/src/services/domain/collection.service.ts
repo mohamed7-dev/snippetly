@@ -13,25 +13,37 @@ import { omit } from '@snippetly/common/lib';
 import { FindOptionsRelations, IsNull, Not } from 'typeorm';
 import { RequestContext } from '../../api/request-context/request-context';
 import { DisallowedCollectionOwnerForkError } from '../../common';
-import { EntityNotFoundError, ForbiddenError } from '../../common/errors/errors';
 import { OnApplicationBootstrap } from '../../common/types/lifecycle-hooks';
+import { EntityNotFoundError, ForbiddenError } from '../../common/errors/errors';
 import { Collection } from '../../entities/collections/collection.entity';
+import { Developer } from '../../entities/developer/developer.entity';
 import { Snippet } from '../../entities/snippets/snippet.entity';
 import { DatabaseService } from '../../infra/database/database.service';
 import { patchEntity } from '../../infra/database/patch-entity';
 import { EventBus } from '../../infra/event-bus/event-bus.service';
+import { AppJobEvent } from '../events/app-job.event';
 import { CollectionEvent } from '../../infra/event-bus/events/collection.event';
 import { Injectable } from '../../infra/ioc-container/injectable.decorator';
-import { AppJob, JobQueue } from '../helpers/job-qeueue.service';
+import { moduleRef } from '../../infra/ioc-container/module-ref';
+import { JobQueue } from '../helpers/job-qeueue.service';
+import type { AppJob } from '../jobs/app-job';
 import { ListQueryBuilder } from '../helpers/list-query-builder/list-query-builder.service';
 import { normalizeDeveloperCounts } from '../helpers/normalize-developer-counts';
 import { SlugValidator } from '../helpers/slug-validator.service';
 import { DeveloperService } from './developer.service';
 import { FavouriteService } from './favourite.service';
+import type { SnippetService } from './snippet.service';
 import { TagService } from './tag.service';
+
+const MAX_JOB_DELAY_SECONDS = 7 * 24 * 60 * 60 - 60;
 
 @Injectable()
 export class CollectionService implements OnApplicationBootstrap {
+    private get snippetService(): SnippetService {
+        const { SnippetService } = require('./snippet.service') as typeof import('./snippet.service');
+        return moduleRef.getProvider<SnippetService>(SnippetService);
+    }
+
     constructor(
         private readonly databaseService: DatabaseService,
         private readonly listQueryBuilder: ListQueryBuilder,
@@ -57,6 +69,15 @@ export class CollectionService implements OnApplicationBootstrap {
 
     /**@internal */
     onApplicationBootstrap(): void {
+        this.eventBus.registerSyncHandler({
+            event: AppJobEvent,
+            id: 'collection-service-job-handler',
+            handler: async ({ job }) => {
+                if (job.type === 'copy-collection-snippets') {
+                    await this.processCollectionSnippetCopyJob(job);
+                }
+            },
+        });
         this.eventBus.ofType(CollectionEvent).subscribe(e => {
             if (e.type === 'forked' && e.entity.forkedFrom) {
                 const job: AppJob = {
@@ -68,6 +89,73 @@ export class CollectionService implements OnApplicationBootstrap {
                 void this.jobQueue.enqueue(job, 10);
             }
         });
+    }
+
+    private async processCollectionSnippetCopyJob(
+        job: Extract<AppJob, { type: 'copy-collection-snippets' }>,
+    ) {
+        const developer = await this.databaseService.getRepository(Developer).findOne({
+            where: { id: job.developerId },
+            relations: { user: true },
+        });
+        if (!developer) return;
+
+        const collectionRepo = this.databaseService.getRepository(Collection);
+        const [sourceCollection, targetCollection] = await Promise.all([
+            collectionRepo.findOne({ where: { id: job.sourceCollectionId } }),
+            collectionRepo.findOne({
+                where: { id: job.targetCollectionId, creator: { id: job.developerId } },
+            }),
+        ]);
+        if (!sourceCollection || !targetCollection) return;
+
+        const snippetRepo = this.databaseService.getRepository(Snippet);
+        const sources = await snippetRepo.find({
+            where: {
+                collection: { id: sourceCollection.id },
+                deletedAt: IsNull(),
+                isPrivate: false,
+                allowForking: true,
+            },
+            order: { createdAt: 'ASC' },
+        });
+
+        const now = Date.now();
+        const context = new RequestContext({
+            apiType: 'developer',
+            isAuthorized: true,
+            isAuthorizedAsOwnerOnly: false,
+            session: {
+                token: 'collection-copy-job',
+                id: 'collection-copy-job',
+                user: {
+                    id: developer.user.id,
+                    identifier: developer.user.identifier,
+                    isVerified: developer.user.isVerified,
+                    permissions: [],
+                },
+                sessionExpiry: new Date(now + MAX_JOB_DELAY_SECONDS * 1000),
+                cacheExpiry: now + MAX_JOB_DELAY_SECONDS * 1000,
+            },
+        });
+
+        for (const source of sources) {
+            const alreadyCopied = await snippetRepo.findOne({
+                where: {
+                    forkedFrom: { id: source.id },
+                    collection: { id: targetCollection.id },
+                    creator: { id: developer.id },
+                    deletedAt: IsNull(),
+                },
+                select: { id: true },
+            });
+            if (alreadyCopied) continue;
+
+            await this.snippetService.fork(context, {
+                id: source.id,
+                collectionId: targetCollection.id,
+            });
+        }
     }
 
     public async findOne(

@@ -63,6 +63,7 @@ export class DeveloperFriendshipController implements AppRouter {
                         {
                             requesterId: developer.id,
                             addresseeId: req.params.friendId,
+                            actorId: developer.id,
                         },
                     );
 

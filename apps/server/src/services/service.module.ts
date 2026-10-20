@@ -10,10 +10,10 @@ import { CollectionService } from './domain/collection.service';
 import { DeveloperService } from './domain/developer.service';
 import { FavouriteService } from './domain/favourite.service';
 import { FriendshipService } from './domain/friendship.service';
-import { JobRunner } from './domain/job-runner.service';
 import { RoleService } from './domain/role.service';
 import { SessionService } from './domain/session.service';
 import { SnippetService } from './domain/snippet.service';
+import { PushNotificationService } from './domain/push-notification.service';
 import { TagService } from './domain/tag.service';
 import { UserService } from './domain/user.service';
 import { DefaultRolesBuilder } from './helpers/default-roles-builder.service';
@@ -54,12 +54,12 @@ const services = [
     AdministratorService,
     DeveloperService,
     SnippetService,
+    PushNotificationService,
     SearchService,
     CollectionService,
     TagService,
     FriendshipService,
     FavouriteService,
-    JobRunner,
 ];
 
 @Module({
@@ -73,6 +73,8 @@ export class ServiceModule implements OnApplicationBootstrap {
         private readonly configService: ConfigService,
         private readonly developerService: DeveloperService,
         private readonly collectionService: CollectionService,
+        private readonly snippetService: SnippetService,
+        private readonly friendshipService: FriendshipService,
     ) {}
 
     async onApplicationBootstrap(): Promise<void> {
@@ -81,5 +83,7 @@ export class ServiceModule implements OnApplicationBootstrap {
         }
         this.developerService.onApplicationBootstrap();
         this.collectionService.onApplicationBootstrap();
+        this.snippetService.onApplicationBootstrap();
+        this.friendshipService.onApplicationBootstrap();
     }
 }

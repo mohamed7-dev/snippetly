@@ -1,22 +1,23 @@
 import { InstallAppButton } from '@/components/inputs/install-app-button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { DownloadIcon, WifiOffIcon, ZapIcon } from 'lucide-react';
+import { PushNotificationSettings } from '@/features/push-notifications/components/push-notification-settings';
 import { createFileRoute } from '@tanstack/react-router';
+import { DownloadIcon, WifiOffIcon, ZapIcon } from 'lucide-react';
 
 export const Route = createFileRoute('/(protected)/dashboard/settings/')({
-    component: InstallSettingsPage,
+    component: GeneralSettingsPage,
     head: () => {
         return {
             meta: [
                 {
-                    title: 'Install Snippetly',
+                    title: 'General Settings',
                 },
             ],
         };
     },
 });
 
-function InstallSettingsPage() {
+function GeneralSettingsPage() {
     return (
         <div className="flex flex-col gap-6">
             <div>
@@ -38,8 +39,8 @@ function InstallSettingsPage() {
                         <li className="flex items-start gap-3">
                             <WifiOffIcon className="mt-0.5 size-5 shrink-0 text-primary" />
                             <span>
-                                The app shell and its resources are cached, so Snippetly can open
-                                when you do not have an internet connection.
+                                The app shell and its resources are cached, so Snippetly can open when you do
+                                not have an internet connection.
                             </span>
                         </li>
                         <li className="flex items-start gap-3">
@@ -48,20 +49,18 @@ function InstallSettingsPage() {
                         </li>
                         <li className="flex items-start gap-3">
                             <ZapIcon className="mt-0.5 size-5 shrink-0 text-primary" />
-                            <span>
-                                Open the familiar Snippetly experience in its own app window.
-                            </span>
+                            <span>Open the familiar Snippetly experience in its own app window.</span>
                         </li>
                     </ul>
                     <p className="text-sm text-muted-foreground">
-                        Features that need your account or the server still require an internet
-                        connection.
+                        Features that need your account or the server still require an internet connection.
                     </p>
                     <div>
                         <InstallAppButton />
                     </div>
                 </CardContent>
             </Card>
+            <PushNotificationSettings />
         </div>
     );
 }

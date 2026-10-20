@@ -41,6 +41,44 @@ self.addEventListener('activate', event => {
     event.waitUntil(self.clients.claim());
 });
 
+self.addEventListener('push', event => {
+    let payload: { title?: string; body?: string; url?: string; tag?: string } = {};
+    try {
+        payload = event.data?.json() ?? {};
+    } catch {
+        payload = {};
+    }
+
+    event.waitUntil(
+        self.registration.showNotification(payload.title || 'Snippetly', {
+            body: payload.body || 'There is something new to explore.',
+            icon: '/web-app-manifest-192x192.png',
+            badge: '/web-app-manifest-192x192.png',
+            tag: payload.tag,
+            data: { url: payload.url || '/' },
+        }),
+    );
+});
+
+self.addEventListener('notificationclick', event => {
+    event.notification.close();
+    const destination = new URL(
+        typeof event.notification.data?.url === 'string' ? event.notification.data.url : '/',
+        self.location.origin,
+    );
+    const url = destination.origin === self.location.origin ? destination.href : self.location.origin;
+
+    event.waitUntil(
+        self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
+            const existingClient = clients.find(client => client.url.startsWith(self.location.origin));
+            if (existingClient) {
+                return existingClient.navigate(url).then(client => client?.focus());
+            }
+            return self.clients.openWindow(url);
+        }),
+    );
+});
+
 async function syncOfflineCreations() {
     const ownerIds = await listPendingOfflineCreationOwnerIds();
     for (const ownerId of ownerIds) {

@@ -11,6 +11,7 @@ import { Friendship } from './friendships/friendship.entity';
 import { Role } from './role/role.entity';
 import { Session } from './session/session.entity';
 import { Snippet } from './snippets/snippet.entity';
+import { PushSubscription } from './push-notifications/push-subscription.entity';
 import { Tag } from './tags/tag.entity';
 import { User } from './users/user.entity';
 
@@ -26,6 +27,7 @@ export const entitiesMap = {
     Favourite,
     Collection,
     Snippet,
+    PushSubscription,
     Tag,
     Administrator,
 };

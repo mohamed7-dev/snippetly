@@ -261,6 +261,21 @@ export const apiEndpoints = {
             contentType: null,
         },
     },
+    pushNotifications: {
+        publicKey: {
+            url: 'push-notifications/public-key',
+            method: 'GET',
+            contentType: null,
+        },
+        subscribe: {
+            url: 'push-notifications/subscriptions',
+            method: 'POST',
+        },
+        unsubscribe: {
+            url: 'push-notifications/subscriptions',
+            method: 'DELETE',
+        },
+    },
     favourites: {
         add: {
             url: (resourceType: string, id: string) => `favourites/${resourceType}/${id}`,

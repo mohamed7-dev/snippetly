@@ -9,6 +9,7 @@ import { HeaderWrapper } from '../header-wrapper';
 import { Logo } from '../logo';
 import { HeaderUserMenu } from './header-user-menu';
 import { MobileSidebar } from './mobile-sidebar';
+import { NotificationsCenter } from '@/features/notifications/components/notifications-center';
 
 export function DashBoardHeader() {
     return (
@@ -37,6 +38,7 @@ export function DashBoardHeader() {
                         </Link>
                     </Button>
                 </PermissionGuard>
+                <NotificationsCenter />
                 <HeaderUserMenu />
             </div>
         </HeaderWrapper>

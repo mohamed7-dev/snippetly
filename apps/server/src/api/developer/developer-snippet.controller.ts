@@ -21,6 +21,7 @@ import { Controller } from '../../infra/ioc-container/controller.decorator';
 import { CollectionService } from '../../services/domain/collection.service';
 import { DeveloperService } from '../../services/domain/developer.service';
 import { SnippetService } from '../../services/domain/snippet.service';
+import { JobQueue } from '../../services/helpers/job-qeueue.service';
 import { authGuard } from '../middlewares/auth.guard';
 import { defineRoutePipeline } from '../middlewares/define-router-pipeline.mw';
 import { transactionInterceptor } from '../middlewares/transaction.interceptor';
@@ -35,6 +36,7 @@ export class DeveloperSnippetController implements AppRouter {
         private readonly snippetService: SnippetService,
         private readonly developerService: DeveloperService,
         private readonly collectionService: CollectionService,
+        private readonly jobQueue: JobQueue,
     ) {}
 
     snippetWriteLimiter = rateLimit({
@@ -64,6 +66,16 @@ export class DeveloperSnippetController implements AppRouter {
                 interceptors: [transactionInterceptor()],
                 handler: async (req, res) => {
                     const result = await this.snippetService.create(req.getRequestContext(), req.body);
+                    if (result.isPrivate !== true && result.creator) {
+                        await this.jobQueue.enqueue(
+                            {
+                                type: 'notify-friends-of-published-snippet',
+                                authorId: result.creator.id,
+                                snippetId: result.id,
+                            },
+                            10,
+                        );
+                    }
                     res.status(200).json(result);
                 },
             }),

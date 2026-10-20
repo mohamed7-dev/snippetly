@@ -32,6 +32,11 @@ export type DatabaseConfigOptions = DataSourceOptions;
 
 export interface SystemConfigOptions {
     shouldRunInitialization?: boolean;
+    pushNotifications?: {
+        publicKey?: string;
+        privateKey?: string;
+        subject?: string;
+    };
     email?: {
         emailTransporterStrategy?: EmailTransporterStrategy;
         accountVerificationCallbackUrl?: string;

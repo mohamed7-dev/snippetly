@@ -1,9 +1,9 @@
 import { Permission } from '@snippetly/common/dto';
 import {
+    AppWindowIcon,
     BellIcon,
     BookOpenIcon,
     CodeIcon,
-    DownloadIcon,
     HeartIcon,
     LayoutDashboardIcon,
     PaletteIcon,
@@ -16,11 +16,11 @@ import {
 
 export const SETTINGS_NAV_ITEMS = [
     {
-        id: 'installation',
-        title: 'Install app',
+        id: 'general',
+        title: 'General',
         href: '/dashboard/settings/',
-        icon: DownloadIcon,
-        description: 'Offline access and app installation',
+        icon: AppWindowIcon,
+        description: 'General application settings',
         requiredPermissions: [Permission.Authenticated],
     },
     {

@@ -60,7 +60,7 @@ export class EventBus implements OnApplicationShutdown {
      * @description
      * Registers blocking event handler
      */
-    public register<Event extends AppEvent>(options: BlockingHandlerOptions<Event>): void {
+    public registerSyncHandler<Event extends AppEvent>(options: BlockingHandlerOptions<Event>): void {
         const events = Array.isArray(options.event) ? options.event : [options.event];
 
         for (const event of events) {
