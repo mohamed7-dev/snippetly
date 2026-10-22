@@ -11,11 +11,11 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/hooks/use-auth';
-import { useLiveQuery } from 'dexie-react-hooks';
+import { getOfflineOwnerId, listOfflineCollectionOptions } from '@/features/offline-snippet/lib/store';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { PlusIcon } from 'lucide-react';
-import { getOfflineOwnerId, listOfflineCollectionOptions } from '@/features/offline-snippet/lib/store';
 import { listCurrentUserCollectionsQueryOptions } from '../../lib/collection-listing-query-options';
 import { CollectionItem } from './collection-item';
 
@@ -24,12 +24,14 @@ export type CurrentUserCollectionsOverlayProps = {
     onOpenChange?: (open: boolean) => void;
     isOpen: boolean;
     selectedCollectionId?: string;
+    createCollectionRedirect?: string;
 };
 export function CurrentUserCollectionsOverlay({
     onSelect,
     onOpenChange,
     isOpen,
     selectedCollectionId,
+    createCollectionRedirect,
 }: CurrentUserCollectionsOverlayProps) {
     const { user } = useAuth();
     const ownerId = user?.id ?? getOfflineOwnerId();
@@ -94,7 +96,12 @@ export function CurrentUserCollectionsOverlay({
                                     layout="section"
                                     actions={
                                         <Button asChild>
-                                            <Link to={'/dashboard/collections/new'}>
+                                            <Link
+                                                to="/dashboard/collections/new"
+                                                search={{
+                                                    redirect: createCollectionRedirect ?? location.href,
+                                                }}
+                                            >
                                                 <PlusIcon className="h-4 w-4 mr-2" />
                                                 Create Collection
                                             </Link>
@@ -106,7 +113,10 @@ export function CurrentUserCollectionsOverlay({
                     />
                 </div>
                 <Button size={'lg'} asChild>
-                    <Link to="/dashboard/collections/new" search={{ redirect: location.href }}>
+                    <Link
+                        to="/dashboard/collections/new"
+                        search={{ redirect: createCollectionRedirect ?? location.href }}
+                    >
                         <PlusIcon />
                         <span>Add New Collection</span>
                     </Link>

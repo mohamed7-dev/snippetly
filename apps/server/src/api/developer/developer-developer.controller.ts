@@ -1,9 +1,10 @@
 import {
-    activeDeveloperAccountStatsDto,
+    activeDeveloperAccountActivityDto,
     activeDeveloperDto,
     deleteDeveloperAccountDto,
     developerListDto,
     findOneDeveloperDto,
+    FriendshipStatus,
     Permission,
     updateDeveloperAccountDto,
 } from '@snippetly/common/dto';
@@ -53,25 +54,62 @@ export class DeveloperDeveloperController implements AppRouter {
                 query: developerListDto.input,
                 response: developerListDto.output,
                 handler: async (req, res) => {
-                    let result = await this.developerService.find(
-                        req.getRequestContext(),
+                    const ctx = req.getRequestContext();
+                    const activeDeveloper = await this.developerService.getActiveDeveloper(ctx);
+
+                    const result = await this.developerService.find(
+                        ctx,
                         req.query,
-                        undefined,
-                        { includePrivateDevelopers: false, includeSoftDeleted: false },
+                        activeDeveloper,
+                        { addedTags: true },
+                        {
+                            includePrivateDevelopers: false,
+                            includeSoftDeleted: false,
+                        },
                     );
 
-                    result = await this.developerService.attachStatsToDevelopersList(
-                        req.getRequestContext(),
-                        result.items,
-                        result.itemsCount,
-                        { includePrivateCollections: false, includePrivateSnippets: false },
-                    );
-                    result.items = await this.developerService.attachFavouriteStatus(
-                        req.getRequestContext(),
-                        result.items,
-                    );
+                    const [
+                        developersWithFriendshipInfo,
+                        developersWithActivityStats,
+                        developersWithTags,
+                        developersWithFavouriteStatus,
+                    ] = await Promise.all([
+                        this.developerService.attachFriendshipInfoToDevelopersList(
+                            ctx,
+                            result.items,
+                            activeDeveloper,
+                        ),
+                        this.developerService.attachActivityStatsToDevelopersList(ctx, result.items, {
+                            includePrivateCollections: false,
+                            includePrivateSnippets: false,
+                        }),
+                        this.developerService.attachTagsInfoToDevelopersList(ctx, result.items),
+                        this.developerService.attachFavouriteStatusToDevelopersList(
+                            ctx,
+                            result.items,
+                            activeDeveloper,
+                        ),
+                    ]);
 
-                    res.status(200).json(result);
+                    const finalResultItems = result.items.map((item, index) => ({
+                        ...item,
+                        activity: {
+                            snippetsCount: developersWithActivityStats[index].activityStats.snippetsCount,
+                            collectionsCount:
+                                developersWithActivityStats[index].activityStats.collectionsCount,
+                            tags: developersWithTags[index].tags,
+                        },
+                        relationshipWithCurrentUser: {
+                            friendshipInfo: developersWithFriendshipInfo[index].friendshipInfo,
+                            isFavouritedByCurrentUser:
+                                developersWithFavouriteStatus[index].isFavouritedByCurrentUser,
+                        },
+                    }));
+
+                    res.status(200).json({
+                        ...result,
+                        items: finalResultItems,
+                    });
                 },
             }),
         );
@@ -100,15 +138,11 @@ export class DeveloperDeveloperController implements AppRouter {
                             },
                             {
                                 includeSoftDeleted: false,
-                                includePrivateDevelopers: false,
+                                includePrivateDevelopers: true,
                             },
                         );
                         if (developer) {
-                            const [developerWithFavouriteStatus] =
-                                await this.developerService.attachFavouriteStatus(req.getRequestContext(), [
-                                    developer,
-                                ]);
-                            res.status(200).json(developerWithFavouriteStatus);
+                            res.status(200).json(developer);
                         } else {
                             res.status(200).json(null);
                         }
@@ -120,7 +154,7 @@ export class DeveloperDeveloperController implements AppRouter {
         );
 
         router.get(
-            '/me/stats',
+            '/me/activity',
             ...defineRoutePipeline({
                 before: [
                     this.developerReadLimiter,
@@ -128,12 +162,13 @@ export class DeveloperDeveloperController implements AppRouter {
                         permissions: [Permission.Owner],
                     }),
                 ],
-                response: activeDeveloperAccountStatsDto.output,
+                response: activeDeveloperAccountActivityDto.output,
                 handler: async (req, res) => {
-                    const userId = req.getRequestContext().activeUserId;
+                    const ctx = req.getRequestContext();
+                    const userId = ctx.activeUserId;
                     if (userId) {
                         const developer = await this.developerService.getOneByUserId(
-                            req.getRequestContext(),
+                            ctx,
                             userId,
                             {
                                 user: {
@@ -147,12 +182,12 @@ export class DeveloperDeveloperController implements AppRouter {
                             },
                         );
                         if (developer) {
-                            const stats = await this.developerService.getProfileActivityStats(
-                                req.getRequestContext(),
+                            const stats = await this.developerService.getDeveloperActivityStats(
+                                ctx,
                                 developer.id,
                                 { includePrivate: true, includeSoftDeleted: false },
                             );
-                            res.status(200).json({ ...stats, id: developer.id });
+                            res.status(200).json({ stats });
                         } else {
                             res.status(200).json(null);
                         }
@@ -171,6 +206,7 @@ export class DeveloperDeveloperController implements AppRouter {
                 response: findOneDeveloperDto.output,
                 handler: async (req, res) => {
                     const ctx = req.getRequestContext();
+
                     const result = await this.developerService.findOne(
                         ctx,
                         req.params,
@@ -180,7 +216,7 @@ export class DeveloperDeveloperController implements AppRouter {
                         { includePrivateDevelopers: true, includeSoftDeleted: false },
                     );
 
-                    const isOwner = ctx.activeUserId === result?.user.id ? true : false;
+                    const isOwner = !!ctx.activeUserId && ctx.activeUserId === result?.user?.id;
 
                     if (!result || (!isOwner && result?.isPrivate)) {
                         throw new EntityNotFoundError({ entityName: 'Developer', entityId: req.params.id });
@@ -189,37 +225,70 @@ export class DeveloperDeveloperController implements AppRouter {
                     const currentDeveloper = ctx.activeUserId
                         ? isOwner
                             ? result
-                            : await this.developerService.getOneByUserId(ctx, ctx.activeUserId)
+                            : await this.developerService.getActiveDeveloper(ctx)
                         : undefined;
-                    const profileInfo = await this.friendshipService.getDeveloperProfileInfo(
+
+                    const friendshipInfo: {
+                        isFriendWithCurrentUser: boolean;
+                        friendshipStatus: FriendshipStatus | null;
+                    } = {
+                        friendshipStatus: null,
+                        isFriendWithCurrentUser: false,
+                    };
+
+                    if (currentDeveloper) {
+                        const friendshipInfoWithCurrentUserMap =
+                            await this.friendshipService.getFriendshipInfoWithActiveDeveloper(
+                                ctx,
+                                currentDeveloper.id,
+                                [result.id],
+                            );
+                        const friendshipInfoWithCurrentUser = friendshipInfoWithCurrentUserMap.get(result.id);
+                        friendshipInfo.friendshipStatus =
+                            friendshipInfoWithCurrentUser?.friendshipStatus ?? null;
+                        friendshipInfo.isFriendWithCurrentUser =
+                            friendshipInfoWithCurrentUser?.isFriendWithCurrentUser ?? false;
+                    }
+
+                    const developerActivityStats = await this.developerService.getDeveloperActivityStats(
                         ctx,
                         result.id,
-                        currentDeveloper?.id,
+                        {
+                            includePrivate: isOwner,
+                            includeSoftDeleted: false,
+                        },
                     );
-                    const profileStats = await this.developerService.getProfileActivityStats(ctx, result.id, {
-                        includePrivate: isOwner,
-                        includeSoftDeleted: false,
-                    });
 
-                    const profile = isOwner
+                    const [developerWithFavouriteStatus] =
+                        await this.developerService.attachFavouriteStatusToDevelopersList(
+                            ctx,
+                            [result],
+                            currentDeveloper,
+                        );
+
+                    const safeDeveloper = isOwner
                         ? result
                         : {
                               ...omit(result, ['isPrivate', 'updatedAt', 'deletedAt', 'user']),
                               isVerified: result.isVerified,
                           };
 
-                    const profileWithStats = {
-                        ...profile,
+                    const finalResult = {
+                        ...safeDeveloper,
                         isVerified: result.isVerified,
-                        ...profileInfo,
-                        stats: { ...profileStats, friendsCount: profileInfo.friendCount },
+                        activity: {
+                            stats: developerActivityStats,
+                        },
+                        relationshipWithCurrentUser: {
+                            isFavouritedByCurrentUser: developerWithFavouriteStatus.isFavouritedByCurrentUser,
+                            friendshipInfo: {
+                                isCurrentUserAFriend: friendshipInfo.isFriendWithCurrentUser,
+                                friendshipStatus: friendshipInfo.friendshipStatus,
+                            },
+                        },
                     };
-                    const [profileWithFavouriteStatus] = await this.developerService.attachFavouriteStatus(
-                        ctx,
-                        [profileWithStats],
-                    );
 
-                    res.status(200).json(profileWithFavouriteStatus);
+                    res.status(200).json(finalResult);
                 },
             }),
         );
@@ -236,8 +305,9 @@ export class DeveloperDeveloperController implements AppRouter {
                 body: updateDeveloperAccountDto.input,
                 response: updateDeveloperAccountDto.output,
                 handler: async (req, res) => {
-                    const developer = await this.requireDeveloperForCurrentUser(req.getRequestContext());
-                    const result = await this.developerService.update(req.getRequestContext(), {
+                    const ctx = req.getRequestContext();
+                    const developer = await this.requireDeveloperForCurrentUser(ctx);
+                    const result = await this.developerService.update(ctx, {
                         ...req.body,
                         id: developer.id,
                     });
@@ -258,11 +328,9 @@ export class DeveloperDeveloperController implements AppRouter {
                 ],
                 response: deleteDeveloperAccountDto.output,
                 handler: async (req, res) => {
-                    const developer = await this.requireDeveloperForCurrentUser(req.getRequestContext());
-                    const result = await this.developerService.softDelete(
-                        req.getRequestContext(),
-                        developer.id,
-                    );
+                    const ctx = req.getRequestContext();
+                    const developer = await this.requireDeveloperForCurrentUser(ctx);
+                    const result = await this.developerService.softDelete(ctx, developer.id);
 
                     return res.status(200).json(result);
                 },

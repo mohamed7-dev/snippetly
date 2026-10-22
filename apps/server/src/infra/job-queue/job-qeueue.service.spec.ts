@@ -2,10 +2,10 @@ import 'reflect-metadata';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ConfigService } from '../../config/config.service';
 import { StdoutLoggerStrategy } from '../../config/system/logger/stdout-logger.strategy';
-import { EventBus } from '../../infra/event-bus/event-bus.service';
-import { Logger } from '../../infra/logger/logger';
-import { AppJobEvent } from '../events/app-job.event';
-import { AppJob } from '../jobs/app-job';
+import { AppJobEvent } from '../../services/events/app-job.event';
+import { AppJob } from '../../services/jobs/app-job';
+import { EventBus } from '../event-bus/event-bus.service';
+import { Logger } from '../logger/logger';
 import { JobQueue } from './job-qeueue.service';
 
 describe('JobQueue', () => {

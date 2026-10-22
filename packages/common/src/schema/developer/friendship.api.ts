@@ -104,18 +104,24 @@ const currentUserFriendsListInput = createPaginatedListInputSchema(filterSchema,
     .partial();
 
 const currentUserFriendParticipant = friendshipParticipant.extend({
-    isFavouritedByCurrentUser: z.boolean(),
-    snippetsCount: z.number().int().nonnegative().optional(),
-    recentSnippets: z
-        .array(
-            z.object({
-                id: idSchema,
-                name: z.string(),
-                slug: z.string(),
-                language: z.string(),
-            }),
-        )
-        .optional(),
+    relationshipWithCurrentUser: z.object({
+        isFavouritedByCurrentUser: z.boolean(),
+    }),
+    activity: z.object({
+        recentSnippets: z
+            .array(
+                z.object({
+                    id: idSchema,
+                    name: z.string(),
+                    slug: z.string(),
+                    language: z.string(),
+                }),
+            )
+            .optional(),
+        stats: z.object({
+            snippetsCount: z.number().int().nonnegative().optional(),
+        }),
+    }),
 });
 
 const currentUserFriendshipItem = friendshipItem.extend({
@@ -137,7 +143,9 @@ export type CurrentUserFriendsListDtoType = InferDtoType<typeof currentUserFrien
 
 // ############################## Inbox #############################
 const currentUserRequestParticipant = friendshipParticipant.extend({
-    isFavouritedByCurrentUser: z.boolean(),
+    relationshipWithCurrentUser: z.object({
+        isFavouritedByCurrentUser: z.boolean(),
+    }),
 });
 
 const currentUserRequestItem = friendshipItem.extend({

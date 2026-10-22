@@ -9,16 +9,16 @@ import {
     sendFriendshipRequestDto,
 } from '@snippetly/common/dto';
 import { Router } from 'express';
-import rateLimit from 'express-rate-limit';
 import { isApiError } from '../../common/errors/api-error';
+import { defineRateLimiter } from '../../common/helpers/define-rate-limiter';
 import { AppRouter } from '../../common/types/app-router.interface';
+import { ConfigService } from '../../config/config.service';
 import { Controller } from '../../infra/ioc-container/controller.decorator';
 import { DeveloperService } from '../../services/domain/developer.service';
 import { FriendshipService } from '../../services/domain/friendship.service';
 import { authGuard } from '../middlewares/auth.guard';
 import { defineRoutePipeline } from '../middlewares/define-router-pipeline.mw';
 import { transactionInterceptor } from '../middlewares/transaction.interceptor';
-import { RequestContext } from '../request-context/request-context';
 
 @Controller({
     path: 'friendships',
@@ -28,21 +28,24 @@ export class DeveloperFriendshipController implements AppRouter {
     constructor(
         private readonly friendshipService: FriendshipService,
         private readonly developerService: DeveloperService,
+        private readonly configService: ConfigService,
     ) {}
 
-    friendshipWriteLimiter = rateLimit({
-        windowMs: 15 * 60 * 1000,
-        max: 50,
-        standardHeaders: true,
-        legacyHeaders: false,
-    });
+    friendshipWriteLimiter = defineRateLimiter(
+        {
+            windowMs: 15 * 60 * 1000,
+            max: 50,
+        },
+        this.configService.apiOptions,
+    );
 
-    friendshipReadLimiter = rateLimit({
-        windowMs: 60 * 1000,
-        max: 120,
-        standardHeaders: true,
-        legacyHeaders: false,
-    });
+    friendshipReadLimiter = defineRateLimiter(
+        {
+            windowMs: 60 * 1000,
+            max: 120,
+        },
+        this.configService.apiOptions,
+    );
 
     initRoutes(router: Router): Router {
         router.post(
@@ -176,29 +179,63 @@ export class DeveloperFriendshipController implements AppRouter {
                 query: currentUserFriendsListDto.input,
                 response: currentUserFriendsListDto.output,
                 handler: async (req, res) => {
-                    const developer = await this.developerService.getActiveDeveloper(
-                        req.getRequestContext(),
-                        true,
-                    );
+                    const ctx = req.getRequestContext();
+                    const developer = await this.developerService.getActiveDeveloper(ctx, true);
 
-                    let result = await this.friendshipService.getUserFriends(
-                        req.getRequestContext(),
-                        developer.id,
-                        req.query,
-                    );
+                    const result = await this.friendshipService.getUserFriends(ctx, developer.id, req.query);
 
-                    if (result.items.length > 0) {
-                        result = await this.friendshipService.enrichFriends(
-                            req.getRequestContext(),
+                    const friendshipsWithRecentSnippets =
+                        await this.friendshipService.attachRecentSnippetsToFriendships(
+                            ctx,
+                            developer,
                             result.items,
-                            result.itemsCount,
-                            developer.id,
                         );
-                    }
 
-                    res.status(200).json(
-                        await this.attachFavouriteStatusToParticipants(req.getRequestContext(), result),
-                    );
+                    const friendshipsWithFavouriteStatus =
+                        await this.friendshipService.attachFavouriteStatusToParticipants(ctx, result.items);
+
+                    const finalResult = {
+                        ...result,
+                        items: result.items.map((item, index) => ({
+                            ...item,
+                            requester: {
+                                ...item.requester,
+                                isVerified: item.requester.isVerified,
+                                relationshipWithCurrentUser: {
+                                    isFavouritedByCurrentUser:
+                                        friendshipsWithFavouriteStatus[index].requester
+                                            .isFavouritedByCurrentUser,
+                                },
+                                activity: {
+                                    stats: {
+                                        snippetsCount:
+                                            friendshipsWithRecentSnippets[index].requester.snippetsCount,
+                                    },
+                                    recentSnippets:
+                                        friendshipsWithRecentSnippets[index].requester.recentSnippets,
+                                },
+                            },
+                            addressee: {
+                                ...item.addressee,
+                                isVerified: item.addressee.isVerified,
+                                relationshipWithCurrentUser: {
+                                    isFavouritedByCurrentUser:
+                                        friendshipsWithFavouriteStatus[index].addressee
+                                            .isFavouritedByCurrentUser,
+                                },
+                                activity: {
+                                    stats: {
+                                        snippetsCount:
+                                            friendshipsWithRecentSnippets[index].addressee.snippetsCount,
+                                    },
+                                    recentSnippets:
+                                        friendshipsWithRecentSnippets[index].addressee.recentSnippets,
+                                },
+                            },
+                        })),
+                    };
+
+                    res.status(200).json(finalResult);
                 },
             }),
         );
@@ -210,20 +247,44 @@ export class DeveloperFriendshipController implements AppRouter {
                 query: currentUserInboxListDto.input,
                 response: currentUserInboxListDto.output,
                 handler: async (req, res) => {
-                    const developer = await this.developerService.getActiveDeveloper(
-                        req.getRequestContext(),
-                        true,
-                    );
+                    const ctx = req.getRequestContext();
+
+                    const developer = await this.developerService.getActiveDeveloper(ctx, true);
 
                     const result = await this.friendshipService.getCurrentUserInbox(
-                        req.getRequestContext(),
+                        ctx,
                         developer.id,
                         req.query,
                     );
 
-                    res.status(200).json(
-                        await this.attachFavouriteStatusToParticipants(req.getRequestContext(), result),
-                    );
+                    const inboxFriendsWithFavouriteStatus =
+                        await this.friendshipService.attachFavouriteStatusToParticipants(ctx, result.items);
+
+                    const finalResult = {
+                        ...result,
+                        items: result.items.map((item, index) => ({
+                            ...item,
+                            requester: {
+                                ...item.requester,
+                                isVerified: item.requester.isVerified,
+                                relationshipWithCurrentUser: {
+                                    isFavouritedByCurrentUser:
+                                        inboxFriendsWithFavouriteStatus[index].requester
+                                            .isFavouritedByCurrentUser,
+                                },
+                            },
+                            addressee: {
+                                ...item.addressee,
+                                isVerified: item.addressee.isVerified,
+                                relationshipWithCurrentUser: {
+                                    isFavouritedByCurrentUser:
+                                        inboxFriendsWithFavouriteStatus[index].addressee
+                                            .isFavouritedByCurrentUser,
+                                },
+                            },
+                        })),
+                    };
+                    res.status(200).json(finalResult);
                 },
             }),
         );
@@ -235,55 +296,48 @@ export class DeveloperFriendshipController implements AppRouter {
                 query: currentUserOutboxListDto.input,
                 response: currentUserOutboxListDto.output,
                 handler: async (req, res) => {
-                    const developer = await this.developerService.getActiveDeveloper(
-                        req.getRequestContext(),
-                        true,
-                    );
+                    const ctx = req.getRequestContext();
+
+                    const developer = await this.developerService.getActiveDeveloper(ctx, true);
 
                     const result = await this.friendshipService.getCurrentUserOutbox(
-                        req.getRequestContext(),
+                        ctx,
                         developer.id,
                         req.query,
                     );
 
-                    res.status(200).json(
-                        await this.attachFavouriteStatusToParticipants(req.getRequestContext(), result),
-                    );
+                    const outboxFriendsWithFavouriteStatus =
+                        await this.friendshipService.attachFavouriteStatusToParticipants(ctx, result.items);
+
+                    const finalResult = {
+                        ...result,
+                        items: result.items.map((item, index) => ({
+                            ...item,
+                            requester: {
+                                ...item.requester,
+                                isVerified: item.requester.isVerified,
+                                relationshipWithCurrentUser: {
+                                    isFavouritedByCurrentUser:
+                                        outboxFriendsWithFavouriteStatus[index].requester
+                                            .isFavouritedByCurrentUser,
+                                },
+                            },
+                            addressee: {
+                                ...item.addressee,
+                                isVerified: item.addressee.isVerified,
+                                relationshipWithCurrentUser: {
+                                    isFavouritedByCurrentUser:
+                                        outboxFriendsWithFavouriteStatus[index].addressee
+                                            .isFavouritedByCurrentUser,
+                                },
+                            },
+                        })),
+                    };
+                    res.status(200).json(finalResult);
                 },
             }),
         );
 
         return router;
-    }
-
-    private async attachFavouriteStatusToParticipants<
-        TItem extends {
-            requester: { id: string; isVerified: boolean };
-            addressee: { id: string; isVerified: boolean };
-        },
-    >(ctx: RequestContext, result: { items: TItem[]; itemsCount: number }) {
-        const participants = result.items.flatMap(({ requester, addressee }) => [requester, addressee]);
-        const participantsWithStatus = await this.developerService.attachFavouriteStatus(ctx, participants);
-        const statusByDeveloperId = new Map<string, boolean>();
-        for (const { id, isFavouritedByCurrentUser } of participantsWithStatus) {
-            statusByDeveloperId.set(id, isFavouritedByCurrentUser);
-        }
-
-        return {
-            ...result,
-            items: result.items.map(item => ({
-                ...item,
-                requester: {
-                    ...item.requester,
-                    isVerified: item.requester.isVerified,
-                    isFavouritedByCurrentUser: statusByDeveloperId.get(item.requester.id) ?? false,
-                },
-                addressee: {
-                    ...item.addressee,
-                    isVerified: item.addressee.isVerified,
-                    isFavouritedByCurrentUser: statusByDeveloperId.get(item.addressee.id) ?? false,
-                },
-            })),
-        };
     }
 }

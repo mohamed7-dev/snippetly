@@ -5,18 +5,19 @@ import {
     InvalidCredentialsError,
     NotVerifiedAccountError,
 } from '../../common/errors/generated-developer-errors';
-import { ConfigService } from '../../config';
 import { AuthenticationStrategy } from '../../config/auth/authentication-strategy.interface';
 import {
     NATIVE_AUTH_STRATEGY_NAME,
     NativeAuthenticationData,
     NativeAuthenticationStrategy,
 } from '../../config/auth/native-auth.strategy';
+import { ConfigService } from '../../config/config.service';
 import { ExternalAuthenticationMethod } from '../../entities/authentication-method/authentication-method.entity';
 import { Session } from '../../entities/session/session.entity';
 import { User } from '../../entities/users/user.entity';
 import { DatabaseService } from '../../infra/database/database.service';
 import { EventBus } from '../../infra/event-bus/event-bus.service';
+import { AccountRegistrationEvent } from '../../infra/event-bus/events/account-registration.eveny';
 import { LoginAttemptEvent } from '../../infra/event-bus/events/login-attempt.event';
 import { LoginEvent } from '../../infra/event-bus/events/login.event';
 import { LogoutEvent } from '../../infra/event-bus/events/logout.event';
@@ -34,6 +35,11 @@ export class AuthService {
         private readonly userService: UserService,
     ) {}
 
+    /**
+     * @description
+     * Checks the supplied credentials and opens a session when they are valid.
+     * Returns an error for invalid credentials or accounts that still need verification.
+     */
     public async authenticate(
         ctx: RequestContext,
         authStrategyName: string,
@@ -62,8 +68,8 @@ export class AuthService {
 
     /**
      * @description
-     * Opens an authenticated session for a user after successful authentication.
-     * Performs verification checks, updates user data, and creates the session.
+     * Checks whether the user can sign in, then records the login and creates a session.
+     * Unverified accounts that need verification are denied and sent a fresh verification token.
      */
     public async openAuthenticatedSession(
         ctx: RequestContext,
@@ -86,7 +92,8 @@ export class AuthService {
         if (isUsingNativeMethod && !user.isVerified) {
             const nativeAuthMethod = user.getNativeAuthenticationMethod({ throwError: false });
             if (nativeAuthMethod && nativeAuthMethod.verificationToken != null) {
-                await this.userService.generateAndAssignVerificationToken(ctx, user);
+                const updatedUser = await this.userService.generateAndAssignVerificationToken(ctx, user);
+                await this.eventBus.publish(new AccountRegistrationEvent(ctx, updatedUser));
                 return new NotVerifiedAccountError();
             }
         }
@@ -108,11 +115,19 @@ export class AuthService {
         return session;
     }
 
+    /**
+     * @description
+     * Ends the session with this token and removes the user's active sessions.
+     */
     public async endSession(ctx: RequestContext, sessionToken: string): Promise<void> {
         const session = await this.databaseService.getRepository(ctx, Session).findOne({
-            relations: ['user', 'user.authenticationMethods'],
             where: {
                 token: sessionToken,
+            },
+            relations: {
+                user: {
+                    authenticationMethods: true,
+                },
             },
         });
 
@@ -124,12 +139,16 @@ export class AuthService {
         }
     }
 
+    /**
+     * @description
+     * Checks a user's password and returns an error if it does not match.
+     */
     public async verifyUserPassword(
         ctx: RequestContext,
         userId: string,
         password: string,
     ): Promise<boolean | InvalidCredentialsError> {
-        const nativeAuthenticationStrategy = this.getAuthStrategy('developer', NATIVE_AUTH_STRATEGY_NAME);
+        const nativeAuthenticationStrategy = this.getAuthStrategy(ctx.apiType, NATIVE_AUTH_STRATEGY_NAME);
         const passwordMatches = await nativeAuthenticationStrategy.verifyUserPassword(ctx, userId, password);
         if (!passwordMatches) {
             return new InvalidCredentialsError({ reason: '' });
@@ -142,6 +161,7 @@ export class AuthService {
         method: typeof NATIVE_AUTH_STRATEGY_NAME,
     ): NativeAuthenticationStrategy;
     private getAuthStrategy(apiType: ApiType, method: string): AuthenticationStrategy;
+    /** Finds the configured sign-in strategy for the requested API. */
     private getAuthStrategy(apiType: ApiType, authStrategyName: string): AuthenticationStrategy {
         const { adminAuthenticationStrategies, developerAuthenticationStrategies } =
             this.configService.authOptions;

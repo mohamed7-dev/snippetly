@@ -39,6 +39,7 @@ import { Route as protectedDashboardDashboardLayoutRequestsIndexRouteImport } fr
 import { Route as protectedDashboardDashboardLayoutSnippetsIndexRouteImport } from './routes/(protected)/dashboard/_dashboard-layout/snippets/index'
 import { Route as protectedDashboardDashboardLayoutTrashIndexRouteImport } from './routes/(protected)/dashboard/_dashboard-layout/trash/index'
 import { Route as protectedDashboardSettingsAppearanceIndexRouteImport } from './routes/(protected)/dashboard/settings/appearance/index'
+import { Route as protectedDashboardSettingsNotificationsIndexRouteImport } from './routes/(protected)/dashboard/settings/notifications/index'
 import { Route as protectedDashboardSettingsSecurityIndexRouteImport } from './routes/(protected)/dashboard/settings/security/index'
 import { Route as protectedDashboardSnippetsNewIndexRouteImport } from './routes/(protected)/dashboard/snippets/new/index'
 import { Route as protectedDashboardCollectionsIdEditIndexRouteImport } from './routes/(protected)/dashboard/collections/$id/edit/index'
@@ -208,6 +209,12 @@ const protectedDashboardSettingsAppearanceIndexRoute =
     path: '/appearance/',
     getParentRoute: () => protectedDashboardSettingsRouteRoute,
   } as any)
+const protectedDashboardSettingsNotificationsIndexRoute =
+  protectedDashboardSettingsNotificationsIndexRouteImport.update({
+    id: '/notifications/',
+    path: '/notifications/',
+    getParentRoute: () => protectedDashboardSettingsRouteRoute,
+  } as any)
 const protectedDashboardSettingsSecurityIndexRoute =
   protectedDashboardSettingsSecurityIndexRouteImport.update({
     id: '/security/',
@@ -261,6 +268,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/snippets/': typeof protectedDashboardDashboardLayoutSnippetsIndexRoute
   '/dashboard/trash/': typeof protectedDashboardDashboardLayoutTrashIndexRoute
   '/dashboard/settings/appearance/': typeof protectedDashboardSettingsAppearanceIndexRoute
+  '/dashboard/settings/notifications/': typeof protectedDashboardSettingsNotificationsIndexRoute
   '/dashboard/settings/security/': typeof protectedDashboardSettingsSecurityIndexRoute
   '/dashboard/snippets/new/': typeof protectedDashboardSnippetsNewIndexRoute
   '/dashboard/collections/$id/edit/': typeof protectedDashboardCollectionsIdEditIndexRoute
@@ -292,6 +300,7 @@ export interface FileRoutesByTo {
   '/dashboard/snippets': typeof protectedDashboardDashboardLayoutSnippetsIndexRoute
   '/dashboard/trash': typeof protectedDashboardDashboardLayoutTrashIndexRoute
   '/dashboard/settings/appearance': typeof protectedDashboardSettingsAppearanceIndexRoute
+  '/dashboard/settings/notifications': typeof protectedDashboardSettingsNotificationsIndexRoute
   '/dashboard/settings/security': typeof protectedDashboardSettingsSecurityIndexRoute
   '/dashboard/snippets/new': typeof protectedDashboardSnippetsNewIndexRoute
   '/dashboard/collections/$id/edit': typeof protectedDashboardCollectionsIdEditIndexRoute
@@ -329,6 +338,7 @@ export interface FileRoutesById {
   '/(protected)/dashboard/_dashboard-layout/snippets/': typeof protectedDashboardDashboardLayoutSnippetsIndexRoute
   '/(protected)/dashboard/_dashboard-layout/trash/': typeof protectedDashboardDashboardLayoutTrashIndexRoute
   '/(protected)/dashboard/settings/appearance/': typeof protectedDashboardSettingsAppearanceIndexRoute
+  '/(protected)/dashboard/settings/notifications/': typeof protectedDashboardSettingsNotificationsIndexRoute
   '/(protected)/dashboard/settings/security/': typeof protectedDashboardSettingsSecurityIndexRoute
   '/(protected)/dashboard/snippets/new/': typeof protectedDashboardSnippetsNewIndexRoute
   '/(protected)/dashboard/collections/$id/edit/': typeof protectedDashboardCollectionsIdEditIndexRoute
@@ -364,6 +374,7 @@ export interface FileRouteTypes {
     | '/dashboard/snippets/'
     | '/dashboard/trash/'
     | '/dashboard/settings/appearance/'
+    | '/dashboard/settings/notifications/'
     | '/dashboard/settings/security/'
     | '/dashboard/snippets/new/'
     | '/dashboard/collections/$id/edit/'
@@ -395,6 +406,7 @@ export interface FileRouteTypes {
     | '/dashboard/snippets'
     | '/dashboard/trash'
     | '/dashboard/settings/appearance'
+    | '/dashboard/settings/notifications'
     | '/dashboard/settings/security'
     | '/dashboard/snippets/new'
     | '/dashboard/collections/$id/edit'
@@ -431,6 +443,7 @@ export interface FileRouteTypes {
     | '/(protected)/dashboard/_dashboard-layout/snippets/'
     | '/(protected)/dashboard/_dashboard-layout/trash/'
     | '/(protected)/dashboard/settings/appearance/'
+    | '/(protected)/dashboard/settings/notifications/'
     | '/(protected)/dashboard/settings/security/'
     | '/(protected)/dashboard/snippets/new/'
     | '/(protected)/dashboard/collections/$id/edit/'
@@ -655,6 +668,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof protectedDashboardSettingsAppearanceIndexRouteImport
       parentRoute: typeof protectedDashboardSettingsRouteRoute
     }
+    '/(protected)/dashboard/settings/notifications/': {
+      id: '/(protected)/dashboard/settings/notifications/'
+      path: '/notifications'
+      fullPath: '/dashboard/settings/notifications/'
+      preLoaderRoute: typeof protectedDashboardSettingsNotificationsIndexRouteImport
+      parentRoute: typeof protectedDashboardSettingsRouteRoute
+    }
     '/(protected)/dashboard/settings/security/': {
       id: '/(protected)/dashboard/settings/security/'
       path: '/security'
@@ -771,6 +791,7 @@ interface protectedDashboardSettingsRouteRouteChildren {
   protectedDashboardSettingsProfileRouteRoute: typeof protectedDashboardSettingsProfileRouteRoute
   protectedDashboardSettingsIndexRoute: typeof protectedDashboardSettingsIndexRoute
   protectedDashboardSettingsAppearanceIndexRoute: typeof protectedDashboardSettingsAppearanceIndexRoute
+  protectedDashboardSettingsNotificationsIndexRoute: typeof protectedDashboardSettingsNotificationsIndexRoute
   protectedDashboardSettingsSecurityIndexRoute: typeof protectedDashboardSettingsSecurityIndexRoute
 }
 
@@ -781,6 +802,8 @@ const protectedDashboardSettingsRouteRouteChildren: protectedDashboardSettingsRo
     protectedDashboardSettingsIndexRoute: protectedDashboardSettingsIndexRoute,
     protectedDashboardSettingsAppearanceIndexRoute:
       protectedDashboardSettingsAppearanceIndexRoute,
+    protectedDashboardSettingsNotificationsIndexRoute:
+      protectedDashboardSettingsNotificationsIndexRoute,
     protectedDashboardSettingsSecurityIndexRoute:
       protectedDashboardSettingsSecurityIndexRoute,
   }

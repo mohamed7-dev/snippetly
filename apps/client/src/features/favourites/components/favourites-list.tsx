@@ -43,11 +43,10 @@ export function FavouriteSnippetsList() {
     const onMutateSuccess = () => {
         qClient.invalidateQueries(favouriteSnippetsQueryOptions(undefined, queryKey));
     };
-    // TODO: use ReadFavourite when it's generated
 
     return (
         <div className="space-y-6">
-            <PermissionGuard requiredPermissions={[Permission.Authenticated]}>
+            <PermissionGuard requiredPermissions={[Permission.Authenticated, Permission.ReadFavourite]}>
                 <div className="flex items-center gap-2">
                     <FilterQueryDialog
                         schema={favouriteSnippetsListDto.input.shape.filter}
@@ -94,7 +93,10 @@ export function FavouriteSnippetsList() {
                     />
                 </div>
             </PermissionGuard>
-            <PermissionGuard requiredPermissions={[Permission.Authenticated]} isAvailableOffline={true}>
+            <PermissionGuard
+                requiredPermissions={[Permission.Authenticated, Permission.ReadFavourite]}
+                isAvailableOffline={true}
+            >
                 <FavouriteListLayout>
                     {snippets.map(snippet => {
                         const { fullName } = formatDeveloperInfo(snippet.creator);
@@ -124,8 +126,12 @@ export function FavouriteSnippetsList() {
                                             </Link>
                                         </div>
                                     </div>
-                                    {/* // TODO: use UpdateFavourite when it gets generated  */}
-                                    <PermissionGuard requiredPermissions={[Permission.Authenticated]}>
+                                    <PermissionGuard
+                                        requiredPermissions={[
+                                            Permission.Authenticated,
+                                            Permission.DeleteFavourite,
+                                        ]}
+                                    >
                                         <RemoveFromFavouritesButton
                                             variant={'destructive-outline'}
                                             resourceType="snippets"
@@ -181,11 +187,9 @@ export function FavouriteCollectionsList() {
         qClient.invalidateQueries(favouriteCollectionsQueryOptions(undefined, queryKey));
     };
 
-    // TODO: use ReadFavourite when it's generated
-
     return (
         <div className="space-y-6">
-            <PermissionGuard requiredPermissions={[Permission.Authenticated]}>
+            <PermissionGuard requiredPermissions={[Permission.Authenticated, Permission.ReadFavourite]}>
                 <div className="flex items-center gap-2">
                     <FilterQueryDialog
                         schema={favouriteCollectionsListDto.input.shape.filter}
@@ -233,7 +237,10 @@ export function FavouriteCollectionsList() {
                 </div>
             </PermissionGuard>
 
-            <PermissionGuard requiredPermissions={[Permission.Authenticated]} isAvailableOffline={true}>
+            <PermissionGuard
+                requiredPermissions={[Permission.Authenticated, Permission.ReadFavourite]}
+                isAvailableOffline={true}
+            >
                 <FavouriteListLayout>
                     {collections.map(collection => {
                         const { fullName } = formatDeveloperInfo(collection.creator);
@@ -265,8 +272,12 @@ export function FavouriteCollectionsList() {
                                             </p>
                                         </div>
                                     </div>
-                                    {/* // TODO: use UpdateFavourite when it gets generated  */}
-                                    <PermissionGuard requiredPermissions={[Permission.Authenticated]}>
+                                    <PermissionGuard
+                                        requiredPermissions={[
+                                            Permission.Authenticated,
+                                            Permission.DeleteFavourite,
+                                        ]}
+                                    >
                                         <RemoveFromFavouritesButton
                                             variant={'destructive-outline'}
                                             resourceType="collections"
@@ -320,8 +331,7 @@ export function FavouriteDevelopersList() {
 
     // shouldn't be available offline, but we should let the api client throws the offline error
     return (
-        // TODO: use ReadFavourite when it's generated
-        <PermissionGuard requiredPermissions={[Permission.Authenticated]}>
+        <PermissionGuard requiredPermissions={[Permission.Authenticated, Permission.ReadFavourite]}>
             <div className="space-y-6">
                 <div className="flex items-center gap-2">
                     <FilterQueryDialog
@@ -358,14 +368,21 @@ export function FavouriteDevelopersList() {
                                 <CardContent className="space-y-4">
                                     <div className="flex min-w-0 items-center justify-between">
                                         <DeveloperIdentity developerInfo={developer} />
-                                        <RemoveFromFavouritesButton
-                                            variant={'destructive-outline'}
-                                            resourceType="developers"
-                                            resourceId={developer.id}
-                                            mutationCallbacks={{
-                                                onSuccess: onMutateSuccess,
-                                            }}
-                                        />
+                                        <PermissionGuard
+                                            requiredPermissions={[
+                                                Permission.Authenticated,
+                                                Permission.DeleteFavourite,
+                                            ]}
+                                        >
+                                            <RemoveFromFavouritesButton
+                                                variant={'destructive-outline'}
+                                                resourceType="developers"
+                                                resourceId={developer.id}
+                                                mutationCallbacks={{
+                                                    onSuccess: onMutateSuccess,
+                                                }}
+                                            />
+                                        </PermissionGuard>
                                     </div>
 
                                     <p className="truncate text-sm text-muted-foreground">

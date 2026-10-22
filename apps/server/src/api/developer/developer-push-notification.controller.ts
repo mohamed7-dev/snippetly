@@ -8,8 +8,8 @@ import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import { AppRouter } from '../../common/types/app-router.interface';
 import { Controller } from '../../infra/ioc-container/controller.decorator';
+import { PushNotificationService } from '../../infra/push-notification/push-notification.service';
 import { DeveloperService } from '../../services/domain/developer.service';
-import { PushNotificationService } from '../../services/domain/push-notification.service';
 import { authGuard } from '../middlewares/auth.guard';
 import { defineRoutePipeline } from '../middlewares/define-router-pipeline.mw';
 
@@ -34,7 +34,7 @@ export class DeveloperPushNotificationController implements AppRouter {
         router.get(
             '/public-key',
             ...defineRoutePipeline({
-                before: [authGuard({ permissions: [Permission.Public] })],
+                before: [authGuard({ permissions: [Permission.Public, Permission.ReadPushNotification] })],
                 response: getPushNotificationPublicKeyDto.output,
                 handler: (_req, res) => {
                     res.status(200).json(this.pushNotificationService.getPublicKey());
@@ -45,7 +45,10 @@ export class DeveloperPushNotificationController implements AppRouter {
         router.post(
             '/subscriptions',
             ...defineRoutePipeline({
-                before: [this.writeLimiter, authGuard({ permissions: [Permission.Authenticated] })],
+                before: [
+                    this.writeLimiter,
+                    authGuard({ permissions: [Permission.Authenticated, Permission.CreatePushNotification] }),
+                ],
                 body: savePushNotificationSubscriptionDto.input,
                 response: savePushNotificationSubscriptionDto.output,
                 handler: async (req, res) => {
@@ -67,7 +70,10 @@ export class DeveloperPushNotificationController implements AppRouter {
         router.delete(
             '/subscriptions',
             ...defineRoutePipeline({
-                before: [this.writeLimiter, authGuard({ permissions: [Permission.Authenticated] })],
+                before: [
+                    this.writeLimiter,
+                    authGuard({ permissions: [Permission.Authenticated, Permission.DeletePushNotification] }),
+                ],
                 body: deletePushNotificationSubscriptionDto.input,
                 response: deletePushNotificationSubscriptionDto.output,
                 handler: async (req, res) => {

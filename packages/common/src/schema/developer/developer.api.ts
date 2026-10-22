@@ -30,24 +30,21 @@ const developerStats = z.object({
     friendsOutboxCount: z.number().int().nonnegative(),
 });
 
-const activeDeveloperAccountStatsOutput = withServerErrors(
-    developerStats.extend(developer.pick({ id: true }).shape).nullable(),
+const activeDeveloperAccountActivityOutput = withServerErrors(
+    z.object({ stats: developerStats }).nullable(),
     [forbiddenErrorSchema],
 );
 
-export const activeDeveloperAccountStatsDto = {
+export const activeDeveloperAccountActivityDto = {
     input: z.null(),
-    output: activeDeveloperAccountStatsOutput,
+    output: activeDeveloperAccountActivityOutput,
 };
 
-export type ActiveDeveloperAccountStatsDtoType = InferDtoType<typeof activeDeveloperAccountStatsDto>;
+export type ActiveDeveloperAccountStatsDtoType = InferDtoType<typeof activeDeveloperAccountActivityDto>;
 
 //############################ Get Active Developer Account ############################
 
-const activeDeveloperOutput = withServerErrors(
-    developer.extend({ isFavouritedByCurrentUser: z.boolean() }).nullable(),
-    [forbiddenErrorSchema],
-);
+const activeDeveloperOutput = withServerErrors(developer.nullable(), [forbiddenErrorSchema]);
 
 export const activeDeveloperDto = {
     input: z.null(),
@@ -96,14 +93,18 @@ export type DeleteDeveloperAccountDtoType = InferDtoType<typeof deleteDeveloperA
 const findOneDeveloperInput = inputIdSchema;
 
 const developerProfileInfo = z.object({
-    isFavouritedByCurrentUser: z.boolean(),
-    friendCount: z.number().int().nonnegative(),
-    friendshipInfo: z.object({
-        isCurrentUserAFriend: z.boolean(),
-        requestStatus: friendshipStatusSchema.nullable(),
+    activity: z.object({
+        stats: developerStats,
     }),
-    stats: developerStats,
+    relationshipWithCurrentUser: z.object({
+        isFavouritedByCurrentUser: z.boolean(),
+        friendshipInfo: z.object({
+            isCurrentUserAFriend: z.boolean(),
+            friendshipStatus: friendshipStatusSchema.nullable(),
+        }),
+    }),
 });
+
 const developerItem = developer.extend(developerProfileInfo.shape);
 
 const publicDeveloperItem = developerItem
@@ -179,13 +180,17 @@ const developerListItem = developer.pick({
 });
 
 const discoverDeveloperListItem = developerListItem.extend({
-    isFavouritedByCurrentUser: z.boolean(),
-    snippetsCount: z.number().int().nonnegative().optional(),
-    collectionsCount: z.number().int().nonnegative().optional(),
-    tags: z.array(tag.pick({ id: true, value: true, usageCount: true })).optional(),
-    friendshipInfo: z.object({
-        isFriendWithCurrentUser: z.boolean(),
-        friendshipStatus: friendshipStatusSchema.nullable(),
+    activity: z.object({
+        snippetsCount: z.number().int().nonnegative().optional(),
+        collectionsCount: z.number().int().nonnegative().optional(),
+        tags: z.array(tag.pick({ id: true, value: true, usageCount: true })).optional(),
+    }),
+    relationshipWithCurrentUser: z.object({
+        friendshipInfo: z.object({
+            isFriendWithCurrentUser: z.boolean(),
+            friendshipStatus: friendshipStatusSchema.nullable(),
+        }),
+        isFavouritedByCurrentUser: z.boolean(),
     }),
 });
 

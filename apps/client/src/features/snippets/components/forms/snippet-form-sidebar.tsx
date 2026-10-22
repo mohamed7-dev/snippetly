@@ -145,6 +145,7 @@ export function SnippetFormSidebar({
                                 <CurrentUserCollectionsOverlay
                                     isOpen={isCollectionsDialogOpen}
                                     onOpenChange={setIsCollectionsDialogOpen}
+                                    createCollectionRedirect="/dashboard/snippets/new"
                                     onSelect={(collectionId, collectionName) =>
                                         onSelectingCollection(collectionId, collectionName)
                                     }

@@ -213,6 +213,19 @@ class OfflineSnippetsDatabase extends Dexie {
             syncLeases: '&ownerId,expiresAt',
             dashboardCache: '&[ownerId+kind+key],[ownerId+kind],ownerId,kind,updatedAt',
         });
+        this.version(8).stores({
+            snippets: '&id,savedBy,language,collectionId,createdAt,collection.name',
+            userSnippets: '&[id+savedBy],id,savedBy,language,collectionId,createdAt,collection.name',
+            cachedCollections: '&[id+ownerId],ownerId,cachedAt',
+            pendingCollections: '&[id+ownerId],ownerId,createdAt',
+            pendingSnippets: '&[id+ownerId],ownerId,createdAt',
+            pendingCollectionUpdates: '&[id+ownerId],ownerId,createdAt',
+            pendingSnippetUpdates: '&[id+ownerId],ownerId,createdAt',
+            collectionMappings: '&[localId+ownerId],ownerId',
+            syncCredentials: '&ownerId',
+            syncLeases: '&ownerId,expiresAt',
+            dashboardCache: '&[ownerId+kind+key],[ownerId+kind],ownerId,kind,updatedAt',
+        });
     }
 }
 
@@ -406,12 +419,7 @@ async function patchCachedListItems(
             }
             let changed = false;
             const items = entry.data.items.map(item => {
-                if (
-                    typeof item !== 'object' ||
-                    item === null ||
-                    !('id' in item) ||
-                    item.id !== id
-                ) {
+                if (typeof item !== 'object' || item === null || !('id' in item) || item.id !== id) {
                     return item;
                 }
                 changed = true;
@@ -465,9 +473,7 @@ export async function hasOfflineEditableDashboardData(
             return false;
         }
         const isEditable =
-            kind === 'snippet-details'
-                ? 'isPrivate' in data
-                : 'updatedAt' in data && 'deletedAt' in data;
+            kind === 'snippet-details' ? 'isPrivate' in data : 'updatedAt' in data && 'deletedAt' in data;
         if (isEditable) await offlineSnippetsDb.dashboardCache.put({ ...entry, updatedAt: new Date() });
         return isEditable;
     });
@@ -647,7 +653,9 @@ export async function listPendingOfflineCreationOwnerIds(): Promise<string[]> {
         offlineSnippetsDb.pendingSnippetUpdates.toArray(),
     ]);
     return [
-        ...new Set([...collections, ...snippets, ...collectionUpdates, ...snippetUpdates].map(item => item.ownerId)),
+        ...new Set(
+            [...collections, ...snippets, ...collectionUpdates, ...snippetUpdates].map(item => item.ownerId),
+        ),
     ];
 }
 

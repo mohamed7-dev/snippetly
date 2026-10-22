@@ -180,6 +180,11 @@ describe('Developer Authentication', () => {
 
             authenticatedUserErrorGuard.assertApiError(loginResult);
             expect(loginResult.code).toBe('NOT_VERIFIED_ACCOUNT_ERROR');
+            await vi.waitFor(() => expect(sendEmailFn).toHaveBeenCalledTimes(2));
+            const rotatedVerificationToken = getRegistrationVerificationToken();
+            expect(rotatedVerificationToken).toBeDefined();
+            expect(rotatedVerificationToken).not.toBe(verificationToken);
+            verificationToken = rotatedVerificationToken as string;
         });
 
         it('succeeds if account is verified and credentials are correct', async () => {
@@ -544,7 +549,8 @@ function getRegistrationVerificationToken(): string | null | undefined {
                     }
                 ).event,
         )
-        .find(event => event instanceof AccountRegistrationEvent);
+        .filter(event => event instanceof AccountRegistrationEvent)
+        .pop();
     return event?.user.getNativeAuthenticationMethod().verificationToken;
 }
 

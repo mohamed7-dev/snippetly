@@ -1,7 +1,8 @@
 import { Permission, popularTagsDto } from '@snippetly/common/dto';
 import { Router } from 'express';
-import rateLimit from 'express-rate-limit';
+import { defineRateLimiter } from '../../common/helpers/define-rate-limiter';
 import { AppRouter } from '../../common/types/app-router.interface';
+import { ConfigService } from '../../config/config.service';
 import { Controller } from '../../infra/ioc-container/controller.decorator';
 import { TagService } from '../../services/domain/tag.service';
 import { authGuard } from '../middlewares/auth.guard';
@@ -12,14 +13,18 @@ import { defineRoutePipeline } from '../middlewares/define-router-pipeline.mw';
     version: 1,
 })
 export class DeveloperTagController implements AppRouter {
-    constructor(private readonly tagService: TagService) {}
+    constructor(
+        private readonly tagService: TagService,
+        private readonly configService: ConfigService,
+    ) {}
 
-    tagReadLimiter = rateLimit({
-        windowMs: 60 * 1000, // 1 minute
-        max: 120,
-        standardHeaders: true,
-        legacyHeaders: false,
-    });
+    tagReadLimiter = defineRateLimiter(
+        {
+            windowMs: 60 * 1000, // 1 minute
+            max: 120,
+        },
+        this.configService.apiOptions,
+    );
 
     initRoutes(router: Router): Router {
         router.get(

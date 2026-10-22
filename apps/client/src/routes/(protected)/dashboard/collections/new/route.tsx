@@ -1,4 +1,5 @@
 import { Page } from '@/components/layout/page';
+import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import { listCurrentUserCollectionsQueryOptions } from '@/features/collection-listing/lib/collection-listing-query-options';
 import { CollectionForm } from '@/features/collections/components/forms/collection-form';
 import { CreateCollectionPageHeader } from '@/features/create-collection/components/sections/create-collection-page-header';
@@ -7,7 +8,6 @@ import {
     createCollectionFormSchema,
     type CreateCollectionFormSchemaType,
 } from '@/features/create-collection/lib/schema';
-import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import { listPopularTagsQueryOptions } from '@/features/tags/lib/list-tags-query-options';
 import { redirectSchema } from '@/lib/zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -34,6 +34,8 @@ export const Route = createFileRoute('/(protected)/dashboard/collections/new')({
 });
 
 function RouteComponent() {
+    const { redirect } = Route.useSearch();
+
     const navigate = Route.useNavigate();
     const qClient = useQueryClient();
     const createCollectionForm = useForm<CreateCollectionFormSchemaType>({
@@ -51,7 +53,28 @@ function RouteComponent() {
         onSuccess: async data => {
             createCollectionForm.reset();
             if (data.status === 'synced') {
-                await navigate({ to: '/collections/$id', params: { id: data.data.id } });
+                if (redirect) {
+                    if (redirect === '/dashboard/snippets/new') {
+                        await navigate({
+                            to: redirect,
+                            search: {
+                                collectionId: data.data.id,
+                                collectionName: data.data.name,
+                            },
+                        });
+                    } else {
+                        await navigate({
+                            to: redirect,
+                            search: prev => ({
+                                ...prev,
+                                collectionId: data.data.id,
+                                collectionName: data.data.name,
+                            }),
+                        });
+                    }
+                } else {
+                    await navigate({ to: '/collections/$id', params: { id: data.data.id } });
+                }
                 void qClient.invalidateQueries(listCurrentUserCollectionsQueryOptions());
             }
         },

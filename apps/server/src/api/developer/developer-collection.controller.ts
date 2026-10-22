@@ -12,11 +12,11 @@ import {
 } from '@snippetly/common/dto';
 import { omit } from '@snippetly/common/lib';
 import { Router } from 'express';
-import rateLimit from 'express-rate-limit';
 import { isApiError } from '../../common/errors/api-error';
 import { EntityNotFoundError, ForbiddenError } from '../../common/errors/errors';
+import { defineRateLimiter } from '../../common/helpers/define-rate-limiter';
 import { AppRouter } from '../../common/types/app-router.interface';
-import { Collection, Snippet } from '../../entities';
+import { ConfigService } from '../../config/config.service';
 import { Controller } from '../../infra/ioc-container/controller.decorator';
 import { CollectionService } from '../../services/domain/collection.service';
 import { DeveloperService } from '../../services/domain/developer.service';
@@ -34,21 +34,24 @@ export class DeveloperCollectionController implements AppRouter {
         private readonly collectionService: CollectionService,
         private readonly developerService: DeveloperService,
         private readonly snippetService: SnippetService,
+        private readonly configService: ConfigService,
     ) {}
 
-    collectionWriteLimiter = rateLimit({
-        windowMs: 15 * 60 * 1000, // 15 minutes
-        max: 50,
-        standardHeaders: true,
-        legacyHeaders: false,
-    });
+    collectionWriteLimiter = defineRateLimiter(
+        {
+            windowMs: 15 * 60 * 1000, // 15 minutes
+            max: 50,
+        },
+        this.configService.apiOptions,
+    );
 
-    collectionReadLimiter = rateLimit({
-        windowMs: 60 * 1000, // 1 minute
-        max: 120,
-        standardHeaders: true,
-        legacyHeaders: false,
-    });
+    collectionReadLimiter = defineRateLimiter(
+        {
+            windowMs: 60 * 1000, // 1 minute
+            max: 120,
+        },
+        this.configService.apiOptions,
+    );
 
     initRoutes(router: Router): Router {
         router.post(
@@ -96,14 +99,14 @@ export class DeveloperCollectionController implements AppRouter {
         router.patch(
             '/:id/restore',
             ...defineRoutePipeline({
-                before: [
-                    this.collectionWriteLimiter,
-                    authGuard({ permissions: [Permission.Authenticated, Permission.Owner] }),
-                ],
+                before: [this.collectionWriteLimiter, authGuard({ permissions: [Permission.Owner] })],
                 params: restoreCollectionDto.input,
                 response: restoreCollectionDto.output,
                 interceptors: [transactionInterceptor()],
                 handler: async (req, res) => {
+                    if (!req.getRequestContext().activeUserId) {
+                        throw new ForbiddenError();
+                    }
                     const result = await this.collectionService.restoreFromTrash(
                         req.getRequestContext(),
                         req.params,
@@ -138,7 +141,7 @@ export class DeveloperCollectionController implements AppRouter {
             ...defineRoutePipeline({
                 before: [
                     this.collectionWriteLimiter,
-                    authGuard({ permissions: [Permission.Authenticated, Permission.ForkCollection] }),
+                    authGuard({ permissions: [Permission.Authenticated, Permission.CreateCollection] }),
                 ],
                 params: forkCollectionDto.input,
                 response: forkCollectionDto.output,
@@ -186,10 +189,11 @@ export class DeveloperCollectionController implements AppRouter {
                 response: collectionListDto.output,
                 handler: async (req, res) => {
                     const developer = await this.developerService.getActiveDeveloper(req.getRequestContext());
+
                     const shouldRestrictToPublic =
                         !req.query.creator || !developer || req.query.creator !== developer.id;
 
-                    let result = await this.collectionService.find(
+                    const result = await this.collectionService.find(
                         req.getRequestContext(),
                         req.query,
                         {
@@ -197,39 +201,39 @@ export class DeveloperCollectionController implements AppRouter {
                             forkedFrom: { creator: { user: true } },
                             tags: true,
                         },
-                        { includePrivateCollections: !shouldRestrictToPublic },
+                        { includePrivateCollections: !shouldRestrictToPublic, includeSoftDeleted: false },
                     );
 
-                    const { snippetCountByCollection, snippetsByCollection } =
-                        await this.collectionService.addSnippetsPreview(
+                    const [snippetsPreview, collectionsWithFavouriteStatus] = await Promise.all([
+                        this.collectionService.getSnippetsPreviewForCollectionsList(
                             req.getRequestContext(),
                             result.items,
                             { includePrivateSnippets: !shouldRestrictToPublic },
-                        );
+                        ),
+                        this.collectionService.attachFavouriteStatus(
+                            req.getRequestContext(),
+                            result.items,
+                            developer,
+                        ),
+                    ]);
 
-                    result = {
-                        items: result.items.map(item => ({
+                    const finalResult = {
+                        ...result,
+                        items: result.items.map((item, index) => ({
                             ...item,
-                            snippetCount: snippetCountByCollection.get(item.id) ?? 0,
-                            snippets: snippetsByCollection.get(item.id) ?? [],
-                        })) as Array<
-                            Collection & {
-                                snippetCount: number;
-                                snippets: Pick<Snippet, 'name' | 'language' | 'id'>;
-                            }
-                        >,
-                        itemsCount: result.itemsCount,
+                            relationshipsWithCurrentUser: {
+                                isFavouritedByCurrentUser:
+                                    collectionsWithFavouriteStatus[index].isFavouritedByCurrentUser,
+                            },
+                            snippets: snippetsPreview.snippetsByCollection.get(item.id) ?? [],
+                            snippetsCount: snippetsPreview.snippetCountByCollection.get(item.id) ?? 0,
+                        })),
                     };
-
-                    result.items = await this.collectionService.attachFavouriteStatus(
-                        req.getRequestContext(),
-                        result.items,
-                    );
 
                     const response = shouldRestrictToPublic
                         ? {
-                              ...result,
-                              items: result.items.map(item =>
+                              ...finalResult,
+                              items: finalResult.items.map(item =>
                                   omit(item, ['isPrivate', 'updatedAt', 'deletedAt']),
                               ),
                           }
@@ -255,43 +259,43 @@ export class DeveloperCollectionController implements AppRouter {
                         true,
                     );
 
-                    let result = await this.collectionService.find(
+                    const result = await this.collectionService.find(
                         req.getRequestContext(),
                         {
                             ...req.query,
                             creator: developer.id,
                         },
                         { creator: { user: true }, forkedFrom: { creator: { user: true } }, tags: true },
-                        { includePrivateCollections: true },
+                        { includePrivateCollections: true, includeSoftDeleted: false },
                     );
 
-                    const { snippetCountByCollection, snippetsByCollection } =
-                        await this.collectionService.addSnippetsPreview(
+                    const [snippetsPreview, collectionsWithFavouriteStatus] = await Promise.all([
+                        this.collectionService.getSnippetsPreviewForCollectionsList(
                             req.getRequestContext(),
                             result.items,
                             { includePrivateSnippets: true },
-                        );
+                        ),
+                        this.collectionService.attachFavouriteStatus(
+                            req.getRequestContext(),
+                            result.items,
+                            developer,
+                        ),
+                    ]);
 
-                    result = {
-                        items: result.items.map(item => ({
+                    const finalResult = {
+                        ...result,
+                        items: result.items.map((item, index) => ({
                             ...item,
-                            snippetCount: snippetCountByCollection.get(item.id) ?? 0,
-                            snippets: snippetsByCollection.get(item.id) ?? [],
-                        })) as Array<
-                            Collection & {
-                                snippetCount: number;
-                                snippets: Pick<Snippet, 'name' | 'language' | 'id'>;
-                            }
-                        >,
-                        itemsCount: result.itemsCount,
+                            relationshipsWithCurrentUser: {
+                                isFavouritedByCurrentUser:
+                                    collectionsWithFavouriteStatus[index].isFavouritedByCurrentUser,
+                            },
+                            snippets: snippetsPreview.snippetsByCollection.get(item.id) ?? [],
+                            snippetsCount: snippetsPreview.snippetCountByCollection.get(item.id) ?? 0,
+                        })),
                     };
 
-                    result.items = await this.collectionService.attachFavouriteStatus(
-                        req.getRequestContext(),
-                        result.items,
-                    );
-
-                    res.status(200).json(result);
+                    res.status(200).json(finalResult);
                 },
             }),
         );
@@ -319,24 +323,33 @@ export class DeveloperCollectionController implements AppRouter {
                         { creator: { user: true }, tags: true },
                         { includePrivateCollections: true, onlySoftDeleted: true },
                     );
-                    const { snippetCountByCollection, snippetsByCollection } =
-                        await this.collectionService.addSnippetsPreview(
+
+                    const [snippetsPreview, collectionsWithFavouriteStatus] = await Promise.all([
+                        this.collectionService.getSnippetsPreviewForCollectionsList(
                             req.getRequestContext(),
                             result.items,
                             { includePrivateSnippets: true },
-                        );
-                    const items = await this.collectionService.attachFavouriteStatus(
-                        req.getRequestContext(),
-                        result.items.map(item => ({
+                        ),
+                        this.collectionService.attachFavouriteStatus(
+                            req.getRequestContext(),
+                            result.items,
+                            developer,
+                        ),
+                    ]);
+                    const finalResult = {
+                        ...result,
+                        items: result.items.map((item, index) => ({
                             ...item,
-                            snippetCount: snippetCountByCollection.get(item.id) ?? 0,
-                            snippets: snippetsByCollection.get(item.id) ?? [],
+                            relationshipsWithCurrentUser: {
+                                isFavouritedByCurrentUser:
+                                    collectionsWithFavouriteStatus[index].isFavouritedByCurrentUser,
+                            },
+                            snippets: snippetsPreview.snippetsByCollection.get(item.id) ?? [],
+                            snippetsCount: snippetsPreview.snippetCountByCollection.get(item.id) ?? 0,
                         })),
-                    );
-                    res.status(200).json({
-                        items,
-                        itemsCount: result.itemsCount,
-                    });
+                    };
+
+                    res.status(200).json(finalResult);
                 },
             }),
         );
@@ -348,8 +361,9 @@ export class DeveloperCollectionController implements AppRouter {
                 params: findOneCollectionDto.input,
                 response: findOneCollectionDto.output,
                 handler: async (req, res) => {
+                    const ctx = req.getRequestContext();
                     const result = await this.collectionService.findOne(
-                        req.getRequestContext(),
+                        ctx,
                         req.params,
                         {
                             creator: { user: true },
@@ -359,8 +373,10 @@ export class DeveloperCollectionController implements AppRouter {
                         { includePrivateCollection: true, includeSoftDeleted: false },
                     );
 
-                    const isOwner =
-                        req.getRequestContext().activeUserId === result?.creator.user.id ? true : false;
+                    const isOwner = !!ctx.activeUserId && ctx.activeUserId === result?.creator.user.id;
+                    const currentDeveloper = ctx.activeUserId
+                        ? await this.developerService.getActiveDeveloper(ctx)
+                        : undefined;
 
                     if (!result || (!isOwner && result?.isPrivate)) {
                         throw new EntityNotFoundError({ entityName: 'Collection', entityId: req.params.id });
@@ -370,21 +386,23 @@ export class DeveloperCollectionController implements AppRouter {
                         ? result
                         : omit(result, ['isPrivate', 'updatedAt', 'deletedAt']);
 
-                    const snippetCountResult = await this.snippetService.countSnippetsInCollection(
-                        req.getRequestContext(),
-                        { collection: result },
-                        { includePrivateSnippets: isOwner, includeSoftDeleted: false },
-                    );
+                    const [snippetCountResult, resultWithFavouriteStatus] = await Promise.all([
+                        this.snippetService.countSnippetsInCollection(
+                            ctx,
+                            { collection: result },
+                            { includePrivateSnippets: isOwner, includeSoftDeleted: false },
+                        ),
+                        this.collectionService.attachFavouriteStatus(ctx, [result], currentDeveloper),
+                    ]);
 
-                    const collectionWithSnippetCount = {
+                    const finalResult = {
                         ...visibleCollection,
-                        snippetCount: snippetCountResult.snippetCount,
+                        snippetsCount: snippetCountResult.snippetCount,
+                        relationshipsWithCurrentUser: {
+                            isFavouritedByCurrentUser: resultWithFavouriteStatus[0].isFavouritedByCurrentUser,
+                        },
                     };
-                    const [resultWithFavouriteStatus] = await this.collectionService.attachFavouriteStatus(
-                        req.getRequestContext(),
-                        [collectionWithSnippetCount],
-                    );
-                    res.status(200).json(resultWithFavouriteStatus);
+                    res.status(200).json(finalResult);
                 },
             }),
         );

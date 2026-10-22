@@ -1,6 +1,5 @@
 import { Page } from '@/components/layout/page';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
-import { isOfflineCreationAvailable } from '@/features/offline-snippet/lib/offline-creation-access';
 import { listCurrentUserCollectionsQueryOptions } from '@/features/collection-listing/lib/collection-listing-query-options';
 import { CreateSnippetPageHeader } from '@/features/create-snippet/components/sections/create-snippet-page-header';
 import { useCreateSnippet } from '@/features/create-snippet/hooks/use-create-snippet';
@@ -8,6 +7,12 @@ import {
     createSnippetFormSchema,
     type CreateSnippetFormSchemaType,
 } from '@/features/create-snippet/lib/schema';
+import {
+    clearSnippetDraft,
+    loadSnippetDraft,
+    saveSnippetDraft,
+} from '@/features/create-snippet/lib/snippet-draft-storage';
+import { isOfflineCreationAvailable } from '@/features/offline-snippet/lib/offline-creation-access';
 import { listCurrentUserSnippetsQueryOptions } from '@/features/snippet-listing/lib/snippet-listing-query-options';
 import { SnippetFormMainFields } from '@/features/snippets/components/forms/snippet-form-main-fields';
 import { SnippetFormSidebar } from '@/features/snippets/components/forms/snippet-form-sidebar';
@@ -17,6 +22,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { idSchema, Permission } from '@snippetly/common/dto';
 import { useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import z from 'zod';
 
@@ -54,6 +60,7 @@ function CreateSnippetPage() {
     const qClient = useQueryClient();
     const navigate = Route.useNavigate();
     const { collectionId, collectionName } = Route.useSearch();
+    const [snippetDraft] = React.useState(loadSnippetDraft);
     const form = useForm<CreateSnippetFormSchemaType>({
         defaultValues: {
             name: '',
@@ -65,15 +72,21 @@ function CreateSnippetPage() {
             isPrivate: false,
             allowForking: true,
             tags: [],
-            collectionId: collectionId,
+            ...snippetDraft,
+            collectionId: collectionId ?? snippetDraft?.collectionId,
         },
         resolver: zodResolver(createSnippetFormSchema),
     });
+    React.useEffect(() => {
+        const subscription = form.watch(values => saveSnippetDraft(values));
+        return () => subscription.unsubscribe();
+    }, [form]);
     const { mutateAsync, isPending } = useCreateSnippet({
         onSuccess: async data => {
             form.reset();
+            clearSnippetDraft();
             if (data.status === 'synced') {
-                await navigate({ to: '../$id', params: { id: data.data.id } });
+                await navigate({ to: '/snippets/$id', params: { id: data.data.id } });
                 void qClient.invalidateQueries(listCurrentUserSnippetsQueryOptions());
             }
         },

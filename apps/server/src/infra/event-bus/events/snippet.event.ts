@@ -9,7 +9,7 @@ type Input =
     | ForkSnippetDtoType['input']
     | { id: string };
 
-type EventType = AppEntityEventType | 'forked';
+type EventType = AppEntityEventType | 'forked' | 'soft-deleted' | 'restored';
 
 export class SnippetEvent extends AppEntityEvent<Snippet> {
     constructor(

@@ -13,7 +13,7 @@ type Input =
     | ForkCollectionDtoType['input']
     | { id: string };
 
-type EventType = AppEntityEventType | 'forked';
+type EventType = AppEntityEventType | 'forked' | 'soft-deleted' | 'restored';
 
 export class CollectionEvent extends AppEntityEvent<Collection> {
     constructor(

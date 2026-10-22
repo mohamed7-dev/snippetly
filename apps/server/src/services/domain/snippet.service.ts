@@ -4,8 +4,8 @@ import {
     DeletionResponse,
     FilterGroupOperator,
     FindOneSnippetDtoType,
-    FriendshipStatus,
     ForkSnippetDtoType,
+    FriendshipStatus,
     SnippetListDtoType,
     SuccessResponse,
     UpdateSnippetDtoType,
@@ -14,25 +14,27 @@ import {
 import { omit } from '@snippetly/common/lib';
 import { Brackets, FindOptionsRelations, In, IsNull, Not } from 'typeorm';
 import { RequestContext } from '../../api/request-context/request-context';
-import { OnApplicationBootstrap } from '../../common/types/lifecycle-hooks';
 import { EntityNotFoundError } from '../../common/errors/errors';
+import { OnApplicationBootstrap } from '../../common/types/lifecycle-hooks';
 import { Collection } from '../../entities/collections/collection.entity';
+import { Developer } from '../../entities/developer/developer.entity';
 import { Friendship } from '../../entities/friendships/friendship.entity';
 import { Snippet } from '../../entities/snippets/snippet.entity';
 import { DatabaseService } from '../../infra/database/database.service';
 import { EventBus } from '../../infra/event-bus/event-bus.service';
+import { AppJobEvent } from '../../infra/event-bus/events/app-job.event';
 import { SnippetEvent } from '../../infra/event-bus/events/snippet.event';
 import { Injectable } from '../../infra/ioc-container/injectable.decorator';
-import { AppJobEvent } from '../events/app-job.event';
+import { JobQueue } from '../../infra/job-queue/job-qeueue.service';
+import { AppJob } from '../../infra/job-queue/types';
+import { PushNotificationService } from '../../infra/push-notification/push-notification.service';
 import { ListQueryBuilder } from '../helpers/list-query-builder/list-query-builder.service';
 import { normalizeDeveloperCounts } from '../helpers/normalize-developer-counts';
-import type { AppJob } from '../jobs/app-job';
 import { SlugValidator } from '../helpers/slug-validator.service';
 import { CollectionService } from './collection.service';
 import { DeveloperService } from './developer.service';
 import { FavouriteService } from './favourite.service';
 import { FriendshipService } from './friendship.service';
-import { PushNotificationService } from './push-notification.service';
 import { TagService } from './tag.service';
 
 @Injectable()
@@ -48,6 +50,7 @@ export class SnippetService implements OnApplicationBootstrap {
         private readonly eventBus: EventBus,
         private readonly favouriteService: FavouriteService,
         private readonly pushNotificationService: PushNotificationService,
+        private readonly jobQueue: JobQueue,
     ) {}
 
     onApplicationBootstrap(): void {
@@ -59,6 +62,22 @@ export class SnippetService implements OnApplicationBootstrap {
                     await this.processPublishedSnippetNotificationJob(job);
                 }
             },
+        });
+        this.eventBus.ofType(SnippetEvent).subscribe(event => {
+            if (event.type === 'created') {
+                if (!event.entity) return undefined;
+                const { isPrivate, id, creator } = event.entity;
+                if (isPrivate !== true && creator) {
+                    void this.jobQueue.enqueue(
+                        {
+                            type: 'notify-friends-of-published-snippet',
+                            authorId: creator.id,
+                            snippetId: id,
+                        },
+                        10,
+                    );
+                }
+            }
         });
     }
 
@@ -100,18 +119,6 @@ export class SnippetService implements OnApplicationBootstrap {
             url: `/snippets/${snippet.id}`,
             tag: `snippet-${snippet.id}`,
         });
-    }
-
-    public async attachFavouriteStatus<T extends { id: string }>(ctx: RequestContext, items: T[]) {
-        const statusById = await this.favouriteService.getFavouriteStatusMap(
-            ctx,
-            items.map(({ id }) => id),
-            'snippets',
-        );
-        return items.map(item => ({
-            ...item,
-            isFavouritedByCurrentUser: statusById.get(item.id) ?? false,
-        }));
     }
 
     public async findOne(
@@ -228,6 +235,259 @@ export class SnippetService implements OnApplicationBootstrap {
         return { items, itemsCount };
     }
 
+    public async getUserFriendsSnippets(
+        ctx: RequestContext,
+        developerId: string,
+        input: UserFriendsSnippetsListDtoType['input'],
+    ) {
+        const friendships = await this.friendshipService.getUserFriends(ctx, developerId, {});
+
+        if (!friendships.items.length) {
+            return { items: [], itemsCount: 0 };
+        }
+
+        const friendIds = friendships.items.map(friendship =>
+            friendship.requester.id === developerId ? friendship.addressee.id : friendship.requester.id,
+        );
+
+        const qb = this.listQueryBuilder.build(Snippet, input as any, {
+            ctx,
+            where: {
+                creator: { id: In(friendIds) },
+                isPrivate: false,
+                deletedAt: IsNull(),
+            },
+            relations: {
+                creator: { user: true },
+                collection: true,
+                tags: true,
+                forkedFrom: {
+                    creator: { user: true },
+                },
+            },
+            orderBy: {
+                createdAt: 'DESC',
+            },
+        });
+
+        const [items, itemsCount] = await qb.getManyAndCount();
+        return { items, itemsCount };
+    }
+
+    public async create(ctx: RequestContext, input: CreateSnippetDtoType['input']) {
+        // resolve developer from current active user
+        const developer = await this.developerService.getActiveDeveloper(ctx, true);
+
+        await this.slugValidator.validateSlug(ctx, input, Snippet);
+
+        const snippet = new Snippet({
+            name: input.name,
+            slug: input.slug,
+            code: input.code,
+            language: input.language,
+            description: !input.description?.length ? null : input.description,
+            note: !input.note?.length ? null : input.note,
+            allowForking: input.allowForking,
+            isPrivate: input.isPrivate,
+            creator: developer,
+        });
+
+        // validate collection
+        if (input.collectionId) {
+            const collection = await this.collectionService.findOne(
+                ctx,
+                { id: input.collectionId },
+                undefined,
+                { includePrivateCollection: true, includeSoftDeleted: false },
+            );
+            if (!collection) {
+                throw new EntityNotFoundError({ entityName: 'Collection', entityId: input.collectionId });
+            }
+            snippet.collection = collection;
+        }
+
+        // handle tags relation
+        if (input.tags) {
+            snippet.tags = await this.tagService.createTagsFromValues(ctx, input.tags);
+        }
+
+        const repo = this.databaseService.getRepository(ctx, Snippet);
+
+        await repo.save(snippet);
+        await this.eventBus.publish(new SnippetEvent(ctx, snippet, 'created', input));
+
+        return snippet;
+    }
+
+    public async update(ctx: RequestContext, input: UpdateSnippetDtoType['input']) {
+        await this.slugValidator.validateSlug(ctx, input, Snippet);
+
+        const repo = this.databaseService.getRepository(ctx, Snippet);
+        let snippet = await this.findOne(
+            ctx,
+            input,
+            { creator: true, collection: true, tags: true },
+            { includePrivateSnippet: true },
+        );
+
+        if (!snippet || (ctx.isAuthorizedAsOwnerOnly && snippet.creator.user.id !== ctx.activeUserId)) {
+            throw new EntityNotFoundError({ entityName: 'Snippet', entityId: input.id });
+        }
+
+        const { collectionId, tags, ...snippetInput } = input;
+        snippet = Object.assign(snippet, omit(snippetInput, ['id']));
+
+        if (collectionId) {
+            const collection = await this.collectionService.findOne(ctx, { id: collectionId }, undefined, {
+                includePrivateCollection: true,
+                includeSoftDeleted: false,
+            });
+            if (!collection) {
+                throw new EntityNotFoundError({ entityName: 'Collection', entityId: collectionId });
+            }
+            snippet.collection = collection;
+        }
+
+        if (tags) {
+            snippet.tags = await this.tagService.createTagsFromValues(ctx, tags);
+        }
+
+        await this.eventBus.publish(new SnippetEvent(ctx, snippet, 'updated', input));
+
+        await repo.save(snippet);
+
+        return snippet;
+    }
+
+    public async softDelete(
+        ctx: RequestContext,
+        input: DeleteSnippetDtoType['input'],
+    ): Promise<{ result: 'DELETED' | 'NOT_DELETED'; message: string }> {
+        const repo = this.databaseService.getRepository(ctx, Snippet);
+        const snippet = await this.findOne(
+            ctx,
+            { id: input.id },
+            { creator: true },
+            { includePrivateSnippet: true },
+        );
+
+        if (!snippet || (ctx.isAuthorizedAsOwnerOnly && snippet.creator.user.id !== ctx.activeUserId)) {
+            return { result: 'NOT_DELETED', message: 'Snippet not found' };
+        }
+
+        snippet.deletedAt = new Date();
+        await repo.save(snippet);
+        await this.eventBus.publish(new SnippetEvent(ctx, snippet, 'soft-deleted', input));
+
+        return { result: 'DELETED', message: '' };
+    }
+
+    public async restoreFromTrash(
+        ctx: RequestContext,
+        input: DeleteSnippetDtoType['input'],
+    ): Promise<SuccessResponse> {
+        const repo = this.databaseService.getRepository(ctx, Snippet);
+        const snippet = await this.findOne(
+            ctx,
+            input,
+            { creator: { user: true } },
+            { includePrivateSnippet: true, includeSoftDeleted: true },
+        );
+
+        if (
+            !snippet?.deletedAt ||
+            (ctx.isAuthorizedAsOwnerOnly && snippet.creator.user.id !== ctx.activeUserId)
+        ) {
+            throw new EntityNotFoundError({ entityName: 'Snippet', entityId: input.id });
+        }
+
+        snippet.deletedAt = null;
+        await repo.save(snippet);
+        await this.eventBus.publish(new SnippetEvent(ctx, snippet, 'restored', input));
+        return { success: true };
+    }
+
+    public async permanentlyDeleteFromTrash(
+        ctx: RequestContext,
+        input: DeleteSnippetDtoType['input'],
+    ): Promise<DeletionResponse> {
+        const repo = this.databaseService.getRepository(ctx, Snippet);
+        const snippet = await this.findOne(
+            ctx,
+            input,
+            { creator: { user: true } },
+            { includePrivateSnippet: true, includeSoftDeleted: true },
+        );
+
+        if (
+            !snippet?.deletedAt ||
+            (ctx.isAuthorizedAsOwnerOnly && snippet.creator.user.id !== ctx.activeUserId)
+        ) {
+            throw new EntityNotFoundError({ entityName: 'Snippet', entityId: input.id });
+        }
+
+        await repo.remove(snippet);
+        await this.eventBus.publish(new SnippetEvent(ctx, snippet, 'deleted', input));
+        return { result: 'DELETED', message: '' };
+    }
+
+    public async fork(ctx: RequestContext, input: ForkSnippetDtoType['input']) {
+        const developer = await this.developerService.getActiveDeveloper(ctx, true);
+
+        const repo = this.databaseService.getRepository(ctx, Snippet);
+
+        const source = await this.findOne(
+            ctx,
+            { id: input.id },
+            { creator: true, collection: true, tags: true },
+            { includePrivateSnippet: true },
+        );
+
+        const isOwner = source?.creator.id === developer.id;
+
+        if (!source || (!isOwner && (source.isPrivate || !source.allowForking))) {
+            throw new EntityNotFoundError({ entityName: 'Snippet', entityId: input.id });
+        }
+
+        const snippet = new Snippet({
+            name: source.name,
+            code: source.code,
+            language: source.language,
+            description: source.description,
+            note: source.note,
+            isPrivate: true,
+            allowForking: source.allowForking,
+            forkedFrom: source,
+            creator: developer,
+            collection: source.collection,
+        });
+
+        const forkInput = { slug: source.slug };
+        await this.slugValidator.validateSlug(ctx, forkInput, Snippet);
+        snippet.slug = forkInput.slug;
+
+        if (!input.collectionId && source.creator.id === developer.id) {
+            snippet.collection = source.collection;
+        }
+
+        if (input.collectionId) {
+            const collection = await this.collectionService.findOne(ctx, { id: input.collectionId });
+            if (!collection) {
+                throw new EntityNotFoundError({ entityName: 'Collection', entityId: input.collectionId });
+            }
+            snippet.collection = collection;
+        }
+
+        await repo.save(snippet);
+        if (source.tags.length > 0) {
+            await repo.createQueryBuilder().relation(Snippet, 'tags').of(snippet).add(source.tags);
+            snippet.tags = source.tags;
+        }
+        await this.eventBus.publish(new SnippetEvent(ctx, snippet, 'forked', input));
+
+        return snippet;
+    }
+
     public async countSnippetsInCollection(
         ctx: RequestContext,
         input: { collection: Collection },
@@ -299,256 +559,20 @@ export class SnippetService implements OnApplicationBootstrap {
         return normalizeDeveloperCounts(developerIds, counts);
     }
 
-    public async create(ctx: RequestContext, input: CreateSnippetDtoType['input']) {
-        // resolve developer from current active user
-        const developer = await this.developerService.getActiveDeveloper(ctx, true);
-
-        await this.slugValidator.validateSlug(ctx, input, Snippet);
-
-        const snippet = new Snippet({
-            name: input.name,
-            slug: input.slug,
-            code: input.code,
-            language: input.language,
-            description: !input.description?.length ? null : input.description,
-            note: !input.note?.length ? null : input.note,
-            allowForking: input.allowForking,
-            isPrivate: input.isPrivate,
-            creator: developer,
-        });
-
-        // validate collection
-        if (input.collectionId) {
-            const collection = await this.collectionService.findOne(
-                ctx,
-                { id: input.collectionId },
-                undefined,
-                { includePrivateCollection: true, includeSoftDeleted: false },
-            );
-            if (!collection) {
-                throw new EntityNotFoundError({ entityName: 'Collection', entityId: input.collectionId });
-            }
-            snippet.collection = collection;
-        }
-
-        // handle tags relation
-        if (input.tags) {
-            snippet.tags = await this.tagService.createTagsFromValues(ctx, input.tags);
-        }
-
-        const repo = this.databaseService.getRepository(ctx, Snippet);
-
-        await repo.save(snippet);
-        await this.eventBus.publish(new SnippetEvent(ctx, snippet, 'created', input));
-
-        return snippet;
-    }
-
-    public async getUserFriendsSnippets(
+    public async attachFavouriteStatus<T extends { id: string }>(
         ctx: RequestContext,
-        developerId: string,
-        input: UserFriendsSnippetsListDtoType['input'],
+        items: T[],
+        developer?: Developer,
     ) {
-        const friendships = await this.friendshipService.getUserFriends(ctx, developerId, {});
-
-        if (!friendships.items.length) {
-            return { items: [], itemsCount: 0 };
-        }
-
-        const friendIds = friendships.items.map(friendship =>
-            friendship.requester.id === developerId ? friendship.addressee.id : friendship.requester.id,
-        );
-
-        const qb = this.listQueryBuilder.build(Snippet, input as any, {
+        const statusById = await this.favouriteService.getFavouriteStatusMapForDeveloper(
             ctx,
-            where: {
-                creator: { id: In(friendIds) },
-                isPrivate: false,
-                deletedAt: IsNull(),
-            },
-            relations: {
-                creator: { user: true },
-                collection: true,
-                tags: true,
-                forkedFrom: {
-                    creator: { user: true },
-                },
-            },
-            orderBy: {
-                createdAt: 'DESC',
-            },
-        });
-
-        const [items, itemsCount] = await qb.getManyAndCount();
-        return { items, itemsCount };
-    }
-
-    public async update(ctx: RequestContext, input: UpdateSnippetDtoType['input']) {
-        await this.slugValidator.validateSlug(ctx, input, Snippet);
-
-        const repo = this.databaseService.getRepository(ctx, Snippet);
-        let snippet = await this.findOne(
-            ctx,
-            input,
-            { creator: true, collection: true, tags: true },
-            { includePrivateSnippet: true },
+            items.map(({ id }) => id),
+            'snippets',
+            developer,
         );
-
-        if (!snippet || (ctx.isAuthorizedAsOwnerOnly && snippet.creator.user.id !== ctx.activeUserId)) {
-            throw new EntityNotFoundError({ entityName: 'Snippet', entityId: input.id });
-        }
-
-        const { collectionId, tags, ...snippetInput } = input;
-        snippet = Object.assign(snippet, omit(snippetInput, ['id']));
-
-        if (collectionId) {
-            const collection = await this.collectionService.findOne(ctx, { id: collectionId }, undefined, {
-                includePrivateCollection: true,
-                includeSoftDeleted: false,
-            });
-            if (!collection) {
-                throw new EntityNotFoundError({ entityName: 'Collection', entityId: collectionId });
-            }
-            snippet.collection = collection;
-        }
-
-        if (tags) {
-            snippet.tags = await this.tagService.createTagsFromValues(ctx, tags);
-        }
-
-        await this.eventBus.publish(new SnippetEvent(ctx, snippet, 'updated', input));
-
-        await repo.save(snippet);
-
-        return snippet;
-    }
-
-    public async softDelete(
-        ctx: RequestContext,
-        input: DeleteSnippetDtoType['input'],
-    ): Promise<{ result: 'DELETED' | 'NOT_DELETED'; message: string }> {
-        const repo = this.databaseService.getRepository(ctx, Snippet);
-        const snippet = await this.findOne(
-            ctx,
-            { id: input.id },
-            { creator: true },
-            { includePrivateSnippet: true },
-        );
-
-        if (!snippet || (ctx.isAuthorizedAsOwnerOnly && snippet.creator.user.id !== ctx.activeUserId)) {
-            return { result: 'NOT_DELETED', message: 'Snippet not found' };
-        }
-
-        snippet.deletedAt = new Date();
-        await repo.save(snippet);
-        await this.eventBus.publish(new SnippetEvent(ctx, snippet, 'deleted', input));
-
-        return { result: 'DELETED', message: '' };
-    }
-
-    public async restoreFromTrash(
-        ctx: RequestContext,
-        input: DeleteSnippetDtoType['input'],
-    ): Promise<SuccessResponse> {
-        const repo = this.databaseService.getRepository(ctx, Snippet);
-        const snippet = await this.findOne(
-            ctx,
-            input,
-            { creator: { user: true } },
-            { includePrivateSnippet: true, includeSoftDeleted: true },
-        );
-
-        if (
-            !snippet?.deletedAt ||
-            (ctx.isAuthorizedAsOwnerOnly && snippet.creator.user.id !== ctx.activeUserId)
-        ) {
-            throw new EntityNotFoundError({ entityName: 'Snippet', entityId: input.id });
-        }
-
-        snippet.deletedAt = null;
-        await repo.save(snippet);
-        await this.eventBus.publish(new SnippetEvent(ctx, snippet, 'restored', input));
-        return { success: true };
-    }
-
-    public async permanentlyDeleteFromTrash(
-        ctx: RequestContext,
-        input: DeleteSnippetDtoType['input'],
-    ): Promise<DeletionResponse> {
-        const repo = this.databaseService.getRepository(ctx, Snippet);
-        const snippet = await this.findOne(
-            ctx,
-            input,
-            { creator: { user: true } },
-            { includePrivateSnippet: true, includeSoftDeleted: true },
-        );
-
-        if (
-            !snippet?.deletedAt ||
-            (ctx.isAuthorizedAsOwnerOnly && snippet.creator.user.id !== ctx.activeUserId)
-        ) {
-            throw new EntityNotFoundError({ entityName: 'Snippet', entityId: input.id });
-        }
-
-        await repo.remove(snippet);
-        await this.eventBus.publish(new SnippetEvent(ctx, snippet, 'permanently-deleted', input));
-        return { result: 'DELETED', message: '' };
-    }
-
-    public async fork(ctx: RequestContext, input: ForkSnippetDtoType['input']) {
-        const developer = await this.developerService.getActiveDeveloper(ctx, true);
-
-        const repo = this.databaseService.getRepository(ctx, Snippet);
-
-        const source = await this.findOne(
-            ctx,
-            { id: input.id },
-            { creator: true, collection: true, tags: true },
-            { includePrivateSnippet: true },
-        );
-
-        const isOwner = source?.creator.id === developer.id;
-
-        if (!source || (!isOwner && (source.isPrivate || !source.allowForking))) {
-            throw new EntityNotFoundError({ entityName: 'Snippet', entityId: input.id });
-        }
-
-        const snippet = new Snippet({
-            name: source.name,
-            code: source.code,
-            language: source.language,
-            description: source.description,
-            note: source.note,
-            isPrivate: true,
-            allowForking: source.allowForking,
-            forkedFrom: source,
-            creator: developer,
-            collection: source.collection,
-        });
-
-        const forkInput = { slug: source.slug };
-        await this.slugValidator.validateSlug(ctx, forkInput, Snippet);
-        snippet.slug = forkInput.slug;
-
-        if (!input.collectionId && source.creator.id === developer.id) {
-            snippet.collection = source.collection;
-        }
-
-        if (input.collectionId) {
-            const collection = await this.collectionService.findOne(ctx, { id: input.collectionId });
-            if (!collection) {
-                throw new EntityNotFoundError({ entityName: 'Collection', entityId: input.collectionId });
-            }
-            snippet.collection = collection;
-        }
-
-        await repo.save(snippet);
-        if (source.tags.length > 0) {
-            await repo.createQueryBuilder().relation(Snippet, 'tags').of(snippet).add(source.tags);
-            snippet.tags = source.tags;
-        }
-        await this.eventBus.publish(new SnippetEvent(ctx, snippet, 'forked', input));
-
-        return snippet;
+        return items.map(item => ({
+            ...item,
+            isFavouritedByCurrentUser: statusById.get(item.id) ?? false,
+        }));
     }
 }

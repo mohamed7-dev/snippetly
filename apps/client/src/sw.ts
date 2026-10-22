@@ -1,9 +1,8 @@
 /// <reference lib="webworker" />
 
+import type { ActiveDeveloperDtoType } from '@snippetly/common/dto';
 import { createHandlerBoundToURL, precacheAndRoute } from 'workbox-precaching';
 import { NavigationRoute, registerRoute } from 'workbox-routing';
-import { developerApiClient } from './lib/api-client';
-import { apiEndpoints } from './lib/api-endpoints';
 import {
     OFFLINE_CREATION_SYNC_REQUEST,
     OFFLINE_CREATION_SYNC_TAG,
@@ -14,7 +13,8 @@ import {
     saveOfflineSyncCredential,
 } from './features/offline-snippet/lib/store';
 import { syncPendingCreations } from './features/offline-snippet/lib/sync-pending-creations';
-import type { ActiveDeveloperDtoType } from '@snippetly/common/dto';
+import { developerApiClient } from './lib/api-client';
+import { apiEndpoints } from './lib/api-endpoints';
 
 declare let self: ServiceWorkerGlobalScope & {
     __WB_MANIFEST: Array<{ url: string; revision?: string | null }>;
@@ -22,10 +22,7 @@ declare let self: ServiceWorkerGlobalScope & {
 
 type BackgroundSyncEvent = ExtendableEvent & { tag: string };
 type SyncCapableWorker = ServiceWorkerGlobalScope & {
-    addEventListener(
-        type: 'sync',
-        listener: (event: BackgroundSyncEvent) => void,
-    ): void;
+    addEventListener(type: 'sync', listener: (event: BackgroundSyncEvent) => void): void;
 };
 
 const worker = self as SyncCapableWorker;
@@ -49,16 +46,31 @@ self.addEventListener('push', event => {
         payload = {};
     }
 
+    const title = payload.title || 'Snippetly';
+    const body = payload.body || 'There is something new to explore.';
+    const url = getSafePushUrl(payload.url);
+
     event.waitUntil(
-        self.registration.showNotification(payload.title || 'Snippetly', {
-            body: payload.body || 'There is something new to explore.',
+        self.registration.showNotification(title, {
+            body,
             icon: '/web-app-manifest-192x192.png',
             badge: '/web-app-manifest-192x192.png',
             tag: payload.tag,
-            data: { url: payload.url || '/' },
+            data: { url },
         }),
     );
 });
+
+function getSafePushUrl(value?: string): string {
+    try {
+        const destination = new URL(value || '/', self.location.origin);
+        return destination.origin === self.location.origin
+            ? destination.pathname + destination.search + destination.hash
+            : '/';
+    } catch {
+        return '/';
+    }
+}
 
 self.addEventListener('notificationclick', event => {
     event.notification.close();
@@ -86,16 +98,15 @@ async function syncOfflineCreations() {
         if (!credentials) continue;
 
         let token = credentials.token;
-        const activeDeveloper =
-            await developerApiClient.fetchWithToken<ActiveDeveloperDtoType['output']>(
-                apiEndpoints.developers.getActiveDeveloper.url,
-                { method: apiEndpoints.developers.getActiveDeveloper.method },
-                token,
-                refreshedToken => {
-                    token = refreshedToken;
-                    return updateCredential(ownerId, refreshedToken);
-                },
-            );
+        const activeDeveloper = await developerApiClient.fetchWithToken<ActiveDeveloperDtoType['output']>(
+            apiEndpoints.developers.getActiveDeveloper.url,
+            { method: apiEndpoints.developers.getActiveDeveloper.method },
+            token,
+            refreshedToken => {
+                token = refreshedToken;
+                return updateCredential(ownerId, refreshedToken);
+            },
+        );
 
         if (!activeDeveloper || activeDeveloper.id !== ownerId) {
             await notifyClients({
@@ -105,10 +116,8 @@ async function syncOfflineCreations() {
             continue;
         }
 
-        const result = await syncPendingCreations(
-            ownerId,
-            token,
-            refreshedToken => updateCredential(ownerId, refreshedToken),
+        const result = await syncPendingCreations(ownerId, token, refreshedToken =>
+            updateCredential(ownerId, refreshedToken),
         );
         await notifyClients({
             type: 'offline-creation-sync-complete',

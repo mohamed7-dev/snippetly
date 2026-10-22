@@ -200,13 +200,34 @@ export const apiEndpoints = {
             contentType: null,
         },
         getActiveDeveloperStats: {
-            url: `developers/me/stats`,
+            url: `developers/me/activity`,
             method: 'GET',
             contentType: null,
+        },
+        getPreferences: {
+            url: 'preferences/me',
+            method: 'GET',
+            contentType: null,
+        },
+        updatePreferences: {
+            url: 'preferences/me',
+            method: 'PATCH',
         },
         list: {
             url: (searchParams: URLSearchParams) => `developers?${searchParams.toString()}`,
             method: 'GET',
+            contentType: null,
+        },
+    },
+    notifications: {
+        list: {
+            url: (searchParams: URLSearchParams) => `notifications?${searchParams.toString()}`,
+            method: 'GET',
+            contentType: null,
+        },
+        dismiss: {
+            url: (id: string) => `notifications/${id}`,
+            method: 'DELETE',
             contentType: null,
         },
     },

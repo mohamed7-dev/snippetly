@@ -1,15 +1,8 @@
+import { useDeveloperSettings } from '@/features/developer-settings/hooks/use-developer-settings';
 import { useQueries, type UseQueryResult } from '@tanstack/react-query';
-import {
-    createContext,
-    useCallback,
-    useEffect,
-    useState,
-    type ReactNode,
-} from 'react';
-import {
-    listNotifications,
-    subscribeToNotificationRegistry,
-} from '../lib/notification-registry';
+import { createContext, useCallback, useEffect, useState, type ReactNode } from 'react';
+import { APP_NOTIFICATIONS_NOTIFICATION_ID } from '../lib/default-notifications';
+import { listNotifications, subscribeToNotificationRegistry } from '../lib/notification-registry';
 import type { AppNotificationDefinition } from '../lib/notification-types';
 
 export type NotificationsContextValue = {
@@ -20,34 +13,36 @@ export type NotificationsContextValue = {
     isEnabled: boolean;
 };
 
-export const NotificationsContext = createContext<NotificationsContextValue | undefined>(
-    undefined,
-);
+export const NotificationsContext = createContext<NotificationsContextValue | undefined>(undefined);
 
 const INITIAL_QUERY_DELAY_MS = 5_000;
 
 export function NotificationsProvider({ children }: { children: ReactNode }) {
+    const {
+        state: { settings, isLoaded },
+    } = useDeveloperSettings();
     const [definitions, setDefinitions] = useState(listNotifications);
     const [dismissedAlerts, setDismissedAlerts] = useState<Map<string, number>>(() => new Map());
-    const [isEnabled, setIsEnabled] = useState(false);
+    const [isReady, setIsReady] = useState(false);
 
-    useEffect(
-        () => subscribeToNotificationRegistry(() => setDefinitions(listNotifications())),
-        [],
-    );
+    useEffect(() => subscribeToNotificationRegistry(() => setDefinitions(listNotifications())), []);
 
     useEffect(() => {
-        const timer = window.setTimeout(() => setIsEnabled(true), INITIAL_QUERY_DELAY_MS);
+        const timer = window.setTimeout(() => setIsReady(true), INITIAL_QUERY_DELAY_MS);
         return () => window.clearTimeout(timer);
     }, []);
 
+    const areNotificationsEnabled = isLoaded && settings.inAppNotificationsEnabled;
+
     const rawQueryResults = useQueries({
-        queries: definitions.map(definition => ({
-            queryKey: ['dashboard-notification', definition.id],
-            queryFn: () => definition.check(),
-            refetchInterval: definition.recheckInterval,
-            enabled: isEnabled,
-        })),
+        queries: definitions
+            .filter(definition => definition.id !== APP_NOTIFICATIONS_NOTIFICATION_ID)
+            .map(definition => ({
+                queryKey: ['dashboard-notification', definition.id],
+                queryFn: () => definition.check(),
+                refetchInterval: definition.recheckInterval,
+                enabled: isReady && areNotificationsEnabled,
+            })),
     });
 
     const dismissAlert = useCallback((id: string) => {
@@ -57,17 +52,19 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         setDismissedAlerts(previous => {
             let next = previous;
-            definitions.forEach((definition, index) => {
-                const result = rawQueryResults[index];
-                if (
-                    previous.has(definition.id) &&
-                    result?.isSuccess &&
-                    !definition.shouldShow(result.data)
-                ) {
-                    if (next === previous) next = new Map(previous);
-                    next.delete(definition.id);
-                }
-            });
+            definitions
+                .filter(definition => definition.id !== APP_NOTIFICATIONS_NOTIFICATION_ID)
+                .forEach((definition, index) => {
+                    const result = rawQueryResults[index];
+                    if (
+                        previous.has(definition.id) &&
+                        result?.isSuccess &&
+                        !definition.shouldShow(result.data)
+                    ) {
+                        if (next === previous) next = new Map(previous);
+                        next.delete(definition.id);
+                    }
+                });
             return next;
         });
     }, [definitions, rawQueryResults]);
@@ -79,7 +76,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
                 rawQueryResults,
                 dismissedAlerts,
                 dismissAlert,
-                isEnabled,
+                isEnabled: isReady && areNotificationsEnabled,
             }}
         >
             {children}

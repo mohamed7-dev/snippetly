@@ -14,12 +14,16 @@ export interface SlugForEntityOptions {
 interface EntityFieldInfo {
     metadata: EntityMetadata;
     column: string;
-    excludeColumn?: string;
 }
 
 @Injectable()
 export class SlugService {
     constructor(private readonly databaseService: DatabaseService) {}
+
+    /**
+     * @description
+     * Converts text into a lowercase, URL-friendly slug.
+     */
     public generate(_ctx: RequestContext, value: string): string {
         if (!value) {
             return '';
@@ -36,6 +40,10 @@ export class SlugService {
             .join('-');
     }
 
+    /**
+     * @description
+     * Creates a unique slug for a direct entity field, excluding the current entity when updating.
+     */
     public async slugForEntity(ctx: RequestContext, input: SlugForEntityOptions): Promise<string> {
         const { entityName, fieldName, inputValue: value, entityId } = input;
         const baseSlug = this.generate(ctx, value);
@@ -44,8 +52,7 @@ export class SlugService {
         }
         const field = this.resolveEntityField(entityName, fieldName);
         const repository = this.databaseService.getRepository(ctx, field.metadata.target);
-        const exclusion =
-            entityId == null ? undefined : { column: field.excludeColumn ?? 'id', value: entityId };
+        const exclusion = entityId == null ? undefined : { column: 'id', value: entityId };
         let slug = baseSlug;
         let suffix = 1;
         while (await this.slugExists(repository, field.column, slug, exclusion)) {
@@ -54,6 +61,7 @@ export class SlugService {
         return slug;
     }
 
+    /** Finds the entity metadata and database column for a direct entity field. */
     private resolveEntityField(entityName: string, fieldName: string): EntityFieldInfo {
         const metadata = this.databaseService.dataSource.entityMetadatas.find(
             m => m.tableName === entityName.toLowerCase(),
@@ -61,33 +69,17 @@ export class SlugService {
         if (!metadata) {
             throw new UserInputError('Entity not found', { entityName });
         }
-        const baseColumn = metadata.columns.find(c => c.propertyName === fieldName);
-        if (baseColumn) {
-            return { metadata, column: baseColumn.databaseName };
-        }
-        const translations = metadata.relations.find(r => r.propertyName === 'translations');
-        if (!translations) {
+        const column = metadata.columns.find(c => c.propertyName === fieldName);
+        if (!column) {
             throw new UserInputError('Entity has no field', {
                 entityName,
                 fieldName,
             });
         }
-        const translationMetadata = this.databaseService.dataSource.getMetadata(translations.type);
-        const translationColumn = translationMetadata.columns.find(c => c.propertyName === fieldName);
-        if (!translationColumn) {
-            throw new UserInputError('Entity has no field', {
-                entityName,
-                fieldName,
-            });
-        }
-        const ownerRelation = translationMetadata.relations.find(r => r.type === metadata.target);
-        return {
-            metadata: translationMetadata,
-            column: translationColumn.databaseName,
-            excludeColumn: ownerRelation?.joinColumns?.[0]?.databaseName ?? 'baseId',
-        };
+        return { metadata, column: column.databaseName };
     }
 
+    /** Checks whether a slug is already used, optionally excluding one entity ID. */
     private async slugExists(
         repository: Repository<ObjectLiteral>,
         column: string,

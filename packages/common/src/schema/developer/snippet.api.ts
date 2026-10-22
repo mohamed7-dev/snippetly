@@ -127,7 +127,6 @@ export type ForkSnippetDtoType = InferDtoType<typeof forkSnippetDto>;
 const findOneSnippetInput = inputIdSchema;
 
 const snippetItem = snippet.omit({ collection: true, tags: true, creator: true }).extend({
-    isFavouritedByCurrentUser: z.boolean(),
     creator: developer.pick({
         id: true,
         firstName: true,
@@ -156,6 +155,10 @@ const snippetItem = snippet.omit({ collection: true, tags: true, creator: true }
             }),
         })
         .nullish(),
+
+    relationshipsWithCurrentUser: z.object({
+        isFavouritedByCurrentUser: z.boolean(),
+    }),
 });
 
 const publicSnippetItem = snippetItem.pick({
@@ -167,7 +170,7 @@ const publicSnippetItem = snippetItem.pick({
     description: true,
     note: true,
     allowForking: true,
-    isFavouritedByCurrentUser: true,
+    relationshipsWithCurrentUser: true,
     tags: true,
     creator: true,
     forkedFrom: true,
@@ -242,7 +245,6 @@ const snippetListInput = createPaginatedListInputSchema(filterSchema, sortSchema
     .partial();
 
 const snippetListItem = snippet.omit({ collection: true, tags: true, creator: true }).extend({
-    isFavouritedByCurrentUser: z.boolean(),
     creator: developer.pick({
         id: true,
         firstName: true,
@@ -271,6 +273,9 @@ const snippetListItem = snippet.omit({ collection: true, tags: true, creator: tr
             }),
         })
         .nullish(),
+    relationshipsWithCurrentUser: z.object({
+        isFavouritedByCurrentUser: z.boolean(),
+    }),
 });
 
 const publicListSnippetItem = snippetListItem.pick({
@@ -282,7 +287,7 @@ const publicListSnippetItem = snippetListItem.pick({
     description: true,
     note: true,
     allowForking: true,
-    isFavouritedByCurrentUser: true,
+    relationshipsWithCurrentUser: true,
     tags: true,
     creator: true,
     forkedFrom: true,
@@ -348,7 +353,7 @@ const userFriendsSnippetsListItem = snippetListItem.pick({
     description: true,
     note: true,
     allowForking: true,
-    isFavouritedByCurrentUser: true,
+    relationshipsWithCurrentUser: true,
     tags: true,
     creator: true,
     forkedFrom: true,

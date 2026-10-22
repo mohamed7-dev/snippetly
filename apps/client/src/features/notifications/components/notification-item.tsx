@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
 import { AlertCircleIcon, InfoIcon, TriangleAlertIcon, XIcon } from 'lucide-react';
+import { toast } from 'sonner';
 import type { NotificationEntry } from '../hooks/use-notifications';
 import type { NotificationAction } from '../lib/notification-types';
 
@@ -51,6 +51,13 @@ export function NotificationItem({ notification }: { notification: NotificationE
                         ))}
                     </div>
                 ) : null}
+                {notification.href && (
+                    <div className="mt-2">
+                        <Button asChild size="sm" variant="secondary" onClick={notification.dismiss}>
+                            <a href={notification.href}>View snippet</a>
+                        </Button>
+                    </div>
+                )}
             </div>
             <Button
                 aria-label={`Dismiss ${title}`}
@@ -89,8 +96,7 @@ function NotificationActionItem({
                     .then(() => onClick({ data, dismiss }))
                     .catch(error => {
                         toast.error(`Could not complete "${action.label}"`, {
-                            description:
-                                error instanceof Error ? error.message : 'Please try again.',
+                            description: error instanceof Error ? error.message : 'Please try again.',
                         });
                     });
             }}

@@ -9,6 +9,7 @@ import { DummyJobQueueStrategy } from './config/system/job-queue/dummy-job-queue
 import { QStashJobQueueStrategy } from './config/system/job-queue/qstash-job-queue.strategy';
 import { LogLevel } from './config/system/logger/logger-strategy.interface';
 import { StdoutLoggerStrategy } from './config/system/logger/stdout-logger.strategy';
+import { PostgresSearchStrategy } from './config/system/search/postgres-search-strategy';
 import { entitiesMap } from './entities/entities-map';
 
 const envPaths = ['.env'];
@@ -94,5 +95,11 @@ export const appConfig: AppConfig = {
                   nextSigningKey: process.env.QSTASH_NEXT_SIGNING_KEY,
               })
             : new DummyJobQueueStrategy(),
+        pushNotifications: {
+            publicKey: process.env.VAPID_PUBLIC_KEY,
+            privateKey: process.env.VAPID_PRIVATE_KEY,
+            subject: process.env.VAPID_SUBJECT,
+        },
+        searchStrategy: new PostgresSearchStrategy(),
     },
 };

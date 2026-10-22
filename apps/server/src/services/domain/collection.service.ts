@@ -12,21 +12,21 @@ import {
 import { omit } from '@snippetly/common/lib';
 import { FindOptionsRelations, IsNull, Not } from 'typeorm';
 import { RequestContext } from '../../api/request-context/request-context';
-import { DisallowedCollectionOwnerForkError } from '../../common';
-import { OnApplicationBootstrap } from '../../common/types/lifecycle-hooks';
 import { EntityNotFoundError, ForbiddenError } from '../../common/errors/errors';
+import { DisallowedCollectionOwnerForkError } from '../../common/errors/generated-developer-errors';
+import { OnApplicationBootstrap } from '../../common/types/lifecycle-hooks';
 import { Collection } from '../../entities/collections/collection.entity';
 import { Developer } from '../../entities/developer/developer.entity';
 import { Snippet } from '../../entities/snippets/snippet.entity';
 import { DatabaseService } from '../../infra/database/database.service';
 import { patchEntity } from '../../infra/database/patch-entity';
 import { EventBus } from '../../infra/event-bus/event-bus.service';
-import { AppJobEvent } from '../events/app-job.event';
+import { AppJobEvent } from '../../infra/event-bus/events/app-job.event';
 import { CollectionEvent } from '../../infra/event-bus/events/collection.event';
 import { Injectable } from '../../infra/ioc-container/injectable.decorator';
 import { moduleRef } from '../../infra/ioc-container/module-ref';
-import { JobQueue } from '../helpers/job-qeueue.service';
-import type { AppJob } from '../jobs/app-job';
+import { JobQueue } from '../../infra/job-queue/job-qeueue.service';
+import { AppJob } from '../../infra/job-queue/types';
 import { ListQueryBuilder } from '../helpers/list-query-builder/list-query-builder.service';
 import { normalizeDeveloperCounts } from '../helpers/normalize-developer-counts';
 import { SlugValidator } from '../helpers/slug-validator.service';
@@ -54,18 +54,6 @@ export class CollectionService implements OnApplicationBootstrap {
         private readonly jobQueue: JobQueue,
         private readonly favouriteService: FavouriteService,
     ) {}
-
-    public async attachFavouriteStatus<T extends { id: string }>(ctx: RequestContext, items: T[]) {
-        const statusById = await this.favouriteService.getFavouriteStatusMap(
-            ctx,
-            items.map(({ id }) => id),
-            'collections',
-        );
-        return items.map(item => ({
-            ...item,
-            isFavouritedByCurrentUser: statusById.get(item.id) ?? false,
-        }));
-    }
 
     /**@internal */
     onApplicationBootstrap(): void {
@@ -248,152 +236,16 @@ export class CollectionService implements OnApplicationBootstrap {
 
         const [items, itemsCount] = await qb.getManyAndCount();
 
-        return { items, itemsCount };
-    }
-
-    public async countDevelopersCollections(
-        ctx: RequestContext,
-        developerIds: string[],
-        options?: { includePrivateCollections?: boolean; includeSoftDeleted?: boolean },
-    ) {
-        const collectionRepo = this.databaseService.getRepository(ctx, Collection);
-
-        const qb = collectionRepo
-            .createQueryBuilder('collection')
-            .innerJoin('collection.creator', 'creator')
-            .select('creator.id', 'developerId')
-            .addSelect('COUNT(collection.id)', 'count')
-            .where('creator.id IN (:...developerIds)', { developerIds })
-            .groupBy('creator.id');
-
-        if (!options?.includePrivateCollections) {
-            qb.andWhere('collection.isPrivate = :isPrivate', { isPrivate: false });
-        }
-
-        if (!options?.includeSoftDeleted) {
-            qb.andWhere('collection.deletedAt IS NULL');
-        }
-
-        const counts = await qb.getRawMany<{ developerId: string; count: number | string }>();
-        return normalizeDeveloperCounts(developerIds, counts);
-    }
-
-    public async countDevelopersForkedCollections(
-        ctx: RequestContext,
-        developerIds: string[],
-        options?: { includePrivateCollections?: boolean; includeSoftDeleted?: boolean },
-    ) {
-        const collectionRepo = this.databaseService.getRepository(ctx, Collection);
-
-        const qb = collectionRepo
-            .createQueryBuilder('collection')
-            .innerJoin('collection.creator', 'creator')
-            .innerJoin('collection.forkedFrom', 'fork')
-            .select('creator.id', 'developerId')
-            .addSelect('COUNT(collection.id)', 'count')
-            .where('creator.id IN (:...developerIds)', { developerIds })
-            .groupBy('creator.id');
-
-        if (!options?.includePrivateCollections) {
-            qb.andWhere('collection.isPrivate = :isPrivate', { isPrivate: false });
-        }
-
-        if (!options?.includeSoftDeleted) {
-            qb.andWhere('collection.deletedAt IS NULL');
-        }
-
-        const counts = await qb.getRawMany<{ developerId: string; count: number | string }>();
-        return normalizeDeveloperCounts(developerIds, counts);
-    }
-
-    public async isCollectionOwnedBy(
-        ctx: RequestContext,
-        collectionId: string,
-        developerId: string,
-    ): Promise<boolean> {
-        const collection = await this.findOne(
-            ctx,
-            { id: collectionId },
-            { creator: { user: true } },
-            { includePrivateCollection: true, includeSoftDeleted: true },
-        );
-        return collection?.creator?.id === developerId;
-    }
-
-    public async addSnippetsPreview(
-        ctx: RequestContext,
-        items: Collection[],
-        options: { includePrivateSnippets: boolean },
-    ) {
-        if (items.length === 0) {
-            return {
-                snippetCountByCollection: new Map<string, number>(),
-                snippetsByCollection: new Map<
-                    string,
-                    Array<{ id: string; name: string; language: string }>
-                >(),
-            };
-        }
-
-        const snippetsQuery = this.databaseService
-            .getRepository(ctx, Snippet)
-            .createQueryBuilder('snippet')
-            .innerJoin('snippet.collection', 'collection')
-            .select('collection.id', 'collectionId')
-            .addSelect('snippet.id', 'snippetId')
-            .addSelect('snippet.name', 'snippetName')
-            .addSelect('snippet.language', 'snippetLanguage')
-            .addSelect('COUNT(snippet.id) OVER (PARTITION BY collection.id)', 'snippetCount')
-            .addSelect(
-                'ROW_NUMBER() OVER (PARTITION BY collection.id ORDER BY snippet.createdAt DESC, snippet.id DESC)',
-                'rowNumber',
-            )
-            .where('collection.id IN (:...collectionIds)', { collectionIds: items.map(item => item.id) })
-            .andWhere('snippet.deletedAt IS NULL');
-
-        if (!options.includePrivateSnippets) {
-            snippetsQuery.andWhere('snippet.isPrivate = :isPrivate', { isPrivate: false });
-        }
-
-        const snippetRows = await snippetsQuery.connection
-            .createQueryBuilder()
-            .select('ranked."collectionId"', 'collectionId')
-            .addSelect('ranked."snippetId"', 'snippetId')
-            .addSelect('ranked."snippetName"', 'snippetName')
-            .addSelect('ranked."snippetLanguage"', 'snippetLanguage')
-            .addSelect('ranked."snippetCount"', 'snippetCount')
-            .from(`(${snippetsQuery.getQuery()})`, 'ranked')
-            .where('ranked."rowNumber" <= :previewLimit', { previewLimit: 5 })
-            .orderBy('ranked."collectionId"', 'ASC')
-            .addOrderBy('ranked."rowNumber"', 'ASC')
-            .setParameters(snippetsQuery.getParameters())
-            .getRawMany<{
-                collectionId: string;
-                snippetId: string;
-                snippetName: string;
-                snippetLanguage: string;
-                snippetCount: string;
-            }>();
-
-        const snippetCountByCollection = new Map<string, number>();
-        const snippetsByCollection = new Map<string, Array<{ id: string; name: string; language: string }>>();
-
-        for (const row of snippetRows) {
-            snippetCountByCollection.set(row.collectionId, Number(row.snippetCount));
-            const snippets = snippetsByCollection.get(row.collectionId) ?? [];
-            snippets.push({
-                id: row.snippetId,
-                name: row.snippetName,
-                language: row.snippetLanguage,
-            });
-            snippetsByCollection.set(row.collectionId, snippets);
-        }
-
-        return { snippetCountByCollection, snippetsByCollection };
+        return {
+            items: items.map(item => ({
+                ...item,
+                creator: { ...item.creator, isVerified: item.creator.isVerified },
+            })),
+            itemsCount,
+        };
     }
 
     public async create(ctx: RequestContext, input: CreateCollectionDtoType['input']) {
-        // resolve developer from current active user
         const developer = await this.developerService.getActiveDeveloper(ctx, true);
 
         await this.slugValidator.validateSlug(ctx, input, Collection);
@@ -408,7 +260,6 @@ export class CollectionService implements OnApplicationBootstrap {
             creator: developer,
         });
 
-        // handle tags relation
         if (input.tags) {
             collection.tags = await this.tagService.createTagsFromValues(ctx, input.tags);
         }
@@ -523,7 +374,7 @@ export class CollectionService implements OnApplicationBootstrap {
 
         collection.deletedAt = new Date();
         await repo.save(collection);
-        await this.eventBus.publish(new CollectionEvent(ctx, collection, 'deleted', input));
+        await this.eventBus.publish(new CollectionEvent(ctx, collection, 'soft-deleted', input));
 
         return {
             result: 'DELETED',
@@ -576,7 +427,165 @@ export class CollectionService implements OnApplicationBootstrap {
         }
 
         await repo.remove(collection);
-        await this.eventBus.publish(new CollectionEvent(ctx, collection, 'permanently-deleted', input));
+        await this.eventBus.publish(new CollectionEvent(ctx, collection, 'deleted', input));
         return { result: 'DELETED', message: '' };
+    }
+
+    public async countDevelopersCollections(
+        ctx: RequestContext,
+        developerIds: string[],
+        options?: { includePrivateCollections?: boolean; includeSoftDeleted?: boolean },
+    ) {
+        const collectionRepo = this.databaseService.getRepository(ctx, Collection);
+
+        const qb = collectionRepo
+            .createQueryBuilder('collection')
+            .innerJoin('collection.creator', 'creator')
+            .select('creator.id', 'developerId')
+            .addSelect('COUNT(collection.id)', 'count')
+            .where('creator.id IN (:...developerIds)', { developerIds })
+            .groupBy('creator.id');
+
+        if (!options?.includePrivateCollections) {
+            qb.andWhere('collection.isPrivate = :isPrivate', { isPrivate: false });
+        }
+
+        if (!options?.includeSoftDeleted) {
+            qb.andWhere('collection.deletedAt IS NULL');
+        }
+
+        const counts = await qb.getRawMany<{ developerId: string; count: number | string }>();
+        return normalizeDeveloperCounts(developerIds, counts);
+    }
+
+    public async countDevelopersForkedCollections(
+        ctx: RequestContext,
+        developerIds: string[],
+        options?: { includePrivateCollections?: boolean; includeSoftDeleted?: boolean },
+    ) {
+        const collectionRepo = this.databaseService.getRepository(ctx, Collection);
+
+        const qb = collectionRepo
+            .createQueryBuilder('collection')
+            .innerJoin('collection.creator', 'creator')
+            .innerJoin('collection.forkedFrom', 'fork')
+            .select('creator.id', 'developerId')
+            .addSelect('COUNT(collection.id)', 'count')
+            .where('creator.id IN (:...developerIds)', { developerIds })
+            .groupBy('creator.id');
+
+        if (!options?.includePrivateCollections) {
+            qb.andWhere('collection.isPrivate = :isPrivate', { isPrivate: false });
+        }
+
+        if (!options?.includeSoftDeleted) {
+            qb.andWhere('collection.deletedAt IS NULL');
+        }
+
+        const counts = await qb.getRawMany<{ developerId: string; count: number | string }>();
+        return normalizeDeveloperCounts(developerIds, counts);
+    }
+
+    public async attachFavouriteStatus<T extends { id: string }>(
+        ctx: RequestContext,
+        items: T[],
+        developer?: Developer,
+    ) {
+        const statusById = await this.favouriteService.getFavouriteStatusMapForDeveloper(
+            ctx,
+            items.map(({ id }) => id),
+            'collections',
+            developer,
+        );
+        return items.map(item => ({
+            ...item,
+            isFavouritedByCurrentUser: statusById.get(item.id) ?? false,
+        }));
+    }
+
+    public async isCollectionOwnedBy(
+        ctx: RequestContext,
+        collectionId: string,
+        developerId: string,
+    ): Promise<boolean> {
+        const collection = await this.findOne(
+            ctx,
+            { id: collectionId },
+            { creator: { user: true } },
+            { includePrivateCollection: true, includeSoftDeleted: true },
+        );
+        return collection?.creator?.id === developerId;
+    }
+
+    public async getSnippetsPreviewForCollectionsList(
+        ctx: RequestContext,
+        items: Collection[],
+        options: { includePrivateSnippets: boolean },
+    ) {
+        if (items.length === 0) {
+            return {
+                snippetCountByCollection: new Map<string, number>(),
+                snippetsByCollection: new Map<
+                    string,
+                    Array<{ id: string; name: string; language: string }>
+                >(),
+            };
+        }
+
+        const snippetsQuery = this.databaseService
+            .getRepository(ctx, Snippet)
+            .createQueryBuilder('snippet')
+            .innerJoin('snippet.collection', 'collection')
+            .select('collection.id', 'collectionId')
+            .addSelect('snippet.id', 'snippetId')
+            .addSelect('snippet.name', 'snippetName')
+            .addSelect('snippet.language', 'snippetLanguage')
+            .addSelect('COUNT(snippet.id) OVER (PARTITION BY collection.id)', 'snippetCount')
+            .addSelect(
+                'ROW_NUMBER() OVER (PARTITION BY collection.id ORDER BY snippet.createdAt DESC, snippet.id DESC)',
+                'rowNumber',
+            )
+            .where('collection.id IN (:...collectionIds)', { collectionIds: items.map(item => item.id) })
+            .andWhere('snippet.deletedAt IS NULL');
+
+        if (!options.includePrivateSnippets) {
+            snippetsQuery.andWhere('snippet.isPrivate = :isPrivate', { isPrivate: false });
+        }
+
+        const snippetRows = await snippetsQuery.connection
+            .createQueryBuilder()
+            .select('ranked."collectionId"', 'collectionId')
+            .addSelect('ranked."snippetId"', 'snippetId')
+            .addSelect('ranked."snippetName"', 'snippetName')
+            .addSelect('ranked."snippetLanguage"', 'snippetLanguage')
+            .addSelect('ranked."snippetCount"', 'snippetCount')
+            .from(`(${snippetsQuery.getQuery()})`, 'ranked')
+            .where('ranked."rowNumber" <= :previewLimit', { previewLimit: 5 })
+            .orderBy('ranked."collectionId"', 'ASC')
+            .addOrderBy('ranked."rowNumber"', 'ASC')
+            .setParameters(snippetsQuery.getParameters())
+            .getRawMany<{
+                collectionId: string;
+                snippetId: string;
+                snippetName: string;
+                snippetLanguage: string;
+                snippetCount: string;
+            }>();
+
+        const snippetCountByCollection = new Map<string, number>();
+        const snippetsByCollection = new Map<string, Array<{ id: string; name: string; language: string }>>();
+
+        for (const row of snippetRows) {
+            snippetCountByCollection.set(row.collectionId, Number(row.snippetCount));
+            const snippets = snippetsByCollection.get(row.collectionId) ?? [];
+            snippets.push({
+                id: row.snippetId,
+                name: row.snippetName,
+                language: row.snippetLanguage,
+            });
+            snippetsByCollection.set(row.collectionId, snippets);
+        }
+
+        return { snippetCountByCollection, snippetsByCollection };
     }
 }

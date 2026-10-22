@@ -9,7 +9,7 @@ export class DeveloperEvent extends AppEntityEvent<Developer> {
     constructor(
         public ctx: RequestContext,
         developer: Developer,
-        eventType: AppEntityEventType,
+        eventType: AppEntityEventType | 'soft-deleted' | 'restored',
         input?: Input,
     ) {
         super(ctx, developer, eventType, input);

@@ -3,16 +3,19 @@ import {
     GetPushNotificationPublicKeyDtoType,
     SavePushNotificationSubscriptionDtoType,
 } from '@snippetly/common/dto';
-import webPush from 'web-push';
 import { In } from 'typeorm';
+import webPush from 'web-push';
 import { RequestContext } from '../../api/request-context/request-context';
-import { UserInputError } from '../../common/errors/errors';
+import { InternalServerError, UserInputError } from '../../common/errors/errors';
+import { ConfigService } from '../../config/config.service';
+import { DeveloperPreferences } from '../../entities/developer-preferences/developer-preferences.entity';
 import { Developer } from '../../entities/developer/developer.entity';
 import { PushSubscription } from '../../entities/push-notifications/push-subscription.entity';
-import { ConfigService } from '../../config/config.service';
-import { DatabaseService } from '../../infra/database/database.service';
-import { Logger } from '../../infra/logger/logger';
-import { Injectable } from '../../infra/ioc-container/injectable.decorator';
+import { DatabaseService } from '../database/database.service';
+import { EventBus } from '../event-bus/event-bus.service';
+import { PushNotificationEvent } from '../event-bus/events/push-notification.event';
+import { Injectable } from '../ioc-container/injectable.decorator';
+import { Logger } from '../logger/logger';
 
 export type PushNotificationPayload = {
     title: string;
@@ -27,6 +30,7 @@ export class PushNotificationService {
     constructor(
         private readonly databaseService: DatabaseService,
         private readonly configService: ConfigService,
+        private readonly eventBus: EventBus,
     ) {}
 
     public getPublicKey(): GetPushNotificationPublicKeyDtoType['output'] {
@@ -44,10 +48,10 @@ export class PushNotificationService {
         userAgent?: string,
     ): Promise<{ success: true }> {
         if (!this.isConfigured()) {
-            throw new UserInputError('Push notifications are not configured on this server.');
+            throw new InternalServerError('errors.push_notifications_not_configured');
         }
         if (!isSupportedPushEndpoint(input.endpoint)) {
-            throw new UserInputError('The push subscription endpoint is not supported.');
+            throw new UserInputError('errors.unsupported_endpoint');
         }
 
         const repo = this.databaseService.getRepository(ctx, PushSubscription);
@@ -81,12 +85,28 @@ export class PushNotificationService {
         developerIds: string[],
         notification: PushNotificationPayload,
     ): Promise<void> {
-        if (!this.isConfigured()) return;
         if (!developerIds.length) return;
+
+        await this.eventBus.publish(new PushNotificationEvent(developerIds, notification));
+
+        if (!this.isConfigured()) return;
+
+        const developerPreferences = await this.databaseService.getRepository(DeveloperPreferences).find({
+            where: { developer: { id: In(developerIds) } },
+            relations: { developer: true },
+        });
+
+        const disabledDeveloperIds = new Set(
+            developerPreferences
+                .filter(({ preferences }) => preferences.isPushEnabled === false)
+                .map(({ developer }) => developer.id),
+        );
+        const pushEnabledDeveloperIds = developerIds.filter(id => !disabledDeveloperIds.has(id));
+        if (!pushEnabledDeveloperIds.length) return;
 
         const subscriptions = await this.databaseService
             .getRepository(PushSubscription)
-            .find({ where: { developer: { id: In(developerIds) } } });
+            .find({ where: { developer: { id: In(pushEnabledDeveloperIds) } } });
         const options = this.configService.pushNotificationOptions;
         webPush.setVapidDetails(options.subject!, options.publicKey!, options.privateKey!);
         const failures: unknown[] = [];
@@ -126,7 +146,9 @@ export class PushNotificationService {
         );
 
         if (failures.length) {
-            throw new Error(`Could not send push notification to ${failures.length} subscription(s).`);
+            throw new InternalServerError('errors.could_not_push_notification_to_subscriptions', {
+                failuresLength: failures.length,
+            });
         }
     }
 

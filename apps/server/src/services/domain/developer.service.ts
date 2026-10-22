@@ -36,17 +36,17 @@ import {
 } from '../../common/errors/generated-developer-errors';
 import { normalizeInput } from '../../common/helpers/validation';
 import { OnApplicationBootstrap } from '../../common/types/lifecycle-hooks';
-import { ConfigService } from '../../config';
+import { ConfigService } from '../../config/config.service';
 import { Developer } from '../../entities/developer/developer.entity';
 import { Friendship } from '../../entities/friendships/friendship.entity';
 import { User } from '../../entities/users/user.entity';
-import { Logger } from '../../infra';
 import { DatabaseService } from '../../infra/database/database.service';
 import { patchEntity } from '../../infra/database/patch-entity';
 import { EventBus } from '../../infra/event-bus/event-bus.service';
-import { AppJobEvent } from '../events/app-job.event';
+import { AccountRegisteredEvent } from '../../infra/event-bus/events/account-registered.event';
 import { AccountRegistrationEvent } from '../../infra/event-bus/events/account-registration.eveny';
 import { AccountVerifiedEvent } from '../../infra/event-bus/events/account-verified.event';
+import { AppJobEvent } from '../../infra/event-bus/events/app-job.event';
 import { DeveloperEvent } from '../../infra/event-bus/events/developer.event';
 import { IdentifierChangeRequestedEvent } from '../../infra/event-bus/events/identifier-change-requested.event';
 import { IdentifierChangedEvent } from '../../infra/event-bus/events/identifier-changed.event';
@@ -54,10 +54,12 @@ import { PasswordResetRequestedEvent } from '../../infra/event-bus/events/passwo
 import { PasswordResetVerifiedEvent } from '../../infra/event-bus/events/password-reset-verified.event';
 import { Injectable } from '../../infra/ioc-container/injectable.decorator';
 import { moduleRef } from '../../infra/ioc-container/module-ref';
+import { JobQueue } from '../../infra/job-queue/job-qeueue.service';
+import { AppJob } from '../../infra/job-queue/types';
+import { Logger } from '../../infra/logger/logger';
 import { EmailClient } from '../helpers/email-client.service';
-import { JobQueue } from '../helpers/job-qeueue.service';
-import type { AppJob } from '../jobs/app-job';
 import { ListQueryBuilder } from '../helpers/list-query-builder/list-query-builder.service';
+import { RequestContextService } from '../helpers/request-context.service';
 import type { CollectionService } from './collection.service';
 import { FavouriteService } from './favourite.service';
 import { FriendshipService } from './friendship.service';
@@ -69,11 +71,13 @@ const MAX_JOB_DELAY_SECONDS = 7 * 24 * 60 * 60 - 60;
 
 @Injectable()
 export class DeveloperService implements OnApplicationBootstrap {
+    /** Resolves the snippet service without creating a circular dependency. */
     private get snippetService(): SnippetService {
         const { SnippetService } = require('./snippet.service') as typeof import('./snippet.service');
         return moduleRef.getProvider<SnippetService>(SnippetService);
     }
 
+    /** Resolves the collection service without creating a circular dependency. */
     private get collectionService(): CollectionService {
         const { CollectionService } =
             require('./collection.service') as typeof import('./collection.service');
@@ -91,34 +95,24 @@ export class DeveloperService implements OnApplicationBootstrap {
         private readonly jobQueue: JobQueue,
         private readonly emailClient: EmailClient,
         private readonly favouriteService: FavouriteService,
+        private readonly requestContextService: RequestContextService,
     ) {}
 
-    public async attachFavouriteStatus<T extends { id: string; isVerified: boolean }>(
-        ctx: RequestContext,
-        items: T[],
-    ) {
-        const statusById = await this.favouriteService.getFavouriteStatusMap(
-            ctx,
-            items.map(({ id }) => id),
-            'developers',
-        );
-        return items.map(item => ({
-            ...item,
-            isVerified: item.isVerified,
-            isFavouritedByCurrentUser: statusById.get(item.id) ?? false,
-        }));
-    }
-
-    /**@internal */
+    /**
+     * @description
+     * Registers event subscriptions and job handlers when the app starts.
+     * @internal
+     */
     onApplicationBootstrap() {
         this.subscribeToAccountRegistrationEvent();
         this.subscribeToPasswordResetRequestedEvent();
         this.subscribeToIdentifierChangeRequestedEvent();
+        this.subscribeToAccountRegisteredEvent();
         this.registerJobHandler();
-        this.registerAccountRegistrationJobHandler();
         this.registerAccountDeletionJobHandler();
     }
 
+    /** Registers the handler that runs queued developer-related jobs. */
     private registerJobHandler() {
         this.eventBus.registerSyncHandler({
             event: AppJobEvent,
@@ -140,25 +134,13 @@ export class DeveloperService implements OnApplicationBootstrap {
         });
     }
 
-    private registerAccountRegistrationJobHandler() {
-        this.eventBus.registerSyncHandler({
-            event: AccountRegistrationEvent,
-            id: 'developer-service-welcome-email-scheduler',
-            handler: async event => {
-                await this.jobQueue.enqueue(
-                    { type: 'send-account-welcome-email', userId: event.user.id },
-                    10,
-                );
-            },
-        });
-    }
-
+    /** Schedules final account deletion and a goodbye email after a soft delete. */
     private registerAccountDeletionJobHandler() {
         this.eventBus.registerSyncHandler({
             event: DeveloperEvent,
             id: 'developer-service-account-deletion-handler',
             handler: async event => {
-                if (event.type !== 'deleted' || !event.entity.user) return;
+                if (event.type !== 'soft-deleted' || !event.entity.user) return;
 
                 const scheduledDeletionAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
                 await this.databaseService
@@ -180,6 +162,7 @@ export class DeveloperService implements OnApplicationBootstrap {
         });
     }
 
+    /** Deletes an account after its grace period, or reschedules while time remains. */
     private async processDeveloperAccountDeletionJob(
         job: Extract<AppJob, { type: 'delete-developer-account' }>,
     ) {
@@ -204,8 +187,17 @@ export class DeveloperService implements OnApplicationBootstrap {
         }
 
         await userRepo.delete(job.userId);
+        await this.eventBus.publish(
+            new DeveloperEvent(
+                this.requestContextService.create({ apiType: 'developer' }),
+                developer,
+                'deleted',
+                { id: job.userId },
+            ),
+        );
     }
 
+    /** Sends a welcome email if the developer account still exists and is active. */
     private async sendAccountWelcomeEmail(
         job: Extract<AppJob, { type: 'send-account-welcome-email' }>,
         event: AppJobEvent,
@@ -224,6 +216,7 @@ export class DeveloperService implements OnApplicationBootstrap {
         });
     }
 
+    /** Sends a goodbye email only while the account is still soft-deleted. */
     private async sendAccountGoodbyeEmail(
         job: Extract<AppJob, { type: 'send-account-goodbye-email' }>,
         event: AppJobEvent,
@@ -233,7 +226,7 @@ export class DeveloperService implements OnApplicationBootstrap {
             relations: { user: true },
             withDeleted: true,
         });
-        if (!developer) return;
+        if (!developer?.deletedAt || !developer.user?.deletedAt) return;
 
         await this.emailClient.sendEmail({
             event,
@@ -243,6 +236,7 @@ export class DeveloperService implements OnApplicationBootstrap {
         });
     }
 
+    /** Escapes text before including it in an HTML email. */
     private escapeHtml(value: string): string {
         return value.replace(/[&<>"']/g, character => {
             const entities: Record<string, string> = {
@@ -256,36 +250,55 @@ export class DeveloperService implements OnApplicationBootstrap {
         });
     }
 
+    /** Sends verification email when an unverified developer account has a token. */
     private subscribeToAccountRegistrationEvent() {
         this.eventBus.ofType(AccountRegistrationEvent).subscribe(event => {
-            Logger.debug(`Handling event 'AccountRegistrationEvent'`);
-            const callbackUrl = `${this.configService.systemOptions.email.accountVerificationCallbackUrl}?token=${event.user.getNativeAuthenticationMethod().verificationToken}`;
-            void this.emailClient.sendEmail({
-                event,
-                to: event.user.identifier,
-                subject: 'Account Verification',
-                html: `
-                    <a font-family="Helvetica"
-                        background-color="#f45e43"
-                        color="white"
-                        href="${callbackUrl}">
-                            Verify Me!
-                    </a>
-                
-                `,
-            });
+            const verificationToken = event.user.getNativeAuthenticationMethod({
+                throwError: false,
+            })?.verificationToken;
+            if (event.ctx.apiType === 'developer' && verificationToken) {
+                Logger.debug(`Handling event 'AccountRegistrationEvent'`);
+                const callbackUrl = `${this.configService.systemOptions.email.accountVerificationCallbackUrl}?token=${verificationToken}`;
+                void this.emailClient
+                    .sendEmail({
+                        event,
+                        to: event.user.identifier,
+                        subject: 'Account Verification',
+                        html: `
+                        <a font-family="Helvetica"
+                            background-color="#f45e43"
+                            color="white"
+                            href="${callbackUrl}">
+                                Verify Me!
+                        </a>
+
+                    `,
+                    })
+                    .catch(error => this.logEventHandlerError('sending account verification email', error));
+            }
         });
     }
 
+    /** Queues a welcome email after a developer account is registered. */
+    private subscribeToAccountRegisteredEvent() {
+        this.eventBus.ofType(AccountRegisteredEvent).subscribe(event => {
+            void this.jobQueue
+                .enqueue({ type: 'send-account-welcome-email', userId: event.user.id }, 10)
+                .catch(error => this.logEventHandlerError('queuing the welcome email', error));
+        });
+    }
+
+    /** Sends an email containing the password-reset link. */
     private subscribeToPasswordResetRequestedEvent() {
         this.eventBus.ofType(PasswordResetRequestedEvent).subscribe(event => {
             Logger.debug(`Handling event 'PasswordResetRequestedEvent'`);
             const callbackUrl = `${this.configService.systemOptions.email.passwordResetCallbackUrl}?token=${event.user.getNativeAuthenticationMethod().passwordResetToken}`;
-            void this.emailClient.sendEmail({
-                event,
-                to: event.user.identifier,
-                subject: 'Password Reset Request',
-                html: `
+            void this.emailClient
+                .sendEmail({
+                    event,
+                    to: event.user.identifier,
+                    subject: 'Password Reset Request',
+                    html: `
                     <a font-family="Helvetica"
                         background-color="#f45e43"
                         color="white"
@@ -294,19 +307,22 @@ export class DeveloperService implements OnApplicationBootstrap {
                     </a>
                 
                 `,
-            });
+                })
+                .catch(error => this.logEventHandlerError('sending a password reset email', error));
         });
     }
 
+    /** Sends an email containing the identifier-change confirmation link. */
     private subscribeToIdentifierChangeRequestedEvent() {
         this.eventBus.ofType(IdentifierChangeRequestedEvent).subscribe(event => {
             Logger.debug(`Handling event 'IdentifierChangeRequestedEvent'`);
             const callbackUrl = `${this.configService.systemOptions.email.identifierChangeCallbackUrl}?token=${event.user.getNativeAuthenticationMethod().identifierChangeToken}`;
-            void this.emailClient.sendEmail({
-                event,
-                to: event.user.identifier,
-                subject: 'Email-address Change Request',
-                html: `
+            void this.emailClient
+                .sendEmail({
+                    event,
+                    to: event.user.identifier,
+                    subject: 'Email-address Change Request',
+                    html: `
                     <a font-family="Helvetica"
                         background-color="#f45e43"
                         color="white"
@@ -315,13 +331,26 @@ export class DeveloperService implements OnApplicationBootstrap {
                     </a>
                 
                 `,
-            });
+                })
+                .catch(error => this.logEventHandlerError('sending an identifier change email', error));
         });
     }
 
+    /** Logs failures from event-stream callbacks that run outside the event bus publish flow. */
+    private logEventHandlerError(action: string, error: unknown): void {
+        const message = error instanceof Error ? error.message : String(error);
+        const trace = error instanceof Error ? error.stack : undefined;
+        Logger.error(`Failed ${action}: ${message}`, 'DeveloperService', trace);
+    }
+
+    /**
+     * @description
+     * Lists developers using the supplied filters and excludes accepted friends from discovery.
+     */
     public async find(
         ctx: RequestContext,
         input: DeveloperListDtoType['input'],
+        activeDeveloper?: Developer,
         relations?: FindOptionsRelations<Developer>,
         options?: { includePrivateDevelopers?: boolean; includeSoftDeleted?: boolean },
     ) {
@@ -334,9 +363,9 @@ export class DeveloperService implements OnApplicationBootstrap {
             },
         });
 
-        const activeDeveloper = input.discover ? await this.getActiveDeveloper(ctx) : undefined;
+        const resolvedActiveDeveloper = input.discover ? activeDeveloper : undefined;
 
-        if (activeDeveloper) {
+        if (resolvedActiveDeveloper) {
             // exclude active user and his friends from discover
             const friendships = await this.databaseService
                 .getRepository(ctx, Friendship)
@@ -348,9 +377,9 @@ export class DeveloperService implements OnApplicationBootstrap {
                 .where(
                     new Brackets(qb => {
                         qb.where('requester.id = :activeDeveloperId', {
-                            activeDeveloperId: activeDeveloper.id,
+                            activeDeveloperId: resolvedActiveDeveloper.id,
                         }).orWhere('addressee.id = :activeDeveloperId', {
-                            activeDeveloperId: activeDeveloper.id,
+                            activeDeveloperId: resolvedActiveDeveloper.id,
                         });
                     }),
                 )
@@ -359,9 +388,9 @@ export class DeveloperService implements OnApplicationBootstrap {
                 })
                 .getRawMany<{ requesterId: string; addresseeId: string }>();
             const excludedDeveloperIds = [
-                activeDeveloper.id,
+                resolvedActiveDeveloper.id,
                 ...friendships.map(({ requesterId, addresseeId }) =>
-                    requesterId === activeDeveloper.id ? addresseeId : requesterId,
+                    requesterId === resolvedActiveDeveloper.id ? addresseeId : requesterId,
                 ),
             ];
 
@@ -369,59 +398,47 @@ export class DeveloperService implements OnApplicationBootstrap {
         }
 
         const [items, itemsCount] = await qb.getManyAndCount();
+        return { items: items.map(item => ({ ...item, isVerified: item.isVerified })), itemsCount };
+    }
 
-        const friendshipInfoByDeveloper = new Map<
+    /**
+     * @description
+     * Adds each developer's friendship status with the active developer.
+     */
+    public async attachFriendshipInfoToDevelopersList<T extends { id: string; isVerified: boolean }>(
+        ctx: RequestContext,
+        items: T[],
+        activeDeveloper?: Developer,
+    ) {
+        let friendshipInfoByDeveloper = new Map<
             string,
             { isFriendWithCurrentUser: boolean; friendshipStatus: FriendshipStatus }
         >();
 
         if (activeDeveloper && items.length) {
             const developerIds = items.map(({ id }) => id);
-            const friendships = await this.databaseService
-                .getRepository(ctx, Friendship)
-                .createQueryBuilder('friendship')
-                .innerJoin('friendship.requester', 'requester')
-                .innerJoin('friendship.addressee', 'addressee')
-                .select(
-                    'CASE WHEN requester.id = :activeDeveloperId THEN addressee.id ELSE requester.id END',
-                    'developerId',
-                )
-                .addSelect('friendship.status', 'friendshipStatus')
-                .where(
-                    new Brackets(query => {
-                        query
-                            .where(
-                                'requester.id = :activeDeveloperId AND addressee.id IN (:...developerIds)',
-                                { activeDeveloperId: activeDeveloper.id, developerIds },
-                            )
-                            .orWhere(
-                                'addressee.id = :activeDeveloperId AND requester.id IN (:...developerIds)',
-                                { activeDeveloperId: activeDeveloper.id, developerIds },
-                            );
-                    }),
-                )
-                .getRawMany<{ developerId: string; friendshipStatus: FriendshipStatus }>();
-
-            for (const { developerId, friendshipStatus } of friendships) {
-                friendshipInfoByDeveloper.set(developerId, {
-                    isFriendWithCurrentUser: friendshipStatus === FriendshipStatus.Accepted,
-                    friendshipStatus,
-                });
-            }
+            friendshipInfoByDeveloper = await this.friendshipService.getFriendshipInfoWithActiveDeveloper(
+                ctx,
+                activeDeveloper.id,
+                developerIds,
+            );
         }
 
         const enrichedItems = items.map(item => ({
             ...item,
-            isVerified: item.isVerified,
             friendshipInfo: friendshipInfoByDeveloper.get(item.id) ?? {
                 isFriendWithCurrentUser: false,
                 friendshipStatus: null,
             },
         }));
 
-        return { items: enrichedItems, itemsCount };
+        return enrichedItems;
     }
 
+    /**
+     * @description
+     * Finds a developer by ID, respecting privacy and soft-delete options.
+     */
     public async findOne(
         ctx: RequestContext,
         input: FindOneDeveloperDtoType['input'],
@@ -441,6 +458,10 @@ export class DeveloperService implements OnApplicationBootstrap {
         return developer ?? undefined;
     }
 
+    /**
+     * @description
+     * Finds a developer linked to a user, respecting privacy and soft-delete options.
+     */
     public async getOneByUserId(
         ctx: RequestContext,
         userId: string,
@@ -467,6 +488,10 @@ export class DeveloperService implements OnApplicationBootstrap {
 
     public async getActiveDeveloper(ctx: RequestContext, strict: boolean): Promise<Developer>;
     public async getActiveDeveloper(ctx: RequestContext, strict?: boolean): Promise<Developer | undefined>;
+    /**
+     * @description
+     * Gets the signed-in user's developer account, optionally requiring it to exist.
+     */
     public async getActiveDeveloper(
         ctx: RequestContext,
         maybeStrict?: boolean,
@@ -494,6 +519,16 @@ export class DeveloperService implements OnApplicationBootstrap {
         return developer ?? undefined;
     }
 
+    /**
+     * @description
+     * Registers a developer account and emits events for verification and welcome emails.
+     *
+     * :::info
+     * - it emits AccountRegistrationEvent when `configService.authOptions.requireVerification` is set to true
+     * so that the consumer can send the token via email address.
+     * - it emits AccountRegisteredEvent so that the consumer can send welcome email.
+     * :::
+     */
     public async registerAccount(
         ctx: RequestContext,
         input: RegisterDeveloperAccountDtoType['input'],
@@ -504,10 +539,11 @@ export class DeveloperService implements OnApplicationBootstrap {
         let user = await this.userService.getUserByIdentifier(ctx, input.emailAddress);
         if (user) {
             const hasAuthMethod = this.userService.hasCredentialsAuthMethod(user);
-            if (hasAuthMethod && user.isVerified)
+            if (hasAuthMethod && user.isVerified) {
                 return {
                     success: true,
                 };
+            }
         }
 
         const foundDeveloper = await this.databaseService.getRepository(ctx, Developer).findOne({
@@ -531,16 +567,16 @@ export class DeveloperService implements OnApplicationBootstrap {
         );
 
         if (!user) {
-            // create customer user
-            const customerUserResult = await this.userService.createDeveloperUser(ctx, {
+            // create developer user
+            const developerUserResult = await this.userService.createDeveloperUser(ctx, {
                 identifier: input.emailAddress,
                 password: input.password,
             });
-            if (isApiError(customerUserResult)) return customerUserResult;
-            user = customerUserResult;
+            if (isApiError(developerUserResult)) return developerUserResult;
+            user = developerUserResult;
         }
 
-        // check if the user has credentials auth method
+        // check if the user has native auth method
         if (!this.userService.hasCredentialsAuthMethod(user)) {
             const assignCredentialsAuthMethodResult =
                 await this.userService.assignCredentialsAuthMethodToUser(ctx, user, {
@@ -552,9 +588,13 @@ export class DeveloperService implements OnApplicationBootstrap {
             user = assignCredentialsAuthMethodResult;
         }
 
-        // check if user is not verified and verification is required and create new token
+        // Ensure unverified users who require verification have a token without rotating one
+        // that was already issued while assigning their credentials auth method.
         if (!user.isVerified && this.configService.authOptions.requireVerification) {
-            user = await this.userService.generateAndAssignVerificationToken(ctx, user);
+            const nativeAuthMethod = user.getNativeAuthenticationMethod();
+            if (!nativeAuthMethod.verificationToken) {
+                user = await this.userService.generateAndAssignVerificationToken(ctx, user);
+            }
         }
 
         developer.user = user;
@@ -565,15 +605,24 @@ export class DeveloperService implements OnApplicationBootstrap {
             reload: false,
         });
 
-        if (!user.isVerified) {
+        if (user.getNativeAuthenticationMethod({ throwError: false })?.verificationToken) {
             await this.eventBus.publish(new AccountRegistrationEvent(ctx, user));
         }
+        await this.eventBus.publish(new AccountRegisteredEvent(ctx, user));
 
         return {
             success: true,
         };
     }
 
+    /**
+     * @description
+     * Reissues a verification token for an unverified account and requests its email.
+     *
+     * :::info
+     * it emits AccountRegistrationEvent so that the consumer can send the token via email address.
+     * :::
+     */
     public async refreshVerificationToken(
         ctx: RequestContext,
         input: RefreshVerificationTokenDtoType['input'],
@@ -586,6 +635,14 @@ export class DeveloperService implements OnApplicationBootstrap {
         }
     }
 
+    /**
+     * @description
+     * Verifies an account and emits an event for follow-up actions.
+     *
+     * :::info
+     *  it emits AccountVerifiedEvent
+     * :::
+     */
     public async verifyAccount(
         ctx: RequestContext,
         input: VerifyAccountDtoType['input'],
@@ -601,6 +658,14 @@ export class DeveloperService implements OnApplicationBootstrap {
         return developer;
     }
 
+    /**
+     * @description
+     * Creates a password-reset token and requests its delivery by email.
+     *
+     * :::info
+     *  it emits PasswordResetRequestedEvent so that the consumer can send the token via email address.
+     * :::
+     */
     public async requestPasswordReset(
         ctx: RequestContext,
         input: RequestPasswordResetDtoType['input'],
@@ -611,6 +676,14 @@ export class DeveloperService implements OnApplicationBootstrap {
         }
     }
 
+    /**
+     * @description
+     * Resets a user's password and emits an event after a successful reset.
+     *
+     * :::info
+     *  it emits PasswordResetVerifiedEvent.
+     * :::
+     */
     public async resetPassword(
         ctx: RequestContext,
         input: ResetPasswordDtoType['input'],
@@ -623,6 +696,15 @@ export class DeveloperService implements OnApplicationBootstrap {
         return result;
     }
 
+    /**
+     * @description
+     * Starts an email change, requiring confirmation when verification is enabled.
+     *
+     * :::info
+     *  - it emits IdentifierChangeRequestedEvent when `configService.authOptions.requireVerification` is set to true.
+     *  - it emits IdentifierChangedEvent when `configService.authOptions.requireVerification` is set to false.
+     * :::
+     */
     public async requestEmailAddressChange(
         ctx: RequestContext,
         userId: string,
@@ -658,6 +740,14 @@ export class DeveloperService implements OnApplicationBootstrap {
         }
     }
 
+    /**
+     * @description
+     * Confirms an email change using its token and updates the developer record.
+     *
+     * :::info
+     *  it emits IdentifierChangedEvent.
+     * :::
+     */
     public async changeEmailAddress(
         ctx: RequestContext,
         input: ChangeEmailAddressDtoType['input'],
@@ -677,6 +767,14 @@ export class DeveloperService implements OnApplicationBootstrap {
         return true;
     }
 
+    /**
+     * @description
+     * Updates a developer account and publishes an update event.
+     *
+     * :::info
+     *  it emits DeveloperEvent.
+     * :::
+     */
     public async update(
         ctx: RequestContext,
         input: UpdateDeveloperAccountDtoType['input'] & { id: string },
@@ -685,8 +783,10 @@ export class DeveloperService implements OnApplicationBootstrap {
         // in the future, it should be extended to handle the case in which the admin updates
         // the account without restrictions (emailAddress is allowed, ..etc)
 
-        if ('emailAddress' in input || 'deletedAt' in input) {
-            throw new UserInputError('errors.invalid_input_fields');
+        if (ctx.apiType === 'developer' && 'emailAddress' in input) {
+            throw new UserInputError('errors.invalid_input_fields', {
+                emailAddress: 'Email address can be updated only through the identifier change workflow.',
+            });
         }
 
         const repo = this.databaseService.getRepository(ctx, Developer);
@@ -719,6 +819,14 @@ export class DeveloperService implements OnApplicationBootstrap {
         return developer;
     }
 
+    /**
+     * @description
+     * Soft-deletes a developer and user account, then schedules cleanup.
+     *
+     * :::info
+     *  it emits DeveloperEvent.
+     * :::
+     */
     public async softDelete(
         ctx: RequestContext,
         developerId: string,
@@ -740,11 +848,19 @@ export class DeveloperService implements OnApplicationBootstrap {
             await this.userService.softDelete(ctx, developer.user.id);
         }
 
-        await this.eventBus.publish(new DeveloperEvent(ctx, developer, 'deleted', { id: developerId }));
+        await this.eventBus.publish(new DeveloperEvent(ctx, developer, 'soft-deleted', { id: developerId }));
 
         return { result: 'DELETED', message: '' };
     }
 
+    /**
+     * @description
+     * Restores a soft-deleted developer account before its scheduled removal.
+     *
+     * :::info
+     *  it emits DeveloperEvent.
+     * :::
+     */
     public async restoreAccount(ctx: RequestContext, userId: string): Promise<boolean> {
         const developer = await this.getOneByUserId(ctx, userId, undefined, {
             includeSoftDeleted: true,
@@ -759,9 +875,19 @@ export class DeveloperService implements OnApplicationBootstrap {
             .getRepository(ctx, Developer)
             .update({ id: developer.id }, { deletedAt: null, scheduledDeletionAt: null });
 
+        await this.eventBus.publish(new DeveloperEvent(ctx, developer, 'restored', { id: developer.id }));
+
         return true;
     }
 
+    /**
+     * @description
+     * Creates a developer, optionally setting a password and verifying the account.
+     *
+     * :::info
+     *  it emits DeveloperEvent.
+     * :::
+     */
     public async create(
         ctx: RequestContext,
         input: CreateDeveloperDtoType['input'],
@@ -807,24 +933,25 @@ export class DeveloperService implements OnApplicationBootstrap {
             }
         }
         developer.user.roles = developerUser.roles;
-        await this.eventBus.publish(new AccountRegistrationEvent(ctx, developer.user));
         const createdDeveloper = await this.databaseService.getRepository(ctx, Developer).save(developer);
         await this.eventBus.publish(new DeveloperEvent(ctx, createdDeveloper, 'created', input));
         return developer;
     }
 
-    public async attachStatsToDevelopersList<T extends Developer>(
+    /**
+     * @description
+     * Adds public or configured snippet and collection counts to developers.
+     */
+    public async attachActivityStatsToDevelopersList<T extends Developer>(
         ctx: RequestContext,
         items: T[],
-        itemsCount: number,
         options?: { includePrivateSnippets?: boolean; includePrivateCollections?: boolean },
     ) {
         const developerIds = items.map(({ id }) => id);
 
-        const [snippetCounts, collectionCounts, addedTags] = await Promise.all([
+        const [snippetCounts, collectionCounts] = await Promise.all([
             this.snippetService.countDevelopersSnippets(ctx, developerIds, options),
             this.collectionService.countDevelopersCollections(ctx, developerIds, options),
-            this.tagService.countDevelopersTags(ctx, developerIds),
         ]);
 
         const snippetCountsByDeveloper = new Map(
@@ -833,26 +960,71 @@ export class DeveloperService implements OnApplicationBootstrap {
         const collectionCountsByDeveloper = new Map(
             collectionCounts.map(({ developerId, count }) => [developerId, Number(count)]),
         );
+
+        const enrichedItems = items.map(item => ({
+            ...item,
+            activityStats: {
+                snippetsCount: snippetCountsByDeveloper.get(item.id) ?? 0,
+                collectionsCount: collectionCountsByDeveloper.get(item.id) ?? 0,
+            },
+        }));
+
+        return enrichedItems;
+    }
+
+    /**
+     * @description
+     * Adds the tags and usage counts associated with each developer.
+     */
+    public async attachTagsInfoToDevelopersList<T extends { id: string }>(
+        ctx: RequestContext,
+        developers: T[],
+    ) {
+        const developerIds = developers.map(({ id }) => id);
+
+        const developersTags = await this.tagService.getDevelopersTags(ctx, developerIds);
+
         const tagsByDeveloper = new Map<string, Array<{ id: string; value: string; usageCount: number }>>();
 
-        for (const { developerId, id, value, usageCount } of addedTags) {
+        for (const { developerId, id, value, usageCount } of developersTags) {
             const tags = tagsByDeveloper.get(developerId) ?? [];
             tags.push({ id, value, usageCount: Number(usageCount) });
             tagsByDeveloper.set(developerId, tags);
         }
 
-        const enrichedItems = items.map(item => ({
-            ...item,
-            isVerified: item.isVerified,
-            snippetsCount: snippetCountsByDeveloper.get(item.id) ?? 0,
-            collectionsCount: collectionCountsByDeveloper.get(item.id) ?? 0,
-            tags: tagsByDeveloper.get(item.id) ?? [],
+        const enrichedItems = developers.map(developer => ({
+            ...developer,
+            tags: tagsByDeveloper.get(developer.id) ?? [],
         }));
-
-        return { items: enrichedItems, itemsCount };
+        return enrichedItems;
     }
 
-    public async getProfileActivityStats(
+    /**
+     * @description
+     * Adds whether the current user has favourited each developer.
+     */
+    public async attachFavouriteStatusToDevelopersList<T extends { id: string }>(
+        ctx: RequestContext,
+        items: T[],
+        developer?: Developer,
+    ) {
+        const statusById = await this.favouriteService.getFavouriteStatusMapForDeveloper(
+            ctx,
+            items.map(({ id }) => id),
+            'developers',
+            developer,
+        );
+        return items.map(item => ({
+            ...item,
+            isFavouritedByCurrentUser: statusById.get(item.id) ?? false,
+        }));
+    }
+
+    /**
+     * @description
+     * Returns content, fork, and friendship counts for a developer.
+     */
+    public async getDeveloperActivityStats(
         ctx: RequestContext,
         developerId: string,
         options?: { includePrivate?: boolean; includeSoftDeleted?: boolean },

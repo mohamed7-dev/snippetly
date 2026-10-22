@@ -3,8 +3,6 @@ import { useFormContext, type UseFormReturn } from 'react-hook-form';
 import type { SnippetFormSchema } from '../../lib/schema';
 import { SnippetCodeBlock } from '../shared/snippet-code-block';
 
-// TODO: replace with an actual code editor, and fullscreen capability
-
 export function SnippetFormCode() {
     const form: UseFormReturn<SnippetFormSchema> = useFormContext();
 

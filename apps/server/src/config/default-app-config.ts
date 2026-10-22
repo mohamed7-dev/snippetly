@@ -19,6 +19,7 @@ import { InMemoryCacheStrategy } from './system/cache/in-memory-cache.strategy';
 import { NodemailerStrategy } from './system/email/nodemailer.strategy';
 import { DummyJobQueueStrategy } from './system/job-queue/dummy-job-queue.strategy';
 import { StdoutLoggerStrategy } from './system/logger/stdout-logger.strategy';
+import { SqliteSearchStrategy } from './system/search/sqlite-search-strategy';
 
 export const defaultAppConfig: RuntimeAppConfig = {
     defaultLanguageCode: LanguageCode.English,
@@ -44,9 +45,9 @@ export const defaultAppConfig: RuntimeAppConfig = {
     system: {
         shouldRunInitialization: true,
         pushNotifications: {
-            publicKey: process.env.VAPID_PUBLIC_KEY,
-            privateKey: process.env.VAPID_PRIVATE_KEY,
-            subject: process.env.VAPID_SUBJECT,
+            publicKey: undefined,
+            privateKey: undefined,
+            subject: undefined,
         },
         email: {
             emailTransporterStrategy: new NodemailerStrategy({ email: '', password: '' }),
@@ -58,6 +59,7 @@ export const defaultAppConfig: RuntimeAppConfig = {
         loggerStrategy: new StdoutLoggerStrategy(),
         cacheStrategy: new InMemoryCacheStrategy(),
         jobQueueStrategy: new DummyJobQueueStrategy(),
+        searchStrategy: new SqliteSearchStrategy(),
     },
     auth: {
         authTokenHeaderKey: AUTH_TOKEN_HEADER_KEY,

@@ -32,6 +32,14 @@ export const SETTINGS_NAV_ITEMS = [
         requiredPermissions: [Permission.Authenticated],
     },
     {
+        id: 'notifications',
+        title: 'Notifications',
+        href: '/dashboard/settings/notifications',
+        icon: BellIcon,
+        description: 'Manage in-app and push notification behavior',
+        requiredPermissions: [Permission.Authenticated],
+    },
+    {
         id: 'profile',
         title: 'Profile',
         href: '/dashboard/settings/profile',

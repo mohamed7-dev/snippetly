@@ -10,10 +10,12 @@ import { DeveloperDeveloperController } from './developer/developer-developer.co
 import { DeveloperFavouriteController } from './developer/developer-favourite.controller';
 import { DeveloperFriendshipController } from './developer/developer-friendship.controller';
 import { DeveloperJobsController } from './developer/developer-jobs.controller';
+import { DeveloperNotificationController } from './developer/developer-notification.controller';
+import { DeveloperPreferencesController } from './developer/developer-preferences.controller';
+import { DeveloperPushNotificationController } from './developer/developer-push-notification.controller';
 import { DeveloperSearchController } from './developer/developer-search.controller';
 import { DeveloperSlugController } from './developer/developer-slug.controller';
 import { DeveloperSnippetController } from './developer/developer-snippet.controller';
-import { DeveloperPushNotificationController } from './developer/developer-push-notification.controller';
 import { DeveloperTagController } from './developer/developer-tag.controller';
 
 @Module({
@@ -35,6 +37,8 @@ class AdminApiModule {}
         DeveloperAuthController,
         DeveloperSnippetController,
         DeveloperPushNotificationController,
+        DeveloperNotificationController,
+        DeveloperPreferencesController,
         DeveloperSearchController,
         DeveloperCollectionController,
         DeveloperFriendshipController,

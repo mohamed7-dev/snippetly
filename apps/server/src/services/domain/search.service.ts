@@ -9,16 +9,14 @@ import {
     SelectQueryBuilder,
 } from 'typeorm';
 import { RequestContext } from '../../api/request-context/request-context';
-import { InternalServerError } from '../../common/errors/errors';
+import { ConfigService } from '../../config/config.service';
+import { SearchField, SearchStrategy } from '../../config/system/search/search-strategy';
 import { Collection } from '../../entities/collections/collection.entity';
 import { Developer } from '../../entities/developer/developer.entity';
 import { Snippet } from '../../entities/snippets/snippet.entity';
 import { Tag } from '../../entities/tags/tag.entity';
 import { DatabaseService } from '../../infra/database/database.service';
 import { Injectable } from '../../infra/ioc-container/injectable.decorator';
-import { PostgresSearchStrategy } from './postgres-search-strategy';
-import { SearchField, SearchStrategy } from './search-strategy';
-import { SqliteSearchStrategy } from './sqlite-search-strategy';
 
 type SearchInput = SearchDtoType['input'];
 type TagCount = { value: string; count: number };
@@ -41,26 +39,71 @@ interface SearchPage<Entity> {
 
 @Injectable()
 export class SearchService {
-    private readonly postgresSearchStrategy = new PostgresSearchStrategy();
-    private readonly sqliteSearchStrategy = new SqliteSearchStrategy();
+    private readonly searchStrategy: SearchStrategy;
 
-    constructor(private readonly databaseService: DatabaseService) {}
+    constructor(
+        private readonly databaseService: DatabaseService,
+        private readonly configService: ConfigService,
+    ) {
+        this.searchStrategy = this.configService.systemOptions.searchStrategy;
+    }
 
     public async search(ctx: RequestContext, input: SearchInput): Promise<SearchDtoType['output']> {
-        const strategy = this.getSearchStrategy();
         const normalizedTerm = input.term?.trim() || undefined;
         const tagValues = Array.from(new Set(input.tags?.values ?? []));
         const definitions = this.getSearchDefinitions();
 
         const [snippetPage, collectionPage, developerPage] = await Promise.all([
-            this.searchEntity(ctx, input, strategy, definitions.snippets, normalizedTerm, tagValues),
-            this.searchEntity(ctx, input, strategy, definitions.collections, normalizedTerm, tagValues),
-            this.searchEntity(ctx, input, strategy, definitions.developers, normalizedTerm, tagValues),
+            this.searchEntity(
+                ctx,
+                input,
+                this.searchStrategy,
+                definitions.snippets,
+                normalizedTerm,
+                tagValues,
+            ),
+            this.searchEntity(
+                ctx,
+                input,
+                this.searchStrategy,
+                definitions.collections,
+                normalizedTerm,
+                tagValues,
+            ),
+            this.searchEntity(
+                ctx,
+                input,
+                this.searchStrategy,
+                definitions.developers,
+                normalizedTerm,
+                tagValues,
+            ),
         ]);
         const tagCountGroups = await Promise.all([
-            this.getTagCounts(ctx, input, strategy, definitions.snippets, normalizedTerm, tagValues),
-            this.getTagCounts(ctx, input, strategy, definitions.collections, normalizedTerm, tagValues),
-            this.getTagCounts(ctx, input, strategy, definitions.developers, normalizedTerm, tagValues),
+            this.getTagCounts(
+                ctx,
+                input,
+                this.searchStrategy,
+                definitions.snippets,
+                normalizedTerm,
+                tagValues,
+            ),
+            this.getTagCounts(
+                ctx,
+                input,
+                this.searchStrategy,
+                definitions.collections,
+                normalizedTerm,
+                tagValues,
+            ),
+            this.getTagCounts(
+                ctx,
+                input,
+                this.searchStrategy,
+                definitions.developers,
+                normalizedTerm,
+                tagValues,
+            ),
         ]);
 
         return {
@@ -128,21 +171,6 @@ export class SearchService {
             },
             tagCounts: mergeTagCounts(tagCountGroups.flat()),
         };
-    }
-
-    private getSearchStrategy(): SearchStrategy {
-        const databaseType = this.databaseService.dataSource.options.type;
-        switch (databaseType) {
-            case 'postgres':
-            case 'aurora-postgres':
-                return this.postgresSearchStrategy;
-            case 'sqlite':
-            case 'better-sqlite3':
-            case 'sqljs':
-                return this.sqliteSearchStrategy;
-            default:
-                throw new InternalServerError(`Search is not supported for database type "${databaseType}"`);
-        }
     }
 
     private getSearchDefinitions(): {

@@ -131,10 +131,15 @@ export function SnippetActionsDropdown({
                                 </Button>
                             </DropdownMenuItem>
                         )}
-                        {/* TODO: use Permission.CreateFavourite when it gets generated  */}
 
                         {(showRemoveFromFavButton || showAddToFavButton) && (
-                            <PermissionGuard requiredPermissions={[Permission.Authenticated]}>
+                            <PermissionGuard
+                                requiredPermissions={[
+                                    Permission.Authenticated,
+                                    Permission.CreateFavourite,
+                                    Permission.DeleteFavourite,
+                                ]}
+                            >
                                 <DropdownMenuItem asChild>
                                     {showRemoveFromFavButton && snippet.isFavouritedByCurrentUser ? (
                                         <RemoveFromFavouritesButton

@@ -128,10 +128,7 @@ export class DeveloperAuthController extends CommonAuth implements AppRouter {
         router.patch(
             '/accounts/me',
             ...defineRoutePipeline({
-                before: [
-                    this.passwordChangeLimiter,
-                    authGuard({ permissions: [Permission.Authenticated, Permission.Owner] }),
-                ],
+                before: [this.passwordChangeLimiter, authGuard({ permissions: [Permission.Owner] })],
                 body: updatePasswordDto.input,
                 response: updatePasswordDto.output,
                 interceptors: [transactionInterceptor()],
@@ -174,6 +171,7 @@ export class DeveloperAuthController extends CommonAuth implements AppRouter {
                         req,
                         res,
                     )) satisfies AuthenticateDeveloperDtoType['output'];
+
                     if (isApiError(result)) return res.status(result.httpStatusCode).json(result);
                     res.status(200).json(result);
                 },
@@ -261,10 +259,7 @@ export class DeveloperAuthController extends CommonAuth implements AppRouter {
         router.post(
             '/account-email-address-change',
             ...defineRoutePipeline({
-                before: [
-                    this.emailChangeRequestLimiter,
-                    authGuard({ permissions: [Permission.Authenticated, Permission.Owner] }),
-                ],
+                before: [this.emailChangeRequestLimiter, authGuard({ permissions: [Permission.Owner] })],
                 body: requestEmailAddressChangeDto.input,
                 response: requestEmailAddressChangeDto.output,
                 interceptors: [transactionInterceptor()],
@@ -273,12 +268,13 @@ export class DeveloperAuthController extends CommonAuth implements AppRouter {
                     if (nativeAuthStrategyError) {
                         return nativeAuthStrategyError;
                     }
-                    if (!req.getRequestContext().activeUserId) {
+                    const ctx = req.getRequestContext();
+                    if (!ctx.activeUserId) {
                         throw new ForbiddenError();
                     }
                     const passwordVerificationResult = await this.authService.verifyUserPassword(
-                        req.getRequestContext(),
-                        req.getRequestContext().activeUserId!,
+                        ctx,
+                        ctx.activeUserId,
                         req.body.password,
                     );
 
@@ -289,8 +285,8 @@ export class DeveloperAuthController extends CommonAuth implements AppRouter {
                     }
 
                     const result = await this.developerService.requestEmailAddressChange(
-                        req.getRequestContext(),
-                        req.getRequestContext().activeUserId!,
+                        ctx,
+                        ctx.activeUserId,
                         req.body,
                     );
                     if (isApiError(result)) {
@@ -305,10 +301,7 @@ export class DeveloperAuthController extends CommonAuth implements AppRouter {
         router.patch(
             '/account-email-address-change',
             ...defineRoutePipeline({
-                before: [
-                    this.emailFlowLimiter,
-                    authGuard({ permissions: [Permission.Authenticated, Permission.Owner] }),
-                ],
+                before: [this.emailFlowLimiter, authGuard({ permissions: [Permission.Owner] })],
                 body: changeEmailAddressDto.input,
                 response: changeEmailAddressDto.output,
                 interceptors: [transactionInterceptor()],
@@ -317,11 +310,11 @@ export class DeveloperAuthController extends CommonAuth implements AppRouter {
                     if (nativeAuthStrategyError) {
                         return nativeAuthStrategyError;
                     }
-
-                    const result = await this.developerService.changeEmailAddress(
-                        req.getRequestContext(),
-                        req.body,
-                    );
+                    const ctx = req.getRequestContext();
+                    if (!ctx.activeUserId) {
+                        throw new ForbiddenError();
+                    }
+                    const result = await this.developerService.changeEmailAddress(ctx, req.body);
                     if (isApiError(result)) {
                         return res.status(result.httpStatusCode).json(result);
                     }
@@ -404,10 +397,10 @@ export class DeveloperAuthController extends CommonAuth implements AppRouter {
 
     protected requireNativeAuthStrategy() {
         const { developerAuthenticationStrategies } = this.configService.authOptions;
-        const nativeAuthStrategyIsConfigured = !!developerAuthenticationStrategies.find(
+        const isNativeAuthStrategyAvailable = !!developerAuthenticationStrategies.find(
             strategy => strategy.name === NATIVE_AUTH_STRATEGY_NAME,
         );
-        if (!nativeAuthStrategyIsConfigured) {
+        if (!isNativeAuthStrategyAvailable) {
             const authStrategyNames = developerAuthenticationStrategies.map(s => s.name).join(', ');
             const errorMessage =
                 'This API endpoint requires that the NativeAuthenticationStrategy be configured for the Developer API.\n' +

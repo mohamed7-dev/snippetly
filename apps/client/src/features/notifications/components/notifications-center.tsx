@@ -8,11 +8,11 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { BellIcon } from 'lucide-react';
-import { NotificationItem } from './notification-item';
 import { useNotifications } from '../hooks/use-notifications';
+import { NotificationItem } from './notification-item';
 
 export function NotificationsCenter() {
-    const { notifications, activeCount } = useNotifications();
+    const { notifications, activeCount, hasMore, isLoadingMore, loadMore } = useNotifications();
 
     return (
         <DropdownMenu>
@@ -25,7 +25,10 @@ export function NotificationsCenter() {
                 >
                     <BellIcon />
                     {activeCount > 0 && (
-                        <Badge className="absolute -right-1 -top-1 min-w-5 justify-center px-1" variant="destructive">
+                        <Badge
+                            className="absolute -right-1 -top-1 min-w-5 justify-center px-1"
+                            variant="destructive"
+                        >
                             {activeCount > 99 ? '99+' : activeCount}
                         </Badge>
                     )}
@@ -37,15 +40,22 @@ export function NotificationsCenter() {
                 <div className="max-h-96 overflow-y-auto px-2">
                     {activeCount > 0 ? (
                         notifications.map(notification => (
-                            <NotificationItem
-                                key={notification.definition.id}
-                                notification={notification}
-                            />
+                            <NotificationItem key={notification.definition.id} notification={notification} />
                         ))
                     ) : (
-                        <p className="py-8 text-center text-sm text-muted-foreground">
-                            No notifications
-                        </p>
+                        <p className="py-8 text-center text-sm text-muted-foreground">No notifications</p>
+                    )}
+                    {hasMore && (
+                        <div className="flex justify-center py-3">
+                            <Button
+                                disabled={isLoadingMore}
+                                onClick={() => void loadMore()}
+                                size="sm"
+                                variant="ghost"
+                            >
+                                {isLoadingMore ? 'Loading…' : 'Load more'}
+                            </Button>
+                        </div>
                     )}
                 </div>
             </DropdownMenuContent>

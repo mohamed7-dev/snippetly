@@ -8,8 +8,9 @@ import { SessionCacheStrategy } from './auth/session-cache-strategy.interface';
 import { VerificationTokenStrategy } from './auth/verification-token-strategy.interface';
 import { CacheStrategy } from './system/cache/cache-strategy.interface';
 import { EmailTransporterStrategy } from './system/email/email-transporter-strategy.interface';
-import { LoggerStrategy } from './system/logger/logger-strategy.interface';
 import { JobQueueStrategy } from './system/job-queue/job-queue-strategy.interface';
+import { LoggerStrategy } from './system/logger/logger-strategy.interface';
+import { SearchStrategy } from './system/search/search-strategy';
 
 interface ApiActorOptions {
     path?: string;
@@ -47,6 +48,7 @@ export interface SystemConfigOptions {
     loggerStrategy?: LoggerStrategy;
     cacheStrategy?: CacheStrategy;
     jobQueueStrategy?: JobQueueStrategy;
+    searchStrategy?: SearchStrategy;
 }
 
 export interface AuthConfigOptions {

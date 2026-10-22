@@ -35,6 +35,10 @@ export class UserService {
         private readonly passwordValidationService: PasswordValidationService,
     ) {}
 
+    /**
+     * @description
+     * Finds an active user by email address or other identifier.
+     */
     public async getUserByIdentifier(ctx: RequestContext, identifier: string): Promise<User | undefined> {
         const isEmailIdentifier = isEmailAddressLike(identifier);
         const query = this.databaseService
@@ -50,6 +54,10 @@ export class UserService {
         return await query.getOne().then(result => result ?? undefined);
     }
 
+    /**
+     * @description
+     * Finds a user for sign-in, including accounts that were soft-deleted.
+     */
     public async getUserByIdentifierForAuthentication(
         ctx: RequestContext,
         identifier: string,
@@ -68,6 +76,10 @@ export class UserService {
         return await query.getOne().then(result => result ?? undefined);
     }
 
+    /**
+     * @description
+     * Finds a user by ID and loads their roles and authentication methods.
+     */
     public async getUserById(
         ctx: RequestContext,
         userId: string,
@@ -87,7 +99,11 @@ export class UserService {
         return foundUser ?? undefined;
     }
 
-    async refreshVerificationToken(ctx: RequestContext, user: User): Promise<User> {
+    /**
+     * @description
+     * Replaces a user's verification token and marks the account unverified.
+     */
+    public async refreshVerificationToken(ctx: RequestContext, user: User): Promise<User> {
         const nativeAuthMethod = user.getNativeAuthenticationMethod();
         nativeAuthMethod.verificationToken =
             await this.verificationTokenGenerator.generateVerificationToken(ctx);
@@ -96,7 +112,11 @@ export class UserService {
         return this.databaseService.getRepository(ctx, User).save(user);
     }
 
-    async verifyDeveloperAccount(
+    /**
+     * @description
+     * Verifies a developer account using its token, or returns an invalid or expired token error.
+     */
+    public async verifyDeveloperAccount(
         ctx: RequestContext,
         verificationToken: string,
     ): Promise<User | VerificationTokenInvalidError | VerificationTokenExpiredError> {
@@ -104,8 +124,8 @@ export class UserService {
             .getRepository(ctx, User)
             .createQueryBuilder('user')
             .leftJoinAndSelect('user.authenticationMethods', 'authMethods')
-            .leftJoin('user.authenticationMethods', 'authenticationMethod')
-            .where('authenticationMethod.verificationToken = :verificationToken', { verificationToken })
+            .leftJoin('user.authenticationMethods', 'aum')
+            .where('aum.verificationToken = :verificationToken', { verificationToken })
             .getOne();
 
         if (!user) {
@@ -127,7 +147,11 @@ export class UserService {
         }
     }
 
-    async generateAndSetPasswordResetToken(
+    /**
+     * @description
+     * Creates and saves a password reset token for an account that has native credentials.
+     */
+    public async generateAndSetPasswordResetToken(
         ctx: RequestContext,
         emailAddress: string,
     ): Promise<User | undefined> {
@@ -141,7 +165,11 @@ export class UserService {
         return user;
     }
 
-    async resetAccountPassword(
+    /**
+     * @description
+     * Checks a password reset token and saves the new password when it is valid.
+     */
+    public async resetAccountPassword(
         ctx: RequestContext,
         passwordResetToken: string,
         newPassword: string,
@@ -151,10 +179,10 @@ export class UserService {
         const user = await this.databaseService
             .getRepository(ctx, User)
             .createQueryBuilder('user')
-            .leftJoinAndSelect('user.authenticationMethods', 'authMethods')
-            .leftJoin('user.authenticationMethods', 'authenticationMethod')
-            .addSelect('authMethods.password')
-            .where('authenticationMethod.passwordResetToken = :passwordResetToken', { passwordResetToken })
+            .leftJoinAndSelect('user.authenticationMethods', 'aums')
+            .leftJoin('user.authenticationMethods', 'aum')
+            .addSelect('aums.password')
+            .where('aum.passwordResetToken = :passwordResetToken', { passwordResetToken })
             .getOne();
 
         if (!user) {
@@ -187,7 +215,14 @@ export class UserService {
         }
     }
 
-    async generateAndSetIdentifierChangeToken(ctx: RequestContext, user: User): Promise<User | undefined> {
+    /**
+     * @description
+     * Creates and saves a token to confirm a user's identifier change.
+     */
+    public async generateAndSetIdentifierChangeToken(
+        ctx: RequestContext,
+        user: User,
+    ): Promise<User | undefined> {
         const nativeAuthMethod = user.getNativeAuthenticationMethod();
         nativeAuthMethod.identifierChangeToken =
             await this.verificationTokenGenerator.generateVerificationToken(ctx);
@@ -195,7 +230,11 @@ export class UserService {
         return user;
     }
 
-    async changeIdentifier(
+    /**
+     * @description
+     * Applies the pending identifier change when its confirmation token is valid.
+     */
+    public async changeIdentifier(
         ctx: RequestContext,
         identifierChangeToken: string,
     ): Promise<
@@ -206,10 +245,10 @@ export class UserService {
         const user = await this.databaseService
             .getRepository(ctx, User)
             .createQueryBuilder('user')
-            .leftJoinAndSelect('user.authenticationMethods', 'authMethods')
-            .leftJoin('user.authenticationMethods', 'authenticationMethod')
-            .addSelect('authMethods.password')
-            .where('authenticationMethod.identifierChangeToken = :identifierChangeToken', {
+            .leftJoinAndSelect('user.authenticationMethods', 'aums')
+            .leftJoin('user.authenticationMethods', 'aum')
+            .addSelect('aums.password')
+            .where('aum.identifierChangeToken = :identifierChangeToken', {
                 identifierChangeToken,
             })
             .getOne();
@@ -243,6 +282,10 @@ export class UserService {
         }
     }
 
+    /**
+     * @description
+     * Checks the current password and saves a validated replacement password.
+     */
     public async updatePassword(
         ctx: RequestContext,
         input: { currentPassword: string; newPassword: string; userId: string },
@@ -250,8 +293,8 @@ export class UserService {
         const user = await this.databaseService
             .getRepository(ctx, User)
             .createQueryBuilder('user')
-            .leftJoinAndSelect('user.authenticationMethods', 'authMethods')
-            .addSelect('authMethods.password')
+            .leftJoinAndSelect('user.authenticationMethods', 'aums')
+            .addSelect('aums.password')
             .where('user.id = :id', { id: input.userId })
             .getOne();
 
@@ -265,11 +308,11 @@ export class UserService {
         }
 
         const nativeMethod = user.getNativeAuthenticationMethod();
-        const matches = await this.passwordHashingService.verify(
+        const isPasswordMatch = await this.passwordHashingService.verify(
             input.currentPassword,
             nativeMethod.password,
         );
-        if (!matches) {
+        if (!isPasswordMatch) {
             return new InvalidCredentialsError({ reason: '' });
         }
 
@@ -283,7 +326,7 @@ export class UserService {
 
     /**
      * @description
-     * Creates a new admin user with credentials authentication.
+     * Creates an already verified administrator account with password authentication.
      */
     public async createAdminUser(
         ctx: RequestContext,
@@ -306,6 +349,10 @@ export class UserService {
         return await this.databaseService.getRepository(ctx, User).save(user);
     }
 
+    /**
+     * @description
+     * Creates a developer account, assigns its role, and adds password authentication.
+     */
     public async createDeveloperUser(
         ctx: RequestContext,
         credentials: {
@@ -326,6 +373,10 @@ export class UserService {
         return await this.databaseService.getRepository(ctx, User).save(assignCredentialsAuthMethodResult);
     }
 
+    /**
+     * @description
+     * Adds password authentication to a user and creates a verification token when required.
+     */
     public async assignCredentialsAuthMethodToUser(
         ctx: RequestContext,
         user: User,
@@ -364,6 +415,10 @@ export class UserService {
         return user;
     }
 
+    /**
+     * @description
+     * Creates a new verification token, saves it, and marks the user unverified.
+     */
     public async generateAndAssignVerificationToken(ctx: RequestContext, user: User): Promise<User> {
         const credentialsAuthMethod = user.getNativeAuthenticationMethod();
         credentialsAuthMethod.verificationToken =
@@ -373,6 +428,10 @@ export class UserService {
         return this.databaseService.getRepository(ctx, User).save(user);
     }
 
+    /**
+     * @description
+     * Ends the user's sessions and marks the account as deleted.
+     */
     public async softDelete(ctx: RequestContext, id: string): Promise<void> {
         // SessionService is imported dynamically to avoid circular dependency
         // since SessionService depends on UserService
@@ -389,10 +448,18 @@ export class UserService {
         await repo.update({ id }, { deletedAt: new Date() });
     }
 
+    /**
+     * @description
+     * Returns whether the user has password-based authentication.
+     */
     public hasCredentialsAuthMethod(user: User): boolean {
         return !!user?.authenticationMethods.find(m => m instanceof NativeAuthenticationMethod);
     }
 
+    /**
+     * @description
+     * Checks a password against the configured rules and returns any validation error.
+     */
     public async validatePassword(
         ctx: RequestContext,
         plainPassword: string,

@@ -5,8 +5,17 @@ import { DatabaseModule } from './infra/database/database.module';
 import { EventBusModule } from './infra/event-bus/even-bus.module';
 import { I18nModule } from './infra/i18n/i18n.module';
 import { Module } from './infra/ioc-container/module.decorator';
+import { JobQueueModule } from './infra/job-queue/job-queue.module';
 
 @Module({
-    imports: [DatabaseModule, ConfigModule, I18nModule, ApiModule, CacheModule, EventBusModule],
+    imports: [
+        DatabaseModule,
+        ConfigModule,
+        I18nModule,
+        ApiModule,
+        CacheModule,
+        EventBusModule,
+        JobQueueModule,
+    ],
 })
 export class AppModule {}

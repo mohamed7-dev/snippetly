@@ -1,3 +1,5 @@
+import { GetDeveloperPreferencesDtoType } from '../schema/index.js';
+
 export const SUPER_ADMIN_IDENTIFIER = 'superadmin';
 export const SUPER_ADMIN_PASSWORD = 'superadmin';
 export const DEFAULT_ADMIN_API_PATH_PREFIX = 'admin';
@@ -11,3 +13,20 @@ export const DEVELOPER_ROLE_DESCRIPTION = 'Developer';
 export const API_PORT = 3000;
 export const AUTH_TOKEN_HEADER_KEY = 'x-session-token';
 export const APP_NAME = 'Snippetly';
+
+type DeveloperPreferencesValues = GetDeveloperPreferencesDtoType['output']['preferences'];
+
+export const DEFAULT_DEVELOPER_PREFERENCES: DeveloperPreferencesValues = {
+    theme: 'system',
+    colorScheme: 'classic',
+    codeEditor: {
+        theme: 'system',
+        fontSize: 14,
+        fontFamily: 'geist-mono',
+        tabSize: 4,
+        lineWrapping: false,
+        lineNumbers: true,
+    },
+    inAppNotificationsEnabled: true,
+    isPushEnabled: true,
+};

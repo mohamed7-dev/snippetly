@@ -43,6 +43,7 @@ export class CommonAuth {
         res: Response,
     ): Promise<AuthenticatedUser | InvalidCredentialsError | NotVerifiedAccountError> {
         const authInfo = Object.entries(input)[0];
+
         const sessionResult = await this.authService.authenticate(
             ctx,
             authInfo?.[0],
@@ -50,11 +51,9 @@ export class CommonAuth {
             ctx.apiType,
             req.get('user-agent') ?? null,
         );
+
         if (isApiError(sessionResult)) return sessionResult;
-        if (ctx.apiType === 'admin') {
-            const foundAdmin = await this.administratorService.findOneByUserId(ctx, sessionResult.user.id);
-            if (!foundAdmin) return new InvalidCredentialsError({ reason: '' });
-        }
+
         setSessionToken({
             res,
             req,

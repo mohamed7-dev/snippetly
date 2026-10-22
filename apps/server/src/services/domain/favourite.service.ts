@@ -116,19 +116,14 @@ export class FavouriteService {
         return { success: true };
     }
 
-    public async getFavouriteStatusMap(
+    public async getFavouriteStatusMapForDeveloper(
         ctx: RequestContext,
         resourceIds: string[],
         resourceType: FavouriteResourceType,
+        developer?: Developer,
     ): Promise<Map<string, boolean>> {
         const statusById = new Map(resourceIds.map(id => [id, false]));
-        if (!ctx.activeUserId || resourceIds.length === 0) {
-            return statusById;
-        }
 
-        const developer = await this.databaseService.getRepository(ctx, Developer).findOne({
-            where: { user: { id: ctx.activeUserId } },
-        });
         if (!developer) {
             return statusById;
         }
@@ -139,6 +134,7 @@ export class FavouriteService {
                 : resourceType === 'collections'
                   ? 'collection'
                   : 'favoritedDeveloper';
+
         const favouritedResources = await this.databaseService
             .getRepository(ctx, Favourite)
             .createQueryBuilder('favourite')

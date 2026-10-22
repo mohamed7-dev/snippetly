@@ -158,20 +158,22 @@ function InboxTabContent() {
                                 {request.requester.bio ??
                                     `No info available about ${request.requester.firstName}`}
                             </p>
-                            <AcceptFriendshipRequestButton
-                                friendId={request.requester.id}
-                                variant={'outline'}
-                                acceptFriendshipRequestMutationCallbacks={{
-                                    onSuccess: onMutateSuccess,
-                                }}
-                            />
-                            <RejectFriendshipRequestButton
-                                friendId={request.requester.id}
-                                variant={'destructive-outline'}
-                                rejectFriendshipRequestMutationCallbacks={{
-                                    onSuccess: onMutateSuccess,
-                                }}
-                            />
+                            <div className="flex items-center gap-4">
+                                <AcceptFriendshipRequestButton
+                                    friendId={request.requester.id}
+                                    variant={'outline'}
+                                    acceptFriendshipRequestMutationCallbacks={{
+                                        onSuccess: onMutateSuccess,
+                                    }}
+                                />
+                                <RejectFriendshipRequestButton
+                                    friendId={request.requester.id}
+                                    variant={'destructive-outline'}
+                                    rejectFriendshipRequestMutationCallbacks={{
+                                        onSuccess: onMutateSuccess,
+                                    }}
+                                />
+                            </div>
                         </CardContent>
                     </Card>
                 ))}

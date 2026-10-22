@@ -1,18 +1,18 @@
 import { createRouter, RouterProvider } from '@tanstack/react-router';
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { Toaster } from 'sonner';
 import { DeleteConfirmationProvider } from './components/providers/delete-confirmation-provider';
 import { queryClient, TanstackQueryProvider } from './components/providers/tanstack-query-provider';
 import { ThemeProvider } from './components/providers/theme-provider';
+import { Toaster } from './components/ui/sonner';
 import { ErrorPageView } from './components/views/error-page-view';
 import { NotFoundPageView, type NotFoundMetaData } from './components/views/not-found-page-view';
 import { PageLoader } from './components/views/page-loading-view';
 import { useAuth } from './features/auth/hooks/use-auth';
 import { AuthProvider } from './features/auth/providers/auth-provider';
 import { DeveloperSettingsProvider } from './features/developer-settings/providers/developer-settings-provider';
-import { NotificationsProvider } from './features/notifications/providers/notifications-provider';
 import { registerDefaultNotifications } from './features/notifications/lib/default-notifications';
+import { NotificationsProvider } from './features/notifications/providers/notifications-provider';
 import { parseSearch, stringifySearch } from './lib/search-serializer';
 import { routeTree } from './routeTree.gen';
 
@@ -98,18 +98,18 @@ export function App() {
     return (
         <React.Fragment>
             <TanstackQueryProvider>
-                <NotificationsProvider>
-                    <AuthProvider>
-                        <DeveloperSettingsProvider>
+                <AuthProvider>
+                    <DeveloperSettingsProvider>
+                        <NotificationsProvider>
                             <ThemeProvider defaultTheme="dark">
                                 <DeleteConfirmationProvider>
                                     <InnerApp />
-                                    {createPortal(<Toaster position="top-center" />, document.body)}
+                                    {createPortal(<Toaster position="bottom-right" />, document.body)}
                                 </DeleteConfirmationProvider>
                             </ThemeProvider>
-                        </DeveloperSettingsProvider>
-                    </AuthProvider>
-                </NotificationsProvider>
+                        </NotificationsProvider>
+                    </DeveloperSettingsProvider>
+                </AuthProvider>
             </TanstackQueryProvider>
 
             <React.Suspense fallback={null}>

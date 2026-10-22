@@ -10,11 +10,11 @@ import { Friendship } from '../../entities/friendships/friendship.entity';
 import { DatabaseService } from '../../infra/database/database.service';
 import { EventBus } from '../../infra/event-bus/event-bus.service';
 import { FriendshipEvent } from '../../infra/event-bus/events/friendship.event';
+import { JobQueue } from '../../infra/job-queue/job-qeueue.service';
 import { Logger } from '../../infra/logger/logger';
+import { PushNotificationService } from '../../infra/push-notification/push-notification.service';
 import { AppJobEvent } from '../events/app-job.event';
 import { FriendshipService } from './friendship.service';
-import { PushNotificationService } from './push-notification.service';
-import { JobQueue } from '../helpers/job-qeueue.service';
 
 describe('FriendshipService job notifications', () => {
     let eventBus: EventBus;
@@ -48,12 +48,11 @@ describe('FriendshipService job notifications', () => {
     });
 
     it('enqueues notifications for friendship request lifecycle events', async () => {
-        const event = new FriendshipEvent(
-            {} as never,
-            {} as Friendship,
-            'sent',
-            { requesterId: 'requester-id', addresseeId: 'addressee-id', actorId: 'requester-id' },
-        );
+        const event = new FriendshipEvent({} as never, {} as Friendship, 'sent', {
+            requesterId: 'requester-id',
+            addresseeId: 'addressee-id',
+            actorId: 'requester-id',
+        });
 
         await eventBus.publish(event);
 

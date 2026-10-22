@@ -34,7 +34,8 @@ export class TagService {
 
     public async createTagsFromValues(ctx: RequestContext, values: string[]): Promise<Tag[]> {
         const { DeveloperService } = require('./developer.service') as typeof import('./developer.service');
-        const developerService = moduleRef.getProvider<InstanceType<typeof DeveloperService>>(DeveloperService);
+        const developerService =
+            moduleRef.getProvider<InstanceType<typeof DeveloperService>>(DeveloperService);
         const developer = await developerService.getActiveDeveloper(ctx);
 
         return Promise.all(
@@ -44,7 +45,7 @@ export class TagService {
         );
     }
 
-    public async countDevelopersTags(ctx: RequestContext, developerIds: string[]) {
+    public async getDevelopersTags(ctx: RequestContext, developerIds: string[]) {
         const tagRepo = this.databaseService.getRepository(ctx, Tag);
 
         const qb = tagRepo

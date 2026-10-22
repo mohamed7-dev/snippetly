@@ -31,21 +31,37 @@ export class SessionService implements EntitySubscriberInterface {
         this.databaseService.dataSource?.subscribers?.push(this);
     }
 
-    /** @internal */
+    /**
+     * @description
+     * Clears cached sessions after an entity is added to the database.
+     * @internal
+     */
     async afterInsert(event: InsertEvent<any>): Promise<any> {
         await this.clearSessionCacheOnDataChange(event);
     }
 
-    /** @internal */
+    /**
+     * @description
+     * Clears cached sessions after an entity is removed from the database.
+     * @internal
+     */
     async afterRemove(event: RemoveEvent<any>): Promise<any> {
         await this.clearSessionCacheOnDataChange(event);
     }
 
-    /** @internal */
+    /**
+     * @description
+     * Clears cached sessions after an entity is updated in the database.
+     * @internal
+     */
     async afterUpdate(event: UpdateEvent<any>): Promise<any> {
         await this.clearSessionCacheOnDataChange(event);
     }
 
+    /**
+     * @description
+     * Creates a session for a user, saves it, and adds it to the session cache.
+     */
     public async createSession(
         ctx: RequestContext,
         user: User,
@@ -67,6 +83,10 @@ export class SessionService implements EntitySubscriberInterface {
         return savedSession;
     }
 
+    /**
+     * @description
+     * Lists a user's sessions that are active and have not expired.
+     */
     public async listActiveSessions(ctx: RequestContext, userId: string): Promise<Session[]> {
         return this.databaseService.getRepository(ctx, Session).find({
             where: {
@@ -78,6 +98,10 @@ export class SessionService implements EntitySubscriberInterface {
         });
     }
 
+    /**
+     * @description
+     * Removes a user's session and its cached entry.
+     */
     public async revokeSession(ctx: RequestContext, userId: string, sessionId: string): Promise<Session> {
         const repository = this.databaseService.getRepository(ctx, Session);
         const session = await repository.findOne({
@@ -94,7 +118,7 @@ export class SessionService implements EntitySubscriberInterface {
 
     /**
      * @description
-     * Deletes all sessions for a user.
+     * Removes all sessions for a user and deletes their cached entries.
      */
     public async deleteSessionsByUser(ctx: RequestContext, user: User): Promise<void> {
         const userSessions = await this.databaseService
@@ -106,6 +130,10 @@ export class SessionService implements EntitySubscriberInterface {
         }
     }
 
+    /**
+     * @description
+     * Gets a session from cache, checking the database if the cached entry is stale or missing.
+     */
     public async getSessionByToken(token: string): Promise<SessionCacheEntry | undefined> {
         const sessionCacheEntry = await race(this.cache.get(token), this.sessionCacheTimeoutMs);
         const isCacheStale = !!(sessionCacheEntry && sessionCacheEntry.cacheExpiry < Date.now() / 1000);
@@ -124,13 +152,21 @@ export class SessionService implements EntitySubscriberInterface {
         return sessionCacheEntry;
     }
 
+    /**
+     * @description
+     * Finds an active, unexpired session in the database and extends its expiry if needed.
+     */
     private async findValidSessionByToken(token: string): Promise<Session | undefined> {
         const session = await this.databaseService.getRepository(Session).findOne({
             where: {
                 token,
                 invalidated: false,
             },
-            relations: ['user', 'user.roles'],
+            relations: {
+                user: {
+                    roles: true,
+                },
+            },
         });
 
         if (session && session.expiresAt > new Date()) {
@@ -140,6 +176,10 @@ export class SessionService implements EntitySubscriberInterface {
         return undefined;
     }
 
+    /**
+     * @description
+     * Converts a session into the smaller form stored in the session cache.
+     */
     private toCacheEntry(session: Session) {
         const { sessionCacheTTL } = this.configService.authOptions;
         const sessionCacheTTLInS =
@@ -164,10 +204,18 @@ export class SessionService implements EntitySubscriberInterface {
         return sessionCacheEntry;
     }
 
+    /**
+     * @description
+     * Returns the date when a session expires after the given duration.
+     */
     private calculateExpiry(durationMs: number): Date {
         return new Date(Date.now() + durationMs);
     }
 
+    /**
+     * @description
+     * Generates a random token for a new session.
+     */
     private async createToken(): Promise<string> {
         return new Promise((resolve, reject) => {
             randomBytes(32, (err, buf) => {
@@ -179,7 +227,7 @@ export class SessionService implements EntitySubscriberInterface {
 
     /**
      * @description
-     * Extends the expiry of a session if it's past halfway through its lifetime.
+     * Extends a session's expiry when it has passed the halfway point of its lifetime.
      */
     private async extendSessionExpiry(session: Session) {
         const now = Date.now();
@@ -193,6 +241,10 @@ export class SessionService implements EntitySubscriberInterface {
         }
     }
 
+    /**
+     * @description
+     * Clears the session cache when a role change could make cached permissions outdated.
+     */
     private async clearSessionCacheOnDataChange(
         event: InsertEvent<any> | RemoveEvent<any> | UpdateEvent<any>,
     ) {

@@ -13,15 +13,15 @@ import {
 } from '@snippetly/common/dto';
 import { omit } from '@snippetly/common/lib';
 import { Router } from 'express';
-import rateLimit from 'express-rate-limit';
 import { EntityNotFoundError, ForbiddenError } from '../../common/errors/errors';
+import { defineRateLimiter } from '../../common/helpers/define-rate-limiter';
 import { AppRouter } from '../../common/types/app-router.interface';
+import { ConfigService } from '../../config/config.service';
 import { Developer } from '../../entities/developer/developer.entity';
 import { Controller } from '../../infra/ioc-container/controller.decorator';
 import { CollectionService } from '../../services/domain/collection.service';
 import { DeveloperService } from '../../services/domain/developer.service';
 import { SnippetService } from '../../services/domain/snippet.service';
-import { JobQueue } from '../../services/helpers/job-qeueue.service';
 import { authGuard } from '../middlewares/auth.guard';
 import { defineRoutePipeline } from '../middlewares/define-router-pipeline.mw';
 import { transactionInterceptor } from '../middlewares/transaction.interceptor';
@@ -36,22 +36,28 @@ export class DeveloperSnippetController implements AppRouter {
         private readonly snippetService: SnippetService,
         private readonly developerService: DeveloperService,
         private readonly collectionService: CollectionService,
-        private readonly jobQueue: JobQueue,
+        private readonly configService: ConfigService,
     ) {}
 
-    snippetWriteLimiter = rateLimit({
-        windowMs: 15 * 60 * 1000, // 15 minutes
-        max: 50,
-        standardHeaders: true,
-        legacyHeaders: false,
-    });
+    snippetWriteLimiter = defineRateLimiter(
+        {
+            windowMs: 15 * 60 * 1000, // 15 minutes
+            max: 50,
+            standardHeaders: true,
+            legacyHeaders: false,
+        },
+        this.configService.apiOptions,
+    );
 
-    snippetReadLimiter = rateLimit({
-        windowMs: 60 * 1000, // 1 minute
-        max: 120,
-        standardHeaders: true,
-        legacyHeaders: false,
-    });
+    snippetReadLimiter = defineRateLimiter(
+        {
+            windowMs: 60 * 1000, // 1 minute
+            max: 120,
+            standardHeaders: true,
+            legacyHeaders: false,
+        },
+        this.configService.apiOptions,
+    );
 
     initRoutes(router: Router): Router {
         router.post(
@@ -66,16 +72,6 @@ export class DeveloperSnippetController implements AppRouter {
                 interceptors: [transactionInterceptor()],
                 handler: async (req, res) => {
                     const result = await this.snippetService.create(req.getRequestContext(), req.body);
-                    if (result.isPrivate !== true && result.creator) {
-                        await this.jobQueue.enqueue(
-                            {
-                                type: 'notify-friends-of-published-snippet',
-                                authorId: result.creator.id,
-                                snippetId: result.id,
-                            },
-                            10,
-                        );
-                    }
                     res.status(200).json(result);
                 },
             }),
@@ -132,10 +128,7 @@ export class DeveloperSnippetController implements AppRouter {
         router.patch(
             '/:id/restore',
             ...defineRoutePipeline({
-                before: [
-                    this.snippetWriteLimiter,
-                    authGuard({ permissions: [Permission.Authenticated, Permission.Owner] }),
-                ],
+                before: [this.snippetWriteLimiter, authGuard({ permissions: [Permission.Owner] })],
                 params: restoreSnippetDto.input,
                 response: restoreSnippetDto.output,
                 interceptors: [transactionInterceptor()],
@@ -152,10 +145,7 @@ export class DeveloperSnippetController implements AppRouter {
         router.delete(
             '/:id/permanent',
             ...defineRoutePipeline({
-                before: [
-                    this.snippetWriteLimiter,
-                    authGuard({ permissions: [Permission.Authenticated, Permission.Owner] }),
-                ],
+                before: [this.snippetWriteLimiter, authGuard({ permissions: [Permission.Owner] })],
                 params: deleteSnippetDto.input,
                 response: deleteSnippetDto.output,
                 interceptors: [transactionInterceptor()],
@@ -174,7 +164,7 @@ export class DeveloperSnippetController implements AppRouter {
             ...defineRoutePipeline({
                 before: [
                     this.snippetWriteLimiter,
-                    authGuard({ permissions: [Permission.Authenticated, Permission.ForkSnippet] }),
+                    authGuard({ permissions: [Permission.Authenticated, Permission.CreateSnippet] }),
                 ],
                 params: forkSnippetDto.input.pick({ id: true }),
                 body: forkSnippetDto.input.pick({ collectionId: true }),
@@ -235,19 +225,31 @@ export class DeveloperSnippetController implements AppRouter {
                               },
                     );
 
-                    result.items = await this.snippetService.attachFavouriteStatus(
+                    const snippetsWithFavStatus = await this.snippetService.attachFavouriteStatus(
                         req.getRequestContext(),
                         result.items,
+                        developer,
                     );
+
+                    const finalResult = {
+                        ...result,
+                        items: result.items.map((item, index) => ({
+                            ...item,
+                            relationshipsWithCurrentUser: {
+                                isFavouritedByCurrentUser:
+                                    snippetsWithFavStatus[index].isFavouritedByCurrentUser,
+                            },
+                        })),
+                    };
 
                     const response = restrictToPublic
                         ? {
-                              ...result,
-                              items: result.items.map(item =>
+                              ...finalResult,
+                              items: finalResult.items.map(item =>
                                   omit(item, ['isPrivate', 'updatedAt', 'deletedAt', 'collection']),
                               ),
                           }
-                        : result;
+                        : finalResult;
                     res.status(200).json(response);
                 },
             }),
@@ -259,7 +261,7 @@ export class DeveloperSnippetController implements AppRouter {
                 before: [
                     this.snippetReadLimiter,
                     authGuard({
-                        permissions: [Permission.Authenticated, Permission.ReadSnippet, Permission.Owner],
+                        permissions: [Permission.Owner],
                     }),
                 ],
                 query: currentUserSnippetListDto.input,
@@ -281,12 +283,25 @@ export class DeveloperSnippetController implements AppRouter {
                         },
                         { includePrivateSnippets: true },
                     );
-                    result.items = await this.snippetService.attachFavouriteStatus(
+
+                    const snippetsWithFavStatus = await this.snippetService.attachFavouriteStatus(
                         req.getRequestContext(),
                         result.items,
+                        developer,
                     );
 
-                    res.status(200).json(result);
+                    const finalResult = {
+                        ...result,
+                        items: result.items.map((item, index) => ({
+                            ...item,
+                            relationshipsWithCurrentUser: {
+                                isFavouritedByCurrentUser:
+                                    snippetsWithFavStatus[index].isFavouritedByCurrentUser,
+                            },
+                        })),
+                    };
+
+                    res.status(200).json(finalResult);
                 },
             }),
         );
@@ -297,7 +312,7 @@ export class DeveloperSnippetController implements AppRouter {
                 before: [
                     this.snippetReadLimiter,
                     authGuard({
-                        permissions: [Permission.Authenticated, Permission.ReadSnippet, Permission.Owner],
+                        permissions: [Permission.Owner],
                     }),
                 ],
                 query: currentUserTrashedSnippetListDto.input,
@@ -317,11 +332,23 @@ export class DeveloperSnippetController implements AppRouter {
                         },
                         { includePrivateSnippets: true, onlySoftDeleted: true },
                     );
-                    result.items = await this.snippetService.attachFavouriteStatus(
+                    const snippetsWithFavStatus = await this.snippetService.attachFavouriteStatus(
                         req.getRequestContext(),
                         result.items,
+                        developer,
                     );
-                    res.status(200).json(result);
+
+                    const finalResult = {
+                        ...result,
+                        items: result.items.map((item, index) => ({
+                            ...item,
+                            relationshipsWithCurrentUser: {
+                                isFavouritedByCurrentUser:
+                                    snippetsWithFavStatus[index].isFavouritedByCurrentUser,
+                            },
+                        })),
+                    };
+                    res.status(200).json(finalResult);
                 },
             }),
         );
@@ -343,12 +370,24 @@ export class DeveloperSnippetController implements AppRouter {
                         req.query.creator ?? developer.id,
                         req.query,
                     );
-                    result.items = await this.snippetService.attachFavouriteStatus(
+                    const snippetsWithFavStatus = await this.snippetService.attachFavouriteStatus(
                         req.getRequestContext(),
                         result.items,
+                        developer,
                     );
 
-                    res.status(200).json(result);
+                    const finalResult = {
+                        ...result,
+                        items: result.items.map((item, index) => ({
+                            ...item,
+                            relationshipsWithCurrentUser: {
+                                isFavouritedByCurrentUser:
+                                    snippetsWithFavStatus[index].isFavouritedByCurrentUser,
+                            },
+                        })),
+                    };
+
+                    res.status(200).json(finalResult);
                 },
             }),
         );
@@ -360,8 +399,9 @@ export class DeveloperSnippetController implements AppRouter {
                 params: findOneSnippetDto.input,
                 response: findOneSnippetDto.output,
                 handler: async (req, res) => {
+                    const ctx = req.getRequestContext();
                     const result = await this.snippetService.findOne(
-                        req.getRequestContext(),
+                        ctx,
                         req.params,
                         {
                             collection: true,
@@ -374,27 +414,32 @@ export class DeveloperSnippetController implements AppRouter {
                         { includePrivateSnippet: true, includeSoftDeleted: false },
                     );
 
-                    const isOwner =
-                        req.getRequestContext().activeUserId === result?.creator.user.id ? true : false;
+                    const isOwner = ctx.activeUserId === result?.creator.user.id ? true : false;
+
+                    const currentDeveloper = await this.developerService.getActiveDeveloper(ctx);
 
                     if (!result || (!isOwner && result?.isPrivate)) {
                         throw new EntityNotFoundError({ entityName: 'Snippet', entityId: req.params.id });
                     }
 
-                    let finalResult;
-
-                    if (result) {
-                        finalResult = isOwner
-                            ? result
-                            : omit(result, ['isPrivate', 'updatedAt', 'deletedAt', 'collection']);
-                    }
-
-                    const [resultWithFavouriteStatus] = await this.snippetService.attachFavouriteStatus(
+                    const snippetsWithFavStatus = await this.snippetService.attachFavouriteStatus(
                         req.getRequestContext(),
-                        finalResult ? [finalResult] : [],
+                        [result],
+                        currentDeveloper,
                     );
 
-                    res.status(200).json(resultWithFavouriteStatus);
+                    const finalResult = {
+                        ...result,
+                        relationshipsWithCurrentUser: {
+                            isFavouritedByCurrentUser: snippetsWithFavStatus[0].isFavouritedByCurrentUser,
+                        },
+                    };
+
+                    const response = isOwner
+                        ? finalResult
+                        : omit(finalResult, ['isPrivate', 'updatedAt', 'deletedAt', 'collection']);
+
+                    res.status(200).json(response);
                 },
             }),
         );

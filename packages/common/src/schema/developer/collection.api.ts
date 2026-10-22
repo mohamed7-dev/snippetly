@@ -119,7 +119,6 @@ export type ForkCollectionDtoType = InferDtoType<typeof forkCollectionDto>;
 const findOneCollectionInput = inputIdSchema;
 
 const collectionItem = collection.omit({ creator: true, tags: true }).extend({
-    isFavouritedByCurrentUser: z.boolean(),
     creator: developer.pick({
         id: true,
         firstName: true,
@@ -140,7 +139,10 @@ const collectionItem = collection.omit({ creator: true, tags: true }).extend({
         })
         .nullish(),
     tags: z.array(tag.pick({ value: true })),
-    snippetCount: z.number().int().nonnegative(),
+    snippetsCount: z.number().int().nonnegative(),
+    relationshipsWithCurrentUser: z.object({
+        isFavouritedByCurrentUser: z.boolean(),
+    }),
 });
 
 const privateCollectionItem = collectionItem;
@@ -153,10 +155,10 @@ const publicCollectionItem = collectionItem.pick({
     color: true,
     description: true,
     allowForking: true,
-    isFavouritedByCurrentUser: true,
+    relationshipsWithCurrentUser: true,
     tags: true,
     creator: true,
-    snippetCount: true,
+    snippetsCount: true,
     forkedFrom: true,
 });
 
@@ -218,7 +220,6 @@ const collectionListInput = createPaginatedListInputSchema(filterSchema, sortSch
     .partial();
 
 const collectionListItem = collection.omit({ tags: true, creator: true }).extend({
-    isFavouritedByCurrentUser: z.boolean(),
     tags: z.array(tag.pick({ value: true })).optional(),
     creator: developer.pick({
         id: true,
@@ -239,7 +240,10 @@ const collectionListItem = collection.omit({ tags: true, creator: true }).extend
             }),
         })
         .nullish(),
-    snippetCount: z.number().int().nonnegative(),
+    relationshipsWithCurrentUser: z.object({
+        isFavouritedByCurrentUser: z.boolean(),
+    }),
+    snippetsCount: z.number().int().nonnegative(),
     snippets: z.array(
         z.object({
             id: idSchema,
@@ -259,10 +263,10 @@ const publicCollectionListItem = collectionListItem.pick({
     color: true,
     description: true,
     allowForking: true,
-    isFavouritedByCurrentUser: true,
+    relationshipsWithCurrentUser: true,
     tags: true,
     creator: true,
-    snippetCount: true,
+    snippetsCount: true,
     snippets: true,
     forkedFrom: true,
 });

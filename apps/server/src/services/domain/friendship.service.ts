@@ -4,23 +4,25 @@ import {
     CurrentUserOutboxListDtoType,
     FriendshipStatus,
 } from '@snippetly/common/dto';
-import { In, IsNull } from 'typeorm';
+import { Brackets, In, IsNull } from 'typeorm';
 import { RequestContext } from '../../api/request-context/request-context';
 import { isApiError } from '../../common/errors/api-error';
 import { InvalidFriendshipActionError } from '../../common/errors/generated-developer-errors';
+import { OnApplicationBootstrap } from '../../common/types/lifecycle-hooks';
 import { Developer } from '../../entities/developer/developer.entity';
 import { Friendship } from '../../entities/friendships/friendship.entity';
 import { Snippet } from '../../entities/snippets/snippet.entity';
-import { OnApplicationBootstrap } from '../../common/types/lifecycle-hooks';
 import { DatabaseService } from '../../infra/database/database.service';
 import { EventBus } from '../../infra/event-bus/event-bus.service';
+import { AppJobEvent } from '../../infra/event-bus/events/app-job.event';
 import { FriendshipEvent } from '../../infra/event-bus/events/friendship.event';
-import { AppJobEvent } from '../events/app-job.event';
 import { Injectable } from '../../infra/ioc-container/injectable.decorator';
+import { moduleRef } from '../../infra/ioc-container/module-ref';
+import { JobQueue } from '../../infra/job-queue/job-qeueue.service';
+import { AppJob } from '../../infra/job-queue/types';
+import { PushNotificationService } from '../../infra/push-notification/push-notification.service';
 import { ListQueryBuilder } from '../helpers/list-query-builder/list-query-builder.service';
-import { JobQueue } from '../helpers/job-qeueue.service';
-import type { AppJob } from '../jobs/app-job';
-import { PushNotificationService } from './push-notification.service';
+import { DeveloperService } from './developer.service';
 
 type FriendshipSendInput = {
     requesterId: string;
@@ -34,6 +36,21 @@ type FriendshipActionInput = {
     actorId: string;
 };
 
+type FriendshipActivity = {
+    snippetsCount: number;
+    recentSnippets: Array<{
+        id: string;
+        name: string;
+        slug: string;
+        language: string;
+    }>;
+};
+
+type FriendshipWithRecentSnippets = Omit<Friendship, 'requester' | 'addressee'> & {
+    requester: Developer & Partial<FriendshipActivity>;
+    addressee: Developer & Partial<FriendshipActivity>;
+};
+
 @Injectable()
 export class FriendshipService implements OnApplicationBootstrap {
     constructor(
@@ -44,24 +61,30 @@ export class FriendshipService implements OnApplicationBootstrap {
         private readonly pushNotificationService: PushNotificationService,
     ) {}
 
-    onApplicationBootstrap(): void {
-        this.eventBus.registerSyncHandler({
-            event: FriendshipEvent,
-            id: 'friendship-service-job-scheduler',
-            handler: async event => {
-                if (!isFriendshipNotificationType(event.type) || !event.input?.actorId) {
-                    return;
-                }
+    /** Resolves the developer service without creating a circular dependency. */
+    private get developerService(): DeveloperService {
+        const { DeveloperService } = require('./developer.service') as typeof import('./developer.service');
+        return moduleRef.getProvider<DeveloperService>(DeveloperService);
+    }
 
-                const job: AppJob = {
-                    type: 'notify-friendship-change',
-                    eventType: event.type,
-                    requesterId: event.input.requesterId,
-                    addresseeId: event.input.addresseeId,
-                    actorId: event.input.actorId,
-                };
-                await this.jobQueue.enqueue(job, 10);
-            },
+    /**
+     * @description
+     * Registers friendship notification handlers at application startup.
+     * @internal
+     */
+    onApplicationBootstrap(): void {
+        this.eventBus.ofType(FriendshipEvent).subscribe(event => {
+            if (!isFriendshipNotificationType(event.type) || !event.input?.actorId) {
+                return;
+            }
+            const job: AppJob = {
+                type: 'notify-friendship-change',
+                eventType: event.type,
+                requesterId: event.input.requesterId,
+                addresseeId: event.input.addresseeId,
+                actorId: event.input.actorId,
+            };
+            void this.jobQueue.enqueue(job, 10);
         });
         this.eventBus.registerSyncHandler({
             event: AppJobEvent,
@@ -74,39 +97,35 @@ export class FriendshipService implements OnApplicationBootstrap {
         });
     }
 
+    /** Sends the push notification for a queued friendship event. */
     private async processFriendshipNotificationJob(
         job: Extract<AppJob, { type: 'notify-friendship-change' }>,
     ): Promise<void> {
         const recipientId =
-            job.eventType === 'sent' || job.eventType === 'cancelled'
-                ? job.addresseeId
-                : job.requesterId;
+            job.eventType === 'sent' || job.eventType === 'cancelled' ? job.addresseeId : job.requesterId;
         const actor = await this.databaseService.getRepository(Developer).findOne({
             where: { id: job.actorId, deletedAt: IsNull() },
         });
         if (!actor) return;
 
         const actorName = `${actor.firstName} ${actor.lastName}`.trim();
+
         const messages = {
             sent: {
                 title: `${actorName} sent you a friend request`,
                 body: 'Open your requests to respond.',
-                url: '/dashboard/requests',
             },
             accepted: {
                 title: `${actorName} accepted your friend request`,
                 body: 'You are now friends.',
-                url: '/dashboard/friends',
             },
             cancelled: {
                 title: `${actorName} cancelled a friend request`,
                 body: 'The request is no longer pending.',
-                url: '/dashboard/requests',
             },
             rejected: {
                 title: `${actorName} declined your friend request`,
                 body: 'Your friend request was declined.',
-                url: '/dashboard/friends',
             },
         } as const;
         const message = messages[job.eventType];
@@ -116,27 +135,14 @@ export class FriendshipService implements OnApplicationBootstrap {
         });
     }
 
-    public async countDeveloperFriendships(ctx: RequestContext, developerId: string) {
-        const friendshipRepo = this.databaseService.getRepository(ctx, Friendship);
-
-        const [friendsCount, friendsInboxCount, friendsOutboxCount] = await Promise.all([
-            friendshipRepo.count({
-                where: [
-                    { requester: { id: developerId }, status: FriendshipStatus.Accepted },
-                    { addressee: { id: developerId }, status: FriendshipStatus.Accepted },
-                ],
-            }),
-            friendshipRepo.count({
-                where: { addressee: { id: developerId }, status: FriendshipStatus.Pending },
-            }),
-            friendshipRepo.count({
-                where: { requester: { id: developerId }, status: FriendshipStatus.Pending },
-            }),
-        ]);
-
-        return { friendsCount, friendsInboxCount, friendsOutboxCount };
-    }
-
+    /**
+     * @description
+     * Creates or updates a friendship record with the supplied status.
+     *
+     * :::info
+     * it emits FriendshipEvent#created event
+     * :::
+     */
     public async create(
         ctx: RequestContext,
         input: Pick<FriendshipActionInput, 'addresseeId' | 'requesterId'> & { status: FriendshipStatus },
@@ -187,6 +193,14 @@ export class FriendshipService implements OnApplicationBootstrap {
         return friendship;
     }
 
+    /**
+     * @description
+     * Sends a friendship request or reopens a previously closed request.
+     *
+     * :::info
+     * it emits FriendshipEvent#sent event
+     * :::
+     */
     public async sendFriendshipRequest(
         ctx: RequestContext,
         input: FriendshipSendInput,
@@ -248,6 +262,14 @@ export class FriendshipService implements OnApplicationBootstrap {
         return friendship;
     }
 
+    /**
+     * @description
+     * Accepts a pending request when the acting developer is its addressee.
+     *
+     * :::info
+     * it emits FriendshipEvent#accepted event
+     * :::
+     */
     public async acceptFriendshipRequest(
         ctx: RequestContext,
         input: FriendshipActionInput,
@@ -287,6 +309,14 @@ export class FriendshipService implements OnApplicationBootstrap {
         return friendship;
     }
 
+    /**
+     * @description
+     * Rejects a pending request when the acting developer is its addressee.
+     *
+     * :::info
+     * it emits FriendshipEvent#rejected event
+     * :::
+     */
     public async rejectFriendshipRequest(
         ctx: RequestContext,
         input: FriendshipActionInput,
@@ -323,6 +353,14 @@ export class FriendshipService implements OnApplicationBootstrap {
         return friendship;
     }
 
+    /**
+     * @description
+     * Cancels a pending request when the acting developer is its requester.
+     *
+     * :::info
+     * it emits FriendshipEvent#cancelled event
+     * :::
+     */
     public async cancelFriendshipRequest(
         ctx: RequestContext,
         input: FriendshipActionInput,
@@ -360,10 +398,10 @@ export class FriendshipService implements OnApplicationBootstrap {
         return friendship;
     }
 
-    // Note: the word Current here is misleading, it indicates that
-    // the method operates on the current active developer
-    // which is not the case because it operates on whatever `developerId` gets
-    // passed to it
+    /**
+     * @description
+     * Lists accepted friendships for the supplied developer and includes verified participants.
+     */
     public async getUserFriends(
         ctx: RequestContext,
         developerId: string,
@@ -396,17 +434,108 @@ export class FriendshipService implements OnApplicationBootstrap {
         qb.setParameter('friendDeveloperId', developerId);
         const [items, itemsCount] = await qb.getManyAndCount();
 
-        return { items, itemsCount };
+        return {
+            items: items.map(item => ({
+                ...item,
+                requester: { ...item.requester, isVerified: item.requester.isVerified },
+                addressee: { ...item.addressee, isVerified: item.addressee.isVerified },
+            })),
+            itemsCount,
+        };
     }
 
-    public async enrichFriends(
+    /**
+     * @description
+     * Lists pending requests addressed to the developer with verified participant data.
+     */
+    public async getCurrentUserInbox(
         ctx: RequestContext,
-        items: Friendship[],
-        itemsCount: number,
         developerId: string,
+        input: CurrentUserInboxListDtoType['input'],
     ) {
-        const friendIds = items.map(friendship =>
-            friendship.requester.id === developerId ? friendship.addressee.id : friendship.requester.id,
+        const qb = this.listQueryBuilder.build(Friendship, input as any, {
+            ctx,
+            where: {
+                addressee: { id: developerId, deletedAt: IsNull() },
+                status: FriendshipStatus.Pending,
+            },
+            relations: {
+                requester: { user: true },
+                addressee: { user: true },
+            },
+            orderBy: {
+                createdAt: 'DESC',
+            },
+            customPropsMap: {
+                requesterFirstName: 'requester.firstName',
+                requesterLastName: 'requester.lastName',
+                requesterId: 'requester.id',
+            },
+        });
+        const [items, itemsCount] = await qb.getManyAndCount();
+        return {
+            items: items.map(item => ({
+                ...item,
+                requester: { ...item.requester, isVerified: item.requester.isVerified },
+                addressee: { ...item.addressee, isVerified: item.addressee.isVerified },
+            })),
+            itemsCount,
+        };
+    }
+
+    /**
+     * @description
+     * Lists pending requests sent by the developer with verified participant data.
+     */
+    public async getCurrentUserOutbox(
+        ctx: RequestContext,
+        developerId: string,
+        input: CurrentUserOutboxListDtoType['input'],
+    ) {
+        const qb = this.listQueryBuilder.build(Friendship, input as any, {
+            ctx,
+            where: {
+                requester: { id: developerId, deletedAt: IsNull() },
+                status: FriendshipStatus.Pending,
+            },
+            relations: {
+                requester: { user: true },
+                addressee: { user: true },
+            },
+            orderBy: {
+                createdAt: 'DESC',
+            },
+            customPropsMap: {
+                addresseeFirstName: 'addressee.firstName',
+                addresseeLastName: 'addressee.lastName',
+                addresseeId: 'addressee.id',
+            },
+        });
+        const [items, itemsCount] = await qb.getManyAndCount();
+        return {
+            items: items.map(item => ({
+                ...item,
+                requester: { ...item.requester, isVerified: item.requester.isVerified },
+                addressee: { ...item.addressee, isVerified: item.addressee.isVerified },
+            })),
+            itemsCount,
+        };
+    }
+
+    /**
+     * @description
+     * Adds each friend's public snippet count and up to three recent snippets.
+     */
+    public async attachRecentSnippetsToFriendships(
+        ctx: RequestContext,
+        activeDeveloper: Developer,
+        friendships: Friendship[],
+    ): Promise<FriendshipWithRecentSnippets[]> {
+        if (!friendships.length) return [];
+        const friendIds = friendships.map(friendship =>
+            friendship.requester.id === activeDeveloper.id
+                ? friendship.addressee.id
+                : friendship.requester.id,
         );
         const snippetRepo = this.databaseService.getRepository(ctx, Snippet);
         const rankedSnippetsQuery = snippetRepo
@@ -470,102 +599,128 @@ export class FriendshipService implements OnApplicationBootstrap {
             friendStats.set(friendId, stats);
         }
 
-        const enrichedItems = items.map(friendship => {
-            const friendSide = friendship.requester.id === developerId ? 'addressee' : 'requester';
+        return friendships.map((friendship): FriendshipWithRecentSnippets => {
+            const friendSide: 'requester' | 'addressee' =
+                friendship.requester.id === activeDeveloper.id ? 'addressee' : 'requester';
             const friend = friendship[friendSide];
             const stats = friendStats.get(friend.id) ?? { snippetsCount: 0, recentSnippets: [] };
+            const friendWithStats = { ...friend, isVerified: friend.isVerified, ...stats };
 
             return {
                 ...friendship,
-                [friendSide]: { ...friend, isVerified: friend.isVerified, ...stats },
+                requester: friendSide === 'requester' ? friendWithStats : friendship.requester,
+                addressee: friendSide === 'addressee' ? friendWithStats : friendship.addressee,
             };
         });
-
-        return { items: enrichedItems, itemsCount };
     }
 
-    public async getDeveloperProfileInfo(
-        ctx: RequestContext,
-        developerId: string,
-        currentUserDeveloperId?: string,
-    ) {
-        const repo = this.databaseService.getRepository(ctx, Friendship);
-        const friendCount = await repo.count({
-            where: [
-                { requester: { id: developerId }, status: FriendshipStatus.Accepted },
-                { addressee: { id: developerId }, status: FriendshipStatus.Accepted },
-            ],
-        });
-        const friendship =
-            currentUserDeveloperId && currentUserDeveloperId !== developerId
-                ? await this.findFriendshipBetween(ctx, developerId, currentUserDeveloperId)
-                : null;
-
-        return {
-            friendCount,
-            friendshipInfo: {
-                isCurrentUserAFriend: friendship?.status === FriendshipStatus.Accepted,
-                requestStatus: friendship?.status ?? null,
-            },
-        };
-    }
-
-    public async getCurrentUserInbox(
-        ctx: RequestContext,
-        developerId: string,
-        input: CurrentUserInboxListDtoType['input'],
-    ) {
-        const qb = this.listQueryBuilder.build(Friendship, input as any, {
+    /**
+     * @description
+     * Adds the current user's favourite status to both participants in each friendship.
+     */
+    public async attachFavouriteStatusToParticipants<
+        TItem extends {
+            requester: { id: string };
+            addressee: { id: string };
+        },
+    >(ctx: RequestContext, friendships: TItem[]) {
+        const participants = friendships.flatMap(({ requester, addressee }) => [requester, addressee]);
+        const participantsWithStatus = await this.developerService.attachFavouriteStatusToDevelopersList(
             ctx,
-            where: {
-                addressee: { id: developerId, deletedAt: IsNull() },
-                status: FriendshipStatus.Pending,
+            participants,
+        );
+        const statusByDeveloperId = new Map<string, boolean>();
+        for (const { id, isFavouritedByCurrentUser } of participantsWithStatus) {
+            statusByDeveloperId.set(id, isFavouritedByCurrentUser);
+        }
+
+        return friendships.map(item => ({
+            ...item,
+            requester: {
+                ...item.requester,
+                isFavouritedByCurrentUser: statusByDeveloperId.get(item.requester.id) ?? false,
             },
-            relations: {
-                requester: { user: true },
-                addressee: { user: true },
+            addressee: {
+                ...item.addressee,
+                isFavouritedByCurrentUser: statusByDeveloperId.get(item.addressee.id) ?? false,
             },
-            orderBy: {
-                createdAt: 'DESC',
-            },
-            customPropsMap: {
-                requesterFirstName: 'requester.firstName',
-                requesterLastName: 'requester.lastName',
-                requesterId: 'requester.id',
-            },
-        });
-        const [items, itemsCount] = await qb.getManyAndCount();
-        return { items, itemsCount };
+        }));
     }
 
-    public async getCurrentUserOutbox(
+    /**
+     * @description
+     * Counts a developer's accepted friendships and pending requests.
+     */
+    public async countDeveloperFriendships(ctx: RequestContext, developerId: string) {
+        const friendshipRepo = this.databaseService.getRepository(ctx, Friendship);
+
+        const [friendsCount, friendsInboxCount, friendsOutboxCount] = await Promise.all([
+            friendshipRepo.count({
+                where: [
+                    { requester: { id: developerId }, status: FriendshipStatus.Accepted },
+                    { addressee: { id: developerId }, status: FriendshipStatus.Accepted },
+                ],
+            }),
+            friendshipRepo.count({
+                where: { addressee: { id: developerId }, status: FriendshipStatus.Pending },
+            }),
+            friendshipRepo.count({
+                where: { requester: { id: developerId }, status: FriendshipStatus.Pending },
+            }),
+        ]);
+
+        return { friendsCount, friendsInboxCount, friendsOutboxCount };
+    }
+
+    /**
+     * @description
+     * Gets friendship status for each developer relative to the active developer.
+     */
+    public async getFriendshipInfoWithActiveDeveloper(
         ctx: RequestContext,
-        developerId: string,
-        input: CurrentUserOutboxListDtoType['input'],
+        activeDeveloperId: string,
+        developerIds: string[],
     ) {
-        const qb = this.listQueryBuilder.build(Friendship, input as any, {
-            ctx,
-            where: {
-                requester: { id: developerId, deletedAt: IsNull() },
-                status: FriendshipStatus.Pending,
-            },
-            relations: {
-                requester: { user: true },
-                addressee: { user: true },
-            },
-            orderBy: {
-                createdAt: 'DESC',
-            },
-            customPropsMap: {
-                addresseeFirstName: 'addressee.firstName',
-                addresseeLastName: 'addressee.lastName',
-                addresseeId: 'addressee.id',
-            },
-        });
-        const [items, itemsCount] = await qb.getManyAndCount();
-        return { items, itemsCount };
+        const friendshipInfoByDeveloper = new Map<
+            string,
+            { isFriendWithCurrentUser: boolean; friendshipStatus: FriendshipStatus }
+        >();
+        const friendships = await this.databaseService
+            .getRepository(ctx, Friendship)
+            .createQueryBuilder('friendship')
+            .innerJoin('friendship.requester', 'requester')
+            .innerJoin('friendship.addressee', 'addressee')
+            .select(
+                'CASE WHEN requester.id = :activeDeveloperId THEN addressee.id ELSE requester.id END',
+                'developerId',
+            )
+            .addSelect('friendship.status', 'friendshipStatus')
+            .where(
+                new Brackets(query => {
+                    query
+                        .where('requester.id = :activeDeveloperId AND addressee.id IN (:...developerIds)', {
+                            activeDeveloperId,
+                            developerIds,
+                        })
+                        .orWhere('addressee.id = :activeDeveloperId AND requester.id IN (:...developerIds)', {
+                            activeDeveloperId,
+                            developerIds,
+                        });
+                }),
+            )
+            .getRawMany<{ developerId: string; friendshipStatus: FriendshipStatus }>();
+
+        for (const { developerId, friendshipStatus } of friendships) {
+            friendshipInfoByDeveloper.set(developerId, {
+                isFriendWithCurrentUser: friendshipStatus === FriendshipStatus.Accepted,
+                friendshipStatus,
+            });
+        }
+
+        return friendshipInfoByDeveloper;
     }
 
+    /** Finds a friendship record between two developers, regardless of direction. */
     private async findFriendshipBetween(
         ctx: RequestContext,
         requesterId: string,
@@ -591,6 +746,7 @@ export class FriendshipService implements OnApplicationBootstrap {
         });
     }
 
+    /** Loads both developers involved in a friendship request. */
     private async getFriendshipSides(
         ctx: RequestContext,
         input: Pick<FriendshipActionInput, 'addresseeId' | 'requesterId'>,
@@ -613,6 +769,7 @@ export class FriendshipService implements OnApplicationBootstrap {
         };
     }
 
+    /** Rejects a friendship action where both sides refer to the same developer. */
     private assertNotSelfRequest(requesterId: string, addresseeId: string) {
         if (requesterId === addresseeId) {
             return new InvalidFriendshipActionError({
@@ -620,11 +777,9 @@ export class FriendshipService implements OnApplicationBootstrap {
             });
         }
     }
-
 }
 
-function isFriendshipNotificationType(
-    type: string,
-): type is 'sent' | 'accepted' | 'cancelled' | 'rejected' {
+/** Returns whether a friendship event should trigger a push notification. */
+function isFriendshipNotificationType(type: string): type is 'sent' | 'accepted' | 'cancelled' | 'rejected' {
     return type === 'sent' || type === 'accepted' || type === 'cancelled' || type === 'rejected';
 }

@@ -20,7 +20,10 @@
         "blocked_by_cors": "This request was blocked by the cross-origin request policy.",
         "rate_limiter_exceeded": "Too many requests. Please try again later.",
         "unverified_external_email": "Your identity provider has not verified this email address.",
-        "internal_server_error": "An unexpected server error occurred. Please try again later."
+        "internal_server_error": "An unexpected server error occurred. Please try again later.",
+        "push_notifications_not_configured": "Push notifications are not configured on this server.",
+        "unsupported_endpoint": "The push subscription endpoint is not supported",
+        "could_not_push_notification_to_subscriptions": "Could not send push notification to {failuresLength} subscription(s)."
     },
     "apiErrors": {
         "EMAIL_ADDRESS_CONFLICT_ERROR": "An account with this email address already exists.",
