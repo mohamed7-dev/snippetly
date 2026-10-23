@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
+@import 'uploadthing/tw/v4';
 @source "../node_modules/@uploadthing/react/dist";
 
 @custom-variant dark (&:is(.dark *));
@@ -322,17 +323,5 @@ code {
     /* Added heading font class */
     .font-heading {
         font-family: var(--font-heading);
-    }
-
-    .ut-button {
-        @apply rounded-lg border border-border bg-primary text-primary-foreground shadow-sm transition-colors hover:bg-primary/90;
-    }
-
-    .ut-label {
-        @apply text-sm font-medium text-primary-foreground;
-    }
-
-    .ut-allowed-content {
-        @apply text-xs text-primary-foreground/80;
     }
 }

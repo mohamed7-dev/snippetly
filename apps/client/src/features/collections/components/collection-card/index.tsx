@@ -1,5 +1,6 @@
 import { DeveloperIdentity } from '@/components/shared/developer-identity';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { ApiSuccess } from '@/lib/api-client';
 import { type CollectionListDtoType } from '@snippetly/common/dto';
@@ -67,8 +68,8 @@ export function CollectionCard({ collection, ...props }: CollectionCardProps) {
                     <DeveloperIdentity developerInfo={collection.creator} />
                     <div className="flex items-center flex-wrap gap-4">
                         <Badge variant="outline" className="text-xs">
-                            {collection.snippetCount} snippet
-                            {collection.snippetCount !== 1 ? 's' : ''}
+                            {collection.snippetsCount} snippet
+                            {collection.snippetsCount !== 1 ? 's' : ''}
                         </Badge>
                         {!isPrivate && (
                             <Badge variant="secondary" className="text-xs">
@@ -88,9 +89,9 @@ export function CollectionCard({ collection, ...props }: CollectionCardProps) {
                                 </Badge>
                             </div>
                         ))}
-                        {collection.snippetCount > collection.snippets.length && (
+                        {collection.snippetsCount > collection.snippets.length && (
                             <div className="text-xs text-muted-foreground text-center pt-1">
-                                +{collection.snippetCount - collection.snippets.length} more snippets
+                                +{collection.snippetsCount - collection.snippets.length} more snippets
                             </div>
                         )}
                     </div>
@@ -102,9 +103,11 @@ export function CollectionCard({ collection, ...props }: CollectionCardProps) {
 
                 <div className="flex items-center gap-1 flex-wrap">
                     {collection.tags?.map(tag => (
-                        <Badge key={tag.value} variant="outline" className="text-xs">
-                            #{tag.value}
-                        </Badge>
+                        <Button key={tag.value} variant={'link'} size="sm" asChild>
+                            <Link to="/search" search={{ tags: [tag.value] }}>
+                                #{tag.value}
+                            </Link>
+                        </Button>
                     ))}
                 </div>
             </CardContent>

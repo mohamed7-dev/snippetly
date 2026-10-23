@@ -1,8 +1,8 @@
 import { Button } from '@/components/ui/button';
 import {
-    listPendingOfflineCollections,
+    listPendingOfflineCollectionCreations,
     listPendingOfflineCollectionUpdates,
-    listPendingOfflineSnippets,
+    listPendingOfflineSnippetCreations,
     listPendingOfflineSnippetUpdates,
 } from '@/features/offline-snippet/lib/store';
 import { developerApiClient } from '@/lib/api-client';
@@ -68,8 +68,8 @@ const backgroundSyncNotification: AppNotificationDefinition<PendingSyncSummary> 
         if (!ownerId) return { itemCount: 0 };
 
         const [collections, snippets, collectionUpdates, snippetUpdates] = await Promise.all([
-            listPendingOfflineCollections(ownerId),
-            listPendingOfflineSnippets(ownerId),
+            listPendingOfflineCollectionCreations(ownerId),
+            listPendingOfflineSnippetCreations(ownerId),
             listPendingOfflineCollectionUpdates(ownerId),
             listPendingOfflineSnippetUpdates(ownerId),
         ]);

@@ -16,7 +16,7 @@ import { DefaultVerificationTokenStrategy } from './auth/default-verification-to
 import { GoogleAuthenticationStrategy } from './auth/google-auth.strategy';
 import { NativeAuthenticationStrategy } from './auth/native-auth.strategy';
 import { InMemoryCacheStrategy } from './system/cache/in-memory-cache.strategy';
-import { NodemailerStrategy } from './system/email/nodemailer.strategy';
+import { DummyEmailTransporterStrategy } from './system/email/dummy-email-transporter.strategy';
 import { DummyJobQueueStrategy } from './system/job-queue/dummy-job-queue.strategy';
 import { StdoutLoggerStrategy } from './system/logger/stdout-logger.strategy';
 import { SqliteSearchStrategy } from './system/search/sqlite-search-strategy';
@@ -50,7 +50,7 @@ export const defaultAppConfig: RuntimeAppConfig = {
             subject: undefined,
         },
         email: {
-            emailTransporterStrategy: new NodemailerStrategy({ email: '', password: '' }),
+            emailTransporterStrategy: new DummyEmailTransporterStrategy(),
             accountVerificationCallbackUrl: '',
             passwordResetCallbackUrl: '',
             identifierChangeCallbackUrl: '',

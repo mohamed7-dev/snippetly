@@ -7,24 +7,28 @@ import type {
 import { developerApiClient } from '../../../lib/api-client';
 import { apiEndpoints } from '../../../lib/api-endpoints';
 import {
-    acquireOfflineSyncLease,
-    completePendingOfflineCollection,
-    completePendingOfflineSnippet,
-    hasPendingOfflineCollection,
-    listPendingOfflineCollections,
-    listPendingOfflineCollectionUpdates,
-    listPendingOfflineSnippets,
-    listPendingOfflineSnippetUpdates,
-    releaseOfflineSyncLease,
+    completePendingOfflineCollectionCreations,
+    completePendingOfflineSnippetCreations,
+    hasPendingOfflineCollectionCreations,
+    listPendingOfflineCollectionCreations,
+    listPendingOfflineSnippetCreations,
     resolveOfflineCollectionId,
-    saveOfflineSyncCredential,
-    updatePendingOfflineCollection,
-    updatePendingOfflineCollectionUpdate,
-    updatePendingOfflineSnippet,
-    updatePendingOfflineSnippetUpdate,
+    updatePendingOfflineCollectionCreations,
+    updatePendingOfflineSnippetCreations,
+} from './offline-storage/offline-creation-queue';
+import {
     completePendingOfflineCollectionUpdate,
     completePendingOfflineSnippetUpdate,
-} from './store';
+    listPendingOfflineCollectionUpdates,
+    listPendingOfflineSnippetUpdates,
+    updatePendingOfflineCollectionUpdate,
+    updatePendingOfflineSnippetUpdate,
+} from './offline-storage/offline-edit-queue';
+import {
+    acquireOfflineSyncLease,
+    releaseOfflineSyncLease,
+    saveOfflineSyncCredential,
+} from './offline-storage/offline-sync-state';
 
 type SyncResult = {
     collections: number;
@@ -35,7 +39,7 @@ type SyncResult = {
 
 const FALLBACK_LEASE_DURATION_MS = 5 * 60 * 1000;
 
-export function syncPendingCreations(
+export function syncPendingMutations(
     ownerId: string,
     token: string,
     onTokenRefresh?: (token: string) => void | Promise<void>,
@@ -43,10 +47,8 @@ export function syncPendingCreations(
     const execute = () => performSync(ownerId, token, onTokenRefresh);
     if (navigator.locks) {
         return navigator.locks
-            .request<Promise<SyncResult>>(
-                `snippetly-offline-sync:${ownerId}`,
-                { mode: 'exclusive' },
-                () => execute(),
+            .request<Promise<SyncResult>>(`snippetly-offline-sync:${ownerId}`, { mode: 'exclusive' }, () =>
+                execute(),
             )
             .then(result => result);
     }
@@ -86,7 +88,7 @@ async function performSync(
         return result;
     }
 
-    const collections = await listPendingOfflineCollections(ownerId);
+    const collections = await listPendingOfflineCollectionCreations(ownerId);
     for (const collection of collections) {
         if (!navigator.onLine) {
             result.hasPending = true;
@@ -108,10 +110,10 @@ async function performSync(
                     );
                 },
             );
-            await completePendingOfflineCollection(collection, created.id, created.color);
+            await completePendingOfflineCollectionCreations(collection, created.id, created.color);
             result.collections++;
         } catch (error) {
-            await updatePendingOfflineCollection(
+            await updatePendingOfflineCollectionCreations(
                 collection,
                 error instanceof Error ? error.message : 'Unknown error while syncing collection.',
             );
@@ -120,7 +122,7 @@ async function performSync(
         }
     }
 
-    const snippets = await listPendingOfflineSnippets(ownerId);
+    const snippets = await listPendingOfflineSnippetCreations(ownerId);
     for (const snippet of snippets) {
         if (!navigator.onLine) {
             result.hasPending = true;
@@ -129,7 +131,7 @@ async function performSync(
         }
         if (
             snippet.input.collectionId &&
-            (await hasPendingOfflineCollection(ownerId, snippet.input.collectionId))
+            (await hasPendingOfflineCollectionCreations(ownerId, snippet.input.collectionId))
         ) {
             continue;
         }
@@ -152,10 +154,10 @@ async function performSync(
                     );
                 },
             );
-            await completePendingOfflineSnippet(snippet);
+            await completePendingOfflineSnippetCreations(snippet);
             result.snippets++;
         } catch (error) {
-            await updatePendingOfflineSnippet(
+            await updatePendingOfflineSnippetCreations(
                 snippet,
                 error instanceof Error ? error.message : 'Unknown error while syncing snippet.',
             );
@@ -243,12 +245,13 @@ async function performSync(
         }
     }
 
-    const [remainingCollections, remainingSnippets, remainingCollectionUpdates, remainingSnippetUpdates] = await Promise.all([
-        listPendingOfflineCollections(ownerId),
-        listPendingOfflineSnippets(ownerId),
-        listPendingOfflineCollectionUpdates(ownerId),
-        listPendingOfflineSnippetUpdates(ownerId),
-    ]);
+    const [remainingCollections, remainingSnippets, remainingCollectionUpdates, remainingSnippetUpdates] =
+        await Promise.all([
+            listPendingOfflineCollectionCreations(ownerId),
+            listPendingOfflineSnippetCreations(ownerId),
+            listPendingOfflineCollectionUpdates(ownerId),
+            listPendingOfflineSnippetUpdates(ownerId),
+        ]);
     result.hasPending ||=
         remainingCollections.length > 0 ||
         remainingSnippets.length > 0 ||

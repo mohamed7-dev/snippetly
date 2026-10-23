@@ -53,7 +53,6 @@ export function SidebarContent() {
                                 <Button variant={'default'} asChild>
                                     <Link to="/dashboard/collections/new">Create Collection</Link>
                                 </Button>
-                                ,
                             </PermissionGuard>,
                         ]}
                     />
@@ -83,7 +82,7 @@ export function SidebarContent() {
                                         }}
                                     />
                                     <span className="flex-1 truncate">{collection.name}</span>
-                                    <span className="text-xs">{collection.snippetCount}</span>
+                                    <span className="text-xs">{collection.snippetsCount}</span>
                                 </Link>
                             </PermissionGuard>
                         ))}

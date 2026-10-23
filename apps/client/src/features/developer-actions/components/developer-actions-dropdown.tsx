@@ -2,11 +2,13 @@ import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
     DropdownMenuContent,
+    DropdownMenuGroup,
     DropdownMenuItem,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
+import { SignInDropdownMenuItem } from '@/features/auth/components/shared/sign-in-dropdown-menu-item';
+import { useAuth } from '@/features/auth/hooks/use-auth';
 import { AddToFavouritesButton } from '@/features/favourites/components/shared/add-to-favourites-button';
 import { RemoveFromFavouritesButton } from '@/features/favourites/components/shared/remove-from-favourites-button';
 import type { AddToFavouritesMutationCallbacks } from '@/features/favourites/hooks/use-favourite-mutation';
@@ -21,7 +23,7 @@ import type { RejectFriendshipRequestMutationCallbacks } from '@/features/friend
 import type { SendFriendshipRequestMutationCallbacks } from '@/features/friendship/hooks/use-send-friendship-request';
 import { FriendshipStatus, Permission } from '@snippetly/common/dto';
 import { useQueryClient } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
+import { Link, useLocation } from '@tanstack/react-router';
 import { EyeIcon, MoreHorizontalIcon, UserCog2Icon } from 'lucide-react';
 import React from 'react';
 
@@ -75,12 +77,26 @@ export function DeveloperActionsDropdown({
 }: DeveloperActionsDropdownProps) {
     const [open, setOpen] = React.useState(false);
     const queryClient = useQueryClient();
+    const { status } = useAuth();
+    const location = useLocation();
     const hasPendingRequest = friendshipInfo.friendshipStatus === FriendshipStatus.Pending;
     const canRequestFriendship =
-        showRequestFriendship && !friendshipInfo.isFriendWithCurrentUser && !hasPendingRequest;
-    const canRespondToRequest = hasPendingRequest && !friendshipInfo.isFriendWithCurrentUser;
+        !friendshipInfo.isFriendWithCurrentUser &&
+        !hasPendingRequest &&
+        (showCancelFriendshipRequest || showRequestFriendship);
+    const canRespondToRequest =
+        hasPendingRequest &&
+        !friendshipInfo.isFriendWithCurrentUser &&
+        (showAcceptFriendshipRequest || showRejectFriendshipRequest);
+
     const canAddToFav = favouriteInfo.isFavouritedByCurrentUser === false;
     const canRemoveFromFav = favouriteInfo.isFavouritedByCurrentUser === true;
+
+    const hasProfileActions = showViewProfile || showEditProfile;
+    const hasFriendshipActions = canRequestFriendship || canRespondToRequest;
+
+    const hasFavouriteActions =
+        (showAddToFavourites && canAddToFav) || (showRemoveFromFavourites && canRemoveFromFav);
 
     const invalidateFriendshipData = () => {
         setOpen(false);
@@ -99,184 +115,196 @@ export function DeveloperActionsDropdown({
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-                {showViewProfile && (
-                    <DropdownMenuItem asChild>
-                        <Button variant="ghost" className="w-full justify-start" asChild>
-                            <Link to="/profile/$id" params={{ id: developer.id }}>
-                                <EyeIcon />
-                                View Profile
-                            </Link>
-                        </Button>
-                    </DropdownMenuItem>
+                {hasProfileActions && (
+                    <DropdownMenuGroup>
+                        {showViewProfile && (
+                            <DropdownMenuItem asChild>
+                                <Button variant="ghost" className="w-full justify-start" asChild>
+                                    <Link to="/developers/$id" params={{ id: developer.id }}>
+                                        <EyeIcon />
+                                        View Profile
+                                    </Link>
+                                </Button>
+                            </DropdownMenuItem>
+                        )}
+                        {showEditProfile && (
+                            <PermissionGuard
+                                requiredPermissions={[
+                                    Permission.Authenticated,
+                                    Permission.UpdateDeveloper,
+                                    Permission.Owner,
+                                ]}
+                                ownerId={developer.id}
+                            >
+                                <DropdownMenuItem asChild>
+                                    <Button variant="ghost" className="w-full justify-start" asChild>
+                                        <Link to="/dashboard/settings/profile">
+                                            <UserCog2Icon />
+                                            Edit Profile
+                                        </Link>
+                                    </Button>
+                                </DropdownMenuItem>
+                            </PermissionGuard>
+                        )}
+                    </DropdownMenuGroup>
                 )}
-                {showEditProfile && (
-                    <PermissionGuard
-                        requiredPermissions={[
-                            Permission.Authenticated,
-                            Permission.UpdateDeveloper,
-                            Permission.Owner,
-                        ]}
-                        ownerId={developer.id}
-                    >
-                        <DropdownMenuItem asChild>
-                            <Button variant="ghost" className="w-full justify-start" asChild>
-                                <Link to="/dashboard/settings/profile">
-                                    <UserCog2Icon />
-                                    Edit Profile
-                                </Link>
-                            </Button>
-                        </DropdownMenuItem>
-                    </PermissionGuard>
+
+                {hasFriendshipActions && (
+                    <DropdownMenuGroup>
+                        {canRequestFriendship && (
+                            <PermissionGuard
+                                requiredPermissions={[Permission.Authenticated]}
+                                ownerId={developer.id}
+                                preventOwner={true}
+                            >
+                                <DropdownMenuItem onSelect={event => event.preventDefault()} asChild>
+                                    <SendFriendshipRequestButton
+                                        friendId={developer.id}
+                                        label="Request Friendship"
+                                        variant="ghost"
+                                        type="button"
+                                        className="w-full justify-start"
+                                        sendFriendshipRequestMutationCallbacks={{
+                                            ...sendFriendshipRequest,
+                                            onSuccess: data => {
+                                                invalidateFriendshipData();
+                                                sendFriendshipRequest?.onSuccess?.(data);
+                                            },
+                                        }}
+                                    />
+                                </DropdownMenuItem>
+                            </PermissionGuard>
+                        )}
+                        {canRespondToRequest && showAcceptFriendshipRequest && (
+                            <PermissionGuard
+                                requiredPermissions={[Permission.Authenticated]}
+                                ownerId={developer.id}
+                                preventOwner={true}
+                            >
+                                <DropdownMenuItem onSelect={event => event.preventDefault()} asChild>
+                                    <AcceptFriendshipRequestButton
+                                        friendId={developer.id}
+                                        label="Accept Request"
+                                        variant="ghost"
+                                        type="button"
+                                        className="w-full justify-start"
+                                        acceptFriendshipRequestMutationCallbacks={{
+                                            ...acceptFriendshipRequest,
+                                            onSuccess: data => {
+                                                invalidateFriendshipData();
+                                                acceptFriendshipRequest?.onSuccess?.(data);
+                                            },
+                                        }}
+                                    />
+                                </DropdownMenuItem>
+                            </PermissionGuard>
+                        )}
+                        {canRespondToRequest && showRejectFriendshipRequest && (
+                            <PermissionGuard
+                                requiredPermissions={[Permission.Authenticated]}
+                                ownerId={developer.id}
+                                preventOwner={true}
+                            >
+                                <DropdownMenuItem onSelect={event => event.preventDefault()} asChild>
+                                    <RejectFriendshipRequestButton
+                                        friendId={developer.id}
+                                        label="Reject Request"
+                                        variant="ghost"
+                                        type="button"
+                                        className="w-full justify-start"
+                                        rejectFriendshipRequestMutationCallbacks={{
+                                            ...rejectFriendshipRequest,
+                                            onSuccess: data => {
+                                                invalidateFriendshipData();
+                                                rejectFriendshipRequest?.onSuccess?.(data);
+                                            },
+                                        }}
+                                    />
+                                </DropdownMenuItem>
+                            </PermissionGuard>
+                        )}
+                        {canRequestFriendship && showCancelFriendshipRequest && (
+                            <PermissionGuard
+                                requiredPermissions={[Permission.Authenticated]}
+                                ownerId={developer.id}
+                                preventOwner={true}
+                            >
+                                <DropdownMenuItem onSelect={event => event.preventDefault()} asChild>
+                                    <CancelFriendshipRequestButton
+                                        friendId={developer.id}
+                                        label="Cancel Request"
+                                        variant="ghost"
+                                        type="button"
+                                        className="w-full justify-start"
+                                        cancelFriendshipRequestMutationCallbacks={{
+                                            ...cancelFriendshipRequest,
+                                            onSuccess: data => {
+                                                invalidateFriendshipData();
+                                                cancelFriendshipRequest?.onSuccess?.(data);
+                                            },
+                                        }}
+                                    />
+                                </DropdownMenuItem>
+                            </PermissionGuard>
+                        )}
+                    </DropdownMenuGroup>
                 )}
-                {(canRequestFriendship ||
-                    (canRespondToRequest && (showAcceptFriendshipRequest || showRejectFriendshipRequest)) ||
-                    (canRespondToRequest && showCancelFriendshipRequest) ||
-                    showAddToFavourites ||
-                    showRemoveFromFavourites) &&
-                    showViewProfile && <DropdownMenuSeparator />}
-                {canRequestFriendship && (
-                    <PermissionGuard
-                        requiredPermissions={[Permission.Authenticated]}
-                        ownerId={developer.id}
-                        preventOwner={true}
-                    >
-                        <DropdownMenuItem onSelect={event => event.preventDefault()} asChild>
-                            <SendFriendshipRequestButton
-                                friendId={developer.id}
-                                label="Request Friendship"
-                                variant="ghost"
-                                type="button"
-                                className="w-full justify-start"
-                                sendFriendshipRequestMutationCallbacks={{
-                                    ...sendFriendshipRequest,
-                                    onSuccess: data => {
-                                        invalidateFriendshipData();
-                                        sendFriendshipRequest?.onSuccess?.(data);
-                                    },
-                                }}
-                            />
-                        </DropdownMenuItem>
-                    </PermissionGuard>
+                {hasFavouriteActions && (
+                    <DropdownMenuGroup>
+                        {showAddToFavourites && canAddToFav && (
+                            <PermissionGuard
+                                requiredPermissions={[Permission.Authenticated]}
+                                ownerId={developer.id}
+                                preventOwner={true}
+                            >
+                                <DropdownMenuItem onSelect={event => event.preventDefault()} asChild>
+                                    <AddToFavouritesButton
+                                        resourceType="developers"
+                                        resourceId={developer.id}
+                                        variant="ghost"
+                                        type="button"
+                                        className="w-full justify-start"
+                                        mutationCallbacks={{
+                                            ...addDeveloperToFavourites,
+                                            onSuccess: data => {
+                                                invalidateFavData();
+                                                addDeveloperToFavourites?.onSuccess?.(data);
+                                            },
+                                        }}
+                                    />
+                                </DropdownMenuItem>
+                            </PermissionGuard>
+                        )}
+                        {showRemoveFromFavourites && canRemoveFromFav && (
+                            <PermissionGuard
+                                requiredPermissions={[Permission.Authenticated]}
+                                ownerId={developer.id}
+                                preventOwner={true}
+                            >
+                                <DropdownMenuItem onSelect={event => event.preventDefault()} asChild>
+                                    <RemoveFromFavouritesButton
+                                        resourceType="developers"
+                                        resourceId={developer.id}
+                                        variant="ghost"
+                                        type="button"
+                                        className="w-full justify-start"
+                                        mutationCallbacks={{
+                                            ...removeDeveloperFromFavourites,
+                                            onSuccess: data => {
+                                                invalidateFavData();
+                                                removeDeveloperFromFavourites?.onSuccess?.(data);
+                                            },
+                                        }}
+                                    />
+                                </DropdownMenuItem>
+                            </PermissionGuard>
+                        )}
+                    </DropdownMenuGroup>
                 )}
-                {canRespondToRequest && showAcceptFriendshipRequest && (
-                    <PermissionGuard
-                        requiredPermissions={[Permission.Authenticated]}
-                        ownerId={developer.id}
-                        preventOwner={true}
-                    >
-                        <DropdownMenuItem onSelect={event => event.preventDefault()} asChild>
-                            <AcceptFriendshipRequestButton
-                                friendId={developer.id}
-                                label="Accept Request"
-                                variant="ghost"
-                                type="button"
-                                className="w-full justify-start"
-                                acceptFriendshipRequestMutationCallbacks={{
-                                    ...acceptFriendshipRequest,
-                                    onSuccess: data => {
-                                        invalidateFriendshipData();
-                                        acceptFriendshipRequest?.onSuccess?.(data);
-                                    },
-                                }}
-                            />
-                        </DropdownMenuItem>
-                    </PermissionGuard>
-                )}
-                {canRespondToRequest && showRejectFriendshipRequest && (
-                    <PermissionGuard
-                        requiredPermissions={[Permission.Authenticated]}
-                        ownerId={developer.id}
-                        preventOwner={true}
-                    >
-                        <DropdownMenuItem onSelect={event => event.preventDefault()} asChild>
-                            <RejectFriendshipRequestButton
-                                friendId={developer.id}
-                                label="Reject Request"
-                                variant="ghost"
-                                type="button"
-                                className="w-full justify-start"
-                                rejectFriendshipRequestMutationCallbacks={{
-                                    ...rejectFriendshipRequest,
-                                    onSuccess: data => {
-                                        invalidateFriendshipData();
-                                        rejectFriendshipRequest?.onSuccess?.(data);
-                                    },
-                                }}
-                            />
-                        </DropdownMenuItem>
-                    </PermissionGuard>
-                )}
-                {canRespondToRequest && showCancelFriendshipRequest && (
-                    <PermissionGuard
-                        requiredPermissions={[Permission.Authenticated]}
-                        ownerId={developer.id}
-                        preventOwner={true}
-                    >
-                        <DropdownMenuItem onSelect={event => event.preventDefault()} asChild>
-                            <CancelFriendshipRequestButton
-                                friendId={developer.id}
-                                label="Cancel Request"
-                                variant="ghost"
-                                type="button"
-                                className="w-full justify-start"
-                                cancelFriendshipRequestMutationCallbacks={{
-                                    ...cancelFriendshipRequest,
-                                    onSuccess: data => {
-                                        invalidateFriendshipData();
-                                        cancelFriendshipRequest?.onSuccess?.(data);
-                                    },
-                                }}
-                            />
-                        </DropdownMenuItem>
-                    </PermissionGuard>
-                )}
-                {showAddToFavourites && canAddToFav && (
-                    <PermissionGuard
-                        requiredPermissions={[Permission.Authenticated]}
-                        ownerId={developer.id}
-                        preventOwner={true}
-                    >
-                        <DropdownMenuItem onSelect={event => event.preventDefault()} asChild>
-                            <AddToFavouritesButton
-                                resourceType="developers"
-                                resourceId={developer.id}
-                                variant="ghost"
-                                type="button"
-                                className="w-full justify-start"
-                                mutationCallbacks={{
-                                    ...addDeveloperToFavourites,
-                                    onSuccess: data => {
-                                        invalidateFavData();
-                                        addDeveloperToFavourites?.onSuccess?.(data);
-                                    },
-                                }}
-                            />
-                        </DropdownMenuItem>
-                    </PermissionGuard>
-                )}
-                {showRemoveFromFavourites && canRemoveFromFav && (
-                    <PermissionGuard
-                        requiredPermissions={[Permission.Authenticated]}
-                        ownerId={developer.id}
-                        preventOwner={true}
-                    >
-                        <DropdownMenuItem onSelect={event => event.preventDefault()} asChild>
-                            <RemoveFromFavouritesButton
-                                resourceType="developers"
-                                resourceId={developer.id}
-                                variant="ghost"
-                                type="button"
-                                className="w-full justify-start"
-                                mutationCallbacks={{
-                                    ...removeDeveloperFromFavourites,
-                                    onSuccess: data => {
-                                        invalidateFavData();
-                                        removeDeveloperFromFavourites?.onSuccess?.(data);
-                                    },
-                                }}
-                            />
-                        </DropdownMenuItem>
-                    </PermissionGuard>
+                {status === 'unauthenticated' && (
+                    <DropdownMenuGroup>
+                        <SignInDropdownMenuItem redirect={location.href} />
+                    </DropdownMenuGroup>
                 )}
             </DropdownMenuContent>
         </DropdownMenu>

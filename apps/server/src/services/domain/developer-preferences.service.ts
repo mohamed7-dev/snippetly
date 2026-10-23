@@ -14,6 +14,10 @@ type DeveloperPreferencesValues = GetDeveloperPreferencesDtoType['output']['pref
 export class DeveloperPreferencesService {
     constructor(private readonly databaseService: DatabaseService) {}
 
+    /**
+     * @description
+     * Gets a developer's preferences merged with the application defaults.
+     */
     public async get(
         ctx: RequestContext,
         developerId: string,
@@ -35,6 +39,10 @@ export class DeveloperPreferencesService {
         };
     }
 
+    /**
+     * @description
+     * Updates a developer's preferences while preserving unspecified values.
+     */
     public async update(
         ctx: RequestContext,
         developerId: string,

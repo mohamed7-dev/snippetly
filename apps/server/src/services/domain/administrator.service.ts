@@ -19,6 +19,11 @@ export class AdministratorService {
         private readonly requestContextService: RequestContextService,
     ) {}
 
+    /**
+     * @description
+     * Creates or restores the configured super-admin account and administrator profile.
+     * @internal
+     */
     public async initializeAdministrators() {
         const { superAdminCredentials } = this.configService.authOptions;
         const superAdminUser = await this.databaseService.getRepository(User).findOne({
@@ -76,6 +81,10 @@ export class AdministratorService {
         }
     }
 
+    /**
+     * @description
+     * Finds an active administrator by ID and optionally loads related entities.
+     */
     public async findOneById(
         ctx: RequestContext,
         id: string,
@@ -93,6 +102,10 @@ export class AdministratorService {
             .then(result => result ?? undefined);
     }
 
+    /**
+     * @description
+     * Finds an active administrator by user ID and optionally loads related entities.
+     */
     public async findOneByUserId(
         ctx: RequestContext,
         userId: string,

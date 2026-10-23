@@ -5,7 +5,6 @@ import { apiEndpoints } from '@/lib/api-endpoints';
 import { LOCAL_STORAGE_SESSION_TOKEN_KEY } from '@/lib/constants';
 import { mbToBytesBinary } from '@/lib/utils';
 import { toast } from 'sonner';
-import { twMerge } from 'tailwind-merge';
 
 export type AvatarUploadInfo = {
     error: { code: string; message: string } | null;
@@ -67,9 +66,6 @@ export function AvatarField({ onChange, uploadInfo }: AvatarFieldProps) {
             </Avatar>
             <div className="space-y-2">
                 <UploadButton
-                    config={{
-                        cn: twMerge,
-                    }}
                     headers={{
                         Authorization: `Bearer ${localStorage.getItem(LOCAL_STORAGE_SESSION_TOKEN_KEY) ?? ''}`,
                     }}

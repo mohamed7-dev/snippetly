@@ -73,19 +73,17 @@ export function SnippetsPageContentHeader() {
                         />
                     </div>
                 </PermissionGuard>
-                <div className="flex items-center gap-3">
-                    <PermissionGuard
-                        requiredPermissions={[Permission.Authenticated, Permission.CreateSnippet]}
-                        isAvailableOffline={true}
-                    >
-                        <Button asChild>
-                            <Link to={'/dashboard/snippets/new'} className="ms-auto">
-                                <PlusIcon />
-                                <span>New Snippet</span>
-                            </Link>
-                        </Button>
-                    </PermissionGuard>
-                </div>
+                <PermissionGuard
+                    requiredPermissions={[Permission.Authenticated, Permission.CreateSnippet]}
+                    isAvailableOffline={true}
+                >
+                    <Button asChild>
+                        <Link to={'/dashboard/snippets/new'} className="ms-auto">
+                            <PlusIcon />
+                            <span>New Snippet</span>
+                        </Link>
+                    </Button>
+                </PermissionGuard>
             </div>
         </div>
     );

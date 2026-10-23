@@ -26,6 +26,10 @@ export class FavouriteService {
         private readonly listQueryBuilder: ListQueryBuilder,
     ) {}
 
+    /**
+     * @description
+     * Adds a resource to a developer's favourites if it is not already favourited.
+     */
     public async add(
         ctx: RequestContext,
         developerId: string,
@@ -92,6 +96,10 @@ export class FavouriteService {
         return { success: true };
     }
 
+    /**
+     * @description
+     * Removes a resource from a developer's favourites if it is favourited.
+     */
     public async remove(
         ctx: RequestContext,
         developerId: string,
@@ -116,6 +124,11 @@ export class FavouriteService {
         return { success: true };
     }
 
+    /**
+     * @description
+     * Gets the favourite status of the supplied resources for a developer.
+     * @internal
+     */
     public async getFavouriteStatusMapForDeveloper(
         ctx: RequestContext,
         resourceIds: string[],
@@ -124,7 +137,7 @@ export class FavouriteService {
     ): Promise<Map<string, boolean>> {
         const statusById = new Map(resourceIds.map(id => [id, false]));
 
-        if (!developer) {
+        if (!developer || resourceIds.length === 0) {
             return statusById;
         }
 
@@ -153,6 +166,10 @@ export class FavouriteService {
         return statusById;
     }
 
+    /**
+     * @description
+     * Lists the snippets a developer has favourited.
+     */
     public async listSnippets(
         ctx: RequestContext,
         developerId: string,
@@ -205,6 +222,10 @@ export class FavouriteService {
         };
     }
 
+    /**
+     * @description
+     * Lists the collections a developer has favourited.
+     */
     public async listCollections(
         ctx: RequestContext,
         developerId: string,
@@ -257,6 +278,10 @@ export class FavouriteService {
         };
     }
 
+    /**
+     * @description
+     * Lists the developers a developer has favourited.
+     */
     public async listDevelopers(
         ctx: RequestContext,
         developerId: string,
@@ -290,6 +315,11 @@ export class FavouriteService {
         };
     }
 
+    /**
+     * @description
+     * Applies the requested tag filter to a favourites query.
+     * @internal
+     */
     private applyTagFilter<Entity extends AppEntity & (Snippet | Collection)>(
         qb: SelectQueryBuilder<Entity>,
         entity: EntityTarget<Entity>,

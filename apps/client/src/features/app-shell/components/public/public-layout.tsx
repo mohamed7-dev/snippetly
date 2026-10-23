@@ -2,10 +2,14 @@ import { InstallAppButton } from '@/components/inputs/install-app-button';
 import { Button } from '@/components/ui/button';
 import { HeaderWrapper } from '@/features/app-shell/components/header-wrapper';
 import { Logo } from '@/features/app-shell/components/logo';
+import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import { useAuth } from '@/features/auth/hooks/use-auth';
+import { isOfflineDashboardAvailable } from '@/features/offline-snippet/lib/common';
 import { SearchBar } from '@/features/search/components/search-bar';
 import { formatSearchInput } from '@/features/search/lib/search-input';
+import { Permission } from '@snippetly/common/dto';
 import { Link, Outlet, useRouterState } from '@tanstack/react-router';
+import React from 'react';
 
 const normalizePathname = (pathname: string) => {
     return pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
@@ -28,7 +32,7 @@ export function PublicLayout() {
 }
 
 function PublicLayoutHeader() {
-    const { isAuthenticated, status } = useAuth();
+    const { isAuthenticated } = useAuth();
     const search = useRouterState({ select: state => state.location.search });
     const initialSearch = formatSearchInput(search);
     const pathname = useRouterState({ select: state => state.location.pathname });
@@ -55,21 +59,26 @@ function PublicLayoutHeader() {
                     </Button>
                 </nav>
                 <div className="flex shrink-0 items-center gap-2">
-                    {isAuthenticated ? (
+                    <InstallAppButton className="hidden sm:inline-flex" />
+                    <PermissionGuard
+                        requiredPermissions={[Permission.Authenticated]}
+                        isAvailableOffline={isOfflineDashboardAvailable()}
+                    >
                         <Button asChild>
                             <Link to="/dashboard">Dashboard</Link>
                         </Button>
-                    ) : status === 'unauthenticated' ? (
-                        <>
-                            <InstallAppButton className="hidden sm:inline-flex" />
+                    </PermissionGuard>
+
+                    {!isAuthenticated && !isOfflineDashboardAvailable() && (
+                        <React.Fragment>
                             <Button variant="ghost" asChild>
                                 <Link to="/sign-in">Sign in</Link>
                             </Button>
-                            <Button className="hidden sm:inline-flex" asChild>
+                            <Button asChild>
                                 <Link to="/register-account">Get started</Link>
                             </Button>
-                        </>
-                    ) : null}
+                        </React.Fragment>
+                    )}
                 </div>
             </div>
         </HeaderWrapper>

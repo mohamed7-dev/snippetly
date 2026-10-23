@@ -58,8 +58,8 @@ export function TrashSection({
                     {items.map(item => (
                         <Card key={`${item.resource}-${item.id}`}>
                             <CardContent className="flex flex-col gap-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-                                <div className="min-w-0">
-                                    <h3 className="truncate font-medium">{item.name}</h3>
+                                <div className="min-w-0 space-y-2">
+                                    <h3 className="truncate font-medium capitalize">{item.name}</h3>
                                     <p className="text-sm text-muted-foreground">
                                         {item.details} · Deleted{' '}
                                         {item.deletedAt ? new Date(item.deletedAt).toLocaleDateString() : ''}

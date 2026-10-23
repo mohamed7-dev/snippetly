@@ -28,13 +28,14 @@ export class UploadthingService {
                 .onUploadComplete(async ({ metadata, file }) => {
                     if (metadata.userId) {
                         const { RequestContextService } =
-                            await import('../helpers/request-context.service.js');
+                            require('../helpers/request-context.service') as typeof import('../helpers/request-context.service');
                         const requestContextService =
                             moduleRef.getProvider<
                                 import('../helpers/request-context.service').RequestContextService
                             >(RequestContextService);
 
-                        const { DeveloperService } = await import('../domain/developer.service.js');
+                        const { DeveloperService } =
+                            require('../domain/developer.service') as typeof import('../domain/developer.service');
                         const developerService =
                             moduleRef.getProvider<import('../domain/developer.service').DeveloperService>(
                                 DeveloperService,
@@ -60,6 +61,8 @@ export class UploadthingService {
                             image: file.ufsUrl,
                             imageKey: file.key,
                         });
+
+                        return { success: true };
                     }
                 }),
         };
@@ -75,5 +78,4 @@ export class UploadthingService {
 }
 
 export const uploadRouter = new UploadthingService().getRouter();
-
-export type OurFileRouter = typeof uploadRouter;
+export type { OurFileRouter } from './uploadthing-router.type';

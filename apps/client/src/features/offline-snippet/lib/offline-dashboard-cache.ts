@@ -1,11 +1,19 @@
+/**
+ * @description
+ * Fetches dashboard data from the API and serves cached data when the network is unavailable.
+ */
 import { OfflineDataUnavailableError, isOfflineNetworkError } from '../../../lib/api-client';
+import { getOfflineOwnerId } from './common';
 import {
     cacheOfflineDashboardData,
     getOfflineDashboardData,
-    getOfflineOwnerId,
-    type OfflineDashboardCacheKind,
-} from './store';
+} from './offline-storage/offline-dashboard-storage';
+import type { OfflineDashboardCacheKind } from './offline-storage/store-types';
 
+/**
+ * @description
+ * Fetches and caches data, falling back to the owner's cached snapshot on network failures.
+ */
 export async function fetchAndCacheDashboardData<TData>(
     kind: OfflineDashboardCacheKind,
     key: string,
@@ -37,6 +45,11 @@ export async function fetchAndCacheDashboardData<TData>(
     }
 }
 
+/**
+ * @description
+ * Extracts an entity's creator ID from an unknown dashboard response.
+ * @internal
+ */
 function getEntityCreatorId(data: unknown): string | undefined {
     if (
         typeof data !== 'object' ||

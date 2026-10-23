@@ -12,21 +12,19 @@ type AuthCardProps = {
 };
 export function AuthCard({ cardDescription, cardTitle, children }: AuthCardProps) {
     return (
-        <div className="w-full max-w-md">
-            <div className="mb-8">
-                <Button variant="ghost" size="sm" asChild>
-                    <Link to="/" className="flex items-center gap-2">
-                        <ArrowLeftIcon className="h-4 w-4" />
-                        Back to home
-                    </Link>
-                </Button>
-            </div>
+        <div className="w-full max-w-lg space-y-6">
+            <Button variant="ghost" size="sm" asChild>
+                <Link to="/" className="flex items-center gap-2">
+                    <ArrowLeftIcon />
+                    Back to home
+                </Link>
+            </Button>
 
             <Card className="border-border">
                 <CardHeader className="text-center gap-4">
                     <div className="flex flex-wrap justify-center gap-3 items-center">
                         <Link to="/" className="flex items-center justify-center gap-2">
-                            <Code2Icon className="h-8 w-8 text-primary" />
+                            <Code2Icon className="size-8 text-primary" />
                             <span className="font-heading font-bold text-xl">{APP_NAME}</span>
                         </Link>
                         <span className="text-2xl">{'/'}</span>

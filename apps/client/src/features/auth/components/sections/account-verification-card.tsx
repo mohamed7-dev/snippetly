@@ -1,5 +1,5 @@
 import { ProcessStatus } from '@/components/feedback/process-status';
-import { PageLoader } from '@/components/views/page-loading-view';
+import { SectionLoader } from '@/components/feedback/section-loader';
 import { useSearch } from '@tanstack/react-router';
 import React from 'react';
 import { useAuth } from '../../hooks/use-auth';
@@ -32,9 +32,17 @@ export function AccountVerificationCard() {
     }, [token]);
 
     return (
-        <AuthCard cardTitle="Email Verification" cardDescription="Verify your email.">
-            {isPending && <PageLoader iconProps={{ className: 'size-10' }} />}
-            {data && <ProcessStatus title="Success" description="Account verified successfully." />}
+        <AuthCard cardTitle="Account Verification" cardDescription="Verify your account.">
+            {isPending && <SectionLoader message="Verifying your account..." />}
+            <div className="p-2">
+                {data && (
+                    <ProcessStatus
+                        title="Success"
+                        description="Account verified successfully."
+                        showCloseButton={false}
+                    />
+                )}
+            </div>
         </AuthCard>
     );
 }

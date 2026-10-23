@@ -5,8 +5,10 @@ import {
     passwordResetRequestFormSchema,
     type PasswordResetRequestFormSchema,
 } from '@/features/auth/lib/schema';
+import { formatApiError } from '@/lib/format-api-error';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createFileRoute } from '@tanstack/react-router';
+import React from 'react';
 import { useForm } from 'react-hook-form';
 
 export const Route = createFileRoute('/(auth)/_auth-layout/forgot-password')({
@@ -20,12 +22,21 @@ function ForgotPasswordPage() {
         },
         resolver: zodResolver(passwordResetRequestFormSchema),
     });
+    const [errorMessage, setErrorMessage] = React.useState<undefined | string>(undefined);
 
-    const { mutateAsync, isPending, data, error } = useRequestPasswordReset();
+    const { mutateAsync, isPending, data } = useRequestPasswordReset({
+        onSuccess: () => {
+            form.reset();
+        },
+        onError: e => {
+            const formattedError = formatApiError(e);
+            setErrorMessage(formattedError.title);
+        },
+    });
 
     return (
         <Page form={form} submitHandler={form.handleSubmit(async values => await mutateAsync(values))}>
-            <div className="min-h-screen flex items-center justify-center p-1 sm:p-4">
+            <div className="min-h-screen flex items-center justify-center p-1">
                 <ForgotPasswordCard
                     isPending={isPending}
                     successMessage={
@@ -33,7 +44,7 @@ function ForgotPasswordPage() {
                             ? 'The password reset flow started, Follow the link sent to your email address to complete the reset flow.'
                             : undefined
                     }
-                    errorMessage={error ? error.message : undefined}
+                    errorMessage={errorMessage}
                 />
             </div>
         </Page>

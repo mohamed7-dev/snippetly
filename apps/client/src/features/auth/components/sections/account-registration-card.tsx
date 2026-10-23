@@ -1,6 +1,6 @@
 import { LoadingButton } from '@/components/inputs/loading-button';
+import { Button } from '@/components/ui/button';
 import { CardContent, CardFooter } from '@/components/ui/card';
-import { Field } from '@/components/ui/field';
 import { Link } from '@tanstack/react-router';
 import { AccountRegistrationForm } from '../forms/account-registration-form';
 import { AuthCard } from '../shared/auth-card';
@@ -15,17 +15,15 @@ export function AccountRegistrationCard({ isPending }: { isPending: boolean }) {
                 <AccountRegistrationForm isPending={isPending} />
             </CardContent>
             <CardFooter className="flex-col gap-4">
-                <div className="self-start text-sm mt-4">
+                <div className="self-start text-sm">
                     <span className="text-muted-foreground">Already have an account? </span>
-                    <Link to={'/sign-in'} className="text-primary hover:underline font-medium">
-                        Sign in
-                    </Link>
+                    <Button variant={'link'} asChild>
+                        <Link to={'/sign-in'}>Sign in</Link>
+                    </Button>
                 </div>
-                <Field orientation={'horizontal'}>
-                    <LoadingButton isLoading={isPending} type="submit" className="w-full">
-                        Register Account
-                    </LoadingButton>
-                </Field>
+                <LoadingButton size={'lg'} isLoading={isPending} type="submit" className="w-full">
+                    Register Account
+                </LoadingButton>
             </CardFooter>
         </AuthCard>
     );

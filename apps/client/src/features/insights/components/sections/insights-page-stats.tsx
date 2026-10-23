@@ -1,4 +1,4 @@
-import { Card, CardContent } from '@/components/ui/card';
+import { StatCard } from '@/components/shared/stat-card';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import { getCurrentDeveloperActivityStats } from '@/features/stats/lib/stats-query-options';
 import { Permission } from '@snippetly/common/dto';
@@ -7,7 +7,7 @@ import { BookOpenIcon, Code2Icon, StarIcon, UsersIcon } from 'lucide-react';
 
 export function InsightsPageStats() {
     const { data } = useSuspenseQuery(getCurrentDeveloperActivityStats());
-    const stats = data ?? {
+    const stats = data?.stats ?? {
         snippetsCount: 0,
         collectionsCount: 0,
         friendsCount: 0,
@@ -22,42 +22,20 @@ export function InsightsPageStats() {
             isAvailableOffline={true}
         >
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                <Card>
-                    <CardContent className="p-4">
-                        <div className="flex items-center gap-2">
-                            <Code2Icon className="h-4 w-4 text-primary" />
-                            <span className="text-sm font-medium">Total Snippets</span>
-                        </div>
-                        <p className="text-2xl font-bold mt-1">{stats.snippetsCount}</p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardContent className="p-4">
-                        <div className="flex items-center gap-2">
-                            <BookOpenIcon className="h-4 w-4 text-secondary" />
-                            <span className="text-sm font-medium">Collections</span>
-                        </div>
-                        <p className="text-2xl font-bold mt-1">{stats.collectionsCount}</p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardContent className="p-4">
-                        <div className="flex items-center gap-2">
-                            <StarIcon className="h-4 w-4 text-accent" />
-                            <span className="text-sm font-medium">Friendship Requests</span>
-                        </div>
-                        <p className="text-2xl font-bold mt-1">{stats.friendsInboxCount}</p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardContent className="p-4">
-                        <div className="flex items-center gap-2">
-                            <UsersIcon className="h-4 w-4 text-primary" />
-                            <span className="text-sm font-medium">Friends</span>
-                        </div>
-                        <p className="text-2xl font-bold mt-1">{stats.friendsCount}</p>
-                    </CardContent>
-                </Card>
+                <StatCard icon={Code2Icon} value={stats.snippetsCount} label="Total Snippets" />
+                <StatCard
+                    icon={BookOpenIcon}
+                    value={stats.collectionsCount}
+                    label="Collections"
+                    variant="secondary"
+                />
+                <StatCard
+                    icon={StarIcon}
+                    value={stats.friendsInboxCount}
+                    label="Friendship Requests"
+                    variant="accent"
+                />
+                <StatCard icon={UsersIcon} value={stats.friendsCount} label="Friends" />
             </div>
         </PermissionGuard>
     );

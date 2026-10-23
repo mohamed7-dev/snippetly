@@ -2,7 +2,7 @@ import { StatusCard } from '@/components/feedback/status-card';
 import { Button } from '@/components/ui/button';
 import { DashboardLayout } from '@/features/app-shell/components/dashboard/dashboard-layout';
 import { listCurrentUserCollectionsQueryOptions } from '@/features/collection-listing/lib/collection-listing-query-options';
-import { isOfflineDashboardAvailable } from '@/features/offline-snippet/lib/offline-creation-access';
+import { isOfflineDashboardAvailable } from '@/features/offline-snippet/lib/common';
 import { getCurrentDeveloperActivityStats } from '@/features/stats/lib/stats-query-options';
 import { createFileRoute, Outlet } from '@tanstack/react-router';
 import { RefreshCwIcon } from 'lucide-react';

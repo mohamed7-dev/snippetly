@@ -5,10 +5,12 @@ import { FilterQueryDialog } from '@/components/shared/list-query-builder/filter
 import { SortQueryDialog } from '@/components/shared/list-query-builder/sort-query-dialog';
 import { TagFilterBar } from '@/components/shared/tag-filter-bar';
 import { Button } from '@/components/ui/button';
+import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import { CollectionCard } from '@/features/collections/components/collection-card';
 import { discoverCollectionsQueryOptions } from '@/features/discover/lib/discover-query-options';
-import { collectionListDto } from '@snippetly/common/dto';
-import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import type { ApiSuccess } from '@/lib/api-client';
+import { collectionListDto, Permission, type CollectionListDtoType } from '@snippetly/common/dto';
+import { useQueryClient, useSuspenseInfiniteQuery, type InfiniteData } from '@tanstack/react-query';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import { PlusIcon } from 'lucide-react';
 import React from 'react';
@@ -35,6 +37,41 @@ export function DiscoverCollectionsList() {
 
     const onMutateSuccess = () => {
         qClient.invalidateQueries(listCurrentUserCollectionsQueryOptions());
+    };
+
+    const onFavRes = (collectionId: string, favAction: 'add' | 'remove', branch: 'success' | 'error') => {
+        qClient.setQueriesData<InfiniteData<ApiSuccess<CollectionListDtoType['output']>>>(
+            { queryKey: ['discover', 'collections'] },
+            old => {
+                if (!old) return;
+
+                return {
+                    ...old,
+                    pages: old.pages.map(page => ({
+                        ...page,
+                        items: page.items.map(item => {
+                            if (collectionId === item.id) {
+                                return {
+                                    ...item,
+                                    relationshipsWithCurrentUser: {
+                                        ...item.relationshipsWithCurrentUser,
+                                        isFavouritedByCurrentUser:
+                                            favAction === 'add'
+                                                ? branch === 'success'
+                                                    ? true
+                                                    : false
+                                                : branch === 'success'
+                                                  ? false
+                                                  : true,
+                                    },
+                                };
+                            }
+                            return item;
+                        }),
+                    })),
+                };
+            },
+        );
     };
 
     return (
@@ -92,22 +129,18 @@ export function DiscoverCollectionsList() {
                         forkCollection={{ onSuccess: onMutateSuccess }}
                         addCollectionToFavourites={{
                             onSuccess: () => {
-                                // update discover collections query cache manually
-                                // to reflect state optimistically, set {isFavouritedByCurrentUser: true}
+                                onFavRes(collection.id, 'add', 'success');
                             },
                             onError: () => {
-                                // update discover collections query cache manually
-                                // to reflect state optimistically, set {isFavouritedByCurrentUser: false}
+                                onFavRes(collection.id, 'add', 'error');
                             },
                         }}
                         removeCollectionFromFavourites={{
                             onSuccess: () => {
-                                // update discover collections query cache manually
-                                // to reflect state optimistically, set {isFavouritedByCurrentUser: false}
+                                onFavRes(collection.id, 'remove', 'success');
                             },
                             onError: () => {
-                                // update discover collections query cache manually
-                                // to reflect state optimistically, set {isFavouritedByCurrentUser: true}
+                                onFavRes(collection.id, 'remove', 'error');
                             },
                         }}
                     />
@@ -125,12 +158,19 @@ export function DiscoverCollectionsList() {
                             description="Create your first collection to get started"
                             layout="section"
                             actions={
-                                <Button asChild>
-                                    <Link to="/dashboard/collections/new">
-                                        <PlusIcon className="h-4 w-4 mr-2" />
-                                        <span>Create Collection</span>
-                                    </Link>
-                                </Button>
+                                <PermissionGuard
+                                    requiredPermissions={[
+                                        Permission.Authenticated,
+                                        Permission.CreateCollection,
+                                    ]}
+                                >
+                                    <Button asChild>
+                                        <Link to="/dashboard/collections/new">
+                                            <PlusIcon />
+                                            <span>Create Collection</span>
+                                        </Link>
+                                    </Button>
+                                </PermissionGuard>
                             }
                         />
                     ) : null

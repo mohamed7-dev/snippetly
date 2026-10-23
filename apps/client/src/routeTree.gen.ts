@@ -13,7 +13,10 @@ import { Route as publicRouteRouteImport } from './routes/(public)/route'
 import { Route as authAuthLayoutRouteRouteImport } from './routes/(auth)/_auth-layout/route'
 import { Route as protectedDashboardRouteRouteImport } from './routes/(protected)/dashboard/route'
 import { Route as publicIndexRouteImport } from './routes/(public)/index'
+import { Route as publicCollectionsRouteRouteImport } from './routes/(public)/collections/route'
+import { Route as publicDevelopersRouteRouteImport } from './routes/(public)/developers/route'
 import { Route as publicGoodbyeRouteImport } from './routes/(public)/goodbye'
+import { Route as publicSnippetsRouteRouteImport } from './routes/(public)/snippets/route'
 import { Route as authAuthLayoutAccountVerificationRouteImport } from './routes/(auth)/_auth-layout/account-verification'
 import { Route as authAuthLayoutForgotPasswordRouteImport } from './routes/(auth)/_auth-layout/forgot-password'
 import { Route as authAuthLayoutPasswordResetRouteImport } from './routes/(auth)/_auth-layout/password-reset'
@@ -25,13 +28,16 @@ import { Route as publicCollectionsIdRouteImport } from './routes/(public)/colle
 import { Route as publicDiscoverIndexRouteImport } from './routes/(public)/discover/index'
 import { Route as publicOfflineIndexRouteImport } from './routes/(public)/offline/index'
 import { Route as publicOfflineIdRouteImport } from './routes/(public)/offline/$id'
-import { Route as publicProfileIdRouteRouteImport } from './routes/(public)/profile/$id/route'
 import { Route as publicSearchIndexRouteImport } from './routes/(public)/search/index'
 import { Route as publicSnippetsIdRouteImport } from './routes/(public)/snippets/$id'
 import { Route as protectedDashboardDashboardLayoutIndexRouteImport } from './routes/(protected)/dashboard/_dashboard-layout/index'
 import { Route as protectedDashboardCollectionsNewRouteRouteImport } from './routes/(protected)/dashboard/collections/new/route'
 import { Route as protectedDashboardSettingsIndexRouteImport } from './routes/(protected)/dashboard/settings/index'
 import { Route as protectedDashboardSettingsProfileRouteRouteImport } from './routes/(protected)/dashboard/settings/profile/route'
+import { Route as publicDevelopersIdIndexRouteImport } from './routes/(public)/developers/$id/index'
+import { Route as publicOfflineCollectionsIndexRouteImport } from './routes/(public)/offline/collections/index'
+import { Route as publicOfflineCollectionsIdRouteImport } from './routes/(public)/offline/collections/$id'
+import { Route as publicOfflineSnippetsIndexRouteImport } from './routes/(public)/offline/snippets/index'
 import { Route as protectedDashboardDashboardLayoutCollectionsIndexRouteImport } from './routes/(protected)/dashboard/_dashboard-layout/collections/index'
 import { Route as protectedDashboardDashboardLayoutFavouritesIndexRouteImport } from './routes/(protected)/dashboard/_dashboard-layout/favourites/index'
 import { Route as protectedDashboardDashboardLayoutFriendsIndexRouteImport } from './routes/(protected)/dashboard/_dashboard-layout/friends/index'
@@ -63,9 +69,24 @@ const publicIndexRoute = publicIndexRouteImport.update({
   path: '/',
   getParentRoute: () => publicRouteRoute,
 } as any)
+const publicCollectionsRouteRoute = publicCollectionsRouteRouteImport.update({
+  id: '/collections',
+  path: '/collections',
+  getParentRoute: () => publicRouteRoute,
+} as any)
+const publicDevelopersRouteRoute = publicDevelopersRouteRouteImport.update({
+  id: '/developers',
+  path: '/developers',
+  getParentRoute: () => publicRouteRoute,
+} as any)
 const publicGoodbyeRoute = publicGoodbyeRouteImport.update({
   id: '/goodbye',
   path: '/goodbye',
+  getParentRoute: () => publicRouteRoute,
+} as any)
+const publicSnippetsRouteRoute = publicSnippetsRouteRouteImport.update({
+  id: '/snippets',
+  path: '/snippets',
   getParentRoute: () => publicRouteRoute,
 } as any)
 const authAuthLayoutAccountVerificationRoute =
@@ -109,9 +130,9 @@ const protectedDashboardSettingsRouteRoute =
     getParentRoute: () => protectedDashboardRouteRoute,
   } as any)
 const publicCollectionsIdRoute = publicCollectionsIdRouteImport.update({
-  id: '/collections/$id',
-  path: '/collections/$id',
-  getParentRoute: () => publicRouteRoute,
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => publicCollectionsRouteRoute,
 } as any)
 const publicDiscoverIndexRoute = publicDiscoverIndexRouteImport.update({
   id: '/discover/',
@@ -128,20 +149,15 @@ const publicOfflineIdRoute = publicOfflineIdRouteImport.update({
   path: '/offline/$id',
   getParentRoute: () => publicRouteRoute,
 } as any)
-const publicProfileIdRouteRoute = publicProfileIdRouteRouteImport.update({
-  id: '/profile/$id',
-  path: '/profile/$id',
-  getParentRoute: () => publicRouteRoute,
-} as any)
 const publicSearchIndexRoute = publicSearchIndexRouteImport.update({
   id: '/search/',
   path: '/search/',
   getParentRoute: () => publicRouteRoute,
 } as any)
 const publicSnippetsIdRoute = publicSnippetsIdRouteImport.update({
-  id: '/snippets/$id',
-  path: '/snippets/$id',
-  getParentRoute: () => publicRouteRoute,
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => publicSnippetsRouteRoute,
 } as any)
 const protectedDashboardDashboardLayoutIndexRoute =
   protectedDashboardDashboardLayoutIndexRouteImport.update({
@@ -166,6 +182,29 @@ const protectedDashboardSettingsProfileRouteRoute =
     id: '/profile',
     path: '/profile',
     getParentRoute: () => protectedDashboardSettingsRouteRoute,
+  } as any)
+const publicDevelopersIdIndexRoute = publicDevelopersIdIndexRouteImport.update({
+  id: '/$id/',
+  path: '/$id/',
+  getParentRoute: () => publicDevelopersRouteRoute,
+} as any)
+const publicOfflineCollectionsIndexRoute =
+  publicOfflineCollectionsIndexRouteImport.update({
+    id: '/offline/collections/',
+    path: '/offline/collections/',
+    getParentRoute: () => publicRouteRoute,
+  } as any)
+const publicOfflineCollectionsIdRoute =
+  publicOfflineCollectionsIdRouteImport.update({
+    id: '/offline/collections/$id',
+    path: '/offline/collections/$id',
+    getParentRoute: () => publicRouteRoute,
+  } as any)
+const publicOfflineSnippetsIndexRoute =
+  publicOfflineSnippetsIndexRouteImport.update({
+    id: '/offline/snippets/',
+    path: '/offline/snippets/',
+    getParentRoute: () => publicRouteRoute,
   } as any)
 const protectedDashboardDashboardLayoutCollectionsIndexRoute =
   protectedDashboardDashboardLayoutCollectionsIndexRouteImport.update({
@@ -242,10 +281,12 @@ const protectedDashboardSnippetsIdEditIndexRoute =
 
 export interface FileRoutesByFullPath {
   '/dashboard': typeof protectedDashboardRouteRouteWithChildren
+  '/collections': typeof publicCollectionsRouteRouteWithChildren
+  '/developers': typeof publicDevelopersRouteRouteWithChildren
+  '/snippets': typeof publicSnippetsRouteRouteWithChildren
   '/goodbye': typeof publicGoodbyeRoute
   '/': typeof publicIndexRoute
   '/dashboard/settings': typeof protectedDashboardSettingsRouteRouteWithChildren
-  '/profile/$id': typeof publicProfileIdRouteRoute
   '/account-verification': typeof authAuthLayoutAccountVerificationRoute
   '/forgot-password': typeof authAuthLayoutForgotPasswordRoute
   '/password-reset': typeof authAuthLayoutPasswordResetRoute
@@ -259,8 +300,12 @@ export interface FileRoutesByFullPath {
   '/search/': typeof publicSearchIndexRoute
   '/dashboard/collections/new': typeof protectedDashboardCollectionsNewRouteRoute
   '/dashboard/settings/profile': typeof protectedDashboardSettingsProfileRouteRoute
+  '/offline/collections/$id': typeof publicOfflineCollectionsIdRoute
   '/dashboard/': typeof protectedDashboardDashboardLayoutIndexRoute
   '/dashboard/settings/': typeof protectedDashboardSettingsIndexRoute
+  '/developers/$id/': typeof publicDevelopersIdIndexRoute
+  '/offline/collections/': typeof publicOfflineCollectionsIndexRoute
+  '/offline/snippets/': typeof publicOfflineSnippetsIndexRoute
   '/dashboard/collections/': typeof protectedDashboardDashboardLayoutCollectionsIndexRoute
   '/dashboard/favourites/': typeof protectedDashboardDashboardLayoutFavouritesIndexRoute
   '/dashboard/friends/': typeof protectedDashboardDashboardLayoutFriendsIndexRoute
@@ -276,9 +321,11 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/dashboard': typeof protectedDashboardDashboardLayoutIndexRoute
+  '/collections': typeof publicCollectionsRouteRouteWithChildren
+  '/developers': typeof publicDevelopersRouteRouteWithChildren
+  '/snippets': typeof publicSnippetsRouteRouteWithChildren
   '/goodbye': typeof publicGoodbyeRoute
   '/': typeof publicIndexRoute
-  '/profile/$id': typeof publicProfileIdRouteRoute
   '/account-verification': typeof authAuthLayoutAccountVerificationRoute
   '/forgot-password': typeof authAuthLayoutForgotPasswordRoute
   '/password-reset': typeof authAuthLayoutPasswordResetRoute
@@ -292,7 +339,11 @@ export interface FileRoutesByTo {
   '/search': typeof publicSearchIndexRoute
   '/dashboard/collections/new': typeof protectedDashboardCollectionsNewRouteRoute
   '/dashboard/settings/profile': typeof protectedDashboardSettingsProfileRouteRoute
+  '/offline/collections/$id': typeof publicOfflineCollectionsIdRoute
   '/dashboard/settings': typeof protectedDashboardSettingsIndexRoute
+  '/developers/$id': typeof publicDevelopersIdIndexRoute
+  '/offline/collections': typeof publicOfflineCollectionsIndexRoute
+  '/offline/snippets': typeof publicOfflineSnippetsIndexRoute
   '/dashboard/collections': typeof protectedDashboardDashboardLayoutCollectionsIndexRoute
   '/dashboard/favourites': typeof protectedDashboardDashboardLayoutFavouritesIndexRoute
   '/dashboard/friends': typeof protectedDashboardDashboardLayoutFriendsIndexRoute
@@ -311,11 +362,13 @@ export interface FileRoutesById {
   '/(public)': typeof publicRouteRouteWithChildren
   '/(auth)/_auth-layout': typeof authAuthLayoutRouteRouteWithChildren
   '/(protected)/dashboard': typeof protectedDashboardRouteRouteWithChildren
+  '/(public)/collections': typeof publicCollectionsRouteRouteWithChildren
+  '/(public)/developers': typeof publicDevelopersRouteRouteWithChildren
+  '/(public)/snippets': typeof publicSnippetsRouteRouteWithChildren
   '/(public)/goodbye': typeof publicGoodbyeRoute
   '/(public)/': typeof publicIndexRoute
   '/(protected)/dashboard/_dashboard-layout': typeof protectedDashboardDashboardLayoutRouteRouteWithChildren
   '/(protected)/dashboard/settings': typeof protectedDashboardSettingsRouteRouteWithChildren
-  '/(public)/profile/$id': typeof publicProfileIdRouteRoute
   '/(auth)/_auth-layout/account-verification': typeof authAuthLayoutAccountVerificationRoute
   '/(auth)/_auth-layout/forgot-password': typeof authAuthLayoutForgotPasswordRoute
   '/(auth)/_auth-layout/password-reset': typeof authAuthLayoutPasswordResetRoute
@@ -329,8 +382,12 @@ export interface FileRoutesById {
   '/(public)/search/': typeof publicSearchIndexRoute
   '/(protected)/dashboard/collections/new': typeof protectedDashboardCollectionsNewRouteRoute
   '/(protected)/dashboard/settings/profile': typeof protectedDashboardSettingsProfileRouteRoute
+  '/(public)/offline/collections/$id': typeof publicOfflineCollectionsIdRoute
   '/(protected)/dashboard/_dashboard-layout/': typeof protectedDashboardDashboardLayoutIndexRoute
   '/(protected)/dashboard/settings/': typeof protectedDashboardSettingsIndexRoute
+  '/(public)/developers/$id/': typeof publicDevelopersIdIndexRoute
+  '/(public)/offline/collections/': typeof publicOfflineCollectionsIndexRoute
+  '/(public)/offline/snippets/': typeof publicOfflineSnippetsIndexRoute
   '/(protected)/dashboard/_dashboard-layout/collections/': typeof protectedDashboardDashboardLayoutCollectionsIndexRoute
   '/(protected)/dashboard/_dashboard-layout/favourites/': typeof protectedDashboardDashboardLayoutFavouritesIndexRoute
   '/(protected)/dashboard/_dashboard-layout/friends/': typeof protectedDashboardDashboardLayoutFriendsIndexRoute
@@ -348,10 +405,12 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/dashboard'
+    | '/collections'
+    | '/developers'
+    | '/snippets'
     | '/goodbye'
     | '/'
     | '/dashboard/settings'
-    | '/profile/$id'
     | '/account-verification'
     | '/forgot-password'
     | '/password-reset'
@@ -365,8 +424,12 @@ export interface FileRouteTypes {
     | '/search/'
     | '/dashboard/collections/new'
     | '/dashboard/settings/profile'
+    | '/offline/collections/$id'
     | '/dashboard/'
     | '/dashboard/settings/'
+    | '/developers/$id/'
+    | '/offline/collections/'
+    | '/offline/snippets/'
     | '/dashboard/collections/'
     | '/dashboard/favourites/'
     | '/dashboard/friends/'
@@ -382,9 +445,11 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/dashboard'
+    | '/collections'
+    | '/developers'
+    | '/snippets'
     | '/goodbye'
     | '/'
-    | '/profile/$id'
     | '/account-verification'
     | '/forgot-password'
     | '/password-reset'
@@ -398,7 +463,11 @@ export interface FileRouteTypes {
     | '/search'
     | '/dashboard/collections/new'
     | '/dashboard/settings/profile'
+    | '/offline/collections/$id'
     | '/dashboard/settings'
+    | '/developers/$id'
+    | '/offline/collections'
+    | '/offline/snippets'
     | '/dashboard/collections'
     | '/dashboard/favourites'
     | '/dashboard/friends'
@@ -416,11 +485,13 @@ export interface FileRouteTypes {
     | '/(public)'
     | '/(auth)/_auth-layout'
     | '/(protected)/dashboard'
+    | '/(public)/collections'
+    | '/(public)/developers'
+    | '/(public)/snippets'
     | '/(public)/goodbye'
     | '/(public)/'
     | '/(protected)/dashboard/_dashboard-layout'
     | '/(protected)/dashboard/settings'
-    | '/(public)/profile/$id'
     | '/(auth)/_auth-layout/account-verification'
     | '/(auth)/_auth-layout/forgot-password'
     | '/(auth)/_auth-layout/password-reset'
@@ -434,8 +505,12 @@ export interface FileRouteTypes {
     | '/(public)/search/'
     | '/(protected)/dashboard/collections/new'
     | '/(protected)/dashboard/settings/profile'
+    | '/(public)/offline/collections/$id'
     | '/(protected)/dashboard/_dashboard-layout/'
     | '/(protected)/dashboard/settings/'
+    | '/(public)/developers/$id/'
+    | '/(public)/offline/collections/'
+    | '/(public)/offline/snippets/'
     | '/(protected)/dashboard/_dashboard-layout/collections/'
     | '/(protected)/dashboard/_dashboard-layout/favourites/'
     | '/(protected)/dashboard/_dashboard-layout/friends/'
@@ -486,11 +561,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof publicIndexRouteImport
       parentRoute: typeof publicRouteRoute
     }
+    '/(public)/collections': {
+      id: '/(public)/collections'
+      path: '/collections'
+      fullPath: '/collections'
+      preLoaderRoute: typeof publicCollectionsRouteRouteImport
+      parentRoute: typeof publicRouteRoute
+    }
+    '/(public)/developers': {
+      id: '/(public)/developers'
+      path: '/developers'
+      fullPath: '/developers'
+      preLoaderRoute: typeof publicDevelopersRouteRouteImport
+      parentRoute: typeof publicRouteRoute
+    }
     '/(public)/goodbye': {
       id: '/(public)/goodbye'
       path: '/goodbye'
       fullPath: '/goodbye'
       preLoaderRoute: typeof publicGoodbyeRouteImport
+      parentRoute: typeof publicRouteRoute
+    }
+    '/(public)/snippets': {
+      id: '/(public)/snippets'
+      path: '/snippets'
+      fullPath: '/snippets'
+      preLoaderRoute: typeof publicSnippetsRouteRouteImport
       parentRoute: typeof publicRouteRoute
     }
     '/(auth)/_auth-layout/account-verification': {
@@ -544,10 +640,10 @@ declare module '@tanstack/react-router' {
     }
     '/(public)/collections/$id': {
       id: '/(public)/collections/$id'
-      path: '/collections/$id'
+      path: '/$id'
       fullPath: '/collections/$id'
       preLoaderRoute: typeof publicCollectionsIdRouteImport
-      parentRoute: typeof publicRouteRoute
+      parentRoute: typeof publicCollectionsRouteRoute
     }
     '/(public)/discover/': {
       id: '/(public)/discover/'
@@ -570,13 +666,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof publicOfflineIdRouteImport
       parentRoute: typeof publicRouteRoute
     }
-    '/(public)/profile/$id': {
-      id: '/(public)/profile/$id'
-      path: '/profile/$id'
-      fullPath: '/profile/$id'
-      preLoaderRoute: typeof publicProfileIdRouteRouteImport
-      parentRoute: typeof publicRouteRoute
-    }
     '/(public)/search/': {
       id: '/(public)/search/'
       path: '/search'
@@ -586,10 +675,10 @@ declare module '@tanstack/react-router' {
     }
     '/(public)/snippets/$id': {
       id: '/(public)/snippets/$id'
-      path: '/snippets/$id'
+      path: '/$id'
       fullPath: '/snippets/$id'
       preLoaderRoute: typeof publicSnippetsIdRouteImport
-      parentRoute: typeof publicRouteRoute
+      parentRoute: typeof publicSnippetsRouteRoute
     }
     '/(protected)/dashboard/_dashboard-layout/': {
       id: '/(protected)/dashboard/_dashboard-layout/'
@@ -618,6 +707,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboard/settings/profile'
       preLoaderRoute: typeof protectedDashboardSettingsProfileRouteRouteImport
       parentRoute: typeof protectedDashboardSettingsRouteRoute
+    }
+    '/(public)/developers/$id/': {
+      id: '/(public)/developers/$id/'
+      path: '/$id'
+      fullPath: '/developers/$id/'
+      preLoaderRoute: typeof publicDevelopersIdIndexRouteImport
+      parentRoute: typeof publicDevelopersRouteRoute
+    }
+    '/(public)/offline/collections/': {
+      id: '/(public)/offline/collections/'
+      path: '/offline/collections'
+      fullPath: '/offline/collections/'
+      preLoaderRoute: typeof publicOfflineCollectionsIndexRouteImport
+      parentRoute: typeof publicRouteRoute
+    }
+    '/(public)/offline/collections/$id': {
+      id: '/(public)/offline/collections/$id'
+      path: '/offline/collections/$id'
+      fullPath: '/offline/collections/$id'
+      preLoaderRoute: typeof publicOfflineCollectionsIdRouteImport
+      parentRoute: typeof publicRouteRoute
+    }
+    '/(public)/offline/snippets/': {
+      id: '/(public)/offline/snippets/'
+      path: '/offline/snippets'
+      fullPath: '/offline/snippets/'
+      preLoaderRoute: typeof publicOfflineSnippetsIndexRouteImport
+      parentRoute: typeof publicRouteRoute
     }
     '/(protected)/dashboard/_dashboard-layout/collections/': {
       id: '/(protected)/dashboard/_dashboard-layout/collections/'
@@ -706,28 +823,72 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface publicCollectionsRouteRouteChildren {
+  publicCollectionsIdRoute: typeof publicCollectionsIdRoute
+}
+
+const publicCollectionsRouteRouteChildren: publicCollectionsRouteRouteChildren =
+  {
+    publicCollectionsIdRoute: publicCollectionsIdRoute,
+  }
+
+const publicCollectionsRouteRouteWithChildren =
+  publicCollectionsRouteRoute._addFileChildren(
+    publicCollectionsRouteRouteChildren,
+  )
+
+interface publicDevelopersRouteRouteChildren {
+  publicDevelopersIdIndexRoute: typeof publicDevelopersIdIndexRoute
+}
+
+const publicDevelopersRouteRouteChildren: publicDevelopersRouteRouteChildren = {
+  publicDevelopersIdIndexRoute: publicDevelopersIdIndexRoute,
+}
+
+const publicDevelopersRouteRouteWithChildren =
+  publicDevelopersRouteRoute._addFileChildren(
+    publicDevelopersRouteRouteChildren,
+  )
+
+interface publicSnippetsRouteRouteChildren {
+  publicSnippetsIdRoute: typeof publicSnippetsIdRoute
+}
+
+const publicSnippetsRouteRouteChildren: publicSnippetsRouteRouteChildren = {
+  publicSnippetsIdRoute: publicSnippetsIdRoute,
+}
+
+const publicSnippetsRouteRouteWithChildren =
+  publicSnippetsRouteRoute._addFileChildren(publicSnippetsRouteRouteChildren)
+
 interface publicRouteRouteChildren {
+  publicCollectionsRouteRoute: typeof publicCollectionsRouteRouteWithChildren
+  publicDevelopersRouteRoute: typeof publicDevelopersRouteRouteWithChildren
+  publicSnippetsRouteRoute: typeof publicSnippetsRouteRouteWithChildren
   publicGoodbyeRoute: typeof publicGoodbyeRoute
   publicIndexRoute: typeof publicIndexRoute
-  publicProfileIdRouteRoute: typeof publicProfileIdRouteRoute
-  publicCollectionsIdRoute: typeof publicCollectionsIdRoute
   publicOfflineIdRoute: typeof publicOfflineIdRoute
-  publicSnippetsIdRoute: typeof publicSnippetsIdRoute
   publicDiscoverIndexRoute: typeof publicDiscoverIndexRoute
   publicOfflineIndexRoute: typeof publicOfflineIndexRoute
   publicSearchIndexRoute: typeof publicSearchIndexRoute
+  publicOfflineCollectionsIdRoute: typeof publicOfflineCollectionsIdRoute
+  publicOfflineCollectionsIndexRoute: typeof publicOfflineCollectionsIndexRoute
+  publicOfflineSnippetsIndexRoute: typeof publicOfflineSnippetsIndexRoute
 }
 
 const publicRouteRouteChildren: publicRouteRouteChildren = {
+  publicCollectionsRouteRoute: publicCollectionsRouteRouteWithChildren,
+  publicDevelopersRouteRoute: publicDevelopersRouteRouteWithChildren,
+  publicSnippetsRouteRoute: publicSnippetsRouteRouteWithChildren,
   publicGoodbyeRoute: publicGoodbyeRoute,
   publicIndexRoute: publicIndexRoute,
-  publicProfileIdRouteRoute: publicProfileIdRouteRoute,
-  publicCollectionsIdRoute: publicCollectionsIdRoute,
   publicOfflineIdRoute: publicOfflineIdRoute,
-  publicSnippetsIdRoute: publicSnippetsIdRoute,
   publicDiscoverIndexRoute: publicDiscoverIndexRoute,
   publicOfflineIndexRoute: publicOfflineIndexRoute,
   publicSearchIndexRoute: publicSearchIndexRoute,
+  publicOfflineCollectionsIdRoute: publicOfflineCollectionsIdRoute,
+  publicOfflineCollectionsIndexRoute: publicOfflineCollectionsIndexRoute,
+  publicOfflineSnippetsIndexRoute: publicOfflineSnippetsIndexRoute,
 }
 
 const publicRouteRouteWithChildren = publicRouteRoute._addFileChildren(

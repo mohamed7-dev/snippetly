@@ -1,4 +1,4 @@
-import { FilterGroupOperator, SearchDtoType } from '@snippetly/common/dto';
+import { FilterGroupOperator, RelatedSnippetsDtoType, SearchDtoType } from '@snippetly/common/dto';
 import { transformInputToSearchParams } from '@snippetly/common/lib';
 import { mergeConfig } from '@snippetly/server';
 import { createTestEnvironment } from '@snippetly/testing';
@@ -95,6 +95,19 @@ describe('Developer Search', () => {
 
         expect(result.snippets.items.map(item => item.name)).toContain('test snippet 1');
         expect(result.snippets.items.map(item => item.name)).toContain('test snippet 2');
+    });
+
+    it('returns at most five related snippets using shared tags and searchable content', async () => {
+        const sourceSnippet = server.state.snippets.find(snippet => snippet.slug === 'test-snippet-1');
+        if (!sourceSnippet) throw new Error('Related-snippet test source was not initialized');
+
+        const response = await developerClient.fetch(`/snippets/${sourceSnippet.id}/related`);
+        expect(response.status, await response.clone().text()).toBe(200);
+
+        const result = (await response.json()) as RelatedSnippetsDtoType['output'];
+        expect(result.items).toHaveLength(5);
+        expect(result.items.map(snippet => snippet.id)).not.toContain(sourceSnippet.id);
+        expect(result.items.map(snippet => snippet.name)).toContain('test snippet 2');
     });
 
     it('does not return private collections', async () => {

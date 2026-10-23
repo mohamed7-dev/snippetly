@@ -31,10 +31,20 @@ export class AppNotificationService implements OnApplicationBootstrap {
         private readonly eventBus: EventBus,
     ) {}
 
+    /**
+     * @description
+     * Subscribes to push-notification events when the application starts.
+     * @internal
+     */
     onApplicationBootstrap(): void {
         this.subscribeToPushNotificationEvent();
     }
 
+    /**
+     * @description
+     * Creates in-app notifications for the developers in the push-notification event.
+     * @internal
+     */
     private subscribeToPushNotificationEvent() {
         this.eventBus.ofType(PushNotificationEvent).subscribe(event => {
             if (!event.developerIds.length || !event.notificationPayload) return;
@@ -43,6 +53,10 @@ export class AppNotificationService implements OnApplicationBootstrap {
         });
     }
 
+    /**
+     * @description
+     * Creates an in-app notification for each specified developer.
+     */
     public async createForDevelopers(
         developerIds: string[],
         notification: CreateAppNotificationInput,
@@ -68,6 +82,10 @@ export class AppNotificationService implements OnApplicationBootstrap {
             .execute();
     }
 
+    /**
+     * @description
+     * Lists a developer's active in-app notifications unless they have disabled them.
+     */
     public async listForDeveloper(
         ctx: RequestContext,
         developerId: string,
@@ -100,6 +118,10 @@ export class AppNotificationService implements OnApplicationBootstrap {
         };
     }
 
+    /**
+     * @description
+     * Marks one of a developer's notifications as dismissed.
+     */
     public async dismiss(
         ctx: RequestContext,
         developerId: string,

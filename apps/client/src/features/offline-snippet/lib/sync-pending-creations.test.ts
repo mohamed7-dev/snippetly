@@ -4,7 +4,7 @@ import type {
     PendingOfflineCollectionUpdate,
     PendingOfflineSnippet,
     PendingOfflineSnippetUpdate,
-} from './store';
+} from './offline-storage/store-types';
 
 const mocks = vi.hoisted(() => ({
     fetch: vi.fn(),
@@ -33,30 +33,36 @@ vi.mock('../../../lib/api-client', () => ({
     developerApiClient: { fetchWithToken: mocks.fetch },
 }));
 
-vi.mock('./store', () => ({
-    completePendingOfflineCollection: mocks.completeCollection,
-    completePendingOfflineSnippet: mocks.completeSnippet,
-    hasPendingOfflineCollection: mocks.hasPendingCollection,
-    listPendingOfflineCollections: mocks.listCollections,
-    listPendingOfflineCollectionUpdates: mocks.listCollectionUpdates,
-    listPendingOfflineSnippets: mocks.listSnippets,
-    listPendingOfflineSnippetUpdates: mocks.listSnippetUpdates,
+vi.mock('./offline-storage/offline-creation-queue', () => ({
+    completePendingOfflineCollectionCreations: mocks.completeCollection,
+    completePendingOfflineSnippetCreations: mocks.completeSnippet,
+    hasPendingOfflineCollectionCreations: mocks.hasPendingCollection,
+    listPendingOfflineCollectionCreations: mocks.listCollections,
+    listPendingOfflineSnippetCreations: mocks.listSnippets,
     resolveOfflineCollectionId: mocks.resolveCollectionId,
-    updatePendingOfflineCollection: mocks.updateCollection,
+    updatePendingOfflineCollectionCreations: mocks.updateCollection,
+    updatePendingOfflineSnippetCreations: mocks.updateSnippet,
+}));
+
+vi.mock('./offline-storage/offline-edit-queue', () => ({
+    listPendingOfflineCollectionUpdates: mocks.listCollectionUpdates,
+    listPendingOfflineSnippetUpdates: mocks.listSnippetUpdates,
     updatePendingOfflineCollectionUpdate: mocks.updateCollectionUpdate,
-    updatePendingOfflineSnippet: mocks.updateSnippet,
     updatePendingOfflineSnippetUpdate: mocks.updateSnippetUpdate,
     completePendingOfflineCollectionUpdate: mocks.completeCollectionUpdate,
     completePendingOfflineSnippetUpdate: mocks.completeSnippetUpdate,
+}));
+
+vi.mock('./offline-storage/offline-sync-state', () => ({
     acquireOfflineSyncLease: mocks.acquireLease,
     releaseOfflineSyncLease: mocks.releaseLease,
     saveOfflineSyncCredential: mocks.saveCredential,
 }));
 
 import { apiEndpoints } from '../../../lib/api-endpoints';
-import { syncPendingCreations } from './sync-pending-creations';
+import { syncPendingMutations } from './sync-pending-mutations';
 
-describe('syncPendingCreations', () => {
+describe('syncPendingMutations', () => {
     const pendingCollection: PendingOfflineCollection = {
         id: 'local-collection',
         ownerId: 'owner',
@@ -93,9 +99,7 @@ describe('syncPendingCreations', () => {
         mocks.releaseLease.mockImplementation(async () => {
             leaseHeld = false;
         });
-        mocks.listCollections.mockImplementation(async () =>
-            collectionPending ? [pendingCollection] : [],
-        );
+        mocks.listCollections.mockImplementation(async () => (collectionPending ? [pendingCollection] : []));
         mocks.listSnippets.mockImplementation(async () =>
             snippetInput ? [{ ...pendingSnippet, input: snippetInput }] : [],
         );
@@ -127,11 +131,10 @@ describe('syncPendingCreations', () => {
             }
             return { id: 'server-snippet' };
         });
-
     });
 
     it('syncs the collection before its dependent snippet and replaces the temporary collection id', async () => {
-        const result = await syncPendingCreations('owner', 'token');
+        const result = await syncPendingMutations('owner', 'token');
 
         expect(result).toEqual({
             collections: 1,
@@ -150,8 +153,8 @@ describe('syncPendingCreations', () => {
 
     it('uses the shared lease so concurrent page and worker syncs do not duplicate requests', async () => {
         const [first, second] = await Promise.all([
-            syncPendingCreations('owner', 'token'),
-            syncPendingCreations('owner', 'token'),
+            syncPendingMutations('owner', 'token'),
+            syncPendingMutations('owner', 'token'),
         ]);
 
         expect([first.collections + first.snippets, second.collections + second.snippets]).toEqual([2, 0]);
@@ -162,7 +165,7 @@ describe('syncPendingCreations', () => {
     it('reports retryable pending work when connectivity is lost', async () => {
         Object.defineProperty(navigator, 'onLine', { configurable: true, value: false });
 
-        const result = await syncPendingCreations('owner', 'token');
+        const result = await syncPendingMutations('owner', 'token');
 
         expect(result).toMatchObject({ hasPending: true, retryableFailure: true });
         expect(mocks.fetch).not.toHaveBeenCalled();
@@ -192,7 +195,7 @@ describe('syncPendingCreations', () => {
             mocks.listSnippetUpdates.mockResolvedValue([]);
         });
 
-        const result = await syncPendingCreations('owner', 'token');
+        const result = await syncPendingMutations('owner', 'token');
 
         expect(result).toMatchObject({ hasPending: false, retryableFailure: false });
         expect(mocks.requestOrder).toEqual([

@@ -23,7 +23,7 @@ describe('CollectionService', () => {
             {} as any,
         );
 
-        const previews = await service.addSnippetsPreview({} as never, [], {
+        const previews = await service.getSnippetsPreviewForCollectionsList({} as never, [], {
             includePrivateSnippets: true,
         });
 

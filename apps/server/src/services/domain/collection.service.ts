@@ -39,6 +39,11 @@ const MAX_JOB_DELAY_SECONDS = 7 * 24 * 60 * 60 - 60;
 
 @Injectable()
 export class CollectionService implements OnApplicationBootstrap {
+    /**
+     * @description
+     * Resolves the snippet service without creating a circular dependency.
+     * @internal
+     */
     private get snippetService(): SnippetService {
         const { SnippetService } = require('./snippet.service') as typeof import('./snippet.service');
         return moduleRef.getProvider<SnippetService>(SnippetService);
@@ -55,7 +60,11 @@ export class CollectionService implements OnApplicationBootstrap {
         private readonly favouriteService: FavouriteService,
     ) {}
 
-    /**@internal */
+    /**
+     * @description
+     * Registers the handler that copies snippets when a collection is forked.
+     * @internal
+     */
     onApplicationBootstrap(): void {
         this.eventBus.registerSyncHandler({
             event: AppJobEvent,
@@ -79,6 +88,11 @@ export class CollectionService implements OnApplicationBootstrap {
         });
     }
 
+    /**
+     * @description
+     * Copies eligible source snippets into a forked collection.
+     * @internal
+     */
     private async processCollectionSnippetCopyJob(
         job: Extract<AppJob, { type: 'copy-collection-snippets' }>,
     ) {
@@ -146,6 +160,10 @@ export class CollectionService implements OnApplicationBootstrap {
         }
     }
 
+    /**
+     * @description
+     * Finds a collection by ID, applying visibility and deletion filters.
+     */
     public async findOne(
         ctx: RequestContext,
         input: FindOneCollectionDtoType['input'],
@@ -171,6 +189,10 @@ export class CollectionService implements OnApplicationBootstrap {
 
         return collection;
     }
+    /**
+     * @description
+     * Lists collections matching the supplied filters and pagination options.
+     */
     public async find(
         ctx: RequestContext,
         input: CollectionListDtoType['input'],
@@ -245,6 +267,14 @@ export class CollectionService implements OnApplicationBootstrap {
         };
     }
 
+    /**
+     * @description
+     * Creates a collection for the active developer.
+     *
+     * :::info
+     * it emits CollectionEvent#created event
+     * :::
+     */
     public async create(ctx: RequestContext, input: CreateCollectionDtoType['input']) {
         const developer = await this.developerService.getActiveDeveloper(ctx, true);
 
@@ -272,6 +302,14 @@ export class CollectionService implements OnApplicationBootstrap {
         return collection;
     }
 
+    /**
+     * @description
+     * Forks an eligible collection for the active developer.
+     *
+     * :::info
+     * it emits CollectionEvent#forked event
+     * :::
+     */
     public async fork(ctx: RequestContext, input: ForkCollectionDtoType['input']) {
         const developer = await this.developerService.getActiveDeveloper(ctx, true);
 
@@ -326,6 +364,14 @@ export class CollectionService implements OnApplicationBootstrap {
         return fork;
     }
 
+    /**
+     * @description
+     * Updates a collection and its tags.
+     *
+     * :::info
+     * it emits CollectionEvent#updated event
+     * :::
+     */
     public async update(ctx: RequestContext, input: UpdateCollectionDtoType['input']) {
         const repo = this.databaseService.getRepository(ctx, Collection);
 
@@ -352,6 +398,14 @@ export class CollectionService implements OnApplicationBootstrap {
         return collection;
     }
 
+    /**
+     * @description
+     * Moves a collection to the trash.
+     *
+     * :::info
+     * it emits CollectionEvent#soft-deleted event
+     * :::
+     */
     public async softDelete(
         ctx: RequestContext,
         input: DeleteCollectionDtoType['input'],
@@ -382,6 +436,14 @@ export class CollectionService implements OnApplicationBootstrap {
         };
     }
 
+    /**
+     * @description
+     * Restores a collection from the trash.
+     *
+     * :::info
+     * it emits CollectionEvent#restored event
+     * :::
+     */
     public async restoreFromTrash(
         ctx: RequestContext,
         input: DeleteCollectionDtoType['input'],
@@ -407,6 +469,14 @@ export class CollectionService implements OnApplicationBootstrap {
         return { success: true };
     }
 
+    /**
+     * @description
+     * Permanently deletes a collection from the trash.
+     *
+     * :::info
+     * it emits CollectionEvent#deleted event
+     * :::
+     */
     public async permanentlyDeleteFromTrash(
         ctx: RequestContext,
         input: DeleteCollectionDtoType['input'],
@@ -431,6 +501,11 @@ export class CollectionService implements OnApplicationBootstrap {
         return { result: 'DELETED', message: '' };
     }
 
+    /**
+     * @description
+     * Counts each developer's collections, excluding private or deleted collections by default.
+     * @internal
+     */
     public async countDevelopersCollections(
         ctx: RequestContext,
         developerIds: string[],
@@ -458,6 +533,11 @@ export class CollectionService implements OnApplicationBootstrap {
         return normalizeDeveloperCounts(developerIds, counts);
     }
 
+    /**
+     * @description
+     * Counts each developer's forked collections, excluding private or deleted collections by default.
+     * @internal
+     */
     public async countDevelopersForkedCollections(
         ctx: RequestContext,
         developerIds: string[],
@@ -486,6 +566,11 @@ export class CollectionService implements OnApplicationBootstrap {
         return normalizeDeveloperCounts(developerIds, counts);
     }
 
+    /**
+     * @description
+     * Adds the current developer's favourite status to each collection-like item.
+     * @internal
+     */
     public async attachFavouriteStatus<T extends { id: string }>(
         ctx: RequestContext,
         items: T[],
@@ -503,6 +588,11 @@ export class CollectionService implements OnApplicationBootstrap {
         }));
     }
 
+    /**
+     * @description
+     * Checks whether a collection belongs to the specified developer.
+     * @internal
+     */
     public async isCollectionOwnedBy(
         ctx: RequestContext,
         collectionId: string,
@@ -517,6 +607,11 @@ export class CollectionService implements OnApplicationBootstrap {
         return collection?.creator?.id === developerId;
     }
 
+    /**
+     * @description
+     * Gets snippet counts and the five most recent snippets for each collection.
+     * @internal
+     */
     public async getSnippetsPreviewForCollectionsList(
         ctx: RequestContext,
         items: Collection[],

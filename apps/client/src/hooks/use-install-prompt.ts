@@ -24,9 +24,7 @@ function isAppInstalled() {
 }
 
 let state: InstallPromptState =
-    typeof window === 'undefined'
-        ? serverSnapshot
-        : { deferredPrompt: null, isInstalled: isAppInstalled() };
+    typeof window === 'undefined' ? serverSnapshot : { deferredPrompt: null, isInstalled: isAppInstalled() };
 
 const subscribers = new Set<() => void>();
 

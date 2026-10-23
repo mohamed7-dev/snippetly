@@ -53,7 +53,7 @@ function DeveloperAuthenticationPage() {
 
     return (
         <Page form={form} submitHandler={form.handleSubmit(values => mutateAsync(values))}>
-            <div className="min-h-screen flex items-center justify-center p-1 sm:p-4">
+            <div className="min-h-screen flex items-center justify-center p-1">
                 <SignInCard isPending={isPending} userType="developer" isVerifying={isVerifying} />
             </div>
         </Page>

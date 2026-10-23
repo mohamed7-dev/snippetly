@@ -3,8 +3,7 @@ import { LandingPageDemo } from '@/features/landing/components/landing-page-demo
 import { LandingPageFeatures } from '@/features/landing/components/landing-page-features';
 import { LandingPageFooter } from '@/features/landing/components/landing-page-footer';
 import { LandingPageHero } from '@/features/landing/components/landing-page-hero';
-import { LandingPageTestimonials } from '@/features/landing/components/landing-page-testimonials';
-import { isOfflineDashboardAvailable } from '@/features/offline-snippet/lib/offline-creation-access';
+import { isOfflineDashboardAvailable } from '@/features/offline-snippet/lib/common';
 import { APP_NAME } from '@snippetly/common/lib';
 import { createFileRoute, redirect } from '@tanstack/react-router';
 
@@ -43,9 +42,6 @@ function LandingPage() {
 
             {/* Demo Section */}
             <LandingPageDemo />
-
-            {/* Testimonials */}
-            <LandingPageTestimonials />
 
             {/* CTA Section */}
             <LandingPageCta />

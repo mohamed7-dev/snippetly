@@ -4,6 +4,7 @@ import path from 'node:path';
 import { isDevelopment, isProduction } from './common/helpers/utils';
 import { AppConfig } from './config/app-config.interface';
 import { RedisCacheStrategy } from './config/system/cache/redis-cache.strategy';
+import { DummyEmailTransporterStrategy } from './config/system/email/dummy-email-transporter.strategy';
 import { NodemailerStrategy } from './config/system/email/nodemailer.strategy';
 import { DummyJobQueueStrategy } from './config/system/job-queue/dummy-job-queue.strategy';
 import { QStashJobQueueStrategy } from './config/system/job-queue/qstash-job-queue.strategy';
@@ -77,10 +78,12 @@ export const appConfig: AppConfig = {
               }
             : {}),
         email: {
-            emailTransporterStrategy: new NodemailerStrategy({
-                email: process.env.GMAIL_APP_EMAIL!,
-                password: process.env.GMAIL_APP_PASSWORD!,
-            }),
+            emailTransporterStrategy: isProduction()
+                ? new NodemailerStrategy({
+                      email: process.env.GMAIL_APP_EMAIL!,
+                      password: process.env.GMAIL_APP_PASSWORD!,
+                  })
+                : new DummyEmailTransporterStrategy(),
             from: process.env.GMAIL_APP_EMAIL,
             accountVerificationCallbackUrl: process.env.ACCOUNT_VERIFICATION_CALLBACK_URL,
             passwordResetCallbackUrl: process.env.PASSWORD_RESET_CALLBACK_URL,

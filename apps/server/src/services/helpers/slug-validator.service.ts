@@ -15,6 +15,10 @@ export type InputWithSlug = {
 export class SlugValidator {
     constructor(private readonly databaseService: DatabaseService) {}
 
+    /**
+     * @description
+     * Normalizes a slug and ensures it does not collide with an active entity's slug.
+     */
     public async validateSlug<Input extends InputWithSlug, Entity extends AppEntity>(
         ctx: RequestContext,
         input: Input,

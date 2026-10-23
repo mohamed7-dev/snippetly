@@ -1,5 +1,5 @@
-export const OFFLINE_CREATION_SYNC_TAG = 'snippetly-offline-creations';
-export const OFFLINE_CREATION_SYNC_REQUEST = 'offline-creation-sync-request';
+export const OFFLINE_MUTATION_SYNC_TAG = 'snippetly-offline-creations';
+export const OFFLINE_MUTATION_SYNC_REQUEST = 'offline-creation-sync-request';
 
 type SyncManagerRegistration = ServiceWorkerRegistration & {
     sync?: {
@@ -7,23 +7,23 @@ type SyncManagerRegistration = ServiceWorkerRegistration & {
     };
 };
 
-export async function registerOfflineCreationSync(): Promise<boolean> {
+export async function registerOfflineMutationSync(): Promise<boolean> {
     if (!('serviceWorker' in navigator)) return false;
 
     const registration = (await navigator.serviceWorker.ready) as SyncManagerRegistration;
     if (!registration.sync) return false;
 
-    await registration.sync.register(OFFLINE_CREATION_SYNC_TAG);
+    await registration.sync.register(OFFLINE_MUTATION_SYNC_TAG);
     return true;
 }
 
-export async function requestOfflineCreationSync(): Promise<boolean> {
+export async function requestOfflineMutationSync(): Promise<boolean> {
     if (!('serviceWorker' in navigator)) return false;
 
     const registration = await navigator.serviceWorker.ready;
     const worker = registration.active ?? navigator.serviceWorker.controller;
     if (!worker) return false;
 
-    worker.postMessage({ type: OFFLINE_CREATION_SYNC_REQUEST });
+    worker.postMessage({ type: OFFLINE_MUTATION_SYNC_REQUEST });
     return true;
 }

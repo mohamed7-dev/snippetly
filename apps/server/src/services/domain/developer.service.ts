@@ -1008,11 +1008,12 @@ export class DeveloperService implements OnApplicationBootstrap {
         items: T[],
         developer?: Developer,
     ) {
+        const currentDeveloper = developer ?? (await this.getActiveDeveloper(ctx));
         const statusById = await this.favouriteService.getFavouriteStatusMapForDeveloper(
             ctx,
             items.map(({ id }) => id),
             'developers',
-            developer,
+            currentDeveloper,
         );
         return items.map(item => ({
             ...item,

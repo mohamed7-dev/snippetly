@@ -12,7 +12,7 @@ import { CalendarIcon } from 'lucide-react';
 import { getDeveloperProfileQueryOptions } from '../../lib/public-profile-query-options';
 
 export function ProfilePageInfo() {
-    const { id } = useParams({ from: '/(public)/profile/$id' });
+    const { id } = useParams({ from: '/(public)/developers/$id/' });
     const qClient = useQueryClient();
     const navigate = useNavigate();
     const location = useLocation();
@@ -24,16 +24,19 @@ export function ProfilePageInfo() {
 
     // isCurrentUserAFriend is always true as long as there is an interaction
     // whether it's accepted or not
-    const friendshipInfo = 'friendshipInfo' in profile ? profile.friendshipInfo : undefined;
-    const friendCount = 'friendCount' in profile ? profile.friendCount : 0;
+    const friendshipInfo =
+        'friendshipInfo' in profile.relationshipWithCurrentUser
+            ? profile.relationshipWithCurrentUser.friendshipInfo
+            : undefined;
+    const friendCount = 'friendsCount' in profile.activity.stats ? profile.activity.stats.friendsCount : 0;
     const shouldDisplayFriendshipInfo = !!friendshipInfo && (user?.id ? profile.id !== user.id : true);
 
     const shouldDisplaySendButton =
-        friendshipInfo?.requestStatus === FriendshipStatus.Cancelled ||
-        (friendshipInfo?.requestStatus !== FriendshipStatus.Pending && !friendshipInfo?.isCurrentUserAFriend);
+        friendshipInfo?.friendshipStatus === FriendshipStatus.Cancelled ||
+        (friendshipInfo?.friendshipStatus !== FriendshipStatus.Pending &&
+            !friendshipInfo?.isCurrentUserAFriend);
 
-    const onMutateFavSuccess = (_data: any, actionType: 'add' | 'remove') => {
-        // TODO: update cache optimistically
+    const onMutateFavSuccess = () => {
         qClient.invalidateQueries(getDeveloperProfileQueryOptions(id));
     };
 
@@ -93,9 +96,9 @@ export function ProfilePageInfo() {
                                         />
                                     </div>
                                 )}
-                                {!!friendshipInfo?.requestStatus && (
+                                {!!friendshipInfo?.friendshipStatus && (
                                     <Badge variant="secondary" className="capitalize">
-                                        {friendshipInfo.requestStatus} Friendship Request
+                                        {friendshipInfo?.friendshipStatus} Friendship Request
                                     </Badge>
                                 )}
                             </div>
@@ -106,20 +109,21 @@ export function ProfilePageInfo() {
                         developer={{ id: profile.id, firstName: profile.firstName }}
                         friendshipInfo={{
                             isFriendWithCurrentUser: friendshipInfo?.isCurrentUserAFriend ?? false,
-                            friendshipStatus: friendshipInfo?.requestStatus ?? null,
+                            friendshipStatus: friendshipInfo?.friendshipStatus ?? null,
                         }}
                         favouriteInfo={{
-                            isFavouritedByCurrentUser: profile.isFavouritedByCurrentUser,
+                            isFavouritedByCurrentUser:
+                                profile.relationshipWithCurrentUser.isFavouritedByCurrentUser,
                         }}
                         showRequestFriendship={shouldDisplaySendButton}
                         showAddToFavourites={true}
                         showRemoveFromFavourites={true}
                         showEditProfile={true}
                         addDeveloperToFavourites={{
-                            onSuccess: data => onMutateFavSuccess(data, 'add'),
+                            onSuccess: () => onMutateFavSuccess(),
                         }}
                         removeDeveloperFromFavourites={{
-                            onSuccess: data => onMutateFavSuccess(data, 'remove'),
+                            onSuccess: () => onMutateFavSuccess(),
                         }}
                     />
                 </div>

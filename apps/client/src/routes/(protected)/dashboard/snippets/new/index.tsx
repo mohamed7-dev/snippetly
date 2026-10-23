@@ -12,7 +12,7 @@ import {
     loadSnippetDraft,
     saveSnippetDraft,
 } from '@/features/create-snippet/lib/snippet-draft-storage';
-import { isOfflineCreationAvailable } from '@/features/offline-snippet/lib/offline-creation-access';
+import { isOfflineMutationAvailable } from '@/features/offline-snippet/lib/common';
 import { listCurrentUserSnippetsQueryOptions } from '@/features/snippet-listing/lib/snippet-listing-query-options';
 import { SnippetFormMainFields } from '@/features/snippets/components/forms/snippet-form-main-fields';
 import { SnippetFormSidebar } from '@/features/snippets/components/forms/snippet-form-sidebar';
@@ -47,7 +47,7 @@ export const Route = createFileRoute('/(protected)/dashboard/snippets/new/')({
     },
     loader: async ({ context: { queryClient } }) => {
         queryClient.query(listPopularTagsQueryOptions()).catch();
-        if (!isOfflineCreationAvailable()) {
+        if (!isOfflineMutationAvailable()) {
             await queryClient.infiniteQuery({
                 ...listCurrentUserCollectionsQueryOptions(),
                 staleTime: 'static',
@@ -77,10 +77,12 @@ function CreateSnippetPage() {
         },
         resolver: zodResolver(createSnippetFormSchema),
     });
+
     React.useEffect(() => {
         const subscription = form.watch(values => saveSnippetDraft(values));
         return () => subscription.unsubscribe();
     }, [form]);
+
     const { mutateAsync, isPending } = useCreateSnippet({
         onSuccess: async data => {
             form.reset();

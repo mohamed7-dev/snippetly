@@ -26,11 +26,20 @@ export class RoleService {
         private readonly eventBus: EventBus,
     ) {}
 
+    /**
+     * @description
+     * Creates or updates the built-in super-admin and developer roles.
+     * @internal
+     */
     public async initializeRoles() {
         await this.initSuperAdminRole();
         await this.initDeveloperRole();
     }
 
+    /**
+     * @description
+     * Gets the built-in super-admin role.
+     */
     public async getSuperAdminRole(ctx?: RequestContext) {
         const superAdminRole = await this.databaseService.getRepository(ctx, Role).findOne({
             where: { name: SUPER_ADMIN_ROLE_NAME },
@@ -39,6 +48,10 @@ export class RoleService {
         return superAdminRole;
     }
 
+    /**
+     * @description
+     * Gets the built-in developer role.
+     */
     public async getDeveloperRole(ctx?: RequestContext) {
         const developerRole = await this.databaseService.getRepository(ctx, Role).findOne({
             where: { name: DEVELOPER_ROLE_NAME },
@@ -47,6 +60,14 @@ export class RoleService {
         return developerRole;
     }
 
+    /**
+     * @description
+     * Creates a role after validating its permissions and the current user's authority.
+     *
+     * :::info
+     * it emits RoleEvent#created event
+     * :::
+     */
     public async create(ctx: RequestContext, input: CreateRoleInput) {
         this.checkPermissionsAreValid(input.permissions);
         this.checkCurrentUserHasSufficientPermissions(ctx, input.permissions);
@@ -63,6 +84,11 @@ export class RoleService {
         return role;
     }
 
+    /**
+     * @description
+     * Verifies that the current user has every permission being assigned.
+     * @internal
+     */
     private checkCurrentUserHasSufficientPermissions(ctx: RequestContext, permissions: Permission[]) {
         const hasAllPermissions = ctx.checkIfUserHasAllPermissions(permissions);
         if (!hasAllPermissions) {
@@ -70,6 +96,11 @@ export class RoleService {
         }
     }
 
+    /**
+     * @description
+     * Verifies that each requested permission can be assigned to a role.
+     * @internal
+     */
     private checkPermissionsAreValid(permissions?: Permission[] | null) {
         if (!permissions) return;
 
@@ -81,6 +112,11 @@ export class RoleService {
         }
     }
 
+    /**
+     * @description
+     * Creates or refreshes the built-in super-admin role from its definition.
+     * @internal
+     */
     private async initSuperAdminRole() {
         const roleDef = this.defaultRolesBuilder.getSuperAdminRoleDefinition();
         if (!roleDef) {
@@ -101,6 +137,11 @@ export class RoleService {
         }
     }
 
+    /**
+     * @description
+     * Creates the built-in developer role if it does not exist.
+     * @internal
+     */
     private async initDeveloperRole() {
         try {
             await this.getDeveloperRole();

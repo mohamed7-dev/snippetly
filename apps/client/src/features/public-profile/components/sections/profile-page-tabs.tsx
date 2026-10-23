@@ -10,11 +10,11 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { getDeveloperProfileQueryOptions } from '../../lib/public-profile-query-options';
 
 export function ProfilePageTabs() {
-    const { id } = useParams({ from: '/(public)/profile/$id' });
+    const { id } = useParams({ from: '/(public)/developers/$id/' });
     const { data } = useSuspenseQuery(getDeveloperProfileQueryOptions(id));
     const stats =
-        'stats' in data
-            ? data.stats
+        'stats' in data.activity
+            ? data.activity.stats
             : {
                   snippetsCount: 0,
                   collectionsCount: 0,
@@ -23,11 +23,11 @@ export function ProfilePageTabs() {
                   forkedCollectionsCount: 0,
               };
 
-    const { tab } = useSearch({ from: '/(public)/profile/$id' }) ?? {};
+    const { tab } = useSearch({ from: '/(public)/developers/$id/' }) ?? {};
     const navigate = useNavigate();
 
     return (
-        <Tabs defaultValue="snippets" value={tab}>
+        <Tabs defaultValue="snippets" value={tab} className="space-y-4">
             <TabsList className="grid grid-cols-2 w-full">
                 <TabsTrigger
                     value="snippets"
@@ -43,7 +43,7 @@ export function ProfilePageTabs() {
                 </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="snippets" className="space-y-4 mt-4">
+            <TabsContent value="snippets">
                 <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
                     <React.Suspense fallback={<SectionLoader />}>
                         <PublicProfilePageSnippetsList />
@@ -51,7 +51,7 @@ export function ProfilePageTabs() {
                 </ErrorBoundary>
             </TabsContent>
 
-            <TabsContent value="collections" className="space-y-4 mt-4">
+            <TabsContent value="collections">
                 <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
                     <React.Suspense fallback={<SectionLoader />}>
                         <PublicProfilePageCollectionsList />

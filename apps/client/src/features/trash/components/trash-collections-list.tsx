@@ -30,7 +30,7 @@ export function TrashCollectionList() {
                 id: item.id,
                 resource: 'collection' as const,
                 name: item.name,
-                details: `${item.snippetCount} snippet${item.snippetCount === 1 ? '' : 's'}`,
+                details: `${item.snippetsCount} snippet${item.snippetsCount === 1 ? '' : 's'}`,
                 deletedAt: item.deletedAt,
                 tags: item.tags,
             })),

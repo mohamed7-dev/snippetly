@@ -6,6 +6,7 @@ import {
     findOneSnippetDto,
     forkSnippetDto,
     Permission,
+    relatedSnippetsDto,
     restoreSnippetDto,
     snippetListDto,
     updateSnippetDto,
@@ -21,6 +22,7 @@ import { Developer } from '../../entities/developer/developer.entity';
 import { Controller } from '../../infra/ioc-container/controller.decorator';
 import { CollectionService } from '../../services/domain/collection.service';
 import { DeveloperService } from '../../services/domain/developer.service';
+import { SearchService } from '../../services/domain/search.service';
 import { SnippetService } from '../../services/domain/snippet.service';
 import { authGuard } from '../middlewares/auth.guard';
 import { defineRoutePipeline } from '../middlewares/define-router-pipeline.mw';
@@ -37,6 +39,7 @@ export class DeveloperSnippetController implements AppRouter {
         private readonly developerService: DeveloperService,
         private readonly collectionService: CollectionService,
         private readonly configService: ConfigService,
+        private readonly searchService: SearchService,
     ) {}
 
     snippetWriteLimiter = defineRateLimiter(
@@ -228,7 +231,6 @@ export class DeveloperSnippetController implements AppRouter {
                     const snippetsWithFavStatus = await this.snippetService.attachFavouriteStatus(
                         req.getRequestContext(),
                         result.items,
-                        developer,
                     );
 
                     const finalResult = {
@@ -393,6 +395,37 @@ export class DeveloperSnippetController implements AppRouter {
         );
 
         router.get(
+            '/:id/related',
+            ...defineRoutePipeline({
+                before: [this.snippetReadLimiter, authGuard({ permissions: [Permission.Public] })],
+                params: relatedSnippetsDto.input,
+                response: relatedSnippetsDto.output,
+                handler: async (req, res) => {
+                    const ctx = req.getRequestContext();
+                    const sourceSnippet = await this.snippetService.findOne(
+                        ctx,
+                        req.params,
+                        { tags: true, creator: { user: true } },
+                        { includePrivateSnippet: true },
+                    );
+
+                    if (
+                        !sourceSnippet ||
+                        (sourceSnippet.isPrivate && sourceSnippet.creator.user.id !== ctx.activeUserId)
+                    ) {
+                        throw new EntityNotFoundError({
+                            entityName: 'Snippet',
+                            entityId: req.params.id,
+                        });
+                    }
+
+                    const result = await this.searchService.findRelatedSnippets(ctx, sourceSnippet);
+                    res.status(200).json(result);
+                },
+            }),
+        );
+
+        router.get(
             '/:id',
             ...defineRoutePipeline({
                 before: [this.snippetReadLimiter, authGuard({ permissions: [Permission.Public] })],
@@ -415,7 +448,6 @@ export class DeveloperSnippetController implements AppRouter {
                     );
 
                     const isOwner = ctx.activeUserId === result?.creator.user.id ? true : false;
-
                     const currentDeveloper = await this.developerService.getActiveDeveloper(ctx);
 
                     if (!result || (!isOwner && result?.isPrivate)) {

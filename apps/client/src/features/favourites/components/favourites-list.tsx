@@ -118,7 +118,7 @@ export function FavouriteSnippetsList() {
                                                 {snippet.language}
                                             </Badge>
                                             <Link
-                                                to="/profile/$id"
+                                                to="/developers/$id"
                                                 params={{ id: snippet.creator.id }}
                                                 className="hover:text-foreground"
                                             >
@@ -263,7 +263,7 @@ export function FavouriteCollectionsList() {
                                             </Link>
                                             <p className="mt-4 truncate text-sm text-muted-foreground">
                                                 <Link
-                                                    to="/profile/$id"
+                                                    to="/developers/$id"
                                                     params={{ id: collection.creator.id }}
                                                     className="hover:text-foreground"
                                                 >

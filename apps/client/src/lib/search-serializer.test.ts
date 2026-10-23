@@ -1,5 +1,5 @@
-import { defaultStringifySearch } from '@tanstack/react-router';
 import { currentUserOutboxListDto } from '@snippetly/common/dto';
+import { defaultStringifySearch } from '@tanstack/react-router';
 import { describe, expect, it } from 'vitest';
 import { parseSearch, stringifySearch } from './search-serializer';
 
@@ -11,7 +11,10 @@ describe('search serialization', () => {
                 sort: { addresseeFirstName: 'ASC', addresseeLastName: 'DESC' },
                 filter: {
                     status: { equals: 'pending' },
-                    _or: [{ addresseeFirstName: { contains: 'Alex' } }, { addresseeLastName: { contains: 'Lee' } }],
+                    _or: [
+                        { addresseeFirstName: { contains: 'Alex' } },
+                        { addresseeLastName: { contains: 'Lee' } },
+                    ],
                 },
                 filterOperator: 'OR',
             },
@@ -47,7 +50,9 @@ describe('search serialization', () => {
         expect(serialized).toContain('sent.sort.addresseeFirstName=ASC');
         expect(parseSearch(serialized)).toEqual(search);
         expect(
-            currentUserOutboxListDto.input.safeParse({ sort: parseSearch(serialized).sent.sort }).success,
+            currentUserOutboxListDto.input.safeParse({
+                sort: (parseSearch(serialized) as Record<string, any>).sent.sort,
+            }).success,
         ).toBe(true);
     });
 

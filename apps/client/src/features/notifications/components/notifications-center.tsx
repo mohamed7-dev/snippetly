@@ -23,7 +23,7 @@ export function NotificationsCenter() {
                     size="icon"
                     variant="ghost"
                 >
-                    <BellIcon />
+                    <BellIcon className="size-5" />
                     {activeCount > 0 && (
                         <Badge
                             className="absolute -right-1 -top-1 min-w-5 justify-center px-1"

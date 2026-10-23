@@ -20,6 +20,10 @@ export type DefaultRolesMap = Map<string, RoleDefinition>;
 export class DefaultRolesBuilder {
     private defaultRolesDefinitions = new Map<string, RoleDefinition>();
 
+    /**
+     * @description
+     * Builds and returns the platform's default role definitions.
+     */
     public build(): DefaultRolesMap {
         this.defaultRolesDefinitions = new Map();
 
@@ -28,6 +32,11 @@ export class DefaultRolesBuilder {
         return this.defaultRolesDefinitions;
     }
 
+    /**
+     * @description
+     * Adds the built-in super-admin and developer roles to the definitions map.
+     * @internal
+     */
     private buildPlatformRoles(): void {
         this.defaultRolesDefinitions.set(SUPER_ADMIN_ROLE_NAME, {
             name: SUPER_ADMIN_ROLE_NAME,
@@ -42,31 +51,60 @@ export class DefaultRolesBuilder {
         });
     }
 
+    /**
+     * @description
+     * Returns all default role definitions as a list.
+     */
     public getAllDefaultRolesFlattened(): RoleDefinition[] {
         return Array.from(this.defaultRolesDefinitions.values());
     }
 
+    /**
+     * @description
+     * Returns the names of all default roles.
+     */
     public getDefaultRolesName(): string[] {
         return this.getAllDefaultRolesFlattened().map(item => item.name);
     }
 
+    /**
+     * @description
+     * Finds a default role definition by name.
+     */
     public getDefaultRoleDefinitionByName(name: string): RoleDefinition | undefined {
         return this.getAllDefaultRolesFlattened().find(item => item.name === name);
     }
 
+    /**
+     * @description
+     * Returns the default super-admin role definition.
+     */
     public getSuperAdminRoleDefinition(): RoleDefinition | undefined {
         return this.getAllDefaultRolesFlattened().find(item => item.name === SUPER_ADMIN_ROLE_NAME);
     }
 
+    /**
+     * @description
+     * Returns the default developer role definition.
+     */
     public getDeveloperRoleDefinition(): RoleDefinition | undefined {
         return this.getAllDefaultRolesFlattened().find(item => item.name === DEVELOPER_ROLE_NAME);
     }
 
+    /**
+     * @description
+     * Returns all application permissions that can be assigned to a role.
+     */
     public getAllAssignablePermissions(): Permission[] {
         const allPermissions = getNormalizedAppPermissions();
         return allPermissions.filter(p => p.assignable).map(p => p.key);
     }
 
+    /**
+     * @description
+     * Returns the permissions assigned to the default developer role.
+     * @internal
+     */
     private getDeveloperAssignablePermissions(): Permission[] {
         return [
             Permission.Authenticated,

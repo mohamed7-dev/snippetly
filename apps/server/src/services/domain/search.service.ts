@@ -1,4 +1,4 @@
-import { FilterGroupOperator, SearchDtoType } from '@snippetly/common/dto';
+import { FilterGroupOperator, RelatedSnippetsDtoType, SearchDtoType } from '@snippetly/common/dto';
 import {
     FindOptionsRelations,
     FindOptionsWhere,
@@ -48,6 +48,10 @@ export class SearchService {
         this.searchStrategy = this.configService.systemOptions.searchStrategy;
     }
 
+    /**
+     * @description
+     * Searches visible snippets, collections, and developers, and returns matching tag counts.
+     */
     public async search(ctx: RequestContext, input: SearchInput): Promise<SearchDtoType['output']> {
         const normalizedTerm = input.term?.trim() || undefined;
         const tagValues = Array.from(new Set(input.tags?.values ?? []));
@@ -173,6 +177,95 @@ export class SearchService {
         };
     }
 
+    public async findRelatedSnippets(
+        ctx: RequestContext,
+        sourceSnippet: Snippet,
+    ): Promise<RelatedSnippetsDtoType['output']> {
+        const definition = this.getSearchDefinitions().snippets;
+        const sourceTags = sourceSnippet.tags.map(tag => tag.value);
+        const input: SearchInput = { take: 25, skip: 0 };
+        const terms = getRelatedSearchTerms(sourceSnippet);
+        const [tagMatches, ...termMatches] = await Promise.all([
+            sourceTags.length
+                ? this.searchEntity(
+                      ctx,
+                      {
+                          ...input,
+                          take: 100,
+                          tags: { values: sourceTags, operator: FilterGroupOperator.OR },
+                      },
+                      this.searchStrategy,
+                      definition,
+                      undefined,
+                      sourceTags,
+                      false,
+                  )
+                : Promise.resolve({ entities: [], scores: new Map<string, number>(), totalItems: 0 }),
+            ...terms.map(term =>
+                this.searchEntity(ctx, { ...input, term }, this.searchStrategy, definition, term, [], false),
+            ),
+        ]);
+
+        const sourceTagValues = new Set(sourceTags.map(value => value.toLowerCase()));
+        const candidates = new Map<string, { snippet: Snippet; score: number; matchingTerms: number }>();
+
+        for (const result of termMatches) {
+            for (const snippet of result.entities) {
+                if (snippet.id === sourceSnippet.id) continue;
+                const candidate = candidates.get(snippet.id) ?? {
+                    snippet,
+                    score: 0,
+                    matchingTerms: 0,
+                };
+                candidate.score = Math.max(candidate.score, result.scores.get(snippet.id) ?? 0);
+                candidate.matchingTerms += 1;
+                candidates.set(snippet.id, candidate);
+            }
+        }
+
+        for (const snippet of tagMatches.entities) {
+            if (snippet.id === sourceSnippet.id) continue;
+            const candidate = candidates.get(snippet.id) ?? {
+                snippet,
+                score: 0,
+                matchingTerms: 0,
+            };
+            candidates.set(snippet.id, candidate);
+        }
+
+        const items = [...candidates.values()]
+            .map(({ snippet, score, matchingTerms }) => {
+                const sharedTagCount = snippet.tags.filter(tag =>
+                    sourceTagValues.has(tag.value.toLowerCase()),
+                ).length;
+                const languageMatch = snippet.language.toLowerCase() === sourceSnippet.language.toLowerCase();
+
+                return {
+                    snippet,
+                    relevance:
+                        sharedTagCount * 4 +
+                        Math.min(matchingTerms, 3) +
+                        Math.min(score, 4) * 0.25 +
+                        (languageMatch ? 0.5 : 0),
+                };
+            })
+            .sort((a, b) => b.relevance - a.relevance || a.snippet.name.localeCompare(b.snippet.name))
+            .slice(0, 5)
+            .map(({ snippet }) => ({
+                id: snippet.id,
+                name: snippet.name,
+                description: snippet.description ?? null,
+                language: snippet.language,
+            }));
+
+        return { items };
+    }
+
+    /**
+     * @description
+     * Defines searchable fields, visibility rules, and relations for each search entity.
+     * @internal
+     */
     private getSearchDefinitions(): {
         snippets: SearchDefinition<Snippet>;
         collections: SearchDefinition<Collection>;
@@ -225,6 +318,11 @@ export class SearchService {
         };
     }
 
+    /**
+     * @description
+     * Searches and ranks one entity type using its search definition.
+     * @internal
+     */
     private async searchEntity<Entity extends ObjectLiteral>(
         ctx: RequestContext,
         input: SearchInput,
@@ -232,6 +330,7 @@ export class SearchService {
         definition: SearchDefinition<Entity>,
         term: string | undefined,
         tagValues: string[],
+        includeTotalItems = true,
     ): Promise<SearchPage<Entity>> {
         const repository = this.databaseService.getRepository(ctx, definition.entity);
         const query = this.createBaseQuery(
@@ -243,7 +342,7 @@ export class SearchService {
             tagValues,
         );
         const [totalItems, rankedItems] = await Promise.all([
-            query.clone().getCount(),
+            includeTotalItems ? query.clone().getCount() : Promise.resolve(0),
             this.getRankedIds(query.clone(), definition.alias, input),
         ]);
 
@@ -266,6 +365,11 @@ export class SearchService {
         return { entities: orderedEntities, scores, totalItems };
     }
 
+    /**
+     * @description
+     * Retrieves the paginated, ranked identifiers and scores from a search query.
+     * @internal
+     */
     private async getRankedIds<Entity extends ObjectLiteral>(
         query: SelectQueryBuilder<Entity>,
         alias: string,
@@ -284,6 +388,11 @@ export class SearchService {
         return rows.map(row => ({ id: String(row.id), score: Number(row.score) }));
     }
 
+    /**
+     * @description
+     * Counts matching entities for each tag in a search result set.
+     * @internal
+     */
     private async getTagCounts<Entity extends ObjectLiteral>(
         ctx: RequestContext,
         input: SearchInput,
@@ -312,6 +421,11 @@ export class SearchService {
             .then(rows => rows.map(row => ({ value: row.value, count: Number(row.count) })));
     }
 
+    /**
+     * @description
+     * Builds a search query with visibility, text, and selected-tag filters.
+     * @internal
+     */
     private createBaseQuery<Entity extends ObjectLiteral>(
         query: SelectQueryBuilder<Entity>,
         input: SearchInput,
@@ -336,6 +450,11 @@ export class SearchService {
         return query;
     }
 
+    /**
+     * @description
+     * Applies the selected tags to a search query using the requested operator.
+     * @internal
+     */
     private applyTagFilters<Entity extends ObjectLiteral>(
         query: SelectQueryBuilder<Entity>,
         definition: SearchDefinition<Entity>,
@@ -360,6 +479,45 @@ export class SearchService {
             searchTagCount: tagValues.length,
         });
     }
+}
+
+function getRelatedSearchTerms(snippet: Snippet): string[] {
+    const searchableText = [
+        snippet.name,
+        snippet.description,
+        snippet.note,
+        snippet.language,
+        snippet.code.slice(0, 2000),
+    ]
+        .filter(Boolean)
+        .join(' ');
+    const stopWords = new Set([
+        'and',
+        'are',
+        'await',
+        'const',
+        'false',
+        'for',
+        'from',
+        'function',
+        'into',
+        'let',
+        'null',
+        'return',
+        'the',
+        'this',
+        'true',
+        'undefined',
+        'with',
+    ]);
+
+    return [
+        ...new Set(
+            (searchableText.match(/[\p{L}\p{N}_]+/gu) ?? [])
+                .filter(term => term.length > 2 && !stopWords.has(term.toLocaleLowerCase()))
+                .map(term => term.toLocaleLowerCase()),
+        ),
+    ].slice(0, 5);
 }
 
 function mergeTagCounts(countGroups: TagCount[]): TagCount[] {

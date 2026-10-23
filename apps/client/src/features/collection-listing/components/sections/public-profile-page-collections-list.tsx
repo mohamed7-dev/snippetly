@@ -11,17 +11,18 @@ import {
     listCurrentUserCollectionsQueryOptions,
 } from '@/features/collection-listing/lib/collection-listing-query-options';
 import { CollectionCard } from '@/features/collections/components/collection-card';
-import { collectionListDto, Permission } from '@snippetly/common/dto';
-import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import { OnlineGuard } from '@/features/offline-snippet/components/shared/online-guard';
+import type { ApiSuccess } from '@/lib/api-client';
+import { collectionListDto, Permission, type CollectionListDtoType } from '@snippetly/common/dto';
+import { useQueryClient, useSuspenseInfiniteQuery, type InfiniteData } from '@tanstack/react-query';
 import { Link, useNavigate, useParams, useSearch } from '@tanstack/react-router';
 import { PlusIcon } from 'lucide-react';
-import React from 'react';
 
 export function PublicProfilePageCollectionsList() {
     const qClient = useQueryClient();
 
-    const { id } = useParams({ from: '/(public)/profile/$id' });
-    const { collections: collectionsSearch } = useSearch({ from: '/(public)/profile/$id' }) ?? {};
+    const { id } = useParams({ from: '/(public)/developers/$id/' });
+    const { collections: collectionsSearch } = useSearch({ from: '/(public)/developers/$id/' }) ?? {};
     const { sort, filter, filterOperator, tags } = collectionsSearch ?? {};
     const queryKeys = [sort, filter, filterOperator, tags];
 
@@ -38,53 +39,89 @@ export function PublicProfilePageCollectionsList() {
     const onMutateSuccess = () => {
         qClient.invalidateQueries(listCurrentUserCollectionsQueryOptions());
     };
+
+    const onFavRes = (collectionId: string, action: 'add' | 'remove', branch: 'success' | 'error') => {
+        qClient.setQueryData<InfiniteData<ApiSuccess<CollectionListDtoType['output']>>>(
+            listCreatorCollectionsQueryOption(id).queryKey,
+            old => {
+                if (!old) return;
+                return {
+                    ...old,
+                    pages: old.pages.map(page => ({
+                        ...page,
+                        items: page.items.map(item => {
+                            if (item.id === collectionId) {
+                                return {
+                                    ...item,
+                                    relationshipsWithCurrentUser: {
+                                        ...item.relationshipsWithCurrentUser,
+                                        isFavouritedByCurrentUser:
+                                            action === 'add'
+                                                ? branch === 'success'
+                                                    ? true
+                                                    : false
+                                                : branch === 'success'
+                                                  ? false
+                                                  : true,
+                                    },
+                                };
+                            }
+                            return item;
+                        }),
+                    })),
+                };
+            },
+        );
+    };
     return (
-        <React.Fragment>
-            <div className="flex items-center gap-2">
-                <FilterQueryDialog
-                    schema={collectionListDto.input.shape.filter}
-                    value={{ filter, filterOperator }}
-                    onApply={val =>
-                        navigate({
-                            to: '.',
-                            search: previous => ({
-                                ...previous,
-                                collections: { ...previous?.collections, ...val },
-                            }),
-                        })
-                    }
-                />
-                <SortQueryDialog
-                    sortSchema={collectionListDto.input.shape.sort}
-                    value={{ sort }}
-                    onApply={val =>
-                        navigate({
-                            to: '.',
-                            search: previous => ({
-                                ...previous,
-                                collections: { ...previous?.collections, sort: val.sort },
-                            }),
-                        })
-                    }
-                />
-                <TagFilterBar
-                    tags={availableTags}
-                    selectedTags={tags?.values ?? []}
-                    operator={tags?.operator}
-                    onChange={(values, operator) =>
-                        navigate({
-                            to: '.',
-                            search: previous => ({
-                                ...previous,
-                                collections: {
-                                    ...previous?.collections,
-                                    tags: values.length ? { values, operator } : undefined,
-                                },
-                            }),
-                        })
-                    }
-                />
-            </div>
+        <div className="space-y-6">
+            <OnlineGuard>
+                <div className="flex items-center gap-2">
+                    <FilterQueryDialog
+                        schema={collectionListDto.input.shape.filter}
+                        value={{ filter, filterOperator }}
+                        onApply={val =>
+                            navigate({
+                                to: '.',
+                                search: previous => ({
+                                    ...previous,
+                                    collections: { ...previous?.collections, ...val },
+                                }),
+                            })
+                        }
+                    />
+                    <SortQueryDialog
+                        sortSchema={collectionListDto.input.shape.sort}
+                        value={{ sort }}
+                        onApply={val =>
+                            navigate({
+                                to: '.',
+                                search: previous => ({
+                                    ...previous,
+                                    collections: { ...previous?.collections, sort: val.sort },
+                                }),
+                            })
+                        }
+                    />
+                    <TagFilterBar
+                        tags={availableTags}
+                        selectedTags={tags?.values ?? []}
+                        operator={tags?.operator}
+                        onChange={(values, operator) =>
+                            navigate({
+                                to: '.',
+                                search: previous => ({
+                                    ...previous,
+                                    collections: {
+                                        ...previous?.collections,
+                                        tags: values.length ? { values, operator } : undefined,
+                                    },
+                                }),
+                            })
+                        }
+                    />
+                </div>
+            </OnlineGuard>
             <CollectionListLayout>
                 {collections.map(collection => (
                     <CollectionCard
@@ -93,6 +130,22 @@ export function PublicProfilePageCollectionsList() {
                         forkCollection={{ onSuccess: onMutateSuccess }}
                         deleteCollection={{ onSuccess: onMutateSuccess }}
                         moveCollectionToTrash={{ onSuccess: onMutateSuccess }}
+                        addCollectionToFavourites={{
+                            onSuccess: () => {
+                                onFavRes(collection.id, 'add', 'success');
+                            },
+                            onError: () => {
+                                onFavRes(collection.id, 'add', 'error');
+                            },
+                        }}
+                        removeCollectionFromFavourites={{
+                            onSuccess: () => {
+                                onFavRes(collection.id, 'remove', 'success');
+                            },
+                            onError: () => {
+                                onFavRes(collection.id, 'remove', 'error');
+                            },
+                        }}
                     />
                 ))}
             </CollectionListLayout>
@@ -126,6 +179,6 @@ export function PublicProfilePageCollectionsList() {
                     ) : null
                 }
             />
-        </React.Fragment>
+        </div>
     );
 }

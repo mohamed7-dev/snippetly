@@ -31,14 +31,7 @@ export const SETTINGS_NAV_ITEMS = [
         description: 'Theme and display preferences',
         requiredPermissions: [Permission.Authenticated],
     },
-    {
-        id: 'notifications',
-        title: 'Notifications',
-        href: '/dashboard/settings/notifications',
-        icon: BellIcon,
-        description: 'Manage in-app and push notification behavior',
-        requiredPermissions: [Permission.Authenticated],
-    },
+
     {
         id: 'profile',
         title: 'Profile',
@@ -53,6 +46,14 @@ export const SETTINGS_NAV_ITEMS = [
         href: '/dashboard/settings/security',
         icon: ShieldIcon,
         description: 'Password and email settings',
+        requiredPermissions: [Permission.Authenticated],
+    },
+    {
+        id: 'notifications',
+        title: 'Notifications',
+        href: '/dashboard/settings/notifications',
+        icon: BellIcon,
+        description: 'Manage in-app and push notification behavior',
         requiredPermissions: [Permission.Authenticated],
     },
 ];

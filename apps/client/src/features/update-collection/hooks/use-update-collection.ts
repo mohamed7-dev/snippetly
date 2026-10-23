@@ -1,17 +1,15 @@
+import { getCollectionQueryOptions } from '@/features/collections/lib/query-options';
+import { getOfflineOwnerId, queueOfflineCollectionUpdate } from '@/features/offline-snippet/lib/store';
 import { getCurrentDeveloperActivityStats } from '@/features/stats/lib/stats-query-options';
-import { ApiClientError, developerApiClient, type ApiSuccess } from '@/lib/api-client';
-import { OfflineNetworkError } from '@/lib/api-client';
+import { ApiClientError, developerApiClient, OfflineNetworkError, type ApiSuccess } from '@/lib/api-client';
 import { apiEndpoints } from '@/lib/api-endpoints';
 import { toastApiError } from '@/lib/toast-api-error';
 import type { AsyncActionCallback } from '@/lib/types';
 import type { UpdateCollectionDtoType } from '@snippetly/common/dto';
 import { omit } from '@snippetly/common/lib';
-import { getOfflineCreationOwnerId } from '@/features/offline-snippet/lib/offline-creation-access';
-import { queueOfflineCollectionUpdate } from '@/features/offline-snippet/lib/store';
-import { getCollectionQueryOptions } from '@/features/collections/lib/query-options';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
 import React from 'react';
+import { toast } from 'sonner';
 
 export type UpdateCollectionMutationCallbacks = AsyncActionCallback<
     ApiSuccess<UpdateCollectionDtoType['output']>,
@@ -24,7 +22,7 @@ export function useUpdateCollection(mutationCallbacks?: UpdateCollectionMutation
     return useMutation({
         mutationFn: async (input: UpdateCollectionDtoType['input']) => {
             if (!navigator.onLine) {
-                const ownerId = getOfflineCreationOwnerId();
+                const ownerId = getOfflineOwnerId();
                 if (!ownerId) throw new Error('Sign in on this device before editing collections offline.');
                 const updated = await queueOfflineCollectionUpdate(ownerId, input);
                 queuedResults.current.add(updated);
@@ -41,7 +39,7 @@ export function useUpdateCollection(mutationCallbacks?: UpdateCollectionMutation
                 );
             } catch (error) {
                 if (!(error instanceof OfflineNetworkError)) throw error;
-                const ownerId = getOfflineCreationOwnerId();
+                const ownerId = getOfflineOwnerId();
                 if (!ownerId) throw error;
                 const updated = await queueOfflineCollectionUpdate(ownerId, input);
                 queuedResults.current.add(updated);

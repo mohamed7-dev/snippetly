@@ -15,6 +15,10 @@ import { Injectable } from '../../infra/ioc-container/injectable.decorator';
 export class RequestContextService {
     constructor(private readonly configService: ConfigService) {}
 
+    /**
+     * @description
+     * Creates an authorized RequestContext from the supplied API, language, and user settings.
+     */
     public create(config: { req?: Request; apiType: ApiType; languageCode?: string; user?: User }) {
         const { req, languageCode, user, apiType } = config;
         let session: SessionCacheEntry | undefined;
@@ -70,6 +74,11 @@ export class RequestContextService {
         });
     }
 
+    /**
+     * @description
+     * Gets the requested language code or falls back to the configured default.
+     * @internal
+     */
     private getLanguageCode(req: Request): string | undefined {
         // priorities ->
         //  1. request query
@@ -78,6 +87,11 @@ export class RequestContextService {
         return queryLocaleCode ?? this.configService.defaultLanguageCode;
     }
 
+    /**
+     * @description
+     * Checks whether the session user has at least one of the required permissions.
+     * @internal
+     */
     private userHasRequiredPermissions(requiredPermissions: string[] = [], user: SessionCacheEntry['user']) {
         if (!user) return false;
         const userPermissions = user?.permissions;

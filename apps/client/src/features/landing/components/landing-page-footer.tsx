@@ -1,89 +1,38 @@
-import { Button } from '@/components/ui/button';
 import { APP_NAME } from '@snippetly/common/lib';
 import { Link } from '@tanstack/react-router';
-import { Code2Icon, GithubIcon, TwitterIcon } from 'lucide-react';
+import { Code2Icon } from 'lucide-react';
 
 export function LandingPageFooter() {
     return (
-        <footer className="border-t border-border bg-muted/30">
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                <div className="grid md:grid-cols-4 gap-8">
+        <footer className="border-t border-border bg-muted/20">
+            <div className="container mx-auto px-4 py-10 sm:px-6 lg:px-8">
+                <div className="flex flex-col gap-8 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <div className="flex items-center gap-2 mb-4">
-                            <Code2Icon className="h-6 w-6 text-primary" />
-                            <span className="font-heading font-bold text-lg">{APP_NAME}</span>
+                        <div className="mb-3 flex items-center gap-2">
+                            <Code2Icon className="h-5 w-5 text-primary" />
+                            <span className="font-heading text-base font-bold">{APP_NAME}</span>
                         </div>
-                        <p className="text-muted-foreground text-sm">
-                            Your personal code library for organizing and sharing snippets.
+                        <p className="max-w-sm text-sm leading-6 text-muted-foreground">
+                            A considered home for the code you want to keep.
                         </p>
                     </div>
 
-                    <div>
-                        <h3 className="font-semibold mb-4">Product</h3>
-                        <ul className="space-y-2 text-sm text-muted-foreground">
-                            <li>
-                                <Link
-                                    to="."
-                                    hash="features"
-                                    className="hover:text-foreground transition-colors"
-                                >
-                                    Features
-                                </Link>
-                            </li>
-                            <li>
-                                <Link
-                                    to="."
-                                    hash="pricing"
-                                    className="hover:text-foreground transition-colors"
-                                >
-                                    Pricing
-                                </Link>
-                            </li>
-                            <li>
-                                <Link to="." hash="docs" className="hover:text-foreground transition-colors">
-                                    Documentation
-                                </Link>
-                            </li>
-                        </ul>
-                    </div>
-
-                    <div>
-                        <h3 className="font-semibold mb-4">Company</h3>
-                        <ul className="space-y-2 text-sm text-muted-foreground">
-                            <li>
-                                <Link to="." className="hover:text-foreground transition-colors">
-                                    About
-                                </Link>
-                            </li>
-                            <li>
-                                <Link to="." className="hover:text-foreground transition-colors">
-                                    Blog
-                                </Link>
-                            </li>
-                            <li>
-                                <Link to="." className="hover:text-foreground transition-colors">
-                                    Contact
-                                </Link>
-                            </li>
-                        </ul>
-                    </div>
-
-                    <div>
-                        <h3 className="font-semibold mb-4">Connect</h3>
-                        <div className="flex gap-3">
-                            <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-                                <GithubIcon className="h-4 w-4" />
-                            </Button>
-                            <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-                                <TwitterIcon className="h-4 w-4" />
-                            </Button>
-                        </div>
+                    <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm text-muted-foreground">
+                        <Link to="." hash="features" className="transition-colors hover:text-foreground">
+                            Features
+                        </Link>
+                        <Link to="/discover" className="transition-colors hover:text-foreground">
+                            Discover
+                        </Link>
+                        <Link to="/offline" className="transition-colors hover:text-foreground">
+                            Offline library
+                        </Link>
                     </div>
                 </div>
 
-                <div className="border-t border-border mt-8 pt-8 text-center text-sm text-muted-foreground">
+                <div className="mt-8 border-t border-border pt-6 text-sm text-muted-foreground">
                     <p>
-                        &copy; {new Date().getFullYear()} {APP_NAME}. All rights reserved.
+                        &copy; {new Date().getFullYear()} {APP_NAME}
                     </p>
                 </div>
             </div>

@@ -1,23 +1,21 @@
-import { getCurrentDeveloperActivityStats } from '@/features/stats/lib/stats-query-options';
+import { useAuth } from '@/features/auth/hooks/use-auth';
 import {
-    ApiClientError,
-    developerApiClient,
-    type ApiSuccess,
-} from '@/lib/api-client';
+    cacheOfflineCollectionOptions,
+    getOfflineOwnerId,
+    queueOfflineCollectionCreation,
+} from '@/features/offline-snippet/lib/store';
+import { getCurrentDeveloperActivityStats } from '@/features/stats/lib/stats-query-options';
+import { ApiClientError, developerApiClient, type ApiSuccess } from '@/lib/api-client';
 import { apiEndpoints } from '@/lib/api-endpoints';
 import { toastApiError } from '@/lib/toast-api-error';
 import type { AsyncActionCallback } from '@/lib/types';
 import type { CreateCollectionDtoType } from '@snippetly/common/dto';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { useAuth } from '@/features/auth/hooks/use-auth';
-import { getOfflineCreationOwnerId } from '@/features/offline-snippet/lib/offline-creation-access';
-import { cacheOfflineCollectionOptions, queueOfflineCollection } from '@/features/offline-snippet/lib/store';
 
 type CreatedCollection = ApiSuccess<CreateCollectionDtoType['output']>;
 export type CreateCollectionResult =
-    | { status: 'synced'; data: CreatedCollection }
-    | { status: 'queued'; id: string };
+    { status: 'synced'; data: CreatedCollection } | { status: 'queued'; id: string };
 
 export type MutationCallbacks = AsyncActionCallback<CreateCollectionResult, ApiClientError>;
 
@@ -26,12 +24,12 @@ export function useCreateCollection(mutationCallbacks?: MutationCallbacks) {
     const { user } = useAuth();
     return useMutation({
         mutationFn: async (input: CreateCollectionDtoType['input']): Promise<CreateCollectionResult> => {
-            const ownerId = user?.id ?? getOfflineCreationOwnerId();
+            const ownerId = user?.id ?? getOfflineOwnerId();
             const queueLocally = async (): Promise<CreateCollectionResult> => {
                 if (!ownerId) {
                     throw new Error('Sign in on this device before creating collections offline.');
                 }
-                const collection = await queueOfflineCollection(ownerId, input);
+                const collection = await queueOfflineCollectionCreation(ownerId, input);
                 return { status: 'queued', id: collection.id };
             };
 

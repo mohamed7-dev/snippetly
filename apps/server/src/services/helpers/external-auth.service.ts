@@ -16,6 +16,10 @@ export class ExternalAuthService {
         private readonly developerService: DeveloperService,
     ) {}
 
+    /**
+     * @description
+     * Finds or creates a user and developer profile for an external authentication account.
+     */
     public async createUserAndDeveloper(
         ctx: RequestContext,
         input: {
@@ -71,6 +75,10 @@ export class ExternalAuthService {
         await this.databaseService.getRepository(ctx, Developer).save(developer);
         return savedUser;
     }
+    /**
+     * @description
+     * Finds the user associated with an external account if they have a developer profile.
+     */
     public async findDeveloperUser(
         ctx: RequestContext,
         strategyName: string,
@@ -84,6 +92,11 @@ export class ExternalAuthService {
         }
     }
 
+    /**
+     * @description
+     * Finds an active user by external provider and account identifier.
+     * @internal
+     */
     private async findUser(
         ctx: RequestContext,
         strategyName: string,
@@ -102,6 +115,11 @@ export class ExternalAuthService {
         return user || undefined;
     }
 
+    /**
+     * @description
+     * Finds an active user by the email address on their developer profile.
+     * @internal
+     */
     private async findUserByEmail(ctx: RequestContext, emailAddress: string) {
         const developer = await this.databaseService
             .getRepository(ctx, Developer)

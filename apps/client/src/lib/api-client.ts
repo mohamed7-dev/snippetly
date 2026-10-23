@@ -1,6 +1,5 @@
 import { type AuthenticateDeveloperDtoType, type LogoutDeveloperDtoType } from '@snippetly/common/dto';
 import { AUTH_TOKEN_HEADER_KEY } from '@snippetly/common/lib';
-import { saveOfflineSyncCredential } from '../features/offline-snippet/lib/store';
 import { apiEndpoints, apiUrl } from './api-endpoints';
 import { LOCAL_STORAGE_SESSION_TOKEN_KEY } from './constants';
 
@@ -75,29 +74,10 @@ function isApiErrorPayload(value: unknown): value is ApiErrorPayload {
 }
 
 export class ApiClient {
-    private offlineOwnerId?: string;
-
     constructor(private apiUrl: string = '') {}
 
     public setAuthToken(token: string) {
         localStorage.setItem(LOCAL_STORAGE_SESSION_TOKEN_KEY, token);
-        if (this.offlineOwnerId) {
-            void saveOfflineSyncCredential(this.offlineOwnerId, token).catch(error => {
-                console.error('Could not save session credentials for background sync.', error);
-            });
-        }
-    }
-
-    public setOfflineOwnerId(ownerId: string | undefined) {
-        this.offlineOwnerId = ownerId;
-        if (ownerId) {
-            const token = this.getAuthToken();
-            if (token) {
-                void saveOfflineSyncCredential(ownerId, token).catch(error => {
-                    console.error('Could not save session credentials for background sync.', error);
-                });
-            }
-        }
     }
 
     public getAuthToken(): string {
@@ -126,7 +106,6 @@ export class ApiClient {
     }
 
     async asUserWithAuthInput(authInput: Partial<AuthenticateDeveloperDtoType['input']>) {
-        this.setOfflineOwnerId(undefined);
         // first log out as the current user
         if (this.getAuthToken()) {
             await this.fetch<LogoutDeveloperDtoType['output']>(apiEndpoints.auth.logout.url, {
@@ -140,7 +119,6 @@ export class ApiClient {
     }
 
     async asAnonymousUser(): Promise<void> {
-        this.setOfflineOwnerId(undefined);
         await this.fetch<LogoutDeveloperDtoType['output']>(apiEndpoints.auth.logout.url, {
             method: apiEndpoints.auth.logout.method,
         });

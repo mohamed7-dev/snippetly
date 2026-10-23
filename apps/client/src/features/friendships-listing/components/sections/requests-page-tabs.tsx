@@ -31,7 +31,7 @@ export function RequestsPageTabs() {
     const navigate = useNavigate();
 
     const { data } = useQuery(getCurrentDeveloperActivityStats());
-    const stats = data ?? { friendsInboxCount: 0, friendsOutboxCount: 0 };
+    const stats = data?.stats ?? { friendsInboxCount: 0, friendsOutboxCount: 0 };
 
     return (
         <Tabs defaultValue="incoming" value={tab}>
@@ -125,7 +125,8 @@ function InboxTabContent() {
                                     }}
                                     favouriteInfo={{
                                         isFavouritedByCurrentUser:
-                                            request.requester.isFavouritedByCurrentUser,
+                                            request.requester.relationshipWithCurrentUser
+                                                .isFavouritedByCurrentUser,
                                     }}
                                     showAcceptFriendshipRequest={true}
                                     showRejectFriendshipRequest={true}
@@ -261,7 +262,8 @@ export function OutboxTabContent() {
                                     }}
                                     favouriteInfo={{
                                         isFavouritedByCurrentUser:
-                                            request.addressee.isFavouritedByCurrentUser,
+                                            request.addressee.relationshipWithCurrentUser
+                                                .isFavouritedByCurrentUser,
                                     }}
                                     showCancelFriendshipRequest={true}
                                     showAddToFavourites={true}

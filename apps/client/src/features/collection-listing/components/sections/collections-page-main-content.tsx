@@ -4,8 +4,9 @@ import { CollectionListLayout } from '@/components/shared/collection-list-layout
 import { Button } from '@/components/ui/button';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import { CollectionCard } from '@/features/collections/components/collection-card';
-import { Permission } from '@snippetly/common/dto';
-import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import type { ApiSuccess } from '@/lib/api-client';
+import { Permission, type CurrentUserCollectionListDtoType } from '@snippetly/common/dto';
+import { useQueryClient, useSuspenseInfiniteQuery, type InfiniteData } from '@tanstack/react-query';
 import { Link, useSearch } from '@tanstack/react-router';
 import { PlusIcon } from 'lucide-react';
 import React from 'react';
@@ -27,12 +28,42 @@ export function CollectionsPageMainContent() {
 
     const qClient = useQueryClient();
 
-    const onMutateSuccess = async (_data?: any, actionType?: 'add' | 'remove') => {
-        if (actionType) {
-            // TODO: update the cache optimistically while triggering the invalidation
-        } else {
-            await qClient.invalidateQueries(listCurrentUserCollectionsQueryOptions(undefined, queryKey));
-        }
+    const onMutateSuccess = async () => {
+        await qClient.invalidateQueries(listCurrentUserCollectionsQueryOptions(undefined, queryKey));
+    };
+
+    const onFavRes = (collectionId: string, favAction: 'add' | 'remove', branch: 'success' | 'error') => {
+        qClient.setQueriesData<InfiniteData<ApiSuccess<CurrentUserCollectionListDtoType['output']>>>(
+            { queryKey: listCurrentUserCollectionsQueryOptions().queryKey },
+            old => {
+                if (!old) return;
+                return {
+                    ...old,
+                    pages: old.pages.map(page => ({
+                        ...page,
+                        items: page.items.map(item => {
+                            if (collectionId === item.id) {
+                                return {
+                                    ...item,
+                                    relationshipsWithCurrentUser: {
+                                        ...item.relationshipsWithCurrentUser,
+                                        isFavouritedByCurrentUser:
+                                            favAction === 'add'
+                                                ? branch === 'success'
+                                                    ? true
+                                                    : false
+                                                : branch === 'success'
+                                                  ? false
+                                                  : true,
+                                    },
+                                };
+                            }
+                            return item;
+                        }),
+                    })),
+                };
+            },
+        );
     };
 
     return (
@@ -61,10 +92,12 @@ export function CollectionsPageMainContent() {
                                 onSuccess: onMutateSuccess,
                             }}
                             addCollectionToFavourites={{
-                                onSuccess: data => onMutateSuccess(data, 'add'),
+                                onSuccess: () => onFavRes(collection.id, 'add', 'success'),
+                                onError: () => onFavRes(collection.id, 'add', 'error'),
                             }}
                             removeCollectionFromFavourites={{
-                                onSuccess: data => onMutateSuccess(data, 'remove'),
+                                onSuccess: () => onFavRes(collection.id, 'remove', 'success'),
+                                onError: () => onFavRes(collection.id, 'remove', 'error'),
                             }}
                         />
                     </PermissionGuard>
@@ -92,7 +125,7 @@ export function CollectionsPageMainContent() {
                                 >
                                     <Button asChild>
                                         <Link to={'/dashboard/collections/new'}>
-                                            <PlusIcon className="h-4 w-4 mr-2" />
+                                            <PlusIcon />
                                             Create Collection
                                         </Link>
                                     </Button>

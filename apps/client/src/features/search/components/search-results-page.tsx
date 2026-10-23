@@ -257,7 +257,7 @@ function SearchResultGroup({ type, items, totalItems }: SearchResultGroupProps) 
                                 <Link
                                     className="text-sm text-muted-foreground hover:text-primary"
                                     params={{ id: snippet.creator.id }}
-                                    to="/profile/$id"
+                                    to="/developers/$id"
                                 >
                                     {formatDeveloperInfo(snippet.creator).fullName}
                                 </Link>
@@ -305,7 +305,7 @@ function SearchResultGroup({ type, items, totalItems }: SearchResultGroupProps) 
                                 <Link
                                     className="text-sm text-muted-foreground hover:text-primary"
                                     params={{ id: collection.creator.id }}
-                                    to="/profile/$id"
+                                    to="/developers/$id"
                                 >
                                     {formatDeveloperInfo(collection.creator).fullName}
                                 </Link>
@@ -337,7 +337,7 @@ function SearchResultGroup({ type, items, totalItems }: SearchResultGroupProps) 
                                                 <Link
                                                     className="hover:text-primary"
                                                     params={{ id: developer.id }}
-                                                    to="/profile/$id"
+                                                    to="/developers/$id"
                                                 >
                                                     {fullName}
                                                 </Link>

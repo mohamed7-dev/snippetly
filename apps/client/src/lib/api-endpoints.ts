@@ -109,6 +109,11 @@ export const apiEndpoints = {
             method: 'GET',
             contentType: null,
         },
+        related: {
+            url: (id: string) => `snippets/${id}/related`,
+            method: 'GET',
+            contentType: null,
+        },
         list: {
             url: (searchParams: URLSearchParams) => `snippets?${searchParams.toString()}`,
             method: 'GET',

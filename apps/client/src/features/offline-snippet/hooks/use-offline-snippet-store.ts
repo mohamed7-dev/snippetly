@@ -3,11 +3,11 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import React from 'react';
 import { toast } from 'sonner';
 import {
-    getOfflineSnippet,
-    insertOfflineSnippet,
-    listOfflineSnippets,
-    removeOfflineSnippet,
-    updateOfflineSnippet,
+    getExplicitOfflineSnippet,
+    insertExplicitOfflineSnippet,
+    listExplicitOfflineSnippets,
+    removeExplicitOfflineSnippet,
+    updateExplicitOfflineSnippet,
     type GetOfflineSnippetInput,
     type InsertOfflineSnippetInput,
     type RemoveOfflineSnippetInput,
@@ -23,7 +23,7 @@ export function useOfflineSnippetStore() {
         isRemoving: false,
         isGettingOne: false,
     });
-    const snippets = useLiveQuery(() => listOfflineSnippets(savedBy), [savedBy]);
+    const snippets = useLiveQuery(() => listExplicitOfflineSnippets(savedBy), [savedBy]);
 
     const onError = React.useCallback((e: unknown, action: 'save' | 'update' | 'remove' | 'get' | 'list') => {
         if (e instanceof DOMException) {
@@ -37,7 +37,7 @@ export function useOfflineSnippetStore() {
         setStatus(prev => ({ ...prev, isInserting: true }));
 
         try {
-            await insertOfflineSnippet({ ...input, savedBy });
+            await insertExplicitOfflineSnippet({ ...input, savedBy });
             toast.success('Saved for offline use');
             return true;
         } catch (e) {
@@ -52,7 +52,7 @@ export function useOfflineSnippetStore() {
         setStatus(prev => ({ ...prev, isUpdating: true }));
 
         try {
-            await updateOfflineSnippet({ ...input, savedBy });
+            await updateExplicitOfflineSnippet({ ...input, savedBy });
             toast.success('Offline snippet was updated successfully');
             return true;
         } catch (e) {
@@ -67,7 +67,7 @@ export function useOfflineSnippetStore() {
         setStatus(prev => ({ ...prev, isRemoving: true }));
 
         try {
-            await removeOfflineSnippet({ ...input, savedBy });
+            await removeExplicitOfflineSnippet({ ...input, savedBy });
             toast.success('Snippet was removed from the offline store.');
             return true;
         } catch (e) {
@@ -83,7 +83,7 @@ export function useOfflineSnippetStore() {
             setStatus(prev => ({ ...prev, isGettingOne: true }));
 
             try {
-                return await getOfflineSnippet({ ...input, savedBy });
+                return await getExplicitOfflineSnippet({ ...input, savedBy });
             } catch (e) {
                 onError(e, 'get');
             } finally {

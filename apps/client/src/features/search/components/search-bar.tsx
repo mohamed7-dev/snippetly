@@ -3,7 +3,7 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { useNavigate } from '@tanstack/react-router';
 import { SearchIcon } from 'lucide-react';
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type SubmitEvent } from 'react';
 import { parseSearchInput } from '../lib/search-input';
 
 type SearchBarProps = {
@@ -19,7 +19,7 @@ export function SearchBar({ initialValue = '', className }: SearchBarProps) {
         setValue(initialValue);
     }, [initialValue]);
 
-    const onSubmit = (event: FormEvent<HTMLFormElement>) => {
+    const onSubmit = (event: SubmitEvent<HTMLFormElement>) => {
         event.preventDefault();
         const parsed = parseSearchInput(value);
         if (!parsed.term && !parsed.tags?.length) return;

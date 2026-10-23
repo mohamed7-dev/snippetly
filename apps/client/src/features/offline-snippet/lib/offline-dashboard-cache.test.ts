@@ -1,5 +1,5 @@
+import { OfflineDataUnavailableError, OfflineNetworkError } from '@/lib/api-client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { OfflineDataUnavailableError, OfflineNetworkError } from '../../../lib/api-client';
 
 const storeMocks = vi.hoisted(() => ({
     cache: vi.fn(),
@@ -7,9 +7,11 @@ const storeMocks = vi.hoisted(() => ({
     getOwnerId: vi.fn(),
 }));
 
-vi.mock('./store', () => ({
+vi.mock('./offline-dashboard-storage', () => ({
     cacheOfflineDashboardData: storeMocks.cache,
     getOfflineDashboardData: storeMocks.get,
+}));
+vi.mock('./offline-collection-storage', () => ({
     getOfflineOwnerId: storeMocks.getOwnerId,
 }));
 
@@ -28,12 +30,7 @@ describe('fetchAndCacheDashboardData', () => {
             fetchAndCacheDashboardData('snippets', '/snippets/me', async () => response),
         ).resolves.toEqual(response);
 
-        expect(storeMocks.cache).toHaveBeenCalledWith(
-            'owner',
-            'snippets',
-            '/snippets/me',
-            response,
-        );
+        expect(storeMocks.cache).toHaveBeenCalledWith('owner', 'snippets', '/snippets/me', response);
     });
 
     it('returns the owner-scoped cached response when a request fails offline', async () => {

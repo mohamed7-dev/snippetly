@@ -6,6 +6,10 @@ import { Injectable } from '../../infra/ioc-container/injectable.decorator';
 export class EmailClient {
     constructor(private readonly configService: ConfigService) {}
 
+    /**
+     * @description
+     * Sends an email using the configured transporter and sender address.
+     */
     async sendEmail<Result = any>(options: Omit<SendEmailOptions, 'from'>): Promise<Result> {
         const { emailTransporterStrategy, from } = this.configService.systemOptions.email;
 

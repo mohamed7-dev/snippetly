@@ -1,7 +1,4 @@
-import {
-    getOfflineCreationOwnerId,
-    isOfflineCreationAvailable,
-} from '@/features/offline-snippet/lib/offline-creation-access';
+import { getOfflineOwnerId, isOfflineMutationAvailable } from '@/features/offline-snippet/lib/common';
 import { Permission } from '@snippetly/common/dto';
 import { useAuth } from '../../hooks/use-auth';
 import { usePermissions } from '../../hooks/use-permissions';
@@ -32,11 +29,11 @@ export function PermissionGuard({
     const { hasPermissions } = usePermissions();
     const { user, status } = useAuth();
 
-    const offlineOwnerId = isAvailableOffline ? getOfflineCreationOwnerId() : undefined;
+    const offlineOwnerId = isAvailableOffline ? getOfflineOwnerId() : undefined;
     const canUseOfflinePermissions =
         isAvailableOffline &&
         status !== 'authenticated' &&
-        isOfflineCreationAvailable() &&
+        isOfflineMutationAvailable() &&
         (!user?.id || user.id === offlineOwnerId);
 
     const currentUserId = user?.id ?? (canUseOfflinePermissions ? offlineOwnerId : undefined);

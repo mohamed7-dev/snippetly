@@ -43,6 +43,11 @@ interface ResolvedCustomPropsMap {
     order: Record<string, string>;
 }
 
+/**
+ * @description
+ * Merges requested relation trees while preserving explicit relation selections.
+ * @internal
+ */
 function mergeRelationTrees(target: RelationTree, source: object): void {
     for (const [relation, value] of Object.entries(source)) {
         if (value === true || value === false) {
@@ -66,6 +71,10 @@ export class ListQueryBuilder {
         private readonly configService: ConfigService,
     ) {}
 
+    /**
+     * @description
+     * Builds a paginated query with the requested relations, sorting, and filters.
+     */
     public build<Entity extends AppEntity>(
         entityType: ClassType<Entity>,
         options: ListQueryOptions<Entity> = {},
@@ -105,13 +114,7 @@ export class ListQueryBuilder {
         // maps gql input fields to typeorm OrderByCondition
         const sortParams = Object.assign({}, options.sort, extraOptions.orderBy);
 
-        const order = buildOrderbyFromSortParams(
-            ds,
-            entityType,
-            sortParams,
-            customPropsMap?.order,
-            qb.alias,
-        );
+        const order = buildOrderbyFromSortParams(ds, entityType, sortParams, customPropsMap?.order, qb.alias);
 
         let filterConditions: Array<WhereGroup | WhereCondition> = [];
         if (options.filter) {
@@ -144,6 +147,11 @@ export class ListQueryBuilder {
         return qb;
     }
 
+    /**
+     * @description
+     * Determines the relation paths needed by custom properties used in the query.
+     * @internal
+     */
     private getMinimumRequiredRelations<Entity extends AppEntity>(
         extraOptions: ExtraOptions<Entity>,
         options: ListQueryOptions<Entity>,
@@ -190,6 +198,11 @@ export class ListQueryBuilder {
         return requiredRelations;
     }
 
+    /**
+     * @description
+     * Resolves custom properties to query expressions for filtering and sorting.
+     * @internal
+     */
     private resolveCustomPropsMap<Entity extends AppEntity>(
         customPropsMap: Record<string, string> | undefined,
         options: ListQueryOptions<Entity>,
@@ -229,6 +242,11 @@ export class ListQueryBuilder {
         return resolved;
     }
 
+    /**
+     * @description
+     * Resolves a relation path and column to its joined query alias.
+     * @internal
+     */
     private resolveRelationColumn<Entity extends AppEntity>(
         qb: SelectQueryBuilder<Entity>,
         relationPath: string,
@@ -250,10 +268,20 @@ export class ListQueryBuilder {
         return `${parentAlias}.${column}`;
     }
 
+    /**
+     * @description
+     * Checks whether a custom property is referenced for filtering or sorting.
+     * @internal
+     */
     private isCustomPropUsed(prop: string, options: ListQueryOptions<any>): boolean {
         return !!options.sort?.[prop] || this.isCustomPropUsedInFilter(prop, options.filter);
     }
 
+    /**
+     * @description
+     * Checks whether a custom property appears in a filter tree.
+     * @internal
+     */
     private isCustomPropUsedInFilter(prop: string, filterParams?: FilterParameter<any> | null): boolean {
         return !!(
             filterParams &&
@@ -263,6 +291,11 @@ export class ListQueryBuilder {
         );
     }
 
+    /**
+     * @description
+     * Applies a nested group of filter conditions to the query.
+     * @internal
+     */
     private applyNestedWhereClause(
         qb: WhereExpressionBuilder,
         group: WhereGroup,
@@ -287,6 +320,11 @@ export class ListQueryBuilder {
         }
     }
 
+    /**
+     * @description
+     * Adds a filter condition with its AND/OR operator to the query.
+     * @internal
+     */
     private applyWhereCondition(
         qb: WhereExpressionBuilder,
         condition: WhereCondition,
@@ -299,6 +337,11 @@ export class ListQueryBuilder {
         }
     }
 
+    /**
+     * @description
+     * Clamps pagination parameters to the configured query limits.
+     * @internal
+     */
     private parsePaginationParams<Entity extends AppEntity>(
         options: ListQueryOptions<Entity>,
         ignoreQueryLimits: boolean,

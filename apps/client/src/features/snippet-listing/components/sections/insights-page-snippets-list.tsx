@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import { listCurrentUserSnippetsQueryOptions } from '@/features/snippet-listing/lib/snippet-listing-query-options';
 import { SnippetCard } from '@/features/snippets/components/snippet-card';
-import { Permission } from '@snippetly/common/dto';
-import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import type { ApiSuccess } from '@/lib/api-client';
+import { Permission, type CurrentUserSnippetListDtoType } from '@snippetly/common/dto';
+import { useQueryClient, useSuspenseInfiniteQuery, type InfiniteData } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 
 export function InsightsPageSnippetsList() {
@@ -14,12 +15,42 @@ export function InsightsPageSnippetsList() {
     const snippets = data.pages.flatMap(p => p.items) ?? [];
     const qClient = useQueryClient();
 
-    const onMutateSnippetSuccess = async (_data?: any, actionType?: 'add' | 'remove') => {
-        if (actionType) {
-            // TODO: update the cache manually
-        } else {
-            await qClient.invalidateQueries(listCurrentUserSnippetsQueryOptions());
-        }
+    const onMutateSnippetSuccess = async () => {
+        await qClient.invalidateQueries(listCurrentUserSnippetsQueryOptions());
+    };
+
+    const onFavRes = (snippetId: string, favAction: 'add' | 'remove', branch: 'success' | 'error') => {
+        qClient.setQueriesData<InfiniteData<ApiSuccess<CurrentUserSnippetListDtoType['output']>>>(
+            { queryKey: listCurrentUserSnippetsQueryOptions().queryKey },
+            old => {
+                if (!old) return;
+                return {
+                    ...old,
+                    pages: old.pages.map(page => ({
+                        ...page,
+                        items: page.items.map(item => {
+                            if (snippetId === item.id) {
+                                return {
+                                    ...item,
+                                    relationshipsWithCurrentUser: {
+                                        ...item.relationshipsWithCurrentUser,
+                                        isFavouritedByCurrentUser:
+                                            favAction === 'add'
+                                                ? branch === 'success'
+                                                    ? true
+                                                    : false
+                                                : branch === 'success'
+                                                  ? false
+                                                  : true,
+                                    },
+                                };
+                            }
+                            return item;
+                        }),
+                    })),
+                };
+            },
+        );
     };
 
     if (!snippets.length) {
@@ -75,10 +106,20 @@ export function InsightsPageSnippetsList() {
                                 onSuccess: onMutateSnippetSuccess,
                             }}
                             addSnippetToFavourites={{
-                                onSuccess: data => onMutateSnippetSuccess(data, 'add'),
+                                onSuccess: () => {
+                                    onFavRes(snippet.id, 'add', 'success');
+                                },
+                                onError: () => {
+                                    onFavRes(snippet.id, 'add', 'error');
+                                },
                             }}
                             removeSnippetFromFavourites={{
-                                onSuccess: data => onMutateSnippetSuccess(data, 'remove'),
+                                onSuccess: () => {
+                                    onFavRes(snippet.id, 'remove', 'success');
+                                },
+                                onError: () => {
+                                    onFavRes(snippet.id, 'remove', 'error');
+                                },
                             }}
                         />
                     </PermissionGuard>

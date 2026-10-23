@@ -4,15 +4,15 @@ import type { ActiveDeveloperDtoType } from '@snippetly/common/dto';
 import { createHandlerBoundToURL, precacheAndRoute } from 'workbox-precaching';
 import { NavigationRoute, registerRoute } from 'workbox-routing';
 import {
-    OFFLINE_CREATION_SYNC_REQUEST,
-    OFFLINE_CREATION_SYNC_TAG,
+    OFFLINE_MUTATION_SYNC_REQUEST,
+    OFFLINE_MUTATION_SYNC_TAG,
 } from './features/offline-snippet/lib/register-background-sync';
 import {
     getOfflineSyncCredential,
-    listPendingOfflineCreationOwnerIds,
+    listPendingOfflineOwnerIds,
     saveOfflineSyncCredential,
 } from './features/offline-snippet/lib/store';
-import { syncPendingCreations } from './features/offline-snippet/lib/sync-pending-creations';
+import { syncPendingMutations } from './features/offline-snippet/lib/sync-pending-mutations';
 import { developerApiClient } from './lib/api-client';
 import { apiEndpoints } from './lib/api-endpoints';
 
@@ -37,6 +37,8 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
     event.waitUntil(self.clients.claim());
 });
+
+//################################# Push Notification ################################
 
 self.addEventListener('push', event => {
     let payload: { title?: string; body?: string; url?: string; tag?: string } = {};
@@ -91,8 +93,10 @@ self.addEventListener('notificationclick', event => {
     );
 });
 
-async function syncOfflineCreations() {
-    const ownerIds = await listPendingOfflineCreationOwnerIds();
+//################################# Offline Sync ################################
+
+async function syncOfflineMutations() {
+    const ownerIds = await listPendingOfflineOwnerIds();
     for (const ownerId of ownerIds) {
         const credentials = await getOfflineSyncCredential(ownerId);
         if (!credentials) continue;
@@ -110,17 +114,17 @@ async function syncOfflineCreations() {
 
         if (!activeDeveloper || activeDeveloper.id !== ownerId) {
             await notifyClients({
-                type: 'offline-creation-sync-auth-mismatch',
+                type: 'offline-mutation-sync-auth-mismatch',
                 ownerId,
             });
             continue;
         }
 
-        const result = await syncPendingCreations(ownerId, token, refreshedToken =>
+        const result = await syncPendingMutations(ownerId, token, refreshedToken =>
             updateCredential(ownerId, refreshedToken),
         );
         await notifyClients({
-            type: 'offline-creation-sync-complete',
+            type: 'offline-mutation-sync-complete',
             ownerId,
             collections: result.collections,
             snippets: result.snippets,
@@ -133,8 +137,8 @@ async function syncOfflineCreations() {
 }
 
 worker.addEventListener('sync', event => {
-    if (event.tag !== OFFLINE_CREATION_SYNC_TAG) return;
-    event.waitUntil(syncOfflineCreations());
+    if (event.tag !== OFFLINE_MUTATION_SYNC_TAG) return;
+    event.waitUntil(syncOfflineMutations());
 });
 
 type SyncRequestMessageEvent = ExtendableMessageEvent;
@@ -143,11 +147,11 @@ self.addEventListener('message', (event: SyncRequestMessageEvent) => {
         typeof event.data !== 'object' ||
         event.data === null ||
         !('type' in event.data) ||
-        event.data.type !== OFFLINE_CREATION_SYNC_REQUEST
+        event.data.type !== OFFLINE_MUTATION_SYNC_REQUEST
     ) {
         return;
     }
-    event.waitUntil(syncOfflineCreations());
+    event.waitUntil(syncOfflineMutations());
 });
 
 async function updateCredential(ownerId: string, token: string) {

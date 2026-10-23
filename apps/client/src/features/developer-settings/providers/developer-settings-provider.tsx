@@ -4,18 +4,25 @@ import { developerApiClient } from '@/lib/api-client';
 import { apiEndpoints } from '@/lib/api-endpoints';
 import { LOCAL_STORAGE_USER_SETTINGS_KEY } from '@/lib/constants';
 import { toastApiError } from '@/lib/toast-api-error';
-import type {
-    GetDeveloperPreferencesDtoType,
-    UpdateDeveloperPreferencesDtoType,
-} from '@snippetly/common/dto';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import React, { createContext, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { getDeveloperPreferencesDto, updateDeveloperPreferencesDto } from '@snippetly/common/dto';
+import { DEFAULT_DEVELOPER_PREFERENCES } from '@snippetly/common/lib';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import React, { createContext, useEffect, useRef, useState } from 'react';
+import z from 'zod';
 
-type DeveloperSettings = GetDeveloperPreferencesDtoType['output']['preferences'];
-type CodeEditorSettings = DeveloperSettings['codeEditor'];
-type PreferencePatch = UpdateDeveloperPreferencesDtoType['input'];
+type DeveloperSettings = z.infer<typeof getDeveloperPreferencesDto.output>['preferences'];
+export type CodeEditorSettings = DeveloperSettings['codeEditor'];
+export type CodeEditorTheme = CodeEditorSettings['theme'];
+type PreferencePatch = z.input<typeof updateDeveloperPreferencesDto.input>;
+type PreferencesResponse = z.infer<typeof getDeveloperPreferencesDto.output>;
+type UpdatedPreferencesResponse = z.infer<typeof updateDeveloperPreferencesDto.output>;
+type SavePreferencesInput = {
+    developerId: string;
+    patch: PreferencePatch;
+    removeLegacyPreferences?: boolean;
+};
 
-type DeveloperSettingsContextType = {
+export interface DeveloperSettingsContextType {
     state: {
         settings: DeveloperSettings;
         isLoaded: boolean;
@@ -27,93 +34,21 @@ type DeveloperSettingsContextType = {
         setInAppNotificationsEnabled: (enabled: boolean) => void;
         setPushEnabled: (enabled: boolean) => void;
     };
-};
+}
 
-const initialUserSettings: DeveloperSettings = {
-    theme: 'system',
-    colorScheme: 'classic',
-    codeEditor: {
-        theme: 'system',
-        fontSize: 14,
-        fontFamily: 'geist-mono',
-        tabSize: 4,
-        lineWrapping: false,
-        lineNumbers: true,
-    },
-    inAppNotificationsEnabled: true,
-    isPushEnabled: true,
-};
+const initialUserSettings: DeveloperSettings = DEFAULT_DEVELOPER_PREFERENCES;
 
 export const DeveloperSettingsContext = createContext<DeveloperSettingsContextType | undefined>(undefined);
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function loadDeveloperSettings(value: unknown): DeveloperSettings {
-    if (!isRecord(value)) return initialUserSettings;
-
-    const storedEditorSettings = isRecord(value.codeEditor) ? value.codeEditor : {};
-    const editorTheme = storedEditorSettings.theme;
-    const fontSize = storedEditorSettings.fontSize;
-    const fontFamily = storedEditorSettings.fontFamily;
-    const tabSize = storedEditorSettings.tabSize;
-
-    return {
-        theme:
-            value.theme === 'light' || value.theme === 'dark' || value.theme === 'system'
-                ? value.theme
-                : initialUserSettings.theme,
-        colorScheme:
-            value.colorScheme === 'retro' || value.colorScheme === 'coding' || value.colorScheme === 'classic'
-                ? value.colorScheme
-                : initialUserSettings.colorScheme,
-        codeEditor: {
-            theme:
-                editorTheme === 'system' ||
-                editorTheme === 'ayu-light' ||
-                editorTheme === 'one-dark' ||
-                editorTheme === 'dracula'
-                    ? editorTheme
-                    : initialUserSettings.codeEditor.theme,
-            fontSize:
-                typeof fontSize === 'number' && [10, 12, 14, 16, 18, 20, 24].includes(fontSize)
-                    ? fontSize
-                    : initialUserSettings.codeEditor.fontSize,
-            fontFamily:
-                fontFamily === 'geist-mono' || fontFamily === 'system-mono'
-                    ? fontFamily
-                    : initialUserSettings.codeEditor.fontFamily,
-            tabSize:
-                typeof tabSize === 'number' && [2, 4, 8].includes(tabSize)
-                    ? tabSize
-                    : initialUserSettings.codeEditor.tabSize,
-            lineWrapping:
-                typeof storedEditorSettings.lineWrapping === 'boolean'
-                    ? storedEditorSettings.lineWrapping
-                    : initialUserSettings.codeEditor.lineWrapping,
-            lineNumbers:
-                typeof storedEditorSettings.lineNumbers === 'boolean'
-                    ? storedEditorSettings.lineNumbers
-                    : initialUserSettings.codeEditor.lineNumbers,
-        },
-        inAppNotificationsEnabled:
-            typeof value.inAppNotificationsEnabled === 'boolean'
-                ? value.inAppNotificationsEnabled
-                : initialUserSettings.inAppNotificationsEnabled,
-        isPushEnabled:
-            typeof value.isPushEnabled === 'boolean'
-                ? value.isPushEnabled
-                : initialUserSettings.isPushEnabled,
-    };
-}
 
 function getLegacyPreferences(): PreferencePatch | undefined {
     const patch: PreferencePatch = {};
 
     try {
         const legacySettings = localStorage.getItem(LOCAL_STORAGE_USER_SETTINGS_KEY);
-        if (legacySettings) Object.assign(patch, loadDeveloperSettings(JSON.parse(legacySettings)));
+        if (legacySettings) {
+            const parsed = updateDeveloperPreferencesDto.input.safeParse(JSON.parse(legacySettings));
+            if (parsed.success) Object.assign(patch, parsed.data);
+        }
     } catch (error) {
         console.error('Could not read legacy developer settings from local storage.', error);
     }
@@ -128,7 +63,7 @@ function getLegacyPreferences(): PreferencePatch | undefined {
     return Object.keys(patch).length ? patch : undefined;
 }
 
-function removeLegacyPreferences() {
+function removeLegacyPreferences(): void {
     try {
         localStorage.removeItem(LOCAL_STORAGE_USER_SETTINGS_KEY);
         localStorage.removeItem('snippetly:in-app-notifications-enabled');
@@ -148,47 +83,44 @@ export function DeveloperSettingsProvider({ children }: DeveloperSettingsProvide
     const queryKey = ['developer-preferences', developerId];
     const [settings, setSettings] = useState<DeveloperSettings>(initialUserSettings);
     const [initializedDeveloperId, setInitializedDeveloperId] = useState<string>();
-    const handledDeveloperId = useRef<string>();
-    const saveQueue = useRef<Promise<void>>(Promise.resolve());
+    const handledDeveloperId = useRef<string | undefined>(undefined);
 
     const preferencesQuery = useQuery({
         queryKey,
         enabled: status === 'authenticated' && Boolean(developerId),
         retry: false,
         queryFn: () =>
-            developerApiClient.fetch<GetDeveloperPreferencesDtoType['output']>(
-                apiEndpoints.developers.getPreferences.url,
-                { method: apiEndpoints.developers.getPreferences.method },
-            ),
+            developerApiClient.fetch<PreferencesResponse>(apiEndpoints.developers.getPreferences.url, {
+                method: apiEndpoints.developers.getPreferences.method,
+            }),
     });
 
-    const persistPreferences = useCallback(
-        (patch: PreferencePatch) => {
-            if (status !== 'authenticated' || !developerId) return Promise.resolve();
-
-            const save = () =>
-                developerApiClient.fetch<DeveloperSettings>(apiEndpoints.developers.updatePreferences.url, {
+    const { mutate: savePreferences } = useMutation({
+        scope: { id: `developer-preferences-${developerId ?? 'anonymous'}` },
+        mutationFn: ({ patch }: SavePreferencesInput) =>
+            developerApiClient.fetch<UpdatedPreferencesResponse>(
+                apiEndpoints.developers.updatePreferences.url,
+                {
                     method: apiEndpoints.developers.updatePreferences.method,
                     body: JSON.stringify(patch),
-                });
-            const operation = saveQueue.current.then(save);
-            saveQueue.current = operation.then(
-                () => undefined,
-                error => {
-                    toastApiError(error);
                 },
-            );
-            return operation;
+            ),
+        onSuccess: (preferences, { developerId, removeLegacyPreferences: removeLegacy }) => {
+            queryClient.setQueryData<PreferencesResponse>(['developer-preferences', developerId], {
+                preferences,
+                isInitialized: true,
+            });
+            if (removeLegacy) removeLegacyPreferences();
         },
-        [developerId, status],
-    );
+        onError: toastApiError,
+    });
 
     useEffect(() => {
         if (!developerId || !preferencesQuery.data || handledDeveloperId.current === developerId) return;
         handledDeveloperId.current = developerId;
 
         const legacyPreferences = preferencesQuery.data.isInitialized ? undefined : getLegacyPreferences();
-        const nextSettings = {
+        const nextSettings: DeveloperSettings = {
             ...preferencesQuery.data.preferences,
             ...legacyPreferences,
             codeEditor: {
@@ -200,83 +132,42 @@ export function DeveloperSettingsProvider({ children }: DeveloperSettingsProvide
         setInitializedDeveloperId(developerId);
 
         if (!preferencesQuery.data.isInitialized) {
-            void persistPreferences(nextSettings)
-                .then(() => {
-                    removeLegacyPreferences();
-                    queryClient.setQueryData(queryKey, {
-                        preferences: nextSettings,
-                        isInitialized: true,
-                    });
-                })
-                .catch(() => {
-                    // persistPreferences already reports the failure to the user.
-                });
+            savePreferences({
+                developerId,
+                patch: nextSettings,
+                removeLegacyPreferences: true,
+            });
         } else {
             removeLegacyPreferences();
         }
-    }, [developerId, persistPreferences, preferencesQuery.data, queryClient, queryKey]);
+    }, [developerId, preferencesQuery.data, savePreferences]);
 
     useEffect(() => {
         if (preferencesQuery.isError) toastApiError(preferencesQuery.error);
     }, [preferencesQuery.error, preferencesQuery.isError]);
 
-    const updatePreference = useCallback(
-        (patch: PreferencePatch) => {
-            setSettings(previous => ({
-                ...previous,
-                ...patch,
-                codeEditor: { ...previous.codeEditor, ...patch.codeEditor },
-            }));
-            void persistPreferences(patch).catch(() => {
-                // persistPreferences already reports the failure to the user.
-            });
-        },
-        [persistPreferences],
-    );
+    const updatePreference = (patch: PreferencePatch): void => {
+        setSettings((previous: DeveloperSettings) => ({
+            ...previous,
+            ...patch,
+            codeEditor: { ...previous.codeEditor, ...patch.codeEditor },
+        }));
+        if (status === 'authenticated' && developerId) savePreferences({ developerId, patch });
+    };
 
-    const setTheme = useCallback((theme: Theme) => updatePreference({ theme }), [updatePreference]);
-    const setColorScheme = useCallback(
-        (colorScheme: ColorScheme) => updatePreference({ colorScheme }),
-        [updatePreference],
-    );
-    const updateCodeEditorSettings = useCallback(
-        (codeEditor: Partial<CodeEditorSettings>) => updatePreference({ codeEditor }),
-        [updatePreference],
-    );
-    const setInAppNotificationsEnabled = useCallback(
-        (enabled: boolean) => updatePreference({ inAppNotificationsEnabled: enabled }),
-        [updatePreference],
-    );
-    const setPushEnabled = useCallback(
-        (enabled: boolean) => updatePreference({ isPushEnabled: enabled }),
-        [updatePreference],
-    );
-
-    const contextValue = useMemo<DeveloperSettingsContextType>(
-        () => ({
-            state: {
-                settings,
-                isLoaded: !developerId || initializedDeveloperId === developerId,
-            },
-            actions: {
-                setTheme,
-                setColorScheme,
-                updateCodeEditorSettings,
-                setInAppNotificationsEnabled,
-                setPushEnabled,
-            },
-        }),
-        [
-            developerId,
-            initializedDeveloperId,
+    const contextValue: DeveloperSettingsContextType = {
+        state: {
             settings,
-            setColorScheme,
-            setInAppNotificationsEnabled,
-            setPushEnabled,
-            setTheme,
-            updateCodeEditorSettings,
-        ],
-    );
+            isLoaded: !developerId || initializedDeveloperId === developerId,
+        },
+        actions: {
+            setTheme: theme => updatePreference({ theme }),
+            setColorScheme: colorScheme => updatePreference({ colorScheme }),
+            updateCodeEditorSettings: codeEditor => updatePreference({ codeEditor }),
+            setInAppNotificationsEnabled: enabled => updatePreference({ inAppNotificationsEnabled: enabled }),
+            setPushEnabled: enabled => updatePreference({ isPushEnabled: enabled }),
+        },
+    };
 
     return (
         <DeveloperSettingsContext.Provider value={contextValue}>{children}</DeveloperSettingsContext.Provider>

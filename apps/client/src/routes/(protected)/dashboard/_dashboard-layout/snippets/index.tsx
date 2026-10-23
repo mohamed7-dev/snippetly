@@ -1,10 +1,10 @@
 import { ErrorBoundaryFallback } from '@/components/feedback/error-boundary-fallback';
 import { SectionLoader } from '@/components/feedback/section-loader';
+import { isOfflineDashboardAvailable } from '@/features/offline-snippet/lib/common';
 import { SnippetsPageContentHeader } from '@/features/snippet-listing/components/sections/snippets-page-content-header';
 import { SnippetsPageMainContent } from '@/features/snippet-listing/components/sections/snippets-page-main-content';
 import { SnippetsPageStats } from '@/features/snippet-listing/components/sections/snippets-page-stats';
 import { listCurrentUserSnippetsQueryOptions } from '@/features/snippet-listing/lib/snippet-listing-query-options';
-import { isOfflineDashboardAvailable } from '@/features/offline-snippet/lib/offline-creation-access';
 import { currentUserSnippetListDto } from '@snippetly/common/dto';
 import { createFileRoute } from '@tanstack/react-router';
 import React from 'react';

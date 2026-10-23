@@ -1,4 +1,5 @@
-import { GetDeveloperPreferencesDtoType } from '../schema/index.js';
+import z from 'zod';
+import { getDeveloperPreferencesDto } from '../schema/developer/preferences.api.js';
 
 export const SUPER_ADMIN_IDENTIFIER = 'superadmin';
 export const SUPER_ADMIN_PASSWORD = 'superadmin';
@@ -14,7 +15,7 @@ export const API_PORT = 3000;
 export const AUTH_TOKEN_HEADER_KEY = 'x-session-token';
 export const APP_NAME = 'Snippetly';
 
-type DeveloperPreferencesValues = GetDeveloperPreferencesDtoType['output']['preferences'];
+type DeveloperPreferencesValues = z.infer<typeof getDeveloperPreferencesDto.output>['preferences'];
 
 export const DEFAULT_DEVELOPER_PREFERENCES: DeveloperPreferencesValues = {
     theme: 'system',

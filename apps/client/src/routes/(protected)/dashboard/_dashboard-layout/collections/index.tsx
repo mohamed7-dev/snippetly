@@ -4,7 +4,7 @@ import { CollectionsPageMainContent } from '@/features/collection-listing/compon
 import { CollectionsPageMainContentHeader } from '@/features/collection-listing/components/sections/collections-page-main-content-header';
 import { CollectionsPageStats } from '@/features/collection-listing/components/sections/collections-page-stats';
 import { listCurrentUserCollectionsQueryOptions } from '@/features/collection-listing/lib/collection-listing-query-options';
-import { isOfflineDashboardAvailable } from '@/features/offline-snippet/lib/offline-creation-access';
+import { isOfflineDashboardAvailable } from '@/features/offline-snippet/lib/common';
 import { currentUserCollectionListDto } from '@snippetly/common/dto';
 import { createFileRoute } from '@tanstack/react-router';
 import React from 'react';

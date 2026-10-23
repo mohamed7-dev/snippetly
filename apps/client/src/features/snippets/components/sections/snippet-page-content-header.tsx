@@ -1,9 +1,10 @@
 import { DeveloperIdentity } from '@/components/shared/developer-identity';
 import { Badge } from '@/components/ui/badge';
-import { formatDeveloperInfo } from '@/lib/format-developer-info';
+import { Button } from '@/components/ui/button';
+import { OnlineGuard } from '@/features/offline-snippet/components/shared/online-guard';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
-import { useParams } from '@tanstack/react-router';
-import { GitForkIcon, GlobeIcon, LockIcon } from 'lucide-react';
+import { Link, useParams } from '@tanstack/react-router';
+import { GlobeIcon, LockIcon } from 'lucide-react';
 import { getSnippetQueryOptions } from '../../lib/snippet-query-options';
 import { SnippetActionsDropdown } from '../shared/snippet-actions-dropdown';
 
@@ -15,10 +16,7 @@ export function SnippetPageContentHeader() {
 
     const isPrivate = 'isPrivate' in snippet ? snippet.isPrivate : false;
 
-    const { fullName, initials } = formatDeveloperInfo(snippet.creator);
-
-    const onMutateSuccess = (_data?: any, actionType?: 'add' | 'remove') => {
-        // TODO: update fav info in the cache optimistically
+    const onMutateSuccess = () => {
         queryClient.invalidateQueries(getSnippetQueryOptions(params.id));
     };
     return (
@@ -35,29 +33,19 @@ export function SnippetPageContentHeader() {
                 <SnippetActionsDropdown
                     snippet={snippet}
                     deleteSnippet={{
-                        onSuccess: () => {
-                            onMutateSuccess();
-                        },
+                        onSuccess: onMutateSuccess,
                     }}
                     moveSnippetToTrash={{
-                        onSuccess: () => {
-                            onMutateSuccess();
-                        },
+                        onSuccess: onMutateSuccess,
                     }}
                     forkSnippet={{
-                        onSuccess: () => {
-                            onMutateSuccess();
-                        },
+                        onSuccess: onMutateSuccess,
                     }}
                     addSnippetToFavourites={{
-                        onSuccess: data => {
-                            onMutateSuccess(data, 'add');
-                        },
+                        onSuccess: onMutateSuccess,
                     }}
                     removeSnippetFromFavourites={{
-                        onSuccess: data => {
-                            onMutateSuccess(data, 'remove');
-                        },
+                        onSuccess: onMutateSuccess,
                     }}
                     showViewButton={false}
                 />
@@ -65,12 +53,6 @@ export function SnippetPageContentHeader() {
 
             <div className="flex items-center gap-4 flex-wrap">
                 <DeveloperIdentity developerInfo={snippet.creator} />
-
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                        <GitForkIcon className="h-4 w-4" /> 0
-                    </div>
-                </div>
 
                 <div className="flex items-center gap-2">
                     <Badge variant="secondary" className="font-mono">
@@ -90,15 +72,19 @@ export function SnippetPageContentHeader() {
                 </div>
             </div>
 
-            {!!snippet.tags.length && (
-                <div className="flex items-center gap-2 flex-wrap">
-                    {snippet.tags.map(tag => (
-                        <Badge key={tag.value} variant="outline" className="text-xs">
-                            #{tag.value}
-                        </Badge>
-                    ))}
-                </div>
-            )}
+            <OnlineGuard>
+                {!!snippet.tags.length && (
+                    <div className="flex items-center gap-2 flex-wrap">
+                        {snippet.tags.map(tag => (
+                            <Button key={tag.value} variant="link" size="sm" asChild>
+                                <Link to="/search" search={{ tags: [tag.value] }}>
+                                    #{tag.value}
+                                </Link>
+                            </Button>
+                        ))}
+                    </div>
+                )}
+            </OnlineGuard>
         </div>
     );
 }

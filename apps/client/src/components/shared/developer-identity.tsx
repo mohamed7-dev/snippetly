@@ -46,7 +46,7 @@ export function DeveloperIdentity({ developerInfo, size, as }: DeveloperIdentity
 
     return (
         <Link
-            to="/profile/$id"
+            to="/developers/$id"
             params={{ id: developerInfo.id }}
             preload={false}
             className={identityVariants({ size })}

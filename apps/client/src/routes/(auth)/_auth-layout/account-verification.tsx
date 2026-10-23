@@ -11,7 +11,7 @@ export const Route = createFileRoute('/(auth)/_auth-layout/account-verification'
 
 function AccountVerificationPage() {
     return (
-        <div className="min-h-screen flex items-center justify-center p-1 sm:p-4">
+        <div className="min-h-screen flex items-center justify-center p-1">
             <AccountVerificationCard />
         </div>
     );

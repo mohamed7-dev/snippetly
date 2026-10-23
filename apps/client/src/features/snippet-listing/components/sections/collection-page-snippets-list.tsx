@@ -5,13 +5,16 @@ import { SnippetListLayout } from '@/components/shared/snippet-list-layout';
 import { TagFilterBar } from '@/components/shared/tag-filter-bar';
 import { Button } from '@/components/ui/button';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
+import { getCollectionQueryOptions } from '@/features/collections/lib/query-options';
+import { OnlineGuard } from '@/features/offline-snippet/components/shared/online-guard';
 import {
     listCollectionSnippetsQueryOptions,
     listCurrentUserSnippetsQueryOptions,
 } from '@/features/snippet-listing/lib/snippet-listing-query-options';
 import { SnippetCard } from '@/features/snippets/components/snippet-card';
-import { Permission, snippetListDto } from '@snippetly/common/dto';
-import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import type { ApiSuccess } from '@/lib/api-client';
+import { Permission, snippetListDto, type SnippetListDtoType } from '@snippetly/common/dto';
+import { useQuery, useQueryClient, useSuspenseInfiniteQuery, type InfiniteData } from '@tanstack/react-query';
 import { Link, useNavigate, useParams, useSearch } from '@tanstack/react-router';
 import { Code2Icon, PlusIcon } from 'lucide-react';
 
@@ -19,6 +22,8 @@ export function CollectionPageSnippetsList() {
     const params = useParams({
         from: '/(public)/collections/$id',
     });
+    const { data: collection } = useQuery(getCollectionQueryOptions(params.id));
+
     const search = useSearch({ from: '/(public)/collections/$id' });
     const { sort, filter, filterOperator, tags } = search ?? {};
     const navigate = useNavigate();
@@ -33,10 +38,43 @@ export function CollectionPageSnippetsList() {
 
     const qClient = useQueryClient();
 
-    const onSnippetMutationSuccess = (_data?: any, actionType?: 'add' | 'remove') => {
-        // TODO: update cache optimistically
-        qClient.invalidateQueries(listCollectionSnippetsQueryOptions(params.id, undefined, queryKeys));
+    const onSnippetMutationSuccess = () => {
         qClient.invalidateQueries(listCurrentUserSnippetsQueryOptions());
+    };
+
+    const onFavRes = (snippetId: string, favAction: 'add' | 'remove', branch: 'success' | 'error') => {
+        qClient.setQueriesData<InfiniteData<ApiSuccess<SnippetListDtoType['output']>>>(
+            { queryKey: listCollectionSnippetsQueryOptions(params.id).queryKey },
+            old => {
+                if (!old) return;
+
+                return {
+                    ...old,
+                    pages: old.pages.map(page => ({
+                        ...page,
+                        items: page.items.map(item => {
+                            if (item.id === snippetId) {
+                                return {
+                                    ...item,
+                                    relationshipsWithCurrentUser: {
+                                        ...item.relationshipsWithCurrentUser,
+                                        isFavouritedByCurrentUser:
+                                            favAction === 'add'
+                                                ? branch === 'success'
+                                                    ? true
+                                                    : false
+                                                : branch === 'success'
+                                                  ? false
+                                                  : true,
+                                    },
+                                };
+                            }
+                            return item;
+                        }),
+                    })),
+                };
+            },
+        );
     };
 
     const availableTags = [...new Set(snippets.flatMap(snippet => snippet.tags ?? []).map(tag => tag.value))];
@@ -45,59 +83,61 @@ export function CollectionPageSnippetsList() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <h2 className="font-heading font-semibold text-xl">Snippets ({total})</h2>
-                <div className="flex items-center gap-2">
-                    <TagFilterBar
-                        tags={availableTags}
-                        selectedTags={tags?.values ?? []}
-                        operator={tags?.operator}
-                        onChange={(values, operator) =>
-                            navigate({
-                                to: '.',
-                                search: previous => ({
-                                    ...previous,
-                                    tags: values.length ? { values, operator } : undefined,
-                                }),
-                            })
-                        }
-                    />
-                    <FilterQueryDialog
-                        schema={snippetListDto.input.shape.filter}
-                        value={{ filter, filterOperator }}
-                        onApply={val => navigate({ to: '.', search: prev => ({ ...prev, ...val }) })}
-                    />
-                    <SortQueryDialog
-                        sortSchema={snippetListDto.input.shape.sort}
-                        value={{ sort }}
-                        onApply={val => navigate({ to: '.', search: prev => ({ ...prev, sort: val.sort }) })}
-                    />
-                </div>
+                <OnlineGuard>
+                    <div className="flex items-center gap-2">
+                        <TagFilterBar
+                            tags={availableTags}
+                            selectedTags={tags?.values ?? []}
+                            operator={tags?.operator}
+                            onChange={(values, operator) =>
+                                navigate({
+                                    to: '.',
+                                    search: previous => ({
+                                        ...previous,
+                                        tags: values.length ? { values, operator } : undefined,
+                                    }),
+                                })
+                            }
+                        />
+                        <FilterQueryDialog
+                            schema={snippetListDto.input.shape.filter}
+                            value={{ filter, filterOperator }}
+                            onApply={val => navigate({ to: '.', search: prev => ({ ...prev, ...val }) })}
+                        />
+                        <SortQueryDialog
+                            sortSchema={snippetListDto.input.shape.sort}
+                            value={{ sort }}
+                            onApply={val =>
+                                navigate({ to: '.', search: prev => ({ ...prev, sort: val.sort }) })
+                            }
+                        />
+                    </div>
+                </OnlineGuard>
             </div>
 
-            <SnippetListLayout className="xl:grid-cols-2">
+            <SnippetListLayout className="xl:grid-cols-3">
                 {snippets.map(snippet => (
-                    <PermissionGuard
+                    <SnippetCard
                         key={snippet.id}
-                        requiredPermissions={[Permission.Authenticated, Permission.ReadSnippet]}
-                    >
-                        <SnippetCard
-                            snippet={snippet}
-                            deleteSnippet={{
-                                onSuccess: onSnippetMutationSuccess,
-                            }}
-                            forkSnippet={{
-                                onSuccess: onSnippetMutationSuccess,
-                            }}
-                            moveSnippetToTrash={{
-                                onSuccess: onSnippetMutationSuccess,
-                            }}
-                            addSnippetToFavourites={{
-                                onSuccess: data => onSnippetMutationSuccess(data, 'add'),
-                            }}
-                            removeSnippetFromFavourites={{
-                                onSuccess: data => onSnippetMutationSuccess(data, 'remove'),
-                            }}
-                        />
-                    </PermissionGuard>
+                        snippet={snippet}
+                        deleteSnippet={{
+                            onSuccess: onSnippetMutationSuccess,
+                        }}
+                        forkSnippet={{
+                            onSuccess: onSnippetMutationSuccess,
+                        }}
+                        moveSnippetToTrash={{
+                            onSuccess: onSnippetMutationSuccess,
+                        }}
+                        addSnippetToFavourites={{
+                            onSuccess: () => onFavRes(snippet.id, 'add', 'success'),
+                            onError: () => onFavRes(snippet.id, 'add', 'error'),
+                        }}
+                        removeSnippetFromFavourites={{
+                            onSuccess: () => onFavRes(snippet.id, 'remove', 'success'),
+                            onError: () => onFavRes(snippet.id, 'remove', 'error'),
+                        }}
+                    />
                 ))}
             </SnippetListLayout>
             <InfiniteLoader
@@ -113,14 +153,26 @@ export function CollectionPageSnippetsList() {
                             <h3 className="font-heading font-semibold text-lg mb-2">
                                 No snippets in this collection
                             </h3>
-                            <p className="text-muted-foreground mb-4">
-                                Add your first snippet to get started
-                            </p>
+
                             <PermissionGuard
-                                requiredPermissions={[Permission.Authenticated, Permission.CreateSnippet]}
+                                requiredPermissions={[
+                                    Permission.Authenticated,
+                                    Permission.CreateSnippet,
+                                    Permission.Owner,
+                                ]}
+                                ownerId={collection?.creator.id}
                             >
+                                <p className="text-muted-foreground mb-4">
+                                    Add your first snippet to get started
+                                </p>
                                 <Button asChild>
-                                    <Link to="/dashboard/snippets/new">
+                                    <Link
+                                        to="/dashboard/snippets/new"
+                                        search={{
+                                            collectionId: collection?.id,
+                                            collectionName: collection?.name,
+                                        }}
+                                    >
                                         <PlusIcon className="h-4 w-4 mr-2" />
                                         Add Snippet
                                     </Link>

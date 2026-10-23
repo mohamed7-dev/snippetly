@@ -1,10 +1,7 @@
 import { StatusCard } from '@/components/feedback/status-card';
 import { PageLoadingView } from '@/components/views/page-loading-view';
 import { useAuth } from '@/features/auth/hooks/use-auth';
-import {
-    isOfflineDashboardAvailable,
-    isOfflineDashboardRoute,
-} from '@/features/offline-snippet/lib/offline-creation-access';
+import { isOfflineDashboardAvailable, isOfflineDashboardRoute } from '@/features/offline-snippet/lib/common';
 import { createFileRoute, Outlet, redirect, useRouterState } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/(protected)/dashboard')({

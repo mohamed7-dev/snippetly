@@ -3,10 +3,7 @@ import { PermissionGuard } from '@/features/auth/components/shared/permission-gu
 import { listCurrentUserCollectionsQueryOptions } from '@/features/collection-listing/lib/collection-listing-query-options';
 import { CollectionForm } from '@/features/collections/components/forms/collection-form';
 import { getCollectionQueryOptions } from '@/features/collections/lib/query-options';
-import {
-    getOfflineCreationOwnerId,
-    isOfflineCreationAvailable,
-} from '@/features/offline-snippet/lib/offline-creation-access';
+import { getOfflineOwnerId, isOfflineMutationAvailable } from '@/features/offline-snippet/lib/common';
 import { listPopularTagsQueryOptions } from '@/features/tags/lib/list-tags-query-options';
 import { UpdateCollectionPageHeader } from '@/features/update-collection/components/sections/update-collection-page-header';
 import { useUpdateCollection } from '@/features/update-collection/hooks/use-update-collection';
@@ -43,11 +40,10 @@ export const Route = createFileRoute('/(protected)/dashboard/collections/$id/edi
     },
     beforeLoad: async ({ params: { id }, context: { queryClient, auth } }) => {
         const data = await queryClient.query({ ...getCollectionQueryOptions(id), staleTime: 'static' });
-        const ownerId =
-            auth.user?.id ?? (isOfflineCreationAvailable() ? getOfflineCreationOwnerId() : undefined);
+        const ownerId = auth.user?.id ?? (isOfflineMutationAvailable() ? getOfflineOwnerId() : undefined);
         if (ownerId !== data.creator.id) {
             throw redirect({
-                to: '/profile/$id',
+                to: '/developers/$id',
                 params: { id: data.creator.id },
             });
         }

@@ -15,6 +15,10 @@ export class TagService {
         private readonly listQueryBuilder: ListQueryBuilder,
     ) {}
 
+    /**
+     * @description
+     * Lists tags ordered by usage count and value.
+     */
     public async getPopularTags(ctx: RequestContext, input: PopularTagsDtoType['input']) {
         const qb = this.listQueryBuilder.build(
             Tag,
@@ -32,6 +36,10 @@ export class TagService {
         return { items, itemsCount };
     }
 
+    /**
+     * @description
+     * Finds or creates tags for the distinct supplied values.
+     */
     public async createTagsFromValues(ctx: RequestContext, values: string[]): Promise<Tag[]> {
         const { DeveloperService } = require('./developer.service') as typeof import('./developer.service');
         const developerService =
@@ -45,6 +53,10 @@ export class TagService {
         );
     }
 
+    /**
+     * @description
+     * Gets the tags added by each specified developer.
+     */
     public async getDevelopersTags(ctx: RequestContext, developerIds: string[]) {
         const tagRepo = this.databaseService.getRepository(ctx, Tag);
 
@@ -61,6 +73,11 @@ export class TagService {
         return await qb.getRawMany<{ developerId: string; id: string; value: string; usageCount: number }>();
     }
 
+    /**
+     * @description
+     * Finds a tag by value or creates it with the specified developer as its author.
+     * @internal
+     */
     private async createTagsFromValue(ctx: RequestContext, value: string, addedBy: Developer | null) {
         const repo = this.databaseService.getRepository(ctx, Tag);
         const tag = await repo.findOne({

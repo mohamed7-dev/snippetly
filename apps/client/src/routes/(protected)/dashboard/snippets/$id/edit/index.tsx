@@ -1,12 +1,12 @@
 import { Page } from '@/components/layout/page';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
+import { getOfflineOwnerId, isOfflineMutationAvailable } from '@/features/offline-snippet/lib/common';
 import { listCurrentUserSnippetsQueryOptions } from '@/features/snippet-listing/lib/snippet-listing-query-options';
 import { SnippetFormMainFields } from '@/features/snippets/components/forms/snippet-form-main-fields';
 import { SnippetFormSidebar } from '@/features/snippets/components/forms/snippet-form-sidebar';
 import { getSnippetQueryOptions } from '@/features/snippets/lib/snippet-query-options';
 import { listPopularTagsQueryOptions } from '@/features/tags/lib/list-tags-query-options';
 import { UpdateSnippetPageHeader } from '@/features/update-snippet/components/update-snippet-page-header';
-import { getOfflineCreationOwnerId, isOfflineCreationAvailable } from '@/features/offline-snippet/lib/offline-creation-access';
 import { useUpdateSnippet } from '@/features/update-snippet/hooks/use-update-snippet';
 import {
     updateSnippetFormSchema,
@@ -40,10 +40,10 @@ export const Route = createFileRoute('/(protected)/dashboard/snippets/$id/edit/'
     },
     beforeLoad: async ({ params: { id }, context: { queryClient, auth } }) => {
         const data = await queryClient.query({ ...getSnippetQueryOptions(id) });
-        const ownerId = auth.user?.id ?? (isOfflineCreationAvailable() ? getOfflineCreationOwnerId() : undefined);
+        const ownerId = auth.user?.id ?? (isOfflineMutationAvailable() ? getOfflineOwnerId() : undefined);
         if (ownerId !== data.creator.id) {
             throw redirect({
-                to: '/profile/$id',
+                to: '/developers/$id',
                 params: { id: data.creator.id },
             });
         }

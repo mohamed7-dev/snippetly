@@ -1,9 +1,11 @@
 import { DeveloperIdentity } from '@/components/shared/developer-identity';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
+import { OnlineGuard } from '@/features/offline-snippet/components/shared/online-guard';
 import { Permission } from '@snippetly/common/dto';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
-import { useNavigate, useParams } from '@tanstack/react-router';
+import { Link, useNavigate, useParams } from '@tanstack/react-router';
 import { CalendarIcon, Code2Icon, GlobeIcon, LockIcon } from 'lucide-react';
 import { getCollectionQueryOptions } from '../../lib/query-options';
 import { CollectionActionMenu } from '../shared/collection-action-menu';
@@ -20,9 +22,7 @@ export function CollectionPageMainContent() {
 
     const navigate = useNavigate();
 
-    const onCollectionMutationSuccess = (_data?: any, actionType?: 'add' | 'remove') => {
-        //TODO: update cache optimistically
-
+    const onCollectionMutationSuccess = () => {
         qClient.invalidateQueries(getCollectionQueryOptions(params.id));
     };
 
@@ -52,19 +52,13 @@ export function CollectionPageMainContent() {
                             },
                         }}
                         forkCollection={{
-                            onSuccess: () => {
-                                onCollectionMutationSuccess();
-                            },
+                            onSuccess: onCollectionMutationSuccess,
                         }}
                         addCollectionToFavourites={{
-                            onSuccess: data => {
-                                onCollectionMutationSuccess(data, 'add');
-                            },
+                            onSuccess: onCollectionMutationSuccess,
                         }}
                         removeCollectionFromFavourites={{
-                            onSuccess: data => {
-                                onCollectionMutationSuccess(data, 'remove');
-                            },
+                            onSuccess: onCollectionMutationSuccess,
                         }}
                         showViewButton={false}
                     />
@@ -78,7 +72,7 @@ export function CollectionPageMainContent() {
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                     <div className="flex items-center gap-1">
                         <Code2Icon className="h-4 w-4" />
-                        {collection.snippetCount} snippets
+                        {collection.snippetsCount} snippets
                     </div>
                     <PermissionGuard
                         requiredPermissions={[
@@ -112,15 +106,19 @@ export function CollectionPageMainContent() {
                 </div>
             </div>
 
-            {!!collection.tags.length && (
-                <div className="flex items-center gap-2 mt-4 flex-wrap">
-                    {collection.tags.map(tag => (
-                        <Badge key={tag.value} variant="outline" className="text-xs">
-                            #{tag.value}
-                        </Badge>
-                    ))}
-                </div>
-            )}
+            <OnlineGuard>
+                {!!collection.tags.length && (
+                    <div className="flex items-center gap-2 mt-4 flex-wrap">
+                        {collection.tags.map(tag => (
+                            <Button key={tag.value} variant="link" size="sm" asChild>
+                                <Link to="/search" search={{ tags: [tag.value] }}>
+                                    #{tag.value}
+                                </Link>
+                            </Button>
+                        ))}
+                    </div>
+                )}
+            </OnlineGuard>
         </div>
     );
 }

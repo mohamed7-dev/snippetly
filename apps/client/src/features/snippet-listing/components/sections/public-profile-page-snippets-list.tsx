@@ -6,17 +6,19 @@ import { SnippetListLayout } from '@/components/shared/snippet-list-layout';
 import { TagFilterBar } from '@/components/shared/tag-filter-bar';
 import { Button } from '@/components/ui/button';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
+import { OnlineGuard } from '@/features/offline-snippet/components/shared/online-guard';
 import { getDeveloperProfileQueryOptions } from '@/features/public-profile/lib/public-profile-query-options';
 import { listCreatorSnippetsQueryOptions } from '@/features/snippet-listing/lib/snippet-listing-query-options';
 import { SnippetCard } from '@/features/snippets/components/snippet-card';
-import { Permission, snippetListDto } from '@snippetly/common/dto';
-import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import type { ApiSuccess } from '@/lib/api-client';
+import { Permission, snippetListDto, type SnippetListDtoType } from '@snippetly/common/dto';
+import { useQueryClient, useSuspenseInfiniteQuery, type InfiniteData } from '@tanstack/react-query';
 import { Link, useNavigate, useParams, useSearch } from '@tanstack/react-router';
 import { PlusIcon } from 'lucide-react';
 
 export function PublicProfilePageSnippetsList() {
-    const { snippets: snippetsSearch } = useSearch({ from: '/(public)/profile/$id' }) ?? {};
-    const { id } = useParams({ from: '/(public)/profile/$id' });
+    const { snippets: snippetsSearch } = useSearch({ from: '/(public)/developers/$id/' }) ?? {};
+    const { id } = useParams({ from: '/(public)/developers/$id/' });
     const navigate = useNavigate();
     const qClient = useQueryClient();
     const { sort, filter, filterOperator, tags } = snippetsSearch ?? {};
@@ -33,47 +35,86 @@ export function PublicProfilePageSnippetsList() {
         qClient.invalidateQueries(getDeveloperProfileQueryOptions(id));
     };
 
+    const onFavRes = (snippetId: string, action: 'add' | 'remove', branch: 'success' | 'error') => {
+        qClient.setQueryData<InfiniteData<ApiSuccess<SnippetListDtoType['output']>>>(
+            listCreatorSnippetsQueryOptions(id).queryKey,
+            old => {
+                if (!old) return;
+                return {
+                    ...old,
+                    pages: old.pages.map(page => ({
+                        ...page,
+                        items: page.items.map(item => {
+                            if (item.id === snippetId) {
+                                return {
+                                    ...item,
+                                    relationshipsWithCurrentUser: {
+                                        ...item.relationshipsWithCurrentUser,
+                                        isFavouritedByCurrentUser:
+                                            action === 'add'
+                                                ? branch === 'success'
+                                                    ? true
+                                                    : false
+                                                : branch === 'success'
+                                                  ? false
+                                                  : true,
+                                    },
+                                };
+                            }
+                            return item;
+                        }),
+                    })),
+                };
+            },
+        );
+    };
+
     return (
         <div className="space-y-6">
-            <div className="flex items-center gap-2">
-                <FilterQueryDialog
-                    schema={snippetListDto.input.shape.filter}
-                    value={{ filter, filterOperator }}
-                    onApply={val =>
-                        navigate({
-                            to: '.',
-                            search: prev => ({ ...prev, snippets: { ...prev?.snippets, ...val } }),
-                        })
-                    }
-                />
-                <SortQueryDialog
-                    sortSchema={snippetListDto.input.shape.sort}
-                    value={{ sort }}
-                    onApply={val =>
-                        navigate({
-                            to: '.',
-                            search: prev => ({ ...prev, snippets: { ...prev?.snippets, sort: val.sort } }),
-                        })
-                    }
-                />
-                <TagFilterBar
-                    tags={availableTags}
-                    selectedTags={tags?.values ?? []}
-                    operator={tags?.operator}
-                    onChange={(values, operator) =>
-                        navigate({
-                            to: '.',
-                            search: previous => ({
-                                ...previous,
-                                snippets: {
-                                    ...previous?.snippets,
-                                    tags: values.length ? { values, operator } : undefined,
-                                },
-                            }),
-                        })
-                    }
-                />
-            </div>
+            <OnlineGuard>
+                <div className="flex items-center gap-2">
+                    <FilterQueryDialog
+                        schema={snippetListDto.input.shape.filter}
+                        value={{ filter, filterOperator }}
+                        onApply={val =>
+                            navigate({
+                                to: '.',
+                                search: prev => ({ ...prev, snippets: { ...prev?.snippets, ...val } }),
+                            })
+                        }
+                    />
+                    <SortQueryDialog
+                        sortSchema={snippetListDto.input.shape.sort}
+                        value={{ sort }}
+                        onApply={val =>
+                            navigate({
+                                to: '.',
+                                search: prev => ({
+                                    ...prev,
+                                    snippets: { ...prev?.snippets, sort: val.sort },
+                                }),
+                            })
+                        }
+                    />
+                    <TagFilterBar
+                        tags={availableTags}
+                        selectedTags={tags?.values ?? []}
+                        operator={tags?.operator}
+                        onChange={(values, operator) =>
+                            navigate({
+                                to: '.',
+                                search: previous => ({
+                                    ...previous,
+                                    snippets: {
+                                        ...previous?.snippets,
+                                        tags: values.length ? { values, operator } : undefined,
+                                    },
+                                }),
+                            })
+                        }
+                    />
+                </div>
+            </OnlineGuard>
             <SnippetListLayout>
                 {snippets.map(snippet => (
                     <SnippetCard
@@ -82,6 +123,22 @@ export function PublicProfilePageSnippetsList() {
                         deleteSnippet={{ onSuccess: onMutateSnippetSuccess }}
                         moveSnippetToTrash={{ onSuccess: onMutateSnippetSuccess }}
                         forkSnippet={{ onSuccess: onMutateSnippetSuccess }}
+                        addSnippetToFavourites={{
+                            onSuccess: () => {
+                                onFavRes(snippet.id, 'add', 'success');
+                            },
+                            onError: () => {
+                                onFavRes(snippet.id, 'add', 'error');
+                            },
+                        }}
+                        removeSnippetFromFavourites={{
+                            onSuccess: () => {
+                                onFavRes(snippet.id, 'remove', 'success');
+                            },
+                            onError: () => {
+                                onFavRes(snippet.id, 'remove', 'error');
+                            },
+                        }}
                     />
                 ))}
             </SnippetListLayout>

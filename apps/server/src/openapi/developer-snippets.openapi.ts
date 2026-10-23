@@ -6,6 +6,7 @@ import {
     deleteSnippetDto,
     findOneSnippetDto,
     forkSnippetDto,
+    relatedSnippetsDto,
     restoreSnippetDto,
     snippetListDto,
     updateSnippetDto,
@@ -112,6 +113,15 @@ export function registerDeveloperSnippetsOpenApi(registry: OpenAPIRegistry): voi
         query: userFriendsSnippetsListDto.input,
         response: userFriendsSnippetsListDto.output,
         authenticated: true,
+    });
+
+    registerRoute(registry, {
+        method: 'get',
+        path: '/developer/snippets/{id}/related',
+        tag: 'Snippets',
+        summary: 'Get related snippets',
+        params: relatedSnippetsDto.input,
+        response: relatedSnippetsDto.output,
     });
 
     registerRoute(registry, {

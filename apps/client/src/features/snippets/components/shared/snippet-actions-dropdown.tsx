@@ -4,10 +4,11 @@ import {
     DropdownMenuContent,
     DropdownMenuGroup,
     DropdownMenuItem,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
+import { SignInDropdownMenuItem } from '@/features/auth/components/shared/sign-in-dropdown-menu-item';
+import { useAuth } from '@/features/auth/hooks/use-auth';
 import { listCurrentUserCollectionsQueryOptions } from '@/features/collection-listing/lib/collection-listing-query-options';
 import { AddToFavouritesButton } from '@/features/favourites/components/shared/add-to-favourites-button';
 import { RemoveFromFavouritesButton } from '@/features/favourites/components/shared/remove-from-favourites-button';
@@ -28,7 +29,7 @@ import type { ForkSnippetMutationCallbacks } from '@/features/snippet-fork/hooks
 import { type ApiSuccess } from '@/lib/api-client';
 import { Permission, type SnippetListDtoType } from '@snippetly/common/dto';
 import { useQueryClient } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
+import { Link, useLocation } from '@tanstack/react-router';
 import { EditIcon, EyeIcon, MoreHorizontalIcon } from 'lucide-react';
 import React from 'react';
 import { CopyButton } from './copy-button';
@@ -75,6 +76,8 @@ export function SnippetActionsDropdown({
     showRemoveFromFavButton: requestedShowRemoveFromFavButton = true,
 }: SnippetActionsDropdownProps) {
     const isOnline = useIsOnline();
+    const { status } = useAuth();
+    const location = useLocation();
     const isSnippetCachedOffline = useOfflineEntityAvailability('snippet-details', snippet.id);
     const qClient = useQueryClient();
     const [open, setOpen] = React.useState(false);
@@ -141,7 +144,8 @@ export function SnippetActionsDropdown({
                                 ]}
                             >
                                 <DropdownMenuItem asChild>
-                                    {showRemoveFromFavButton && snippet.isFavouritedByCurrentUser ? (
+                                    {showRemoveFromFavButton &&
+                                    snippet.relationshipsWithCurrentUser.isFavouritedByCurrentUser ? (
                                         <RemoveFromFavouritesButton
                                             variant="ghost"
                                             className="w-full justify-start"
@@ -220,8 +224,6 @@ export function SnippetActionsDropdown({
                                 </DropdownMenuItem>
                             </PermissionGuard>
                         )}
-
-                        {(showDeleteActions || showForkActions) && <DropdownMenuSeparator />}
                     </DropdownMenuGroup>
                 )}
                 {showDeleteActions && (
@@ -290,7 +292,6 @@ export function SnippetActionsDropdown({
                                 </React.Fragment>
                             )}
                         </DropdownMenuItem>
-                        {showForkActions && <DropdownMenuSeparator />}
                     </DropdownMenuGroup>
                 )}
 
@@ -335,6 +336,11 @@ export function SnippetActionsDropdown({
                             )}
                         </DropdownMenuGroup>
                     </PermissionGuard>
+                )}
+                {status === 'unauthenticated' && (
+                    <DropdownMenuGroup>
+                        <SignInDropdownMenuItem redirect={location.href} />
+                    </DropdownMenuGroup>
                 )}
             </DropdownMenuContent>
         </DropdownMenu>

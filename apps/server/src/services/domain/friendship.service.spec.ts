@@ -9,11 +9,11 @@ import { StdoutLoggerStrategy } from '../../config/system/logger/stdout-logger.s
 import { Friendship } from '../../entities/friendships/friendship.entity';
 import { DatabaseService } from '../../infra/database/database.service';
 import { EventBus } from '../../infra/event-bus/event-bus.service';
+import { AppJobEvent } from '../../infra/event-bus/events/app-job.event';
 import { FriendshipEvent } from '../../infra/event-bus/events/friendship.event';
 import { JobQueue } from '../../infra/job-queue/job-qeueue.service';
 import { Logger } from '../../infra/logger/logger';
 import { PushNotificationService } from '../../infra/push-notification/push-notification.service';
-import { AppJobEvent } from '../events/app-job.event';
 import { FriendshipService } from './friendship.service';
 
 describe('FriendshipService job notifications', () => {

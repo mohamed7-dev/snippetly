@@ -6,6 +6,7 @@ import { DeveloperIdentity } from '@/components/shared/developer-identity';
 import { FilterQueryDialog } from '@/components/shared/list-query-builder/filter-query-dialog';
 import { SortQueryDialog } from '@/components/shared/list-query-builder/sort-query-dialog';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DiscoverCollectionsList } from '@/features/collection-listing/components/sections/discover-collections-list';
@@ -18,7 +19,7 @@ import {
     type SendFriendshipRequestDtoType,
 } from '@snippetly/common/dto';
 import { useQueryClient, useSuspenseInfiniteQuery, type InfiniteData } from '@tanstack/react-query';
-import { useNavigate, useSearch } from '@tanstack/react-router';
+import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { discoverDevelopersQueryOptions } from '../../lib/discover-query-options';
@@ -98,7 +99,7 @@ function DevelopersTabContent() {
 
     const onSendingFriendshipRequestSuccess = (data: ApiSuccess<SendFriendshipRequestDtoType['output']>) => {
         qClient.setQueriesData<InfiniteData<ApiSuccess<DeveloperListDtoType['output']>>>(
-            { queryKey: ['discover', 'developers'] },
+            { queryKey: discoverDevelopersQueryOptions().queryKey },
             old => {
                 if (!old) return;
 
@@ -110,9 +111,46 @@ function DevelopersTabContent() {
                             if (item.id === data.addressee.id) {
                                 return {
                                     ...item,
-                                    friendshipInfo: {
-                                        isFriendWithCurrentUser: false,
-                                        friendshipStatus: data.status,
+                                    relationshipWithCurrentUser: {
+                                        ...item.relationshipWithCurrentUser,
+                                        friendshipInfo: {
+                                            isFriendWithCurrentUser: false,
+                                            friendshipStatus: data.status,
+                                        },
+                                    },
+                                };
+                            }
+                            return item;
+                        }),
+                    })),
+                };
+            },
+        );
+    };
+
+    const onFavRes = (developerId: string, favAction: 'add' | 'remove', branch: 'success' | 'error') => {
+        qClient.setQueriesData<InfiniteData<ApiSuccess<DeveloperListDtoType['output']>>>(
+            { queryKey: discoverDevelopersQueryOptions().queryKey },
+            old => {
+                if (!old) return;
+                return {
+                    ...old,
+                    pages: old.pages.map(page => ({
+                        ...page,
+                        items: page.items.map(item => {
+                            if (developerId === item.id) {
+                                return {
+                                    ...item,
+                                    relationshipWithCurrentUser: {
+                                        ...item.relationshipWithCurrentUser,
+                                        isFavouritedByCurrentUser:
+                                            favAction === 'add'
+                                                ? branch === 'success'
+                                                    ? true
+                                                    : false
+                                                : branch === 'success'
+                                                  ? false
+                                                  : true,
                                     },
                                 };
                             }
@@ -152,56 +190,70 @@ function DevelopersTabContent() {
                 />
             </div>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {developers.map(developer => (
-                    <Card key={developer.id} className="hover:shadow-md transition-shadow">
-                        <CardHeader>
-                            <div className="flex items-start justify-between">
-                                <DeveloperIdentity developerInfo={developer} />
-                                <div className="flex items-center gap-2">
-                                    <Badge variant="secondary">
-                                        joined {new Date(developer.createdAt).toLocaleDateString()}
-                                    </Badge>
-                                    <DeveloperActionsDropdown
-                                        developer={developer}
-                                        friendshipInfo={developer.friendshipInfo}
-                                        favouriteInfo={{
-                                            isFavouritedByCurrentUser: developer.isFavouritedByCurrentUser,
-                                        }}
-                                        showRequestFriendship={true}
-                                        showViewProfile={true}
-                                        showAddToFavourites={true}
-                                        showRemoveFromFavourites={true}
-                                        sendFriendshipRequest={{
-                                            onSuccess: onSendingFriendshipRequestSuccess,
-                                        }}
-                                    />
+                {developers.map(developer => {
+                    const { relationshipWithCurrentUser, activity } = developer;
+                    return (
+                        <Card key={developer.id} className="hover:shadow-md transition-shadow">
+                            <CardHeader>
+                                <div className="flex items-start justify-between">
+                                    <DeveloperIdentity developerInfo={developer} />
+                                    <div className="flex items-center gap-2">
+                                        <Badge variant="outline">
+                                            joined {new Date(developer.createdAt).toLocaleDateString()}
+                                        </Badge>
+                                        <DeveloperActionsDropdown
+                                            developer={developer}
+                                            friendshipInfo={relationshipWithCurrentUser.friendshipInfo}
+                                            favouriteInfo={{
+                                                isFavouritedByCurrentUser:
+                                                    relationshipWithCurrentUser.isFavouritedByCurrentUser,
+                                            }}
+                                            showRequestFriendship={true}
+                                            showViewProfile={true}
+                                            showAddToFavourites={true}
+                                            showRemoveFromFavourites={true}
+                                            sendFriendshipRequest={{
+                                                onSuccess: onSendingFriendshipRequestSuccess,
+                                            }}
+                                            addDeveloperToFavourites={{
+                                                onSuccess: () => onFavRes(developer.id, 'add', 'success'),
+                                                onError: () => onFavRes(developer.id, 'add', 'error'),
+                                            }}
+                                            removeDeveloperFromFavourites={{
+                                                onSuccess: () => onFavRes(developer.id, 'remove', 'success'),
+                                                onError: () => onFavRes(developer.id, 'remove', 'error'),
+                                            }}
+                                        />
+                                    </div>
                                 </div>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <p className="text-sm text-muted-foreground">{developer.bio}</p>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <p className="text-sm text-muted-foreground">{developer.bio}</p>
 
-                            <div className="flex gap-4 text-sm capitalize">
-                                <span>
-                                    <strong>{developer.snippetsCount}</strong> snippet
-                                    {developer.snippetsCount !== 1 ? 's' : ''}
-                                </span>
-                                <span>
-                                    <strong>{developer.collectionsCount}</strong> collection
-                                    {developer.collectionsCount !== 1 ? 's' : ''}
-                                </span>
-                            </div>
+                                <div className="flex gap-4 text-sm capitalize">
+                                    <span>
+                                        <strong>{activity.snippetsCount}</strong> snippet
+                                        {activity.snippetsCount !== 1 ? 's' : ''}
+                                    </span>
+                                    <span>
+                                        <strong>{activity.collectionsCount}</strong> collection
+                                        {activity.collectionsCount !== 1 ? 's' : ''}
+                                    </span>
+                                </div>
 
-                            <div className="flex flex-wrap gap-1">
-                                {developer.tags?.map(tag => (
-                                    <Badge key={tag.id} variant="secondary" className="text-xs">
-                                        {tag.value}
-                                    </Badge>
-                                ))}
-                            </div>
-                        </CardContent>
-                    </Card>
-                ))}
+                                <div className="flex flex-wrap gap-1">
+                                    {activity.tags?.map(tag => (
+                                        <Button key={tag.id} variant="link" asChild>
+                                            <Link to={'/search'} search={{ tags: [tag.value] }}>
+                                                #{tag.value}
+                                            </Link>
+                                        </Button>
+                                    ))}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    );
+                })}
             </div>
             <InfiniteLoader
                 fetchNextPage={fetchNextPage}

@@ -190,6 +190,31 @@ export const findOneSnippetDto = {
 
 export type FindOneSnippetDtoType = InferDtoType<typeof findOneSnippetDto>;
 
+//########################### Related snippets ########################################
+const relatedSnippetsInput = inputIdSchema;
+const relatedSnippetsOutput = withServerErrors(
+    z.object({
+        items: z
+            .array(
+                snippet.pick({
+                    id: true,
+                    name: true,
+                    description: true,
+                    language: true,
+                }),
+            )
+            .max(5),
+    }),
+    [userInputErrorSchema, entityNotFoundErrorSchema],
+);
+
+export const relatedSnippetsDto = {
+    input: relatedSnippetsInput,
+    output: relatedSnippetsOutput,
+};
+
+export type RelatedSnippetsDtoType = InferDtoType<typeof relatedSnippetsDto>;
+
 //########################### List ########################################
 const filterSchema = z
     .object({

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiClient, ApiClientError, OfflineNetworkError } from './api-client';
+import { LOCAL_STORAGE_SESSION_TOKEN_KEY } from './constants';
 
 describe('ApiClient', () => {
     beforeEach(() => {
@@ -80,6 +81,14 @@ describe('ApiClient', () => {
         const result = await client.fetch<{ success: boolean }>('/register');
 
         expect(result).toEqual({ success: true });
+    });
+
+    it('stores the session token without coupling token handling to offline sync state', () => {
+        const client = new ApiClient('https://api.example.test');
+
+        client.setAuthToken('session-token');
+
+        expect(localStorage.getItem(LOCAL_STORAGE_SESSION_TOKEN_KEY)).toBe('session-token');
     });
 
     it('throws an informative offline error without making a request when the browser is offline', async () => {

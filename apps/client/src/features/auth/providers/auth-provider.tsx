@@ -1,4 +1,4 @@
-import { requestOfflineCreationSync } from '@/features/offline-snippet/lib/register-background-sync';
+import { requestOfflineMutationSync } from '@/features/offline-snippet/lib/register-background-sync';
 import { removeOfflineSyncCredential, saveOfflineSyncCredential } from '@/features/offline-snippet/lib/store';
 import { developerApiClient, type ApiSuccess } from '@/lib/api-client.js';
 import { apiEndpoints } from '@/lib/api-endpoints.js';
@@ -109,7 +109,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
             try {
                 const ownerId = activeUserData?.id;
-                developerApiClient.setOfflineOwnerId(undefined);
                 await developerApiClient.asAnonymousUser();
                 if (ownerId) await removeOfflineSyncCredential(ownerId);
                 localStorage.removeItem(LOCAL_STORAGE_SESSION_TOKEN_KEY);
@@ -132,8 +131,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         });
     }, [queryClient]);
 
+    // maintains status transitions
+    // makes sure that nothing gets performed while a mutation
+    // is active
     React.useEffect(() => {
-        // we must not perform any side effect while a mutation is active
         if (isActiveAuthMutationInProgress) return;
         if (isLoadingActiveUser) {
             setAuthStatus('verifying');
@@ -165,17 +166,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
     React.useEffect(() => {
         if (activeUserData?.id) {
             localStorage.setItem(LOCAL_STORAGE_OFFLINE_OWNER_ID_KEY, activeUserData.id);
-            developerApiClient.setOfflineOwnerId(activeUserData.id);
-        } else if (authStatus === 'unauthenticated') {
-            developerApiClient.setOfflineOwnerId(undefined);
         }
-    }, [activeUserData?.id, authStatus]);
+    }, [activeUserData?.id]);
 
     const wakeServiceWorkerSync = React.useCallback(async (userId: string) => {
         const token = developerApiClient.getAuthToken();
         if (!token) return;
         await saveOfflineSyncCredential(userId, token);
-        await requestOfflineCreationSync();
+        await requestOfflineMutationSync();
     }, []);
 
     React.useEffect(() => {
@@ -186,13 +184,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
         });
     }, [activeUserData?.id, wakeServiceWorkerSync]);
 
+    // listens to the online event
+    // and updates the session
     React.useEffect(() => {
         const refreshSessionWhenOnline = async () => {
             try {
                 const result = await refetchActiveUser({ throwOnError: true });
                 if (result.data?.id) {
                     localStorage.setItem(LOCAL_STORAGE_OFFLINE_OWNER_ID_KEY, result.data.id);
-                    developerApiClient.setOfflineOwnerId(result.data.id);
                     await wakeServiceWorkerSync(result.data.id);
                 }
             } catch (error) {
@@ -204,6 +203,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return () => window.removeEventListener('online', refreshSessionWhenOnline);
     }, [refetchActiveUser, wakeServiceWorkerSync]);
 
+    // listens to the 'offline-mutation-sync-complete' message sent from the sw
+    // and re-invalidates cached collections, and snippets
     React.useEffect(() => {
         if (!('serviceWorker' in navigator)) return;
 
@@ -212,7 +213,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
                 typeof event.data !== 'object' ||
                 event.data === null ||
                 !('type' in event.data) ||
-                event.data.type !== 'offline-creation-sync-complete'
+                event.data.type !== 'offline-mutation-sync-complete'
             ) {
                 return;
             }

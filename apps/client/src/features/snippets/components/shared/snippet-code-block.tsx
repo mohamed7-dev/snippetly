@@ -84,7 +84,7 @@ export function SnippetCodeBlock({ snippet, readOnly = true, onChange }: Snippet
                                 settings={editorSettings}
                                 hasLocalOverrides={Object.keys(localEditorSettings).length > 0}
                                 onChange={settings =>
-                                    setLocalEditorSettings(previous => ({ ...previous, ...settings }))
+                                    setLocalEditorSettings((previous: any) => ({ ...previous, ...settings }))
                                 }
                                 onReset={() => setLocalEditorSettings({})}
                             />
@@ -124,7 +124,7 @@ export function SnippetCodeBlock({ snippet, readOnly = true, onChange }: Snippet
                             hasLocalOverrides={Object.keys(localEditorSettings).length > 0}
                             settingsOverride={localEditorSettings}
                             onSettingsChange={settings =>
-                                setLocalEditorSettings(previous => ({ ...previous, ...settings }))
+                                setLocalEditorSettings((previous: any) => ({ ...previous, ...settings }))
                             }
                             onResetSettings={() => setLocalEditorSettings({})}
                             onChange={handleCodeChange}

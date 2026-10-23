@@ -1,4 +1,4 @@
-import { Card, CardContent } from '@/components/ui/card';
+import { StatCard } from '@/components/shared/stat-card';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import { getCurrentDeveloperActivityStats } from '@/features/stats/lib/stats-query-options';
 import { Permission } from '@snippetly/common/dto';
@@ -7,57 +7,27 @@ import { ClockIcon, MailIcon, UsersIcon } from 'lucide-react';
 
 export function RequestsPageStats() {
     const { data } = useSuspenseQuery(getCurrentDeveloperActivityStats());
-    const stats = data ?? {
-        snippetsCount: 0,
-        collectionsCount: 0,
-        friendsCount: 0,
-        forkedSnippetsCount: 0,
-        forkedCollectionsCount: 0,
+    const stats = data?.stats ?? {
         friendsInboxCount: 0,
         friendsOutboxCount: 0,
+        friendsCount: 0,
     };
     return (
         <PermissionGuard requiredPermissions={[Permission.Authenticated, Permission.ReadDeveloper]}>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card>
-                    <CardContent className="pt-6">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                                <MailIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                            </div>
-                            <div>
-                                <div className="text-2xl font-bold">{stats.friendsInboxCount}</div>
-                                <p className="text-sm text-muted-foreground">Incoming Requests</p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardContent className="pt-6">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-amber-100 dark:bg-amber-900 rounded-lg">
-                                <ClockIcon className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                            </div>
-                            <div>
-                                <div className="text-2xl font-bold">{stats.friendsOutboxCount}</div>
-                                <p className="text-sm text-muted-foreground">Sent Requests</p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardContent className="pt-6">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
-                                <UsersIcon className="h-5 w-5 text-green-600 dark:text-green-400" />
-                            </div>
-                            <div>
-                                <div className="text-2xl font-bold">{stats.friendsCount}</div>
-                                <p className="text-sm text-muted-foreground">Total Friends</p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                <StatCard icon={MailIcon} value={stats.friendsInboxCount} label="Incoming Requests" />
+                <StatCard
+                    icon={ClockIcon}
+                    value={stats.friendsOutboxCount}
+                    label="Sent Requests"
+                    variant="secondary"
+                />
+                <StatCard
+                    icon={UsersIcon}
+                    value={stats.friendsCount}
+                    label="Total Friends"
+                    variant="secondary"
+                />
             </div>
         </PermissionGuard>
     );

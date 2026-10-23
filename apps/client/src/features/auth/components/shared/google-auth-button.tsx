@@ -34,9 +34,6 @@ export function GoogleAuthButton({ redirect }: { redirect?: string }) {
 
     const { mutateAsync } = useAuthenticateDeveloper({
         onSuccess: async () => {
-            if (window.google) {
-                window.google.accounts.id.cancel();
-            }
             if (!redirect) {
                 await navigate({
                     to: '/dashboard',
@@ -58,6 +55,8 @@ export function GoogleAuthButton({ redirect }: { redirect?: string }) {
 
         let isMounted = true;
         const handleCredentialResponse = async (response: GoogleCredentialResponse) => {
+            window.google?.accounts.id.cancel();
+
             if (!response.credential) {
                 console.error('Google authentication did not return an ID token');
                 return;
@@ -115,7 +114,14 @@ export function GoogleAuthButton({ redirect }: { redirect?: string }) {
     };
 
     return (
-        <Button type="button" variant={'ghost'} size={'lg'} onClick={handleGoogleSignIn} disabled={pending}>
+        <Button
+            type="button"
+            variant={'ghost'}
+            size={'lg'}
+            className="w-full"
+            onClick={handleGoogleSignIn}
+            disabled={pending}
+        >
             {pending ? (
                 'Authenticating...'
             ) : (

@@ -1,17 +1,15 @@
+import { getOfflineOwnerId, queueOfflineSnippetUpdate } from '@/features/offline-snippet/lib/store';
+import { getSnippetQueryOptions } from '@/features/snippets/lib/snippet-query-options';
 import { getCurrentDeveloperActivityStats } from '@/features/stats/lib/stats-query-options';
-import { ApiClientError, developerApiClient, type ApiSuccess } from '@/lib/api-client';
-import { OfflineNetworkError } from '@/lib/api-client';
+import { ApiClientError, developerApiClient, OfflineNetworkError, type ApiSuccess } from '@/lib/api-client';
 import { apiEndpoints } from '@/lib/api-endpoints';
 import { toastApiError } from '@/lib/toast-api-error';
 import type { AsyncActionCallback } from '@/lib/types';
 import type { UpdateSnippetDtoType } from '@snippetly/common/dto';
 import { omit } from '@snippetly/common/lib';
-import { getOfflineCreationOwnerId } from '@/features/offline-snippet/lib/offline-creation-access';
-import { queueOfflineSnippetUpdate } from '@/features/offline-snippet/lib/store';
-import { getSnippetQueryOptions } from '@/features/snippets/lib/snippet-query-options';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
 import React from 'react';
+import { toast } from 'sonner';
 
 export type UpdateSnippetMutationCallbacks = AsyncActionCallback<
     ApiSuccess<UpdateSnippetDtoType['output']>,
@@ -24,7 +22,7 @@ export function useUpdateSnippet(mutationCallbacks?: UpdateSnippetMutationCallba
     return useMutation({
         mutationFn: async (input: UpdateSnippetDtoType['input']) => {
             if (!navigator.onLine) {
-                const ownerId = getOfflineCreationOwnerId();
+                const ownerId = getOfflineOwnerId();
                 if (!ownerId) throw new Error('Sign in on this device before editing snippets offline.');
                 const updated = await queueOfflineSnippetUpdate(ownerId, input);
                 queuedResults.current.add(updated);
@@ -41,7 +39,7 @@ export function useUpdateSnippet(mutationCallbacks?: UpdateSnippetMutationCallba
                 );
             } catch (error) {
                 if (!(error instanceof OfflineNetworkError)) throw error;
-                const ownerId = getOfflineCreationOwnerId();
+                const ownerId = getOfflineOwnerId();
                 if (!ownerId) throw error;
                 const updated = await queueOfflineSnippetUpdate(ownerId, input);
                 queuedResults.current.add(updated);

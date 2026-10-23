@@ -15,7 +15,7 @@ export function AccountRegistrationForm({ isPending }: { isPending: boolean }) {
                     name="firstName"
                     render={({ field }) => {
                         return (
-                            <FormItem>
+                            <FormItem className="flex-1">
                                 <FormLabel>
                                     First Name<sup className="text-sm">*</sup>
                                 </FormLabel>
@@ -32,7 +32,7 @@ export function AccountRegistrationForm({ isPending }: { isPending: boolean }) {
                     name="lastName"
                     render={({ field }) => {
                         return (
-                            <FormItem>
+                            <FormItem className="flex-1">
                                 <FormLabel>
                                     Last Name<sup className="text-sm">*</sup>
                                 </FormLabel>

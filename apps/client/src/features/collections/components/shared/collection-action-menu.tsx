@@ -4,10 +4,11 @@ import {
     DropdownMenuContent,
     DropdownMenuGroup,
     DropdownMenuItem,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
+import { SignInDropdownMenuItem } from '@/features/auth/components/shared/sign-in-dropdown-menu-item';
+import { useAuth } from '@/features/auth/hooks/use-auth';
 import { DeleteCollectionButton } from '@/features/collection-delete/components/delete-collection-button';
 import { MoveCollectionToTrashButton } from '@/features/collection-delete/components/move-collection-to-trash-button';
 import type { DeleteCollectionMutationCallbacks } from '@/features/collection-delete/hooks/use-delete-collection';
@@ -21,12 +22,15 @@ import type {
     RemoveFromFavouritesMutationCallbacks,
 } from '@/features/favourites/hooks/use-favourite-mutation';
 import { favouriteCollectionsQueryOptions } from '@/features/favourites/lib/favourites-query-options';
+import { RemoveCollectionOfflineButton } from '@/features/offline-snippet/components/remove-collection-offline-button';
+import { SaveCollectionOfflineButton } from '@/features/offline-snippet/components/save-collection-offline-button';
 import { useIsOnline } from '@/features/offline-snippet/hooks/use-is-online';
+import { useOfflineCollectionStore } from '@/features/offline-snippet/hooks/use-offline-collection-store';
 import { useOfflineEntityAvailability } from '@/features/offline-snippet/hooks/use-offline-entity-availability';
 import type { ApiSuccess } from '@/lib/api-client';
 import { Permission, type CollectionListDtoType } from '@snippetly/common/dto';
 import { useQueryClient } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
+import { Link, useLocation } from '@tanstack/react-router';
 import { EditIcon, EyeIcon, MoreHorizontalIcon, PlusIcon } from 'lucide-react';
 import React from 'react';
 
@@ -45,6 +49,8 @@ export type CollectionActionMenuProps = {
     showForkButton?: boolean;
     showAddToFavButton?: boolean;
     showRemoveFromFavButton?: boolean;
+    showSaveOfflineButton?: boolean;
+    showRemoveOfflineButton?: boolean;
 };
 export function CollectionActionMenu({
     collection,
@@ -61,11 +67,23 @@ export function CollectionActionMenu({
     showForkButton: requestedShowForkButton = true,
     showAddToFavButton: requestedShowAddToFavButton = true,
     showRemoveFromFavButton: requestedShowRemoveFromFavButton = true,
+    showSaveOfflineButton = true,
+    showRemoveOfflineButton = true,
 }: CollectionActionMenuProps) {
     const isOnline = useIsOnline();
+    const { status } = useAuth();
+    const location = useLocation();
     const isCollectionCachedOffline = useOfflineEntityAvailability('collection-details', collection.id);
     const [open, setOpen] = React.useState(false);
     const qClient = useQueryClient();
+    const {
+        list: { data: offlineCollections },
+    } = useOfflineCollectionStore();
+    const savedOfflineCollection = offlineCollections?.find(item => item.id === collection.id);
+    const isCollectionSavedOffline = !!savedOfflineCollection;
+    const canSaveOffline =
+        offlineCollections !== undefined &&
+        (!savedOfflineCollection || savedOfflineCollection.snippets === undefined);
     const showAddToFavButton = isOnline && requestedShowAddToFavButton;
     const showRemoveFromFavButton = isOnline && requestedShowRemoveFromFavButton;
     const showDeleteButton = isOnline && requestedShowDeleteButton;
@@ -103,7 +121,8 @@ export function CollectionActionMenu({
                         {(showRemoveFromFavButton || showAddToFavButton) && (
                             <PermissionGuard requiredPermissions={[Permission.Authenticated]}>
                                 <DropdownMenuItem asChild>
-                                    {showRemoveFromFavButton && collection.isFavouritedByCurrentUser ? (
+                                    {showRemoveFromFavButton &&
+                                    collection.relationshipsWithCurrentUser.isFavouritedByCurrentUser ? (
                                         <RemoveFromFavouritesButton
                                             resourceType="collections"
                                             resourceId={collection.id}
@@ -147,7 +166,32 @@ export function CollectionActionMenu({
                                 </DropdownMenuItem>
                             </PermissionGuard>
                         )}
-                        {showManageActions && <DropdownMenuSeparator />}
+                    </DropdownMenuGroup>
+                )}
+
+                {((showSaveOfflineButton && canSaveOffline) ||
+                    (showRemoveOfflineButton && isCollectionSavedOffline)) && (
+                    <DropdownMenuGroup>
+                        {showSaveOfflineButton && canSaveOffline && (
+                            <DropdownMenuItem onSelect={event => event.preventDefault()} asChild>
+                                <SaveCollectionOfflineButton
+                                    collection={collection}
+                                    className="w-full justify-start"
+                                    variant="ghost"
+                                    onSuccess={() => setOpen(false)}
+                                />
+                            </DropdownMenuItem>
+                        )}
+                        {showRemoveOfflineButton && isCollectionSavedOffline && (
+                            <DropdownMenuItem onSelect={event => event.preventDefault()} asChild>
+                                <RemoveCollectionOfflineButton
+                                    collectionId={collection.id}
+                                    className="w-full justify-start"
+                                    variant="ghost"
+                                    onSuccess={() => setOpen(false)}
+                                />
+                            </DropdownMenuItem>
+                        )}
                     </DropdownMenuGroup>
                 )}
 
@@ -266,6 +310,11 @@ export function CollectionActionMenu({
                                 </DropdownMenuItem>
                             )}
                         </PermissionGuard>
+                    </DropdownMenuGroup>
+                )}
+                {status === 'unauthenticated' && (
+                    <DropdownMenuGroup>
+                        <SignInDropdownMenuItem redirect={location.href} />
                     </DropdownMenuGroup>
                 )}
             </DropdownMenuContent>

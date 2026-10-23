@@ -53,6 +53,11 @@ export class SnippetService implements OnApplicationBootstrap {
         private readonly jobQueue: JobQueue,
     ) {}
 
+    /**
+     * @description
+     * Registers handlers for queued snippet jobs and publication notifications.
+     * @internal
+     */
     onApplicationBootstrap(): void {
         this.eventBus.registerSyncHandler({
             event: AppJobEvent,
@@ -81,6 +86,11 @@ export class SnippetService implements OnApplicationBootstrap {
         });
     }
 
+    /**
+     * @description
+     * Notifies a snippet author's friends about a published snippet.
+     * @internal
+     */
     private async processPublishedSnippetNotificationJob(
         job: Extract<AppJob, { type: 'notify-friends-of-published-snippet' }>,
     ): Promise<void> {
@@ -121,6 +131,10 @@ export class SnippetService implements OnApplicationBootstrap {
         });
     }
 
+    /**
+     * @description
+     * Finds a snippet by ID, applying visibility and deletion filters.
+     */
     public async findOne(
         ctx: RequestContext,
         input: FindOneSnippetDtoType['input'],
@@ -142,6 +156,10 @@ export class SnippetService implements OnApplicationBootstrap {
         return snippet;
     }
 
+    /**
+     * @description
+     * Lists snippets matching the supplied filters and pagination options.
+     */
     public async find(
         ctx: RequestContext,
         input: SnippetListDtoType['input'],
@@ -235,6 +253,10 @@ export class SnippetService implements OnApplicationBootstrap {
         return { items, itemsCount };
     }
 
+    /**
+     * @description
+     * Lists public snippets published by the specified developer's friends.
+     */
     public async getUserFriendsSnippets(
         ctx: RequestContext,
         developerId: string,
@@ -274,6 +296,14 @@ export class SnippetService implements OnApplicationBootstrap {
         return { items, itemsCount };
     }
 
+    /**
+     * @description
+     * Creates a snippet for the active developer.
+     *
+     * :::info
+     * it emits SnippetEvent#created event
+     * :::
+     */
     public async create(ctx: RequestContext, input: CreateSnippetDtoType['input']) {
         // resolve developer from current active user
         const developer = await this.developerService.getActiveDeveloper(ctx, true);
@@ -319,6 +349,14 @@ export class SnippetService implements OnApplicationBootstrap {
         return snippet;
     }
 
+    /**
+     * @description
+     * Updates a snippet and its collection and tags.
+     *
+     * :::info
+     * it emits SnippetEvent#updated event
+     * :::
+     */
     public async update(ctx: RequestContext, input: UpdateSnippetDtoType['input']) {
         await this.slugValidator.validateSlug(ctx, input, Snippet);
 
@@ -359,6 +397,14 @@ export class SnippetService implements OnApplicationBootstrap {
         return snippet;
     }
 
+    /**
+     * @description
+     * Moves a snippet to the trash.
+     *
+     * :::info
+     * it emits SnippetEvent#soft-deleted event
+     * :::
+     */
     public async softDelete(
         ctx: RequestContext,
         input: DeleteSnippetDtoType['input'],
@@ -382,6 +428,14 @@ export class SnippetService implements OnApplicationBootstrap {
         return { result: 'DELETED', message: '' };
     }
 
+    /**
+     * @description
+     * Restores a snippet from the trash.
+     *
+     * :::info
+     * it emits SnippetEvent#restored event
+     * :::
+     */
     public async restoreFromTrash(
         ctx: RequestContext,
         input: DeleteSnippetDtoType['input'],
@@ -407,6 +461,14 @@ export class SnippetService implements OnApplicationBootstrap {
         return { success: true };
     }
 
+    /**
+     * @description
+     * Permanently deletes a snippet from the trash.
+     *
+     * :::info
+     * it emits SnippetEvent#deleted event
+     * :::
+     */
     public async permanentlyDeleteFromTrash(
         ctx: RequestContext,
         input: DeleteSnippetDtoType['input'],
@@ -431,6 +493,14 @@ export class SnippetService implements OnApplicationBootstrap {
         return { result: 'DELETED', message: '' };
     }
 
+    /**
+     * @description
+     * Forks an eligible snippet for the active developer.
+     *
+     * :::info
+     * it emits SnippetEvent#forked event
+     * :::
+     */
     public async fork(ctx: RequestContext, input: ForkSnippetDtoType['input']) {
         const developer = await this.developerService.getActiveDeveloper(ctx, true);
 
@@ -488,6 +558,11 @@ export class SnippetService implements OnApplicationBootstrap {
         return snippet;
     }
 
+    /**
+     * @description
+     * Counts a collection's snippets, excluding private or deleted snippets by default.
+     * @internal
+     */
     public async countSnippetsInCollection(
         ctx: RequestContext,
         input: { collection: Collection },
@@ -504,6 +579,11 @@ export class SnippetService implements OnApplicationBootstrap {
         return { snippetCount };
     }
 
+    /**
+     * @description
+     * Counts each developer's snippets, excluding private or deleted snippets by default.
+     * @internal
+     */
     public async countDevelopersSnippets(
         ctx: RequestContext,
         developerIds: string[],
@@ -531,6 +611,11 @@ export class SnippetService implements OnApplicationBootstrap {
         return normalizeDeveloperCounts(developerIds, counts);
     }
 
+    /**
+     * @description
+     * Counts each developer's forked snippets, excluding private or deleted snippets by default.
+     * @internal
+     */
     public async countDevelopersForkedSnippets(
         ctx: RequestContext,
         developerIds: string[],
@@ -559,6 +644,11 @@ export class SnippetService implements OnApplicationBootstrap {
         return normalizeDeveloperCounts(developerIds, counts);
     }
 
+    /**
+     * @description
+     * Adds the current developer's favourite status to each snippet-like item.
+     * @internal
+     */
     public async attachFavouriteStatus<T extends { id: string }>(
         ctx: RequestContext,
         items: T[],

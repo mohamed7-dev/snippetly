@@ -1,6 +1,6 @@
 import { LoadingButton } from '@/components/inputs/loading-button';
+import { Button } from '@/components/ui/button';
 import { CardContent, CardFooter } from '@/components/ui/card';
-import { Field } from '@/components/ui/field';
 import type { UserType } from '@/lib/types';
 import { Link, useSearch } from '@tanstack/react-router';
 import React from 'react';
@@ -38,19 +38,17 @@ export function SignInCard({
             </CardContent>
             <CardFooter className="flex-col gap-4">
                 {userType === 'developer' && (
-                    <div className="self-start text-center text-sm mt-4">
+                    <div className="self-start text-center text-sm">
                         <span className="text-muted-foreground">Don't have an account? </span>
-                        <Link to={'/register-account'} className="text-primary hover:underline font-medium">
-                            Register Account
-                        </Link>
+                        <Button variant={'link'} asChild>
+                            <Link to={'/register-account'}>Register Account</Link>
+                        </Button>
                     </div>
                 )}
-                <Field orientation={'vertical'}>
-                    <LoadingButton isLoading={isPending} type="submit" className="w-full">
-                        Sign In
-                    </LoadingButton>
-                    <GoogleAuthButton redirect={redirect} />
-                </Field>
+                <LoadingButton isLoading={isPending} type="submit" className="w-full">
+                    Sign In
+                </LoadingButton>
+                <GoogleAuthButton redirect={redirect} />
             </CardFooter>
         </AuthCard>
     );

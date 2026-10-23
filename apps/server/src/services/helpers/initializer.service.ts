@@ -14,6 +14,14 @@ export class InitializerService {
         private readonly defaultRolesBuilder: DefaultRolesBuilder,
     ) {}
 
+    /**
+     * @description
+     * Initializes default roles and administrators.
+     *
+     * :::info
+     * it emits InitializerEvent
+     * :::
+     */
     public async initialize() {
         this.defaultRolesBuilder.build();
         await this.roleService.initializeRoles();

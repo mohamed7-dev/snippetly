@@ -3,6 +3,7 @@ import { ProfilePageStats } from '@/features/public-profile/components/sections/
 import { ProfilePageTabs } from '@/features/public-profile/components/sections/profile-page-tabs';
 import { getDeveloperProfileQueryOptions } from '@/features/public-profile/lib/public-profile-query-options';
 import { listCreatorSnippetsQueryOptions } from '@/features/snippet-listing/lib/snippet-listing-query-options';
+import { formatDeveloperInfo } from '@/lib/format-developer-info';
 import { collectionListDto, snippetListDto } from '@snippetly/common/dto';
 import { createFileRoute } from '@tanstack/react-router';
 import z from 'zod';
@@ -26,7 +27,7 @@ const tabsSchema = z
     .partial()
     .optional();
 
-export const Route = createFileRoute('/(public)/profile/$id')({
+export const Route = createFileRoute('/(public)/developers/$id/')({
     component: ProfilePage,
     validateSearch: tabsSchema,
     head: async ({ params, match }) => {
@@ -35,25 +36,26 @@ export const Route = createFileRoute('/(public)/profile/$id')({
             ...getDeveloperProfileQueryOptions(params.id),
             staleTime: 'static',
         });
-        const name = data.firstName + ' ' + data.lastName;
+        const { fullName } = formatDeveloperInfo(data);
         return {
             meta: [
                 {
                     name: 'description',
-                    content: data.bio ?? `${name} Profile`,
+                    content: data.bio ?? `${fullName} Profile`,
                 },
                 {
-                    title: name,
+                    title: fullName,
                 },
             ],
         };
     },
     loaderDeps: ({ search: { snippets } = {} }) => ({ ...snippets }),
     loader: async ({ context: { queryClient }, params: { id }, deps }) => {
-        await queryClient.infiniteQuery({
-            ...listCreatorSnippetsQueryOptions(id, deps, Object.values(deps)),
-            staleTime: 'static',
-        });
+        void queryClient
+            .infiniteQuery({
+                ...listCreatorSnippetsQueryOptions(id, deps, Object.values(deps)),
+            })
+            .catch();
         await queryClient.query({ ...getDeveloperProfileQueryOptions(id), staleTime: 'static' });
     },
 });

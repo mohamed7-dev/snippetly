@@ -92,13 +92,11 @@ export function SnippetCard({ snippet, ...props }: SnippetCardProps) {
                 <div className="flex items-center gap-1 mt-3 flex-wrap">
                     {'tags' in snippet
                         ? snippet?.tags?.map(tag => (
-                              <Badge
-                                  key={tag.value}
-                                  variant="outline"
-                                  className="text-xs hover:bg-primary/10 cursor-pointer"
-                              >
-                                  #{tag.value}
-                              </Badge>
+                              <Button key={tag.value} variant="link" size={'sm'}>
+                                  <Link to="/search" search={{ tags: [tag.value] }}>
+                                      #{tag.value}
+                                  </Link>
+                              </Button>
                           ))
                         : null}
                 </div>

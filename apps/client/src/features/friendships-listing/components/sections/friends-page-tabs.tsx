@@ -13,9 +13,10 @@ import { useAuth } from '@/features/auth/hooks/use-auth';
 import { DeveloperActionsDropdown } from '@/features/developer-actions/components/developer-actions-dropdown';
 import { CurrentUserFriendsSnippets } from '@/features/snippet-listing/components/sections/current-user-friends-snippets';
 import { getCurrentDeveloperActivityStats } from '@/features/stats/lib/stats-query-options';
-import { currentUserFriendsListDto } from '@snippetly/common/dto';
+import type { ApiSuccess } from '@/lib/api-client';
+import { currentUserFriendsListDto, type CurrentUserFriendsListDtoType } from '@snippetly/common/dto';
 import { omit } from '@snippetly/common/lib';
-import { useQuery, useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useSuspenseInfiniteQuery, type InfiniteData } from '@tanstack/react-query';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import { PlusIcon } from 'lucide-react';
 import React from 'react';
@@ -38,7 +39,7 @@ export function FriendsPageTabs() {
                     value="friends"
                     onClick={() => navigate({ to: '.', search: prev => ({ ...prev, tab: 'friends' }) })}
                 >
-                    My Friends ({data?.friendsCount ?? 0})
+                    My Friends ({data?.stats?.friendsCount ?? 0})
                 </TabsTrigger>
                 <TabsTrigger
                     value="snippets"
@@ -48,7 +49,7 @@ export function FriendsPageTabs() {
                 </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="friends" className="space-y-6">
+            <TabsContent value="friends">
                 <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
                     <React.Suspense fallback={<SectionLoader />}>
                         <FriendsTabContent />
@@ -56,7 +57,7 @@ export function FriendsPageTabs() {
                 </ErrorBoundary>
             </TabsContent>
 
-            <TabsContent value="snippets" className="space-y-6">
+            <TabsContent value="snippets">
                 <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
                     <React.Suspense fallback={<SectionLoader />}>
                         <CurrentUserFriendsSnippets
@@ -103,15 +104,61 @@ function FriendsTabContent() {
         }
     });
 
-    const onMutateFavSuccess = (actionType: 'add' | 'remove') => {
-        // TODO: update qClient cache to achieve optimistic update to the isFavouritedByCurrentUser prop
-        // and revert to the previous state otherwise, also trigger the re-invalidation
-        qClient.invalidateQueries(listCurrentUserFriendsQueryOptions(undefined, queryKeys));
+    const onFavRes = (developerId: string, favAction: 'add' | 'remove', branch: 'success' | 'error') => {
+        qClient.setQueriesData<InfiniteData<ApiSuccess<CurrentUserFriendsListDtoType['output']>>>(
+            { queryKey: listCurrentUserFriendsQueryOptions().queryKey },
+            old => {
+                if (!old) return;
+                return {
+                    ...old,
+                    pages: old.pages.map(page => ({
+                        ...page,
+                        items: page.items.map(item => {
+                            const friendId =
+                                item.requester.id === user?.id ? item.addressee.id : item.requester.id;
+                            const isFavouritedByCurrentUser =
+                                favAction === 'add'
+                                    ? branch === 'success'
+                                        ? true
+                                        : false
+                                    : branch === 'success'
+                                      ? false
+                                      : true;
+                            if (developerId === friendId) {
+                                return {
+                                    ...item,
+                                    ...(item.requester.id === user?.id
+                                        ? {
+                                              addressee: {
+                                                  ...item.addressee,
+                                                  relationshipWithCurrentUser: {
+                                                      ...item.addressee.relationshipWithCurrentUser,
+                                                      isFavouritedByCurrentUser,
+                                                  },
+                                              },
+                                          }
+                                        : {
+                                              requester: {
+                                                  ...item.requester,
+                                                  relationshipWithCurrentUser: {
+                                                      ...item.requester.relationshipWithCurrentUser,
+                                                      isFavouritedByCurrentUser,
+                                                  },
+                                              },
+                                          }),
+                                };
+                            }
+                            return item;
+                        }),
+                    })),
+                };
+            },
+        );
     };
 
     return (
-        <React.Fragment>
-            <div className="flex items-center gap-4 my-6">
+        <div className="space-y-6">
+            <div className="flex items-center gap-4">
                 <FilterQueryDialog
                     schema={currentUserFriendsListDto.input.shape.filter}
                     value={{ filter, filterOperator }}
@@ -146,26 +193,29 @@ function FriendsTabContent() {
                                         friendshipStatus: item.status,
                                     }}
                                     favouriteInfo={{
-                                        isFavouritedByCurrentUser: item.friend.isFavouritedByCurrentUser,
+                                        isFavouritedByCurrentUser:
+                                            item.friend.relationshipWithCurrentUser.isFavouritedByCurrentUser,
                                     }}
                                     showAddToFavourites={true}
                                     showRemoveFromFavourites={true}
                                     showViewProfile={true}
                                     addDeveloperToFavourites={{
-                                        onSuccess: () => onMutateFavSuccess('add'),
+                                        onSuccess: () => onFavRes(item.friend.id, 'add', 'success'),
+                                        onError: () => onFavRes(item.friend.id, 'add', 'error'),
                                     }}
                                     removeDeveloperFromFavourites={{
-                                        onSuccess: () => onMutateFavSuccess('remove'),
+                                        onSuccess: () => onFavRes(item.friend.id, 'remove', 'success'),
+                                        onError: () => onFavRes(item.friend.id, 'remove', 'error'),
                                     }}
                                 />
                             </div>
                             <p className="text-sm text-muted-foreground text-pretty">{item.friend.bio}</p>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            {!!item.friend.recentSnippets?.length && (
+                            {!!item.friend.activity.recentSnippets?.length && (
                                 <div className="space-y-4">
                                     <p className="text-sm font-medium">Recent Snippets</p>
-                                    {item.friend.recentSnippets?.map(snippet => (
+                                    {item.friend.activity.recentSnippets?.map(snippet => (
                                         <div
                                             key={snippet.id}
                                             className="flex items-center justify-between gap-2 text-sm"
@@ -229,6 +279,6 @@ function FriendsTabContent() {
                     ) : null
                 }
             />
-        </React.Fragment>
+        </div>
     );
 }
