@@ -1,7 +1,9 @@
+import { CardStrip } from '@/components/shared/card-strip';
 import { DeveloperIdentity } from '@/components/shared/developer-identity';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { OnlineGuard } from '@/features/offline-snippet/components/shared/online-guard';
 import type { ApiSuccess } from '@/lib/api-client';
 import { type CollectionListDtoType } from '@snippetly/common/dto';
 import { Link } from '@tanstack/react-router';
@@ -15,7 +17,8 @@ interface CollectionCardProps extends CollectionActionMenuProps {
 export function CollectionCard({ collection, ...props }: CollectionCardProps) {
     const isPrivate = 'isPrivate' in collection ? collection.isPrivate : false;
     return (
-        <Card key={collection.id} className="border-border hover:shadow-lg transition-shadow group">
+        <Card key={collection.id} className="border-border hover:shadow-lg transition-shadow group pt-0">
+            <CardStrip />
             <CardHeader className="space-y-3">
                 <div className="flex items-start justify-between">
                     <div className="flex-1 space-y-2">
@@ -26,7 +29,7 @@ export function CollectionCard({ collection, ...props }: CollectionCardProps) {
                                     backgroundColor: collection.color,
                                 }}
                             />
-                            <CardTitle className="text-lg font-heading capitalize group-hover:text-primary transition-colors">
+                            <CardTitle className="text-lg font-heading capitalize">
                                 <Link to={'/collections/$id'} params={{ id: collection.id }}>
                                     {collection.name}
                                 </Link>
@@ -81,13 +84,18 @@ export function CollectionCard({ collection, ...props }: CollectionCardProps) {
                 {collection.snippets?.length > 0 ? (
                     <div className="space-y-2 mb-4">
                         {collection.snippets.map(snippet => (
-                            <div key={snippet.id} className="flex items-center gap-2 text-sm">
-                                <div className="h-2 w-2 rounded-full bg-muted-foreground/50" />
+                            <Link
+                                key={snippet.id}
+                                to="/snippets/$id"
+                                params={{ id: snippet.id }}
+                                className="flex items-center gap-2 text-sm hover:text-primary"
+                            >
+                                <span className="h-2 w-2 rounded-full bg-muted-foreground/50" />
                                 <span className="flex-1 truncate">{snippet.name}</span>
                                 <Badge variant="outline" className="text-xs font-mono">
                                     {snippet.language}
                                 </Badge>
-                            </div>
+                            </Link>
                         ))}
                         {collection.snippetsCount > collection.snippets.length && (
                             <div className="text-xs text-muted-foreground text-center pt-1">
@@ -101,15 +109,17 @@ export function CollectionCard({ collection, ...props }: CollectionCardProps) {
                     </div>
                 )}
 
-                <div className="flex items-center gap-1 flex-wrap">
-                    {collection.tags?.map(tag => (
-                        <Button key={tag.value} variant={'link'} size="sm" asChild>
-                            <Link to="/search" search={{ tags: [tag.value] }}>
-                                #{tag.value}
-                            </Link>
-                        </Button>
-                    ))}
-                </div>
+                <OnlineGuard>
+                    <div className="flex items-center gap-1 flex-wrap">
+                        {collection.tags?.map(tag => (
+                            <Button key={tag.value} variant={'link'} size="sm" asChild>
+                                <Link to="/search" search={{ tags: [tag.value] }}>
+                                    #{tag.value}
+                                </Link>
+                            </Button>
+                        ))}
+                    </div>
+                </OnlineGuard>
             </CardContent>
         </Card>
     );

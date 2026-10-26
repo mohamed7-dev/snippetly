@@ -31,14 +31,17 @@ export default defineConfig({
     build: {
         rollupOptions: {
             output: {
-                // Improve chunking to keep vendor libs separate
                 manualChunks(id) {
-                    if (id.includes('node_modules')) {
-                        if (id.includes('react')) return 'vendor-react';
-                        if (id.includes('@tanstack')) return 'vendor-tanstack';
-                        if (id.includes('lucide-react')) return 'vendor-icons';
-                        if (id.includes('/prettier/')) return 'vendor-prettier';
-                        return 'vendor';
+                    const normalizedId = id.replaceAll('\\', '/');
+                    if (normalizedId.includes('/node_modules/@tanstack/')) {
+                        return 'vendor-tanstack';
+                    }
+                    if (
+                        normalizedId.includes('/node_modules/react/') ||
+                        normalizedId.includes('/node_modules/react-dom/') ||
+                        normalizedId.includes('/node_modules/scheduler/')
+                    ) {
+                        return 'vendor-react';
                     }
                 },
             },

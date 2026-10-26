@@ -26,10 +26,12 @@ export function SecuritySettingsPagePassword() {
         <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                    <ShieldIcon className="h-5 w-5" />
-                    Password & Security
+                    <ShieldIcon className="size-5 shrink-0 text-primary" aria-hidden="true" />
+                    <h2>Password</h2>
                 </CardTitle>
-                <CardDescription>Update your password to keep your account secure</CardDescription>
+                <CardDescription>
+                    <p>Change your password to help protect your account.</p>
+                </CardDescription>
             </CardHeader>
             <CardContent>
                 <Form {...form}>

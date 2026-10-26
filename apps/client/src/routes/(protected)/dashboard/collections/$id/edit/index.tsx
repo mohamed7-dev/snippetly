@@ -1,11 +1,16 @@
-import { Page } from '@/components/layout/page';
+import { GoToButton } from '@/components/inputs/goto-button';
+import { LoadingButton } from '@/components/inputs/loading-button';
+import { Page, PageTitle } from '@/components/layout/page';
+import { PageActionBar, PageActionBarItem, PageActionBarMenuItem } from '@/components/layout/page-action-bar';
+import { UpdateCollectionIcon } from '@/components/shared/creation-icons';
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
+import { MoveCollectionToTrashButton } from '@/features/collection-delete/components/move-collection-to-trash-button';
 import { listCurrentUserCollectionsQueryOptions } from '@/features/collection-listing/lib/collection-listing-query-options';
 import { CollectionForm } from '@/features/collections/components/forms/collection-form';
 import { getCollectionQueryOptions } from '@/features/collections/lib/query-options';
 import { getOfflineOwnerId, isOfflineMutationAvailable } from '@/features/offline-snippet/lib/common';
 import { listPopularTagsQueryOptions } from '@/features/tags/lib/list-tags-query-options';
-import { UpdateCollectionPageHeader } from '@/features/update-collection/components/sections/update-collection-page-header';
 import { useUpdateCollection } from '@/features/update-collection/hooks/use-update-collection';
 import {
     updateCollectionFormSchema,
@@ -56,6 +61,8 @@ export const Route = createFileRoute('/(protected)/dashboard/collections/$id/edi
 
 function UpdateCollectionPage() {
     const { id } = Route.useParams();
+    const navigate = Route.useNavigate();
+
     const { data } = useQuery(getCollectionQueryOptions(id));
     const qClient = useQueryClient();
     if (!data) {
@@ -82,8 +89,91 @@ function UpdateCollectionPage() {
         <Page
             form={updateCollectionForm}
             submitHandler={updateCollectionForm.handleSubmit(values => mutateAsync(values))}
+            pageHeaderClassName="px-4 md:px-6 py-4 border-b border-border bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 sticky top-0 z-50"
         >
-            <UpdateCollectionPageHeader isPending={isPending} />
+            <PageTitle>Edit Collection</PageTitle>
+            <PageActionBar>
+                <PageActionBarItem hideOnSmallScreens>
+                    <GoToButton label={`Go to collection`} to="/collections/$id" params={{ id: id } as any} />
+                </PageActionBarItem>
+
+                <PageActionBarItem hideOnSmallScreens>
+                    <PermissionGuard
+                        requiredPermissions={[
+                            Permission.Authenticated,
+                            Permission.DeleteCollection,
+                            Permission.Owner,
+                        ]}
+                        ownerId={data.creator.id}
+                    >
+                        <MoveCollectionToTrashButton
+                            collectionId={data.id}
+                            mutationCallbacks={{
+                                onSuccess: () => {
+                                    qClient.invalidateQueries(getCollectionQueryOptions(id));
+                                    navigate({ to: '/dashboard/collections' });
+                                },
+                            }}
+                            type="button"
+                            variant={'destructive-outline'}
+                            className="w-auto"
+                        />
+                    </PermissionGuard>
+                </PageActionBarItem>
+                <PageActionBarItem>
+                    <PermissionGuard
+                        requiredPermissions={[
+                            Permission.Authenticated,
+                            Permission.UpdateCollection,
+                            Permission.Owner,
+                        ]}
+                        ownerId={data.creator.id}
+                        isAvailableOffline
+                    >
+                        <LoadingButton isLoading={isPending} type="submit">
+                            <UpdateCollectionIcon className="size-4 sm:mr-2" />
+                            Save Changes
+                        </LoadingButton>
+                    </PermissionGuard>
+                </PageActionBarItem>
+
+                <PageActionBarMenuItem>
+                    <DropdownMenuItem asChild>
+                        <GoToButton
+                            label={`Go to collection`}
+                            to="/collections/$id"
+                            params={{ id: id } as any}
+                            variant={'ghost'}
+                            className="w-full justify-start"
+                        />
+                    </DropdownMenuItem>
+                </PageActionBarMenuItem>
+                <PageActionBarMenuItem>
+                    <PermissionGuard
+                        requiredPermissions={[
+                            Permission.Authenticated,
+                            Permission.DeleteCollection,
+                            Permission.Owner,
+                        ]}
+                        ownerId={data.creator.id}
+                    >
+                        <DropdownMenuItem asChild>
+                            <MoveCollectionToTrashButton
+                                collectionId={data.id}
+                                mutationCallbacks={{
+                                    onSuccess: () => {
+                                        qClient.invalidateQueries(getCollectionQueryOptions(id));
+                                        navigate({ to: '/dashboard/collections' });
+                                    },
+                                }}
+                                type="button"
+                                variant={'ghost'}
+                                className="w-full justify-start"
+                            />
+                        </DropdownMenuItem>
+                    </PermissionGuard>
+                </PageActionBarMenuItem>
+            </PageActionBar>
             <PermissionGuard
                 requiredPermissions={[
                     Permission.Authenticated,
@@ -91,7 +181,7 @@ function UpdateCollectionPage() {
                     Permission.Owner,
                 ]}
                 ownerId={data.creator.id}
-                isAvailableOffline
+                isAvailableOffline={true}
             >
                 <main className="container mx-auto px-2 lg:px-6 py-8 max-w-2xl">
                     <CollectionForm isPending={isPending} />

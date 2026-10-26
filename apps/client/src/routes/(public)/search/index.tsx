@@ -1,3 +1,4 @@
+import { Page, PageDescription, PageTitle } from '@/components/layout/page';
 import { SearchResultsPage } from '@/features/search/components/search-results-page';
 import { createFileRoute } from '@tanstack/react-router';
 import z from 'zod';
@@ -23,5 +24,16 @@ export const Route = createFileRoute('/(public)/search/')({
 function SearchPage() {
     const { term, tags, types } = Route.useSearch() ?? {};
 
-    return <SearchResultsPage term={term} tags={tags} types={types} />;
+    return (
+        <main>
+            <Page className="container mx-auto max-w-6xl space-y-6 px-4 py-8">
+                <PageTitle>Search results</PageTitle>
+                <PageDescription>
+                    {term ? `Results for “${term}”` : 'Results matching your tags'}
+                    {!!tags?.length && ` · ${tags?.map(tag => `#${tag}`).join(' ')}`}
+                </PageDescription>
+                <SearchResultsPage term={term} tags={tags} types={types} />;
+            </Page>
+        </main>
+    );
 }

@@ -11,7 +11,7 @@ import { formatDeveloperInfo } from '@/lib/format-developer-info';
 import { Permission, userFriendsSnippetsListDto } from '@snippetly/common/dto';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
-import { PlusIcon } from 'lucide-react';
+import { UserSearchIcon } from 'lucide-react';
 import React from 'react';
 import {
     listCreatorSnippetsQueryOptions,
@@ -77,11 +77,11 @@ export function CurrentUserFriendsSnippets({
 
     return (
         <React.Fragment>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-4">
                 <h2 className="font-heading font-semibold text-xl capitalize">
                     {!friendName ? "Friends' Snippets" : `${friendName}'s Snippets`}
                 </h2>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center flex-wrap gap-3">
                     <TagFilterBar
                         tags={availableTags}
                         selectedTags={tags?.values ?? []}
@@ -154,8 +154,8 @@ export function CurrentUserFriendsSnippets({
                             layout="section"
                             actions={
                                 <Button asChild>
-                                    <Link to="/discover">
-                                        <PlusIcon className="h-4 w-4 mr-2" />
+                                    <Link to="/discover" search={{ tab: 'developers' }}>
+                                        <UserSearchIcon />
                                         <span>Discover Developers</span>
                                     </Link>
                                 </Button>

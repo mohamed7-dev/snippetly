@@ -237,7 +237,7 @@ export class DeveloperCollectionController implements AppRouter {
                                   omit(item, ['isPrivate', 'updatedAt', 'deletedAt']),
                               ),
                           }
-                        : result;
+                        : finalResult;
 
                     res.status(200).json(response);
                 },

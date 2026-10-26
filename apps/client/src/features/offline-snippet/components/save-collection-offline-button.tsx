@@ -1,6 +1,7 @@
 import { LoadingButton } from '@/components/inputs/loading-button';
 import { FilterQueryDialog } from '@/components/shared/list-query-builder/filter-query-dialog';
 import { Button } from '@/components/ui/button';
+import { useIsOnline } from '@/features/offline-snippet/hooks/use-is-online';
 import { listCollectionSnippetsQueryOptions } from '@/features/snippet-listing/lib/snippet-listing-query-options';
 import { FilterGroupOperator, snippetListDto, type SnippetListDtoType } from '@snippetly/common/dto';
 import { useQueryClient } from '@tanstack/react-query';
@@ -27,6 +28,7 @@ export function SaveCollectionOfflineButton({
     ...props
 }: SaveCollectionOfflineButtonProps) {
     const queryClient = useQueryClient();
+    const isOnline = useIsOnline();
     const [filterDialogOpen, setFilterDialogOpen] = useState(false);
     const [isFetchingSnippets, setIsFetchingSnippets] = useState(false);
     const {
@@ -42,6 +44,11 @@ export function SaveCollectionOfflineButton({
         filter,
         filterOperator,
     }: Pick<SnippetListDtoType['input'], 'filter'> & { filterOperator?: FilterGroupOperator }) => {
+        if (!navigator.onLine) {
+            toast.error('Connect to the internet to save a collection offline');
+            return;
+        }
+
         setIsFetchingSnippets(true);
         try {
             const query = listCollectionSnippetsQueryOptions(
@@ -70,6 +77,11 @@ export function SaveCollectionOfflineButton({
                 savedAt,
             }));
 
+            if (!navigator.onLine) {
+                toast.error('Connect to the internet to save a collection offline');
+                return;
+            }
+
             if (await mutate({ ...collection, snippets })) onSuccess?.();
         } catch (error) {
             toast.error(
@@ -84,7 +96,12 @@ export function SaveCollectionOfflineButton({
 
     return (
         <>
-            <LoadingButton {...props} onClick={handleOfflineSave} isLoading={isPending || isFetchingSnippets}>
+            <LoadingButton
+                {...props}
+                onClick={handleOfflineSave}
+                disabled={props.disabled || !isOnline}
+                isLoading={isPending || isFetchingSnippets}
+            >
                 <LibraryIcon className="rotate-180" />
                 {label}
             </LoadingButton>

@@ -41,7 +41,6 @@ export function TrashSection({
 }) {
     return (
         <section className="space-y-4">
-            <h2 className="text-xl font-semibold">{title}</h2>
             {isLoading && <StatusCard variant="loading" title={`Loading ${title.toLowerCase()}`} />}
             {isError && (
                 <StatusCard

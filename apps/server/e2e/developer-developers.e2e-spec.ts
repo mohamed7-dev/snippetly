@@ -115,6 +115,21 @@ describe('Developer Account Workflows', () => {
             }
         });
 
+        it('returns an empty discovery page without enriching developers', async () => {
+            const searchParams = transformInputToSearchParams({
+                take: 20,
+                skip: 1000,
+                discover: true,
+            } satisfies DeveloperListDtoType['input']);
+            const res = await developerClient.fetch(`/developers?${searchParams.toString()}`, {
+                method: 'GET',
+            });
+            const result = (await res.json()) as DeveloperListDtoType['output'];
+
+            expect(res.status).toBe(200);
+            expect(result.items).toEqual([]);
+        });
+
         it('returns only public fields when reading a developer profile', async () => {
             const targetDeveloper = server.state.developers[0];
             const res = await developerClient.fetch(`/developers/${targetDeveloper.id}`, { method: 'GET' });

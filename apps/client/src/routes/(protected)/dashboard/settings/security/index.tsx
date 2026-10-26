@@ -1,9 +1,6 @@
+import { Page, PageDescription, PageTitle } from '@/components/layout/page';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import { useAuth } from '@/features/auth/hooks/use-auth';
-import { SecuritySettingsPageAccountDeletion } from '@/features/developer-settings/components/sections/security-settings-page-account-deletion';
-import { SecuritySettingsPageContentHeader } from '@/features/developer-settings/components/sections/security-settings-page-content-header';
-import { SecuritySettingsPageEmail } from '@/features/developer-settings/components/sections/security-settings-page-email';
-import { SecuritySettingsPageEmailChange } from '@/features/developer-settings/components/sections/security-settings-page-email-change';
 import { SecuritySettingsPagePassword } from '@/features/developer-settings/components/sections/security-settings-page-password';
 import { SecuritySettingsPageSessions } from '@/features/developer-settings/components/sections/security-settings-page-sessions';
 import { Permission } from '@snippetly/common/dto';
@@ -25,18 +22,19 @@ export const Route = createFileRoute('/(protected)/dashboard/settings/security/'
 function SecurityPage() {
     const { user } = useAuth();
     return (
-        <div className="flex flex-col gap-6">
-            <SecuritySettingsPageContentHeader />
+        <Page>
+            <PageTitle>Security</PageTitle>
+            <PageDescription>
+                Change your password and review or sign out of devices using your account.
+            </PageDescription>
+
             <PermissionGuard
                 requiredPermissions={[Permission.Authenticated, Permission.Owner, Permission.UpdateDeveloper]}
                 ownerId={user?.id}
             >
-                <SecuritySettingsPageEmail />
-                <SecuritySettingsPageEmailChange />
                 <SecuritySettingsPagePassword />
                 <SecuritySettingsPageSessions />
-                <SecuritySettingsPageAccountDeletion />
             </PermissionGuard>
-        </div>
+        </Page>
     );
 }

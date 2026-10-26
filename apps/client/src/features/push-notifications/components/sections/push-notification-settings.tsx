@@ -3,6 +3,7 @@ import { Switch } from '@/components/ui/switch';
 import { useDeveloperSettings } from '@/features/developer-settings/hooks/use-developer-settings';
 import { developerApiClient } from '@/lib/api-client';
 import { apiEndpoints } from '@/lib/api-endpoints';
+import { BellRingIcon } from 'lucide-react';
 import {
     type GetPushNotificationPublicKeyDtoType,
     type SavePushNotificationSubscriptionDtoType,
@@ -149,7 +150,10 @@ export function PushNotificationSettings() {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Push notifications</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                    <BellRingIcon className="size-5 shrink-0 text-primary" aria-hidden="true" />
+                    Push notifications
+                </CardTitle>
                 <CardDescription>
                     Allow browser notifications when a friend publishes a public snippet, including when
                     Snippetly is closed. Your browser must grant notification permission.

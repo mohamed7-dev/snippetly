@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import { useAuth } from '@/features/auth/hooks/use-auth';
+import { OnlineGuard } from '@/features/offline-snippet/components/shared/online-guard';
 import { formatDeveloperInfo } from '@/lib/format-developer-info';
 import {
     favouriteCollectionsListDto,
@@ -46,53 +47,55 @@ export function FavouriteSnippetsList() {
 
     return (
         <div className="space-y-6">
-            <PermissionGuard requiredPermissions={[Permission.Authenticated, Permission.ReadFavourite]}>
-                <div className="flex items-center gap-2">
-                    <FilterQueryDialog
-                        schema={favouriteSnippetsListDto.input.shape.filter}
-                        value={{ filter, filterOperator }}
-                        onApply={value =>
-                            navigate({
-                                to: '.',
-                                search: previous => ({
-                                    ...previous,
-                                    snippets: { ...previous?.snippets, ...value },
-                                }),
-                            })
-                        }
-                    />
-                    <SortQueryDialog
-                        sortSchema={favouriteSnippetsListDto.input.shape.sort}
-                        value={{ sort }}
-                        onApply={value =>
-                            navigate({
-                                to: '.',
-                                search: previous => ({
-                                    ...previous,
-                                    snippets: { ...previous?.snippets, sort: value.sort },
-                                }),
-                            })
-                        }
-                    />
-                    <TagFilterBar
-                        tags={availableTags}
-                        selectedTags={tags?.values ?? []}
-                        operator={tags?.operator}
-                        onChange={(values, operator) =>
-                            navigate({
-                                to: '.',
-                                search: previous => ({
-                                    ...previous,
-                                    snippets: {
-                                        ...previous?.snippets,
-                                        tags: values.length ? { values, operator } : undefined,
-                                    },
-                                }),
-                            })
-                        }
-                    />
-                </div>
-            </PermissionGuard>
+            <OnlineGuard>
+                <PermissionGuard requiredPermissions={[Permission.Authenticated, Permission.ReadFavourite]}>
+                    <div className="flex items-center flex-wrap gap-2">
+                        <FilterQueryDialog
+                            schema={favouriteSnippetsListDto.input.shape.filter}
+                            value={{ filter, filterOperator }}
+                            onApply={value =>
+                                navigate({
+                                    to: '.',
+                                    search: previous => ({
+                                        ...previous,
+                                        snippets: { ...previous?.snippets, ...value },
+                                    }),
+                                })
+                            }
+                        />
+                        <SortQueryDialog
+                            sortSchema={favouriteSnippetsListDto.input.shape.sort}
+                            value={{ sort }}
+                            onApply={value =>
+                                navigate({
+                                    to: '.',
+                                    search: previous => ({
+                                        ...previous,
+                                        snippets: { ...previous?.snippets, sort: value.sort },
+                                    }),
+                                })
+                            }
+                        />
+                        <TagFilterBar
+                            tags={availableTags}
+                            selectedTags={tags?.values ?? []}
+                            operator={tags?.operator}
+                            onChange={(values, operator) =>
+                                navigate({
+                                    to: '.',
+                                    search: previous => ({
+                                        ...previous,
+                                        snippets: {
+                                            ...previous?.snippets,
+                                            tags: values.length ? { values, operator } : undefined,
+                                        },
+                                    }),
+                                })
+                            }
+                        />
+                    </div>
+                </PermissionGuard>
+            </OnlineGuard>
             <PermissionGuard
                 requiredPermissions={[Permission.Authenticated, Permission.ReadFavourite]}
                 isAvailableOffline={true}
@@ -189,53 +192,55 @@ export function FavouriteCollectionsList() {
 
     return (
         <div className="space-y-6">
-            <PermissionGuard requiredPermissions={[Permission.Authenticated, Permission.ReadFavourite]}>
-                <div className="flex items-center gap-2">
-                    <FilterQueryDialog
-                        schema={favouriteCollectionsListDto.input.shape.filter}
-                        value={{ filter, filterOperator }}
-                        onApply={value =>
-                            navigate({
-                                to: '.',
-                                search: previous => ({
-                                    ...previous,
-                                    collections: { ...previous?.collections, ...value },
-                                }),
-                            })
-                        }
-                    />
-                    <SortQueryDialog
-                        sortSchema={favouriteCollectionsListDto.input.shape.sort}
-                        value={{ sort }}
-                        onApply={value =>
-                            navigate({
-                                to: '.',
-                                search: previous => ({
-                                    ...previous,
-                                    collections: { ...previous?.collections, sort: value.sort },
-                                }),
-                            })
-                        }
-                    />
-                    <TagFilterBar
-                        tags={availableTags}
-                        selectedTags={tags?.values ?? []}
-                        operator={tags?.operator}
-                        onChange={(values, operator) =>
-                            navigate({
-                                to: '.',
-                                search: previous => ({
-                                    ...previous,
-                                    collections: {
-                                        ...previous?.collections,
-                                        tags: values.length ? { values, operator } : undefined,
-                                    },
-                                }),
-                            })
-                        }
-                    />
-                </div>
-            </PermissionGuard>
+            <OnlineGuard>
+                <PermissionGuard requiredPermissions={[Permission.Authenticated, Permission.ReadFavourite]}>
+                    <div className="flex items-center flex-wrap gap-2">
+                        <FilterQueryDialog
+                            schema={favouriteCollectionsListDto.input.shape.filter}
+                            value={{ filter, filterOperator }}
+                            onApply={value =>
+                                navigate({
+                                    to: '.',
+                                    search: previous => ({
+                                        ...previous,
+                                        collections: { ...previous?.collections, ...value },
+                                    }),
+                                })
+                            }
+                        />
+                        <SortQueryDialog
+                            sortSchema={favouriteCollectionsListDto.input.shape.sort}
+                            value={{ sort }}
+                            onApply={value =>
+                                navigate({
+                                    to: '.',
+                                    search: previous => ({
+                                        ...previous,
+                                        collections: { ...previous?.collections, sort: value.sort },
+                                    }),
+                                })
+                            }
+                        />
+                        <TagFilterBar
+                            tags={availableTags}
+                            selectedTags={tags?.values ?? []}
+                            operator={tags?.operator}
+                            onChange={(values, operator) =>
+                                navigate({
+                                    to: '.',
+                                    search: previous => ({
+                                        ...previous,
+                                        collections: {
+                                            ...previous?.collections,
+                                            tags: values.length ? { values, operator } : undefined,
+                                        },
+                                    }),
+                                })
+                            }
+                        />
+                    </div>
+                </PermissionGuard>
+            </OnlineGuard>
 
             <PermissionGuard
                 requiredPermissions={[Permission.Authenticated, Permission.ReadFavourite]}

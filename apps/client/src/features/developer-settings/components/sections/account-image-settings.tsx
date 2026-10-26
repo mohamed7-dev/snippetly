@@ -1,10 +1,10 @@
 import { ProcessStatus } from '@/components/feedback/process-status';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ImagePlusIcon } from 'lucide-react';
+import { ImageIcon } from 'lucide-react';
 import React from 'react';
 import { AvatarField, type AvatarUploadInfo } from '../forms/avatar-field';
 
-export function ProfileSettingsPageAvatar() {
+export function AccountImageSettings() {
     const [uploadInfo, setUploadInfo] = React.useState<AvatarUploadInfo>({
         error: null,
         preview: null,
@@ -18,10 +18,12 @@ export function ProfileSettingsPageAvatar() {
         <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                    <ImagePlusIcon className="h-5 w-5" />
-                    Profile Picture
+                    <ImageIcon className="size-5 shrink-0 text-primary" aria-hidden="true" />
+                    <h2>Profile photo</h2>
                 </CardTitle>
-                <CardDescription>Update your personal profile picture</CardDescription>
+                <CardDescription>
+                    <p>Upload or update the image shown on your profile.</p>
+                </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
                 {!!uploadInfo.error && (

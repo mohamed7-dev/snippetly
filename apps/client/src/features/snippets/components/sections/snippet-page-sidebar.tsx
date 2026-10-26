@@ -1,6 +1,6 @@
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
+import { OnlineGuard } from '@/features/offline-snippet/components/shared/online-guard';
 import { ForkSnippetToCollection } from '@/features/snippet-fork/components/fork-snippet-to-collection';
 import { Permission } from '@snippetly/common/dto';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
@@ -38,11 +38,13 @@ export function SnippetPageSidebar() {
                                         <BookOpenIcon className="size-4 text-muted-foreground" />
                                         <span className="text-muted-foreground">Collection:</span>
                                     </div>
-                                    <Button variant={'link'} className="px-0 truncate underline" asChild>
-                                        <Link to="/collections/$id" params={{ id: collection.id }}>
-                                            {collection.name}
-                                        </Link>
-                                    </Button>
+                                    <Link
+                                        to="/collections/$id"
+                                        params={{ id: collection.id }}
+                                        className="block font-medium truncate hover:text-primary"
+                                    >
+                                        {collection.name}
+                                    </Link>
                                 </div>
                             )}
                             {createdAt && (
@@ -78,42 +80,44 @@ export function SnippetPageSidebar() {
                     </CardContent>
                 </Card>
             </PermissionGuard>
-            <Card>
-                <CardHeader>
-                    <CardTitle className="font-heading text-base">Related Snippets</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                    {isRelatedSnippetsPending ? (
-                        <p className="py-4 text-center text-sm text-muted-foreground">
-                            Loading suggestions...
-                        </p>
-                    ) : isRelatedSnippetsError ? (
-                        <p role="alert" className="py-4 text-center text-sm text-destructive">
-                            Unable to load related snippets.
-                        </p>
-                    ) : relatedSnippets?.items.length ? (
-                        <div className="space-y-4 text-sm">
-                            {relatedSnippets.items.map(relatedSnippet => (
-                                <div key={relatedSnippet.id} className="flex items-center gap-2">
-                                    <div className="size-2 rounded-full bg-muted-foreground/50" />
-                                    <Link
-                                        to="/snippets/$id"
-                                        params={{ id: relatedSnippet.id }}
-                                        preload={false}
-                                        className="block font-medium truncate hover:text-primary"
-                                    >
-                                        {relatedSnippet.name}
-                                    </Link>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <p className="py-4 text-center text-sm text-muted-foreground">
-                            No related snippets found.
-                        </p>
-                    )}
-                </CardContent>
-            </Card>
+            <OnlineGuard>
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="font-heading text-base">Related Snippets</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                        {isRelatedSnippetsPending ? (
+                            <p className="py-4 text-center text-sm text-muted-foreground">
+                                Loading suggestions...
+                            </p>
+                        ) : isRelatedSnippetsError ? (
+                            <p role="alert" className="py-4 text-center text-sm text-destructive">
+                                Unable to load related snippets.
+                            </p>
+                        ) : relatedSnippets?.items.length ? (
+                            <div className="space-y-4 text-sm">
+                                {relatedSnippets.items.map(relatedSnippet => (
+                                    <div key={relatedSnippet.id} className="flex items-center gap-2">
+                                        <div className="size-2 rounded-full bg-muted-foreground/50" />
+                                        <Link
+                                            to="/snippets/$id"
+                                            params={{ id: relatedSnippet.id }}
+                                            preload={false}
+                                            className="block font-medium truncate hover:text-primary"
+                                        >
+                                            {relatedSnippet.name}
+                                        </Link>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="py-4 text-center text-sm text-muted-foreground">
+                                No related snippets found.
+                            </p>
+                        )}
+                    </CardContent>
+                </Card>
+            </OnlineGuard>
         </div>
     );
 }

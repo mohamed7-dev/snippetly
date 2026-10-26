@@ -1,7 +1,11 @@
-import { Page } from '@/components/layout/page';
+import { GoToButton } from '@/components/inputs/goto-button';
+import { LoadingButton } from '@/components/inputs/loading-button';
+import { Page, PageTitle } from '@/components/layout/page';
+import { PageActionBar, PageActionBarItem, PageActionBarMenuItem } from '@/components/layout/page-action-bar';
+import { CreateSnippetIcon } from '@/components/shared/creation-icons';
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import { listCurrentUserCollectionsQueryOptions } from '@/features/collection-listing/lib/collection-listing-query-options';
-import { CreateSnippetPageHeader } from '@/features/create-snippet/components/sections/create-snippet-page-header';
 import { useCreateSnippet } from '@/features/create-snippet/hooks/use-create-snippet';
 import {
     createSnippetFormSchema,
@@ -59,7 +63,7 @@ export const Route = createFileRoute('/(protected)/dashboard/snippets/new/')({
 function CreateSnippetPage() {
     const qClient = useQueryClient();
     const navigate = Route.useNavigate();
-    const { collectionId, collectionName } = Route.useSearch();
+    const { collectionId, collectionName, redirect } = Route.useSearch();
     const [snippetDraft] = React.useState(loadSnippetDraft);
     const form = useForm<CreateSnippetFormSchemaType>({
         defaultValues: {
@@ -94,14 +98,65 @@ function CreateSnippetPage() {
         },
     });
     return (
-        <Page form={form} submitHandler={form.handleSubmit(values => mutateAsync(values))}>
-            <CreateSnippetPageHeader isPending={isPending} />
+        <Page
+            pageHeaderClassName="px-4 md:px-6 py-4 border-b border-border bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 sticky top-0 z-50"
+            form={form}
+            submitHandler={form.handleSubmit(values => mutateAsync(values))}
+        >
+            <PageTitle>Create New Snippet</PageTitle>
+            <PageActionBar>
+                <PageActionBarItem hideOnSmallScreens>
+                    <GoToButton
+                        to={redirect ?? '/dashboard/snippets'}
+                        label={!redirect ? 'Go to Snippets' : 'Go Back'}
+                    />
+                </PageActionBarItem>
+                <PageActionBarItem hideOnSmallScreens>
+                    <PermissionGuard
+                        requiredPermissions={[Permission.Authenticated, Permission.CreateSnippet]}
+                        isAvailableOffline={true}
+                    >
+                        <LoadingButton isLoading={isPending} type="submit">
+                            <CreateSnippetIcon className="size-4" />
+                            Create Snippet
+                        </LoadingButton>
+                    </PermissionGuard>
+                </PageActionBarItem>
+                <PageActionBarMenuItem>
+                    <DropdownMenuItem asChild>
+                        <GoToButton
+                            to={redirect ?? '/dashboard/snippets'}
+                            label={!redirect ? 'Back to Snippets' : 'Go Back'}
+                            variant={'ghost'}
+                            className="justify-start w-full"
+                        />
+                    </DropdownMenuItem>
+                </PageActionBarMenuItem>
+                <PageActionBarMenuItem>
+                    <PermissionGuard
+                        requiredPermissions={[Permission.Authenticated, Permission.CreateSnippet]}
+                        isAvailableOffline={true}
+                    >
+                        <DropdownMenuItem asChild>
+                            <LoadingButton
+                                variant={'ghost'}
+                                className="justify-start w-full"
+                                isLoading={isPending}
+                                type="submit"
+                            >
+                                <CreateSnippetIcon className="size-4" />
+                                Create Snippet
+                            </LoadingButton>
+                        </DropdownMenuItem>
+                    </PermissionGuard>
+                </PageActionBarMenuItem>
+            </PageActionBar>
 
             <PermissionGuard
                 requiredPermissions={[Permission.Authenticated, Permission.CreateSnippet]}
-                isAvailableOffline
+                isAvailableOffline={true}
             >
-                <main className="container mx-auto px-2 lg:px-6 py-8 max-w-6xl">
+                <main className="container mx-auto px-3 lg:px-6 py-6 max-w-6xl">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                         <div className="md:col-span-2 space-y-6">
                             <SnippetFormMainFields isPending={isPending} />

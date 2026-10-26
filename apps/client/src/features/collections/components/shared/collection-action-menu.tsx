@@ -1,4 +1,6 @@
 import { Button } from '@/components/ui/button';
+import { AddSnippetToCollectionIcon } from '@/components/shared/creation-icons';
+import { UpdateCollectionIcon } from '@/components/shared/creation-icons';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -31,7 +33,7 @@ import type { ApiSuccess } from '@/lib/api-client';
 import { Permission, type CollectionListDtoType } from '@snippetly/common/dto';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation } from '@tanstack/react-router';
-import { EditIcon, EyeIcon, MoreHorizontalIcon, PlusIcon } from 'lucide-react';
+import { EyeIcon, MoreHorizontalIcon } from 'lucide-react';
 import React from 'react';
 
 export type CollectionActionMenuProps = {
@@ -82,6 +84,7 @@ export function CollectionActionMenu({
     const savedOfflineCollection = offlineCollections?.find(item => item.id === collection.id);
     const isCollectionSavedOffline = !!savedOfflineCollection;
     const canSaveOffline =
+        isOnline &&
         offlineCollections !== undefined &&
         (!savedOfflineCollection || savedOfflineCollection.snippets === undefined);
     const showAddToFavButton = isOnline && requestedShowAddToFavButton;
@@ -119,7 +122,13 @@ export function CollectionActionMenu({
                         )}
 
                         {(showRemoveFromFavButton || showAddToFavButton) && (
-                            <PermissionGuard requiredPermissions={[Permission.Authenticated]}>
+                            <PermissionGuard
+                                requiredPermissions={[
+                                    Permission.Authenticated,
+                                    Permission.CreateFavourite,
+                                    Permission.DeleteFavourite,
+                                ]}
+                            >
                                 <DropdownMenuItem asChild>
                                     {showRemoveFromFavButton &&
                                     collection.relationshipsWithCurrentUser.isFavouritedByCurrentUser ? (
@@ -216,7 +225,7 @@ export function CollectionActionMenu({
                                                 collectionName: collection.name,
                                             }}
                                         >
-                                            <PlusIcon />
+                                            <AddSnippetToCollectionIcon className="size-4" />
                                             Add New Snippet To Collection
                                         </Link>
                                     </Button>
@@ -239,7 +248,7 @@ export function CollectionActionMenu({
                                             to={'/dashboard/collections/$id/edit'}
                                             params={{ id: collection.id }}
                                         >
-                                            <EditIcon />
+                                            <UpdateCollectionIcon className="size-4" />
                                             Edit Collection
                                         </Link>
                                     </Button>

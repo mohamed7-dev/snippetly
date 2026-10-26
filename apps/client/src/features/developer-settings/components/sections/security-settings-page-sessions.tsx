@@ -32,10 +32,12 @@ export function SecuritySettingsPageSessions() {
         <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                    <MonitorIcon className="h-5 w-5" />
-                    Active sessions
+                    <MonitorIcon className="size-5 shrink-0 text-primary" aria-hidden="true" />
+                    <h2>Active sessions</h2>
                 </CardTitle>
-                <CardDescription>Review devices signed in to your account and sign them out.</CardDescription>
+                <CardDescription>
+                    <p>Review devices signed in to your account and sign them out.</p>
+                </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 {isPending && <p className="text-sm text-muted-foreground">Loading sessions...</p>}

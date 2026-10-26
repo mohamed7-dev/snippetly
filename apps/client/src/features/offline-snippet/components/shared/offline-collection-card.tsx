@@ -1,3 +1,4 @@
+import { CardStrip } from '@/components/shared/card-strip';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { OfflineCollectionItem } from '@/features/offline-snippet/lib/store';
@@ -18,7 +19,7 @@ export function OfflineCollectionCard({
 
     const card = (
         <Card className="h-full overflow-hidden transition-all hover:border-primary/40 hover:shadow-md pt-0">
-            <div className="h-1.5 bg-linear-to-r from-primary via-primary/60 to-transparent" />
+            <CardStrip />
             <CardHeader className="gap-2 px-5 pt-5">
                 <div className="flex items-start justify-between gap-3">
                     {linkWholeCard ? (

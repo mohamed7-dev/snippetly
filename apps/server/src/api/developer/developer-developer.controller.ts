@@ -68,6 +68,11 @@ export class DeveloperDeveloperController implements AppRouter {
                         },
                     );
 
+                    if (result.items.length === 0) {
+                        res.status(200).json(result);
+                        return;
+                    }
+
                     const [
                         developersWithFriendshipInfo,
                         developersWithActivityStats,

@@ -8,7 +8,7 @@ import type { RequestEmailAddressChangeFormSchemaType } from '../../lib/schema';
 export function RequestEmailAddressChangeForm({ isPending }: { isPending: boolean }) {
     const form = useFormContext<RequestEmailAddressChangeFormSchemaType>();
     return (
-        <div className="space-y-4">
+        <div className="space-y-6">
             <FormField
                 control={form.control}
                 name="newEmailAddress"
@@ -47,7 +47,7 @@ export function RequestEmailAddressChangeForm({ isPending }: { isPending: boolea
                 )}
             />
 
-            <LoadingButton isLoading={isPending} type="submit">
+            <LoadingButton isLoading={isPending} type="submit" className="w-full sm:w-auto">
                 Request Change
             </LoadingButton>
         </div>

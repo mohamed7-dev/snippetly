@@ -2,15 +2,16 @@ import { ErrorBoundaryFallback } from '@/components/feedback/error-boundary-fall
 import { InfiniteLoader } from '@/components/feedback/infinite-loader';
 import { SectionLoader } from '@/components/feedback/section-loader';
 import { StatusCard } from '@/components/feedback/status-card';
+import { CardStrip } from '@/components/shared/card-strip';
 import { DeveloperIdentity } from '@/components/shared/developer-identity';
 import { FilterQueryDialog } from '@/components/shared/list-query-builder/filter-query-dialog';
 import { SortQueryDialog } from '@/components/shared/list-query-builder/sort-query-dialog';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DiscoverCollectionsList } from '@/features/collection-listing/components/sections/discover-collections-list';
 import { DeveloperActionsDropdown } from '@/features/developer-actions/components/developer-actions-dropdown';
+import { OnlineGuard } from '@/features/offline-snippet/components/shared/online-guard';
 import { DiscoverSnippetsList } from '@/features/snippet-listing/components/sections/discover-snippets-list';
 import type { ApiSuccess } from '@/lib/api-client';
 import {
@@ -32,7 +33,7 @@ export function DiscoverPageTabs() {
 
     const navigate = useNavigate();
     return (
-        <Tabs defaultValue="developers" value={tab}>
+        <Tabs defaultValue="developers" value={tab} className="space-y-6">
             <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger
                     value="developers"
@@ -46,7 +47,7 @@ export function DiscoverPageTabs() {
                     onClick={() => navigate({ to: '.', search: prev => ({ ...prev, tab: 'snippets' }) })}
                     className="text-xs sm:text-sm font-bold sm:font-semibold"
                 >
-                    Trending Snippets
+                    Snippets
                 </TabsTrigger>
                 <TabsTrigger
                     value="collections"
@@ -57,14 +58,14 @@ export function DiscoverPageTabs() {
                 </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="developers" className="space-y-4 mt-6">
+            <TabsContent value="developers" className="space-y-4">
                 <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
                     <React.Suspense fallback={<SectionLoader />}>
                         <DevelopersTabContent />
                     </React.Suspense>
                 </ErrorBoundary>
             </TabsContent>
-            <TabsContent value="snippets" className="space-y-4 mt-6">
+            <TabsContent value="snippets" className="space-y-4">
                 <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
                     <React.Suspense fallback={<SectionLoader />}>
                         <DiscoverSnippetsList />
@@ -72,7 +73,7 @@ export function DiscoverPageTabs() {
                 </ErrorBoundary>
             </TabsContent>
 
-            <TabsContent value="collections" className="space-y-4 mt-6">
+            <TabsContent value="collections" className="space-y-4">
                 <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
                     <React.Suspense fallback={<SectionLoader />}>
                         <DiscoverCollectionsList />
@@ -164,67 +165,66 @@ function DevelopersTabContent() {
 
     return (
         <React.Fragment>
-            <div className="flex items-center gap-2">
-                <FilterQueryDialog
-                    schema={developerListDto.input.shape.filter}
-                    value={{ filter }}
-                    onApply={val =>
-                        navigate({
-                            to: '.',
-                            search: prev => ({ ...prev, developers: { ...prev?.developers, ...val } }),
-                        })
-                    }
-                />
-                <SortQueryDialog
-                    sortSchema={developerListDto.input.shape.sort}
-                    value={{ sort }}
-                    onApply={val =>
-                        navigate({
-                            to: '.',
-                            search: prev => ({
-                                ...prev,
-                                developers: { ...prev?.developers, sort: val.sort },
-                            }),
-                        })
-                    }
-                />
-            </div>
+            <OnlineGuard>
+                <div className="flex items-center gap-2">
+                    <FilterQueryDialog
+                        schema={developerListDto.input.shape.filter}
+                        value={{ filter }}
+                        onApply={val =>
+                            navigate({
+                                to: '.',
+                                search: prev => ({ ...prev, developers: { ...prev?.developers, ...val } }),
+                            })
+                        }
+                    />
+                    <SortQueryDialog
+                        sortSchema={developerListDto.input.shape.sort}
+                        value={{ sort }}
+                        onApply={val =>
+                            navigate({
+                                to: '.',
+                                search: prev => ({
+                                    ...prev,
+                                    developers: { ...prev?.developers, sort: val.sort },
+                                }),
+                            })
+                        }
+                    />
+                </div>
+            </OnlineGuard>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {developers.map(developer => {
                     const { relationshipWithCurrentUser, activity } = developer;
                     return (
-                        <Card key={developer.id} className="hover:shadow-md transition-shadow">
+                        <Card key={developer.id} className="hover:shadow-md transition-shadow pt-0">
+                            <CardStrip />
                             <CardHeader>
                                 <div className="flex items-start justify-between">
                                     <DeveloperIdentity developerInfo={developer} />
-                                    <div className="flex items-center gap-2">
-                                        <Badge variant="outline">
-                                            joined {new Date(developer.createdAt).toLocaleDateString()}
-                                        </Badge>
-                                        <DeveloperActionsDropdown
-                                            developer={developer}
-                                            friendshipInfo={relationshipWithCurrentUser.friendshipInfo}
-                                            favouriteInfo={{
-                                                isFavouritedByCurrentUser:
-                                                    relationshipWithCurrentUser.isFavouritedByCurrentUser,
-                                            }}
-                                            showRequestFriendship={true}
-                                            showViewProfile={true}
-                                            showAddToFavourites={true}
-                                            showRemoveFromFavourites={true}
-                                            sendFriendshipRequest={{
-                                                onSuccess: onSendingFriendshipRequestSuccess,
-                                            }}
-                                            addDeveloperToFavourites={{
-                                                onSuccess: () => onFavRes(developer.id, 'add', 'success'),
-                                                onError: () => onFavRes(developer.id, 'add', 'error'),
-                                            }}
-                                            removeDeveloperFromFavourites={{
-                                                onSuccess: () => onFavRes(developer.id, 'remove', 'success'),
-                                                onError: () => onFavRes(developer.id, 'remove', 'error'),
-                                            }}
-                                        />
-                                    </div>
+
+                                    <DeveloperActionsDropdown
+                                        developer={developer}
+                                        friendshipInfo={relationshipWithCurrentUser.friendshipInfo}
+                                        favouriteInfo={{
+                                            isFavouritedByCurrentUser:
+                                                relationshipWithCurrentUser.isFavouritedByCurrentUser,
+                                        }}
+                                        showRequestFriendship={true}
+                                        showViewProfile={true}
+                                        showAddToFavourites={true}
+                                        showRemoveFromFavourites={true}
+                                        sendFriendshipRequest={{
+                                            onSuccess: onSendingFriendshipRequestSuccess,
+                                        }}
+                                        addDeveloperToFavourites={{
+                                            onSuccess: () => onFavRes(developer.id, 'add', 'success'),
+                                            onError: () => onFavRes(developer.id, 'add', 'error'),
+                                        }}
+                                        removeDeveloperFromFavourites={{
+                                            onSuccess: () => onFavRes(developer.id, 'remove', 'success'),
+                                            onError: () => onFavRes(developer.id, 'remove', 'error'),
+                                        }}
+                                    />
                                 </div>
                             </CardHeader>
                             <CardContent className="space-y-4">
@@ -241,15 +241,17 @@ function DevelopersTabContent() {
                                     </span>
                                 </div>
 
-                                <div className="flex flex-wrap gap-1">
-                                    {activity.tags?.map(tag => (
-                                        <Button key={tag.id} variant="link" asChild>
-                                            <Link to={'/search'} search={{ tags: [tag.value] }}>
-                                                #{tag.value}
-                                            </Link>
-                                        </Button>
-                                    ))}
-                                </div>
+                                <OnlineGuard>
+                                    <div className="flex flex-wrap gap-1">
+                                        {activity.tags?.map(tag => (
+                                            <Button key={tag.id} variant="link" asChild>
+                                                <Link to={'/search'} search={{ tags: [tag.value] }}>
+                                                    #{tag.value}
+                                                </Link>
+                                            </Button>
+                                        ))}
+                                    </div>
+                                </OnlineGuard>
                             </CardContent>
                         </Card>
                     );

@@ -1,6 +1,7 @@
 import { ErrorBoundaryFallback } from '@/components/feedback/error-boundary-fallback';
 import { InfiniteLoader } from '@/components/feedback/infinite-loader';
 import { SectionLoader } from '@/components/feedback/section-loader';
+import { StatusCard } from '@/components/feedback/status-card';
 import { DeveloperIdentity } from '@/components/shared/developer-identity';
 import { FilterQueryDialog } from '@/components/shared/list-query-builder/filter-query-dialog';
 import { SortQueryDialog } from '@/components/shared/list-query-builder/sort-query-dialog';
@@ -16,7 +17,7 @@ import { getCurrentDeveloperActivityStats } from '@/features/stats/lib/stats-que
 import { currentUserInboxListDto, currentUserOutboxListDto } from '@snippetly/common/dto';
 import { useQuery, useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
-import { ClockIcon, MailIcon, UserPlusIcon } from 'lucide-react';
+import { UserPlusIcon } from 'lucide-react';
 import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import {
@@ -34,7 +35,7 @@ export function RequestsPageTabs() {
     const stats = data?.stats ?? { friendsInboxCount: 0, friendsOutboxCount: 0 };
 
     return (
-        <Tabs defaultValue="incoming" value={tab}>
+        <Tabs defaultValue="incoming" value={tab} className="space-y-6">
             <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger
                     value="incoming"
@@ -88,8 +89,8 @@ function InboxTabContent() {
         qClient.invalidateQueries(listCurrentUserInboxQueryOptions(undefined, queryKeys));
     };
     return (
-        <React.Fragment>
-            <div className="flex items-center gap-4 my-6">
+        <div className="space-y-6">
+            <div className="flex items-center gap-4">
                 <FilterQueryDialog
                     schema={currentUserInboxListDto.input.shape.filter}
                     value={{ filter, filterOperator }}
@@ -185,23 +186,23 @@ function InboxTabContent() {
                 isFetchingNextPage={isFetchingNextPage}
                 Content={
                     !inboxFriendships.length ? (
-                        <div className="text-center py-12">
-                            <MailIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                            <h3 className="text-lg font-semibold mb-2">No Incoming Requests</h3>
-                            <p className="text-muted-foreground mb-4">
-                                You don't have any pending friend requests at the moment.
-                            </p>
-                            <Button asChild>
-                                <Link to="/discover">
-                                    <UserPlusIcon className="h-4 w-4 mr-2" />
-                                    Discover Developers
-                                </Link>
-                            </Button>
-                        </div>
+                        <StatusCard
+                            variant="empty"
+                            title="No Incoming Requests"
+                            description="You don't have any pending friend requests at the moment."
+                            actions={
+                                <Button asChild>
+                                    <Link to="/discover" search={{ tab: 'developers' }}>
+                                        <UserPlusIcon />
+                                        Discover Developers
+                                    </Link>
+                                </Button>
+                            }
+                        />
                     ) : null
                 }
             />
-        </React.Fragment>
+        </div>
     );
 }
 
@@ -224,8 +225,8 @@ export function OutboxTabContent() {
     };
 
     return (
-        <React.Fragment>
-            <div className="flex items-center gap-4 my-6">
+        <div className="space-y-6">
+            <div className="flex items-center gap-4">
                 <FilterQueryDialog
                     schema={currentUserOutboxListDto.input.shape.filter}
                     value={{ filter, filterOperator }}
@@ -309,22 +310,22 @@ export function OutboxTabContent() {
                 isFetchingNextPage={isFetchingNextPage}
                 Content={
                     !outboxFriendships.length ? (
-                        <div className="text-center py-12">
-                            <ClockIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                            <h3 className="text-lg font-semibold mb-2">No Sent Requests</h3>
-                            <p className="text-muted-foreground mb-4">
-                                You haven't sent any friend requests recently.
-                            </p>
-                            <Button asChild>
-                                <Link to="/discover">
-                                    <UserPlusIcon className="h-4 w-4 mr-2" />
-                                    Find People to Connect
-                                </Link>
-                            </Button>
-                        </div>
+                        <StatusCard
+                            variant="empty"
+                            title="No Sent Requests"
+                            description="You haven't sent any friend requests recently."
+                            actions={
+                                <Button asChild>
+                                    <Link to="/discover" search={{ tab: 'developers' }}>
+                                        <UserPlusIcon />
+                                        Discover developers
+                                    </Link>
+                                </Button>
+                            }
+                        />
                     ) : null
                 }
             />
-        </React.Fragment>
+        </div>
     );
 }

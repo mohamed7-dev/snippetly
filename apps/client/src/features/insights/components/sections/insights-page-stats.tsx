@@ -21,7 +21,7 @@ export function InsightsPageStats() {
             requiredPermissions={[Permission.Authenticated, Permission.ReadDeveloper]}
             isAvailableOffline={true}
         >
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 <StatCard icon={Code2Icon} value={stats.snippetsCount} label="Total Snippets" />
                 <StatCard
                     icon={BookOpenIcon}

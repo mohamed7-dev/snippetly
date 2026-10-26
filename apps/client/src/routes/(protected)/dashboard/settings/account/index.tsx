@@ -1,9 +1,11 @@
-import { Page } from '@/components/layout/page';
+import { Page, PageDescription, PageTitle } from '@/components/layout/page';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import { useAuth } from '@/features/auth/hooks/use-auth';
-import { ProfileSettingsPageAvatar } from '@/features/developer-settings/components/sections/profile-settings-page-avatar';
-import { ProfileSettingsPageContentHeader } from '@/features/developer-settings/components/sections/profile-settings-page-content-header';
-import { ProfileSettingsPageForm } from '@/features/developer-settings/components/sections/profile-settings-page-form';
+import { AccountDeletionSettings } from '@/features/developer-settings/components/sections/account-deletion-settings';
+import { AccountEmailAddressChange } from '@/features/developer-settings/components/sections/account-email-address-change';
+import { AccountEmailAddressSettings } from '@/features/developer-settings/components/sections/account-email-address-settings';
+import { AccountImageSettings } from '@/features/developer-settings/components/sections/account-image-settings';
+import { ProfileSettings } from '@/features/developer-settings/components/sections/profile-settings';
 import { useUpdateDeveloperProfile } from '@/features/developer-settings/hooks/use-update-developer-profile';
 import {
     updateDeveloperProfileInfoFormSchema,
@@ -14,20 +16,20 @@ import { Permission } from '@snippetly/common/dto';
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { useForm } from 'react-hook-form';
 
-export const Route = createFileRoute('/(protected)/dashboard/settings/profile')({
-    component: ProfileSettingsPage,
+export const Route = createFileRoute('/(protected)/dashboard/settings/account/')({
+    component: AccountSettingsPage,
     head: () => {
         return {
             meta: [
                 {
-                    title: 'Profile Settings',
+                    title: 'Account Settings',
                 },
             ],
         };
     },
 });
 
-function ProfileSettingsPage() {
+function AccountSettingsPage() {
     const { user, refreshActiveUser } = useAuth();
     if (!user) {
         throw redirect({ to: '/sign-in' });
@@ -54,6 +56,10 @@ function ProfileSettingsPage() {
 
     return (
         <Page form={form} submitHandler={form.handleSubmit(onSubmit)} entity={user}>
+            <PageTitle>Account settings</PageTitle>
+            <PageDescription>
+                Update your profile and email address, or schedule account deletion.
+            </PageDescription>
             <div className="flex flex-col gap-6">
                 <PermissionGuard
                     requiredPermissions={[
@@ -63,11 +69,11 @@ function ProfileSettingsPage() {
                     ]}
                     ownerId={user.id}
                 >
-                    <ProfileSettingsPageContentHeader />
-                    <div className="space-y-8">
-                        <ProfileSettingsPageAvatar />
-                        <ProfileSettingsPageForm isPending={isPending} />
-                    </div>
+                    <AccountImageSettings />
+                    <ProfileSettings isPending={isPending} />
+                    <AccountEmailAddressSettings />
+                    <AccountEmailAddressChange />
+                    <AccountDeletionSettings />
                 </PermissionGuard>
             </div>
         </Page>

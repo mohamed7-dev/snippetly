@@ -1,4 +1,5 @@
 import { StatusCard } from '@/components/feedback/status-card';
+import { CreateSnippetIcon } from '@/components/shared/creation-icons';
 import { Link } from '@tanstack/react-router';
 import { HomeIcon, SearchIcon } from 'lucide-react';
 import { Button } from '../ui/button';
@@ -37,6 +38,7 @@ export function NotFoundPageView({ title, description }: NotFoundMetaData) {
                     <p>Looking for something specific?</p>
                     <div className="flex justify-center space-x-4 mt-2">
                         <Link to="/dashboard/snippets/new" className="text-primary hover:underline">
+                            <CreateSnippetIcon className="mr-1 inline size-4 align-text-bottom" />
                             Create Snippet
                         </Link>
                         <Link to="/dashboard/collections" className="text-primary hover:underline">

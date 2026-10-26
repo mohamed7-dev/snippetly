@@ -1,6 +1,5 @@
+import { Page, PageDescription, PageTitle } from '@/components/layout/page';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
-import { useAuth } from '@/features/auth/hooks/use-auth';
-import { FriendsPageMainContentHeader } from '@/features/friendships-listing/components/sections/friends-page-main-content-header';
 import { FriendsPageTabs } from '@/features/friendships-listing/components/sections/friends-page-tabs';
 import { listCurrentUserFriendsQueryOptions } from '@/features/friendships-listing/lib/friendships-listing-query-options';
 import {
@@ -57,16 +56,13 @@ export const Route = createFileRoute('/(protected)/dashboard/_dashboard-layout/f
 });
 
 function FriendsPage() {
-    const { user } = useAuth();
     return (
-        <div className="space-y-6">
-            <FriendsPageMainContentHeader />
-            <PermissionGuard
-                requiredPermissions={[Permission.Authenticated, Permission.ReadFriendship, Permission.Owner]}
-                ownerId={user?.id}
-            >
+        <Page>
+            <PageTitle>Friends & Community</PageTitle>
+            <PageDescription>Discover and share code snippets with your developer friends</PageDescription>
+            <PermissionGuard requiredPermissions={[Permission.Authenticated, Permission.ReadFriendship]}>
                 <FriendsPageTabs />
             </PermissionGuard>
-        </div>
+        </Page>
     );
 }

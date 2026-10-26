@@ -65,7 +65,7 @@ export function TrashSnippetsList() {
     };
     return (
         <div className="space-y-6">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center flex-wrap gap-3">
                 <FilterQueryDialog
                     schema={currentUserTrashedSnippetListDto.input.shape.filter}
                     value={{ filter, filterOperator }}

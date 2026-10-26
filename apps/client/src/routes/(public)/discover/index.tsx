@@ -1,4 +1,4 @@
-import { DiscoverPageMainContentHeader } from '@/features/discover/components/sections/discover-page-main-content-header';
+import { Page, PageDescription, PageTitle } from '@/components/layout/page';
 import { DiscoverPageTabs } from '@/features/discover/components/sections/discover-page-tabs';
 import { discoverDevelopersQueryOptions } from '@/features/discover/lib/discover-query-options';
 import { collectionListDto, developerListDto, snippetListDto } from '@snippetly/common/dto';
@@ -49,9 +49,12 @@ export const Route = createFileRoute('/(public)/discover/')({
 
 function DiscoverPage() {
     return (
-        <main className="container mx-auto flex flex-col gap-6 px-6 py-8">
-            <DiscoverPageMainContentHeader />
-            <DiscoverPageTabs />
+        <main>
+            <Page className="container mx-auto flex flex-col gap-6 px-3 md:px-6 py-6">
+                <PageTitle>Discover</PageTitle>
+                <PageDescription>Find amazing developers and their code snippets</PageDescription>
+                <DiscoverPageTabs />
+            </Page>
         </main>
     );
 }

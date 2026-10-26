@@ -1,3 +1,4 @@
+import { CardStrip } from '@/components/shared/card-strip';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import type { OfflineSnippetItem } from '@/features/offline-snippet/lib/store';
@@ -15,7 +16,7 @@ export function OfflineSnippetCard({ snippet }: { snippet: OfflineSnippetItem })
             className="group block h-full rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
             <Card className="h-full overflow-hidden py-0 transition-all duration-200 group-hover:-translate-y-1 group-hover:border-primary/40 group-hover:shadow-lg">
-                <div className="h-1.5 bg-linear-to-r from-primary via-primary/60 to-transparent" />
+                <CardStrip />
                 <CardHeader className="gap-4 px-5 pb-0 pt-5">
                     <div className="flex items-start justify-between gap-3">
                         <div className="flex min-w-0 items-start gap-3">

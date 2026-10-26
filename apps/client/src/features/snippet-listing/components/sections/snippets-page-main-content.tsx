@@ -1,4 +1,5 @@
 import { InfiniteLoader } from '@/components/feedback/infinite-loader';
+import { CreateSnippetIcon } from '@/components/shared/creation-icons';
 import { StatusCard } from '@/components/feedback/status-card';
 import { SnippetListLayout } from '@/components/shared/snippet-list-layout';
 import { Button } from '@/components/ui/button';
@@ -8,7 +9,6 @@ import type { ApiSuccess } from '@/lib/api-client';
 import { Permission, type CurrentUserSnippetListDtoType } from '@snippetly/common/dto';
 import { useQueryClient, useSuspenseInfiniteQuery, type InfiniteData } from '@tanstack/react-query';
 import { Link, useSearch } from '@tanstack/react-router';
-import { PlusIcon } from 'lucide-react';
 import React from 'react';
 import { listCurrentUserSnippetsQueryOptions } from '../../lib/snippet-listing-query-options';
 
@@ -119,7 +119,7 @@ export function SnippetsPageMainContent() {
                                 >
                                     <Button asChild>
                                         <Link to={'/dashboard/snippets/new'}>
-                                            <PlusIcon className="h-4 w-4 mr-2" />
+                                            <CreateSnippetIcon className="mr-2 size-4" />
                                             Create Snippet
                                         </Link>
                                     </Button>

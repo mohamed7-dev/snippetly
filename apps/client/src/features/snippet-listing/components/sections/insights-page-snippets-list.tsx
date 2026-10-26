@@ -1,4 +1,5 @@
 import { StatusCard } from '@/components/feedback/status-card';
+import { CreateSnippetIcon } from '@/components/shared/creation-icons';
 import { SnippetListLayout } from '@/components/shared/snippet-list-layout';
 import { Button } from '@/components/ui/button';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
@@ -66,7 +67,10 @@ export function InsightsPageSnippetsList() {
                         isAvailableOffline={true}
                     >
                         <Button variant={'default'} asChild>
-                            <Link to="/dashboard/snippets/new">Create Snippet</Link>
+                            <Link to="/dashboard/snippets/new">
+                                <CreateSnippetIcon className="mr-2 size-4" />
+                                Create Snippet
+                            </Link>
                         </Button>
                     </PermissionGuard>,
                 ]}
@@ -76,7 +80,7 @@ export function InsightsPageSnippetsList() {
 
     return (
         <section className="space-y-6">
-            <div>
+            <div className="space-y-1">
                 <h2 className="text-xl font-semibold font-heading">Recent Snippets</h2>
                 <p className="text-muted-foreground">
                     A list of snippets that you have recently interacted with

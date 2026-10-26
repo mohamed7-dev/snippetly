@@ -12,7 +12,7 @@ export function TrashPageContentTabs() {
     const { tab } = search ?? {};
     const navigate = useNavigate();
     return (
-        <Tabs defaultValue="snippets" value={tab} className="space-y-4">
+        <Tabs defaultValue="snippets" value={tab} className="space-y-6">
             <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger
                     value="snippets"
@@ -28,7 +28,7 @@ export function TrashPageContentTabs() {
                 </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="snippets" className="space-y-4">
+            <TabsContent value="snippets">
                 <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
                     <React.Suspense fallback={<SectionLoader />}>
                         <TrashSnippetsList />
@@ -36,7 +36,7 @@ export function TrashPageContentTabs() {
                 </ErrorBoundary>
             </TabsContent>
 
-            <TabsContent value="collections" className="space-y-4">
+            <TabsContent value="collections">
                 <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
                     <React.Suspense fallback={<SectionLoader />}>
                         <TrashCollectionList />

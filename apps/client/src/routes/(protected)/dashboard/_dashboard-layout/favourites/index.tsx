@@ -1,4 +1,4 @@
-import { FavouritesPageHeader } from '@/features/favourites/components/sections/favourites-page-header';
+import { Page, PageDescription, PageTitle } from '@/components/layout/page';
 import { FavouritesPageTabs } from '@/features/favourites/components/sections/favourites-page-tabs';
 import {
     favouriteCollectionsListDto,
@@ -48,9 +48,10 @@ export const Route = createFileRoute('/(protected)/dashboard/_dashboard-layout/f
 
 function FavouritesPage() {
     return (
-        <div className="space-y-6">
-            <FavouritesPageHeader />
+        <Page>
+            <PageTitle>Favourites</PageTitle>
+            <PageDescription>Your saved snippets, collections, and developers.</PageDescription>
             <FavouritesPageTabs />
-        </div>
+        </Page>
     );
 }

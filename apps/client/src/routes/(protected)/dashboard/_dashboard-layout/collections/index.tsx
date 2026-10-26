@@ -1,12 +1,17 @@
 import { ErrorBoundaryFallback } from '@/components/feedback/error-boundary-fallback';
 import { SectionLoader } from '@/components/feedback/section-loader';
+import { Page, PageDescription, PageTitle } from '@/components/layout/page';
+import { PageActionBar, PageActionBarItem } from '@/components/layout/page-action-bar';
+import { CreateCollectionIcon } from '@/components/shared/creation-icons';
+import { Button } from '@/components/ui/button';
+import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import { CollectionsPageMainContent } from '@/features/collection-listing/components/sections/collections-page-main-content';
-import { CollectionsPageMainContentHeader } from '@/features/collection-listing/components/sections/collections-page-main-content-header';
+import { CollectionsPageMainContentActions } from '@/features/collection-listing/components/sections/collections-page-main-content-actions';
 import { CollectionsPageStats } from '@/features/collection-listing/components/sections/collections-page-stats';
 import { listCurrentUserCollectionsQueryOptions } from '@/features/collection-listing/lib/collection-listing-query-options';
 import { isOfflineDashboardAvailable } from '@/features/offline-snippet/lib/common';
-import { currentUserCollectionListDto } from '@snippetly/common/dto';
-import { createFileRoute } from '@tanstack/react-router';
+import { currentUserCollectionListDto, Permission } from '@snippetly/common/dto';
+import { createFileRoute, Link } from '@tanstack/react-router';
 import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import z from 'zod';
@@ -55,18 +60,39 @@ export const Route = createFileRoute('/(protected)/dashboard/_dashboard-layout/c
 
 function CollectionsPage() {
     return (
-        <React.Fragment>
-            <CollectionsPageMainContentHeader />
-            <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
-                <React.Suspense fallback={<SectionLoader />}>
-                    <CollectionsPageStats />
-                </React.Suspense>
-            </ErrorBoundary>
-            <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
-                <React.Suspense fallback={<SectionLoader />}>
-                    <CollectionsPageMainContent />
-                </React.Suspense>
-            </ErrorBoundary>
-        </React.Fragment>
+        <Page>
+            <PageTitle>My Collections</PageTitle>
+            <PageDescription>
+                Organize your code snippets into themed collections for better management
+            </PageDescription>
+            <PageActionBar>
+                <PageActionBarItem>
+                    <PermissionGuard
+                        requiredPermissions={[Permission.Authenticated, Permission.CreateCollection]}
+                        isAvailableOffline={true}
+                    >
+                        <Button asChild>
+                            <Link to={'/dashboard/collections/new'} className="ms-auto">
+                                <CreateCollectionIcon className="size-4" />
+                                <span>New Collection</span>
+                            </Link>
+                        </Button>
+                    </PermissionGuard>
+                </PageActionBarItem>
+            </PageActionBar>
+            <div className="space-y-8">
+                <CollectionsPageMainContentActions />
+                <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
+                    <React.Suspense fallback={<SectionLoader />}>
+                        <CollectionsPageStats />
+                    </React.Suspense>
+                </ErrorBoundary>
+                <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
+                    <React.Suspense fallback={<SectionLoader />}>
+                        <CollectionsPageMainContent />
+                    </React.Suspense>
+                </ErrorBoundary>
+            </div>
+        </Page>
     );
 }

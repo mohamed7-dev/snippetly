@@ -10,7 +10,7 @@ export function SettingsLayoutHeader() {
         <HeaderWrapper className="justify-between">
             <div className="flex items-center gap-4">
                 <MobileSidebar />
-                <GoToButton label="Back to Dashboard" to="/dashboard" />
+                <GoToButton label="Back to Dashboard" to="/dashboard" className="hidden lg:flex" />
                 <h1 className="text-xl sm:text-3xl font-bold tracking-tight">Settings</h1>
             </div>
             <PermissionGuard requiredPermissions={[Permission.Authenticated]}>

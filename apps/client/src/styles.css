@@ -325,3 +325,14 @@ code {
         font-family: var(--font-heading);
     }
 }
+
+.scroll-strip {
+    mask-image: linear-gradient(to right, transparent, black 1.5rem, black calc(100% - 1.5rem), transparent);
+    -webkit-mask-image: linear-gradient(
+        to right,
+        transparent,
+        black 1.5rem,
+        black calc(100% - 1.5rem),
+        transparent
+    );
+}

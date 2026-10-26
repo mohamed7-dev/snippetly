@@ -1,4 +1,5 @@
 import { InfiniteLoader } from '@/components/feedback/infinite-loader';
+import { AddSnippetToCollectionIcon } from '@/components/shared/creation-icons';
 import { FilterQueryDialog } from '@/components/shared/list-query-builder/filter-query-dialog';
 import { SortQueryDialog } from '@/components/shared/list-query-builder/sort-query-dialog';
 import { SnippetListLayout } from '@/components/shared/snippet-list-layout';
@@ -16,7 +17,7 @@ import type { ApiSuccess } from '@/lib/api-client';
 import { Permission, snippetListDto, type SnippetListDtoType } from '@snippetly/common/dto';
 import { useQuery, useQueryClient, useSuspenseInfiniteQuery, type InfiniteData } from '@tanstack/react-query';
 import { Link, useNavigate, useParams, useSearch } from '@tanstack/react-router';
-import { Code2Icon, PlusIcon } from 'lucide-react';
+import { Code2Icon } from 'lucide-react';
 
 export function CollectionPageSnippetsList() {
     const params = useParams({
@@ -81,10 +82,10 @@ export function CollectionPageSnippetsList() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex md:items-center md:justify-between flex-col md:flex-row gap-4">
                 <h2 className="font-heading font-semibold text-xl">Snippets ({total})</h2>
                 <OnlineGuard>
-                    <div className="flex items-center gap-2">
+                    <div className="flex md:items-center flex-col-reverse md:flex-row gap-2">
                         <TagFilterBar
                             tags={availableTags}
                             selectedTags={tags?.values ?? []}
@@ -99,18 +100,20 @@ export function CollectionPageSnippetsList() {
                                 })
                             }
                         />
-                        <FilterQueryDialog
-                            schema={snippetListDto.input.shape.filter}
-                            value={{ filter, filterOperator }}
-                            onApply={val => navigate({ to: '.', search: prev => ({ ...prev, ...val }) })}
-                        />
-                        <SortQueryDialog
-                            sortSchema={snippetListDto.input.shape.sort}
-                            value={{ sort }}
-                            onApply={val =>
-                                navigate({ to: '.', search: prev => ({ ...prev, sort: val.sort }) })
-                            }
-                        />
+                        <div className="flex flex-row items-center gap-2">
+                            <FilterQueryDialog
+                                schema={snippetListDto.input.shape.filter}
+                                value={{ filter, filterOperator }}
+                                onApply={val => navigate({ to: '.', search: prev => ({ ...prev, ...val }) })}
+                            />
+                            <SortQueryDialog
+                                sortSchema={snippetListDto.input.shape.sort}
+                                value={{ sort }}
+                                onApply={val =>
+                                    navigate({ to: '.', search: prev => ({ ...prev, sort: val.sort }) })
+                                }
+                            />
+                        </div>
                     </div>
                 </OnlineGuard>
             </div>
@@ -173,7 +176,7 @@ export function CollectionPageSnippetsList() {
                                             collectionName: collection?.name,
                                         }}
                                     >
-                                        <PlusIcon className="h-4 w-4 mr-2" />
+                                        <AddSnippetToCollectionIcon className="mr-2 size-4" />
                                         Add Snippet
                                     </Link>
                                 </Button>

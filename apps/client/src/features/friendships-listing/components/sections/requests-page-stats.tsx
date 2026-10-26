@@ -14,7 +14,7 @@ export function RequestsPageStats() {
     };
     return (
         <PermissionGuard requiredPermissions={[Permission.Authenticated, Permission.ReadDeveloper]}>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <StatCard icon={MailIcon} value={stats.friendsInboxCount} label="Incoming Requests" />
                 <StatCard
                     icon={ClockIcon}

@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { UpdateSnippetIcon } from '@/components/shared/creation-icons';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -30,7 +31,7 @@ import { type ApiSuccess } from '@/lib/api-client';
 import { Permission, type SnippetListDtoType } from '@snippetly/common/dto';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation } from '@tanstack/react-router';
-import { EditIcon, EyeIcon, MoreHorizontalIcon } from 'lucide-react';
+import { EyeIcon, MoreHorizontalIcon } from 'lucide-react';
 import React from 'react';
 import { CopyButton } from './copy-button';
 
@@ -217,7 +218,7 @@ export function SnippetActionsDropdown({
                                             params={{ id: snippet.id }}
                                             preload={false}
                                         >
-                                            <EditIcon />
+                                            <UpdateSnippetIcon className="size-4" />
                                             Edit Snippet
                                         </Link>
                                     </Button>

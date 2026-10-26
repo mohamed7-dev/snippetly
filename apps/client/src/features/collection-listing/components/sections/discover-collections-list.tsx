@@ -1,6 +1,7 @@
 import { InfiniteLoader } from '@/components/feedback/infinite-loader';
 import { StatusCard } from '@/components/feedback/status-card';
 import { CollectionListLayout } from '@/components/shared/collection-list-layout';
+import { CreateCollectionIcon } from '@/components/shared/creation-icons';
 import { FilterQueryDialog } from '@/components/shared/list-query-builder/filter-query-dialog';
 import { SortQueryDialog } from '@/components/shared/list-query-builder/sort-query-dialog';
 import { TagFilterBar } from '@/components/shared/tag-filter-bar';
@@ -8,12 +9,11 @@ import { Button } from '@/components/ui/button';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import { CollectionCard } from '@/features/collections/components/collection-card';
 import { discoverCollectionsQueryOptions } from '@/features/discover/lib/discover-query-options';
+import { OnlineGuard } from '@/features/offline-snippet/components/shared/online-guard';
 import type { ApiSuccess } from '@/lib/api-client';
 import { collectionListDto, Permission, type CollectionListDtoType } from '@snippetly/common/dto';
 import { useQueryClient, useSuspenseInfiniteQuery, type InfiniteData } from '@tanstack/react-query';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
-import { PlusIcon } from 'lucide-react';
-import React from 'react';
 import { listCurrentUserCollectionsQueryOptions } from '../../lib/collection-listing-query-options';
 
 export function DiscoverCollectionsList() {
@@ -75,52 +75,54 @@ export function DiscoverCollectionsList() {
     };
 
     return (
-        <React.Fragment>
-            <div className="flex items-center gap-3">
-                <FilterQueryDialog
-                    schema={collectionListDto.input.shape.filter}
-                    value={{ filter, filterOperator }}
-                    onApply={val =>
-                        navigate({
-                            to: '.',
-                            search: prev => ({
-                                ...prev,
-                                collections: { ...prev?.collections, ...val },
-                            }),
-                        })
-                    }
-                />
-                <SortQueryDialog
-                    sortSchema={collectionListDto.input.shape.sort}
-                    value={{ sort }}
-                    onApply={val =>
-                        navigate({
-                            to: '.',
-                            search: prev => ({
-                                ...prev,
-                                collections: { ...prev?.collections, sort: val.sort },
-                            }),
-                        })
-                    }
-                />
-                <TagFilterBar
-                    tags={availableTags}
-                    selectedTags={tags?.values ?? []}
-                    operator={tags?.operator}
-                    onChange={(values, operator) =>
-                        navigate({
-                            to: '.',
-                            search: previous => ({
-                                ...previous,
-                                collections: {
-                                    ...previous?.collections,
-                                    tags: values.length ? { values, operator } : undefined,
-                                },
-                            }),
-                        })
-                    }
-                />
-            </div>
+        <div className="space-y-6">
+            <OnlineGuard>
+                <div className="flex items-center flex-wrap gap-3">
+                    <FilterQueryDialog
+                        schema={collectionListDto.input.shape.filter}
+                        value={{ filter, filterOperator }}
+                        onApply={val =>
+                            navigate({
+                                to: '.',
+                                search: prev => ({
+                                    ...prev,
+                                    collections: { ...prev?.collections, ...val },
+                                }),
+                            })
+                        }
+                    />
+                    <SortQueryDialog
+                        sortSchema={collectionListDto.input.shape.sort}
+                        value={{ sort }}
+                        onApply={val =>
+                            navigate({
+                                to: '.',
+                                search: prev => ({
+                                    ...prev,
+                                    collections: { ...prev?.collections, sort: val.sort },
+                                }),
+                            })
+                        }
+                    />
+                    <TagFilterBar
+                        tags={availableTags}
+                        selectedTags={tags?.values ?? []}
+                        operator={tags?.operator}
+                        onChange={(values, operator) =>
+                            navigate({
+                                to: '.',
+                                search: previous => ({
+                                    ...previous,
+                                    collections: {
+                                        ...previous?.collections,
+                                        tags: values.length ? { values, operator } : undefined,
+                                    },
+                                }),
+                            })
+                        }
+                    />
+                </div>
+            </OnlineGuard>
             <CollectionListLayout>
                 {collections.map(collection => (
                     <CollectionCard
@@ -166,7 +168,7 @@ export function DiscoverCollectionsList() {
                                 >
                                     <Button asChild>
                                         <Link to="/dashboard/collections/new">
-                                            <PlusIcon />
+                                            <CreateCollectionIcon className="size-4" />
                                             <span>Create Collection</span>
                                         </Link>
                                     </Button>
@@ -176,6 +178,6 @@ export function DiscoverCollectionsList() {
                     ) : null
                 }
             />
-        </React.Fragment>
+        </div>
     );
 }

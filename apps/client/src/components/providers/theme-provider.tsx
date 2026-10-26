@@ -8,6 +8,7 @@ export interface ThemeContextType {
     state: {
         theme: Theme;
         colorScheme: ColorScheme;
+        systemPrefersDark: boolean;
     };
     actions: {
         setTheme: (theme: Theme) => void;
@@ -29,6 +30,9 @@ export function ThemeProvider(props: ThemeProviderProps) {
         state: { settings },
         actions: { setTheme, setColorScheme },
     } = useDeveloperSettings();
+    const [systemPrefersDark, setSystemPrefersDark] = React.useState(
+        () => typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches,
+    );
 
     React.useEffect(() => {
         const root = window.document.documentElement;
@@ -49,11 +53,20 @@ export function ThemeProvider(props: ThemeProviderProps) {
         root.classList.add(activeTheme);
     }, [settings.colorScheme, settings.theme, defaultTheme]);
 
+    React.useEffect(() => {
+        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        const updateSystemTheme = () => setSystemPrefersDark(mediaQuery.matches);
+
+        mediaQuery.addEventListener('change', updateSystemTheme);
+        return () => mediaQuery.removeEventListener('change', updateSystemTheme);
+    }, []);
+
     const contextValue = React.useMemo(() => {
         return {
             state: {
                 theme: settings.theme,
                 colorScheme: settings.colorScheme,
+                systemPrefersDark,
             },
             actions: {
                 setTheme: setTheme,

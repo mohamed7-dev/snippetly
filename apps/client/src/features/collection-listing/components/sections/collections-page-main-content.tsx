@@ -1,5 +1,6 @@
 import { InfiniteLoader } from '@/components/feedback/infinite-loader';
 import { StatusCard } from '@/components/feedback/status-card';
+import { CreateCollectionIcon } from '@/components/shared/creation-icons';
 import { CollectionListLayout } from '@/components/shared/collection-list-layout';
 import { Button } from '@/components/ui/button';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
@@ -8,7 +9,6 @@ import type { ApiSuccess } from '@/lib/api-client';
 import { Permission, type CurrentUserCollectionListDtoType } from '@snippetly/common/dto';
 import { useQueryClient, useSuspenseInfiniteQuery, type InfiniteData } from '@tanstack/react-query';
 import { Link, useSearch } from '@tanstack/react-router';
-import { PlusIcon } from 'lucide-react';
 import React from 'react';
 import { listCurrentUserCollectionsQueryOptions } from '../../lib/collection-listing-query-options';
 
@@ -125,7 +125,7 @@ export function CollectionsPageMainContent() {
                                 >
                                     <Button asChild>
                                         <Link to={'/dashboard/collections/new'}>
-                                            <PlusIcon />
+                                            <CreateCollectionIcon className="size-4" />
                                             Create Collection
                                         </Link>
                                     </Button>

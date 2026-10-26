@@ -8,13 +8,16 @@ import { OfflineSnippetCard } from '@/features/offline-snippet/components/shared
 import { useOfflineCollectionStore } from '@/features/offline-snippet/hooks/use-offline-collection-store';
 import { useOfflineSnippetStore } from '@/features/offline-snippet/hooks/use-offline-snippet-store';
 import { getOfflineSnippetItems } from '@/features/offline-snippet/lib/offline-snippet-items';
+import {
+    OFFLINE_SNIPPET_SORT_ORDERS,
+    type OfflineSnippetsSearchParams,
+} from '@/features/offline-snippet/lib/offline-snippets-search';
 import { FilterGroupOperator } from '@snippetly/common/dto';
-import { Link } from '@tanstack/react-router';
 import { ArrowLeftIcon, ArrowRightIcon } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 
 const PAGE_SIZE = 6;
-type SortOrder = 'newest' | 'oldest' | 'name-asc' | 'name-desc';
+type SortOrder = (typeof OFFLINE_SNIPPET_SORT_ORDERS)[number];
 
 const sortOptions: { value: SortOrder; label: string }[] = [
     { value: 'newest', label: 'Recently saved' },
@@ -23,18 +26,28 @@ const sortOptions: { value: SortOrder; label: string }[] = [
     { value: 'name-desc', label: 'Name: Z to A' },
 ];
 
-export function OfflineSnippetsListing() {
+type OfflineSnippetsListingProps = {
+    searchParams: OfflineSnippetsSearchParams;
+    onSearchParamsChange: (updates: Partial<OfflineSnippetsSearchParams>) => void;
+    onCountsChange: (counts: { filtered: number; total: number }) => void;
+};
+
+export function OfflineSnippetsListing({
+    searchParams,
+    onSearchParamsChange,
+    onCountsChange,
+}: OfflineSnippetsListingProps) {
     const {
         list: { data: savedSnippets, isPending: snippetsPending },
     } = useOfflineSnippetStore();
     const {
         list: { data: savedCollections, isPending: collectionsPending },
     } = useOfflineCollectionStore();
-    const [search, setSearch] = useState('');
-    const [selectedTags, setSelectedTags] = useState<string[]>([]);
-    const [tagOperator, setTagOperator] = useState(FilterGroupOperator.AND);
-    const [sortOrder, setSortOrder] = useState<SortOrder>('newest');
-    const [page, setPage] = useState(1);
+    const search = searchParams.search ?? '';
+    const selectedTags = searchParams.tags ?? [];
+    const tagOperator = searchParams.tagOperator ?? FilterGroupOperator.AND;
+    const sortOrder = searchParams.sort ?? 'newest';
+    const page = searchParams.page ?? 1;
     const snippets = useMemo(
         () => getOfflineSnippetItems(savedCollections ?? [], savedSnippets ?? []),
         [savedCollections, savedSnippets],
@@ -77,12 +90,14 @@ export function OfflineSnippetsListing() {
     const pageCount = Math.max(1, Math.ceil(filteredSnippets.length / PAGE_SIZE));
     const currentPage = Math.min(page, pageCount);
     const visibleSnippets = filteredSnippets.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-    const setFilter =
-        <T extends string>(setter: (value: T) => void) =>
-        (value: T) => {
-            setter(value);
-            setPage(1);
-        };
+    const setSearch = (value: string) =>
+        onSearchParamsChange({ search: value || undefined, page: undefined });
+
+    useEffect(() => {
+        if (!snippetsPending && !collectionsPending) {
+            onCountsChange({ filtered: filteredSnippets.length, total: snippets.length });
+        }
+    }, [collectionsPending, filteredSnippets.length, onCountsChange, snippets.length, snippetsPending]);
 
     if (snippetsPending || collectionsPending) {
         return <SectionLoader message="Loading offline snippets..." />;
@@ -90,35 +105,23 @@ export function OfflineSnippetsListing() {
 
     return (
         <section className="space-y-6">
-            <header className="space-y-1">
-                <Button variant="link" className="-ml-3 px-3" asChild>
-                    <Link to="/offline">
-                        <ArrowLeftIcon className="size-4" />
-                        Offline library
-                    </Link>
-                </Button>
-                <p className="text-sm font-medium text-primary">Your pocket library</p>
-                <h1 className="text-2xl font-semibold tracking-tight">Offline snippets</h1>
-                <p className="text-sm text-muted-foreground">
-                    {filteredSnippets.length} of {snippets.length} saved snippets
-                </p>
-            </header>
-
             <div className="space-y-4 rounded-2xl border bg-linear-to-br from-primary/10 via-card to-card p-5 sm:p-7">
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(15rem,1fr)_minmax(11rem,0.65fr)_minmax(11rem,0.65fr)]">
                     <OfflineSearchBar
                         label="Search offline snippets"
                         placeholder="Search snippets..."
                         value={search}
-                        onChange={setFilter(setSearch)}
+                        onChange={setSearch}
                     />
                     <Select
                         value={sortOrder}
                         onValueChange={value => {
                             const selected = sortOptions.find(option => option.value === value);
                             if (selected) {
-                                setSortOrder(selected.value);
-                                setPage(1);
+                                onSearchParamsChange({
+                                    sort: selected.value === 'newest' ? undefined : selected.value,
+                                    page: undefined,
+                                });
                             }
                         }}
                     >
@@ -141,9 +144,14 @@ export function OfflineSnippetsListing() {
                             selectedTags={selectedTags}
                             operator={tagOperator}
                             onChange={(tags, operator) => {
-                                setSelectedTags(tags);
-                                setTagOperator(operator);
-                                setPage(1);
+                                onSearchParamsChange({
+                                    tags: tags.length ? tags : undefined,
+                                    tagOperator:
+                                        tags.length > 1 && operator !== FilterGroupOperator.AND
+                                            ? operator
+                                            : undefined,
+                                    page: undefined,
+                                });
                             }}
                         />
                     </div>
@@ -171,7 +179,11 @@ export function OfflineSnippetsListing() {
                                 size="sm"
                                 aria-label="Previous page"
                                 disabled={currentPage === 1}
-                                onClick={() => setPage(currentPage - 1)}
+                                onClick={() =>
+                                    onSearchParamsChange({
+                                        page: currentPage > 2 ? currentPage - 1 : undefined,
+                                    })
+                                }
                             >
                                 <ArrowLeftIcon />
                                 Previous
@@ -184,7 +196,7 @@ export function OfflineSnippetsListing() {
                                 size="sm"
                                 aria-label="Next page"
                                 disabled={currentPage === pageCount}
-                                onClick={() => setPage(currentPage + 1)}
+                                onClick={() => onSearchParamsChange({ page: currentPage + 1 })}
                             >
                                 Next
                                 <ArrowRightIcon />
@@ -207,10 +219,12 @@ export function OfflineSnippetsListing() {
                             <Button
                                 variant="outline"
                                 onClick={() => {
-                                    setSearch('');
-                                    setSelectedTags([]);
-                                    setTagOperator(FilterGroupOperator.AND);
-                                    setPage(1);
+                                    onSearchParamsChange({
+                                        search: undefined,
+                                        tags: undefined,
+                                        tagOperator: undefined,
+                                        page: undefined,
+                                    });
                                 }}
                             >
                                 Clear filters

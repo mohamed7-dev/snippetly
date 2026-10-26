@@ -7,7 +7,7 @@ import type { UpdatePasswordFormSchemaType } from '../../lib/schema';
 export function UpdatePasswordForm({ isPending }: { isPending: boolean }) {
     const form = useFormContext<UpdatePasswordFormSchemaType>();
     return (
-        <div className="space-y-4">
+        <div className="space-y-6">
             <FormField
                 control={form.control}
                 name="currentPassword"
@@ -44,8 +44,8 @@ export function UpdatePasswordForm({ isPending }: { isPending: boolean }) {
                 )}
             />
 
-            <div className="pt-2">
-                <LoadingButton isLoading={isPending} type="submit">
+            <div>
+                <LoadingButton isLoading={isPending} type="submit" className="w-full sm:w-auto">
                     Update Password
                 </LoadingButton>
             </div>

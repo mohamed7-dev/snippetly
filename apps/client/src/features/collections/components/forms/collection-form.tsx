@@ -31,12 +31,12 @@ export function CollectionForm({ isPending: isMutating }: { isPending: boolean }
                     <CardTitle className="font-heading">Collection Details</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center flex-wrap gap-4">
                         <FormField
                             control={form.control}
                             name="name"
                             render={({ field }) => (
-                                <FormItem className="flex-1">
+                                <FormItem className="flex-1 min-w-52">
                                     <FormLabel>Collection Name</FormLabel>
                                     <FormControl>
                                         <Input
@@ -53,7 +53,7 @@ export function CollectionForm({ isPending: isMutating }: { isPending: boolean }
                             control={form.control}
                             name="slug"
                             render={({ field }) => (
-                                <FormItem className="flex-1">
+                                <FormItem className="flex-1 min-w-52">
                                     <FormLabel>Collection Slug</FormLabel>
                                     <FormControl>
                                         <SlugInput

@@ -27,7 +27,7 @@ export function ProfilePageTabs() {
     const navigate = useNavigate();
 
     return (
-        <Tabs defaultValue="snippets" value={tab} className="space-y-4">
+        <Tabs defaultValue="snippets" value={tab} className="space-y-6">
             <TabsList className="grid grid-cols-2 w-full">
                 <TabsTrigger
                     value="snippets"

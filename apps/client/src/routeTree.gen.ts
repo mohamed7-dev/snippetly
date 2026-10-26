@@ -16,6 +16,7 @@ import { Route as publicIndexRouteImport } from './routes/(public)/index'
 import { Route as publicCollectionsRouteRouteImport } from './routes/(public)/collections/route'
 import { Route as publicDevelopersRouteRouteImport } from './routes/(public)/developers/route'
 import { Route as publicGoodbyeRouteImport } from './routes/(public)/goodbye'
+import { Route as publicSearchPageRouteImport } from './routes/(public)/search-page'
 import { Route as publicSnippetsRouteRouteImport } from './routes/(public)/snippets/route'
 import { Route as authAuthLayoutAccountVerificationRouteImport } from './routes/(auth)/_auth-layout/account-verification'
 import { Route as authAuthLayoutForgotPasswordRouteImport } from './routes/(auth)/_auth-layout/forgot-password'
@@ -31,9 +32,9 @@ import { Route as publicOfflineIdRouteImport } from './routes/(public)/offline/$
 import { Route as publicSearchIndexRouteImport } from './routes/(public)/search/index'
 import { Route as publicSnippetsIdRouteImport } from './routes/(public)/snippets/$id'
 import { Route as protectedDashboardDashboardLayoutIndexRouteImport } from './routes/(protected)/dashboard/_dashboard-layout/index'
-import { Route as protectedDashboardCollectionsNewRouteRouteImport } from './routes/(protected)/dashboard/collections/new/route'
+import { Route as protectedDashboardCollectionsIdRouteRouteImport } from './routes/(protected)/dashboard/collections/$id/route'
 import { Route as protectedDashboardSettingsIndexRouteImport } from './routes/(protected)/dashboard/settings/index'
-import { Route as protectedDashboardSettingsProfileRouteRouteImport } from './routes/(protected)/dashboard/settings/profile/route'
+import { Route as protectedDashboardSnippetsIdRouteRouteImport } from './routes/(protected)/dashboard/snippets/$id/route'
 import { Route as publicDevelopersIdIndexRouteImport } from './routes/(public)/developers/$id/index'
 import { Route as publicOfflineCollectionsIndexRouteImport } from './routes/(public)/offline/collections/index'
 import { Route as publicOfflineCollectionsIdRouteImport } from './routes/(public)/offline/collections/$id'
@@ -44,6 +45,8 @@ import { Route as protectedDashboardDashboardLayoutFriendsIndexRouteImport } fro
 import { Route as protectedDashboardDashboardLayoutRequestsIndexRouteImport } from './routes/(protected)/dashboard/_dashboard-layout/requests/index'
 import { Route as protectedDashboardDashboardLayoutSnippetsIndexRouteImport } from './routes/(protected)/dashboard/_dashboard-layout/snippets/index'
 import { Route as protectedDashboardDashboardLayoutTrashIndexRouteImport } from './routes/(protected)/dashboard/_dashboard-layout/trash/index'
+import { Route as protectedDashboardCollectionsNewIndexRouteImport } from './routes/(protected)/dashboard/collections/new/index'
+import { Route as protectedDashboardSettingsAccountIndexRouteImport } from './routes/(protected)/dashboard/settings/account/index'
 import { Route as protectedDashboardSettingsAppearanceIndexRouteImport } from './routes/(protected)/dashboard/settings/appearance/index'
 import { Route as protectedDashboardSettingsNotificationsIndexRouteImport } from './routes/(protected)/dashboard/settings/notifications/index'
 import { Route as protectedDashboardSettingsSecurityIndexRouteImport } from './routes/(protected)/dashboard/settings/security/index'
@@ -82,6 +85,11 @@ const publicDevelopersRouteRoute = publicDevelopersRouteRouteImport.update({
 const publicGoodbyeRoute = publicGoodbyeRouteImport.update({
   id: '/goodbye',
   path: '/goodbye',
+  getParentRoute: () => publicRouteRoute,
+} as any)
+const publicSearchPageRoute = publicSearchPageRouteImport.update({
+  id: '/search-page',
+  path: '/search-page',
   getParentRoute: () => publicRouteRoute,
 } as any)
 const publicSnippetsRouteRoute = publicSnippetsRouteRouteImport.update({
@@ -165,10 +173,10 @@ const protectedDashboardDashboardLayoutIndexRoute =
     path: '/',
     getParentRoute: () => protectedDashboardDashboardLayoutRouteRoute,
   } as any)
-const protectedDashboardCollectionsNewRouteRoute =
-  protectedDashboardCollectionsNewRouteRouteImport.update({
-    id: '/collections/new',
-    path: '/collections/new',
+const protectedDashboardCollectionsIdRouteRoute =
+  protectedDashboardCollectionsIdRouteRouteImport.update({
+    id: '/collections/$id',
+    path: '/collections/$id',
     getParentRoute: () => protectedDashboardRouteRoute,
   } as any)
 const protectedDashboardSettingsIndexRoute =
@@ -177,11 +185,11 @@ const protectedDashboardSettingsIndexRoute =
     path: '/',
     getParentRoute: () => protectedDashboardSettingsRouteRoute,
   } as any)
-const protectedDashboardSettingsProfileRouteRoute =
-  protectedDashboardSettingsProfileRouteRouteImport.update({
-    id: '/profile',
-    path: '/profile',
-    getParentRoute: () => protectedDashboardSettingsRouteRoute,
+const protectedDashboardSnippetsIdRouteRoute =
+  protectedDashboardSnippetsIdRouteRouteImport.update({
+    id: '/snippets/$id',
+    path: '/snippets/$id',
+    getParentRoute: () => protectedDashboardRouteRoute,
   } as any)
 const publicDevelopersIdIndexRoute = publicDevelopersIdIndexRouteImport.update({
   id: '/$id/',
@@ -242,6 +250,18 @@ const protectedDashboardDashboardLayoutTrashIndexRoute =
     path: '/trash/',
     getParentRoute: () => protectedDashboardDashboardLayoutRouteRoute,
   } as any)
+const protectedDashboardCollectionsNewIndexRoute =
+  protectedDashboardCollectionsNewIndexRouteImport.update({
+    id: '/collections/new/',
+    path: '/collections/new/',
+    getParentRoute: () => protectedDashboardRouteRoute,
+  } as any)
+const protectedDashboardSettingsAccountIndexRoute =
+  protectedDashboardSettingsAccountIndexRouteImport.update({
+    id: '/account/',
+    path: '/account/',
+    getParentRoute: () => protectedDashboardSettingsRouteRoute,
+  } as any)
 const protectedDashboardSettingsAppearanceIndexRoute =
   protectedDashboardSettingsAppearanceIndexRouteImport.update({
     id: '/appearance/',
@@ -268,15 +288,15 @@ const protectedDashboardSnippetsNewIndexRoute =
   } as any)
 const protectedDashboardCollectionsIdEditIndexRoute =
   protectedDashboardCollectionsIdEditIndexRouteImport.update({
-    id: '/collections/$id/edit/',
-    path: '/collections/$id/edit/',
-    getParentRoute: () => protectedDashboardRouteRoute,
+    id: '/edit/',
+    path: '/edit/',
+    getParentRoute: () => protectedDashboardCollectionsIdRouteRoute,
   } as any)
 const protectedDashboardSnippetsIdEditIndexRoute =
   protectedDashboardSnippetsIdEditIndexRouteImport.update({
-    id: '/snippets/$id/edit/',
-    path: '/snippets/$id/edit/',
-    getParentRoute: () => protectedDashboardRouteRoute,
+    id: '/edit/',
+    path: '/edit/',
+    getParentRoute: () => protectedDashboardSnippetsIdRouteRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -285,6 +305,7 @@ export interface FileRoutesByFullPath {
   '/developers': typeof publicDevelopersRouteRouteWithChildren
   '/snippets': typeof publicSnippetsRouteRouteWithChildren
   '/goodbye': typeof publicGoodbyeRoute
+  '/search-page': typeof publicSearchPageRoute
   '/': typeof publicIndexRoute
   '/dashboard/settings': typeof protectedDashboardSettingsRouteRouteWithChildren
   '/account-verification': typeof authAuthLayoutAccountVerificationRoute
@@ -298,8 +319,8 @@ export interface FileRoutesByFullPath {
   '/discover/': typeof publicDiscoverIndexRoute
   '/offline/': typeof publicOfflineIndexRoute
   '/search/': typeof publicSearchIndexRoute
-  '/dashboard/collections/new': typeof protectedDashboardCollectionsNewRouteRoute
-  '/dashboard/settings/profile': typeof protectedDashboardSettingsProfileRouteRoute
+  '/dashboard/collections/$id': typeof protectedDashboardCollectionsIdRouteRouteWithChildren
+  '/dashboard/snippets/$id': typeof protectedDashboardSnippetsIdRouteRouteWithChildren
   '/offline/collections/$id': typeof publicOfflineCollectionsIdRoute
   '/dashboard/': typeof protectedDashboardDashboardLayoutIndexRoute
   '/dashboard/settings/': typeof protectedDashboardSettingsIndexRoute
@@ -312,6 +333,8 @@ export interface FileRoutesByFullPath {
   '/dashboard/requests/': typeof protectedDashboardDashboardLayoutRequestsIndexRoute
   '/dashboard/snippets/': typeof protectedDashboardDashboardLayoutSnippetsIndexRoute
   '/dashboard/trash/': typeof protectedDashboardDashboardLayoutTrashIndexRoute
+  '/dashboard/collections/new/': typeof protectedDashboardCollectionsNewIndexRoute
+  '/dashboard/settings/account/': typeof protectedDashboardSettingsAccountIndexRoute
   '/dashboard/settings/appearance/': typeof protectedDashboardSettingsAppearanceIndexRoute
   '/dashboard/settings/notifications/': typeof protectedDashboardSettingsNotificationsIndexRoute
   '/dashboard/settings/security/': typeof protectedDashboardSettingsSecurityIndexRoute
@@ -325,6 +348,7 @@ export interface FileRoutesByTo {
   '/developers': typeof publicDevelopersRouteRouteWithChildren
   '/snippets': typeof publicSnippetsRouteRouteWithChildren
   '/goodbye': typeof publicGoodbyeRoute
+  '/search-page': typeof publicSearchPageRoute
   '/': typeof publicIndexRoute
   '/account-verification': typeof authAuthLayoutAccountVerificationRoute
   '/forgot-password': typeof authAuthLayoutForgotPasswordRoute
@@ -337,8 +361,8 @@ export interface FileRoutesByTo {
   '/discover': typeof publicDiscoverIndexRoute
   '/offline': typeof publicOfflineIndexRoute
   '/search': typeof publicSearchIndexRoute
-  '/dashboard/collections/new': typeof protectedDashboardCollectionsNewRouteRoute
-  '/dashboard/settings/profile': typeof protectedDashboardSettingsProfileRouteRoute
+  '/dashboard/collections/$id': typeof protectedDashboardCollectionsIdRouteRouteWithChildren
+  '/dashboard/snippets/$id': typeof protectedDashboardSnippetsIdRouteRouteWithChildren
   '/offline/collections/$id': typeof publicOfflineCollectionsIdRoute
   '/dashboard/settings': typeof protectedDashboardSettingsIndexRoute
   '/developers/$id': typeof publicDevelopersIdIndexRoute
@@ -350,6 +374,8 @@ export interface FileRoutesByTo {
   '/dashboard/requests': typeof protectedDashboardDashboardLayoutRequestsIndexRoute
   '/dashboard/snippets': typeof protectedDashboardDashboardLayoutSnippetsIndexRoute
   '/dashboard/trash': typeof protectedDashboardDashboardLayoutTrashIndexRoute
+  '/dashboard/collections/new': typeof protectedDashboardCollectionsNewIndexRoute
+  '/dashboard/settings/account': typeof protectedDashboardSettingsAccountIndexRoute
   '/dashboard/settings/appearance': typeof protectedDashboardSettingsAppearanceIndexRoute
   '/dashboard/settings/notifications': typeof protectedDashboardSettingsNotificationsIndexRoute
   '/dashboard/settings/security': typeof protectedDashboardSettingsSecurityIndexRoute
@@ -366,6 +392,7 @@ export interface FileRoutesById {
   '/(public)/developers': typeof publicDevelopersRouteRouteWithChildren
   '/(public)/snippets': typeof publicSnippetsRouteRouteWithChildren
   '/(public)/goodbye': typeof publicGoodbyeRoute
+  '/(public)/search-page': typeof publicSearchPageRoute
   '/(public)/': typeof publicIndexRoute
   '/(protected)/dashboard/_dashboard-layout': typeof protectedDashboardDashboardLayoutRouteRouteWithChildren
   '/(protected)/dashboard/settings': typeof protectedDashboardSettingsRouteRouteWithChildren
@@ -380,8 +407,8 @@ export interface FileRoutesById {
   '/(public)/discover/': typeof publicDiscoverIndexRoute
   '/(public)/offline/': typeof publicOfflineIndexRoute
   '/(public)/search/': typeof publicSearchIndexRoute
-  '/(protected)/dashboard/collections/new': typeof protectedDashboardCollectionsNewRouteRoute
-  '/(protected)/dashboard/settings/profile': typeof protectedDashboardSettingsProfileRouteRoute
+  '/(protected)/dashboard/collections/$id': typeof protectedDashboardCollectionsIdRouteRouteWithChildren
+  '/(protected)/dashboard/snippets/$id': typeof protectedDashboardSnippetsIdRouteRouteWithChildren
   '/(public)/offline/collections/$id': typeof publicOfflineCollectionsIdRoute
   '/(protected)/dashboard/_dashboard-layout/': typeof protectedDashboardDashboardLayoutIndexRoute
   '/(protected)/dashboard/settings/': typeof protectedDashboardSettingsIndexRoute
@@ -394,6 +421,8 @@ export interface FileRoutesById {
   '/(protected)/dashboard/_dashboard-layout/requests/': typeof protectedDashboardDashboardLayoutRequestsIndexRoute
   '/(protected)/dashboard/_dashboard-layout/snippets/': typeof protectedDashboardDashboardLayoutSnippetsIndexRoute
   '/(protected)/dashboard/_dashboard-layout/trash/': typeof protectedDashboardDashboardLayoutTrashIndexRoute
+  '/(protected)/dashboard/collections/new/': typeof protectedDashboardCollectionsNewIndexRoute
+  '/(protected)/dashboard/settings/account/': typeof protectedDashboardSettingsAccountIndexRoute
   '/(protected)/dashboard/settings/appearance/': typeof protectedDashboardSettingsAppearanceIndexRoute
   '/(protected)/dashboard/settings/notifications/': typeof protectedDashboardSettingsNotificationsIndexRoute
   '/(protected)/dashboard/settings/security/': typeof protectedDashboardSettingsSecurityIndexRoute
@@ -409,6 +438,7 @@ export interface FileRouteTypes {
     | '/developers'
     | '/snippets'
     | '/goodbye'
+    | '/search-page'
     | '/'
     | '/dashboard/settings'
     | '/account-verification'
@@ -422,8 +452,8 @@ export interface FileRouteTypes {
     | '/discover/'
     | '/offline/'
     | '/search/'
-    | '/dashboard/collections/new'
-    | '/dashboard/settings/profile'
+    | '/dashboard/collections/$id'
+    | '/dashboard/snippets/$id'
     | '/offline/collections/$id'
     | '/dashboard/'
     | '/dashboard/settings/'
@@ -436,6 +466,8 @@ export interface FileRouteTypes {
     | '/dashboard/requests/'
     | '/dashboard/snippets/'
     | '/dashboard/trash/'
+    | '/dashboard/collections/new/'
+    | '/dashboard/settings/account/'
     | '/dashboard/settings/appearance/'
     | '/dashboard/settings/notifications/'
     | '/dashboard/settings/security/'
@@ -449,6 +481,7 @@ export interface FileRouteTypes {
     | '/developers'
     | '/snippets'
     | '/goodbye'
+    | '/search-page'
     | '/'
     | '/account-verification'
     | '/forgot-password'
@@ -461,8 +494,8 @@ export interface FileRouteTypes {
     | '/discover'
     | '/offline'
     | '/search'
-    | '/dashboard/collections/new'
-    | '/dashboard/settings/profile'
+    | '/dashboard/collections/$id'
+    | '/dashboard/snippets/$id'
     | '/offline/collections/$id'
     | '/dashboard/settings'
     | '/developers/$id'
@@ -474,6 +507,8 @@ export interface FileRouteTypes {
     | '/dashboard/requests'
     | '/dashboard/snippets'
     | '/dashboard/trash'
+    | '/dashboard/collections/new'
+    | '/dashboard/settings/account'
     | '/dashboard/settings/appearance'
     | '/dashboard/settings/notifications'
     | '/dashboard/settings/security'
@@ -489,6 +524,7 @@ export interface FileRouteTypes {
     | '/(public)/developers'
     | '/(public)/snippets'
     | '/(public)/goodbye'
+    | '/(public)/search-page'
     | '/(public)/'
     | '/(protected)/dashboard/_dashboard-layout'
     | '/(protected)/dashboard/settings'
@@ -503,8 +539,8 @@ export interface FileRouteTypes {
     | '/(public)/discover/'
     | '/(public)/offline/'
     | '/(public)/search/'
-    | '/(protected)/dashboard/collections/new'
-    | '/(protected)/dashboard/settings/profile'
+    | '/(protected)/dashboard/collections/$id'
+    | '/(protected)/dashboard/snippets/$id'
     | '/(public)/offline/collections/$id'
     | '/(protected)/dashboard/_dashboard-layout/'
     | '/(protected)/dashboard/settings/'
@@ -517,6 +553,8 @@ export interface FileRouteTypes {
     | '/(protected)/dashboard/_dashboard-layout/requests/'
     | '/(protected)/dashboard/_dashboard-layout/snippets/'
     | '/(protected)/dashboard/_dashboard-layout/trash/'
+    | '/(protected)/dashboard/collections/new/'
+    | '/(protected)/dashboard/settings/account/'
     | '/(protected)/dashboard/settings/appearance/'
     | '/(protected)/dashboard/settings/notifications/'
     | '/(protected)/dashboard/settings/security/'
@@ -580,6 +618,13 @@ declare module '@tanstack/react-router' {
       path: '/goodbye'
       fullPath: '/goodbye'
       preLoaderRoute: typeof publicGoodbyeRouteImport
+      parentRoute: typeof publicRouteRoute
+    }
+    '/(public)/search-page': {
+      id: '/(public)/search-page'
+      path: '/search-page'
+      fullPath: '/search-page'
+      preLoaderRoute: typeof publicSearchPageRouteImport
       parentRoute: typeof publicRouteRoute
     }
     '/(public)/snippets': {
@@ -687,11 +732,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof protectedDashboardDashboardLayoutIndexRouteImport
       parentRoute: typeof protectedDashboardDashboardLayoutRouteRoute
     }
-    '/(protected)/dashboard/collections/new': {
-      id: '/(protected)/dashboard/collections/new'
-      path: '/collections/new'
-      fullPath: '/dashboard/collections/new'
-      preLoaderRoute: typeof protectedDashboardCollectionsNewRouteRouteImport
+    '/(protected)/dashboard/collections/$id': {
+      id: '/(protected)/dashboard/collections/$id'
+      path: '/collections/$id'
+      fullPath: '/dashboard/collections/$id'
+      preLoaderRoute: typeof protectedDashboardCollectionsIdRouteRouteImport
       parentRoute: typeof protectedDashboardRouteRoute
     }
     '/(protected)/dashboard/settings/': {
@@ -701,12 +746,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof protectedDashboardSettingsIndexRouteImport
       parentRoute: typeof protectedDashboardSettingsRouteRoute
     }
-    '/(protected)/dashboard/settings/profile': {
-      id: '/(protected)/dashboard/settings/profile'
-      path: '/profile'
-      fullPath: '/dashboard/settings/profile'
-      preLoaderRoute: typeof protectedDashboardSettingsProfileRouteRouteImport
-      parentRoute: typeof protectedDashboardSettingsRouteRoute
+    '/(protected)/dashboard/snippets/$id': {
+      id: '/(protected)/dashboard/snippets/$id'
+      path: '/snippets/$id'
+      fullPath: '/dashboard/snippets/$id'
+      preLoaderRoute: typeof protectedDashboardSnippetsIdRouteRouteImport
+      parentRoute: typeof protectedDashboardRouteRoute
     }
     '/(public)/developers/$id/': {
       id: '/(public)/developers/$id/'
@@ -778,6 +823,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof protectedDashboardDashboardLayoutTrashIndexRouteImport
       parentRoute: typeof protectedDashboardDashboardLayoutRouteRoute
     }
+    '/(protected)/dashboard/collections/new/': {
+      id: '/(protected)/dashboard/collections/new/'
+      path: '/collections/new'
+      fullPath: '/dashboard/collections/new/'
+      preLoaderRoute: typeof protectedDashboardCollectionsNewIndexRouteImport
+      parentRoute: typeof protectedDashboardRouteRoute
+    }
+    '/(protected)/dashboard/settings/account/': {
+      id: '/(protected)/dashboard/settings/account/'
+      path: '/account'
+      fullPath: '/dashboard/settings/account/'
+      preLoaderRoute: typeof protectedDashboardSettingsAccountIndexRouteImport
+      parentRoute: typeof protectedDashboardSettingsRouteRoute
+    }
     '/(protected)/dashboard/settings/appearance/': {
       id: '/(protected)/dashboard/settings/appearance/'
       path: '/appearance'
@@ -808,17 +867,17 @@ declare module '@tanstack/react-router' {
     }
     '/(protected)/dashboard/collections/$id/edit/': {
       id: '/(protected)/dashboard/collections/$id/edit/'
-      path: '/collections/$id/edit'
+      path: '/edit'
       fullPath: '/dashboard/collections/$id/edit/'
       preLoaderRoute: typeof protectedDashboardCollectionsIdEditIndexRouteImport
-      parentRoute: typeof protectedDashboardRouteRoute
+      parentRoute: typeof protectedDashboardCollectionsIdRouteRoute
     }
     '/(protected)/dashboard/snippets/$id/edit/': {
       id: '/(protected)/dashboard/snippets/$id/edit/'
-      path: '/snippets/$id/edit'
+      path: '/edit'
       fullPath: '/dashboard/snippets/$id/edit/'
       preLoaderRoute: typeof protectedDashboardSnippetsIdEditIndexRouteImport
-      parentRoute: typeof protectedDashboardRouteRoute
+      parentRoute: typeof protectedDashboardSnippetsIdRouteRoute
     }
   }
 }
@@ -866,6 +925,7 @@ interface publicRouteRouteChildren {
   publicDevelopersRouteRoute: typeof publicDevelopersRouteRouteWithChildren
   publicSnippetsRouteRoute: typeof publicSnippetsRouteRouteWithChildren
   publicGoodbyeRoute: typeof publicGoodbyeRoute
+  publicSearchPageRoute: typeof publicSearchPageRoute
   publicIndexRoute: typeof publicIndexRoute
   publicOfflineIdRoute: typeof publicOfflineIdRoute
   publicDiscoverIndexRoute: typeof publicDiscoverIndexRoute
@@ -881,6 +941,7 @@ const publicRouteRouteChildren: publicRouteRouteChildren = {
   publicDevelopersRouteRoute: publicDevelopersRouteRouteWithChildren,
   publicSnippetsRouteRoute: publicSnippetsRouteRouteWithChildren,
   publicGoodbyeRoute: publicGoodbyeRoute,
+  publicSearchPageRoute: publicSearchPageRoute,
   publicIndexRoute: publicIndexRoute,
   publicOfflineIdRoute: publicOfflineIdRoute,
   publicDiscoverIndexRoute: publicDiscoverIndexRoute,
@@ -949,8 +1010,8 @@ const protectedDashboardDashboardLayoutRouteRouteWithChildren =
   )
 
 interface protectedDashboardSettingsRouteRouteChildren {
-  protectedDashboardSettingsProfileRouteRoute: typeof protectedDashboardSettingsProfileRouteRoute
   protectedDashboardSettingsIndexRoute: typeof protectedDashboardSettingsIndexRoute
+  protectedDashboardSettingsAccountIndexRoute: typeof protectedDashboardSettingsAccountIndexRoute
   protectedDashboardSettingsAppearanceIndexRoute: typeof protectedDashboardSettingsAppearanceIndexRoute
   protectedDashboardSettingsNotificationsIndexRoute: typeof protectedDashboardSettingsNotificationsIndexRoute
   protectedDashboardSettingsSecurityIndexRoute: typeof protectedDashboardSettingsSecurityIndexRoute
@@ -958,9 +1019,9 @@ interface protectedDashboardSettingsRouteRouteChildren {
 
 const protectedDashboardSettingsRouteRouteChildren: protectedDashboardSettingsRouteRouteChildren =
   {
-    protectedDashboardSettingsProfileRouteRoute:
-      protectedDashboardSettingsProfileRouteRoute,
     protectedDashboardSettingsIndexRoute: protectedDashboardSettingsIndexRoute,
+    protectedDashboardSettingsAccountIndexRoute:
+      protectedDashboardSettingsAccountIndexRoute,
     protectedDashboardSettingsAppearanceIndexRoute:
       protectedDashboardSettingsAppearanceIndexRoute,
     protectedDashboardSettingsNotificationsIndexRoute:
@@ -974,13 +1035,43 @@ const protectedDashboardSettingsRouteRouteWithChildren =
     protectedDashboardSettingsRouteRouteChildren,
   )
 
+interface protectedDashboardCollectionsIdRouteRouteChildren {
+  protectedDashboardCollectionsIdEditIndexRoute: typeof protectedDashboardCollectionsIdEditIndexRoute
+}
+
+const protectedDashboardCollectionsIdRouteRouteChildren: protectedDashboardCollectionsIdRouteRouteChildren =
+  {
+    protectedDashboardCollectionsIdEditIndexRoute:
+      protectedDashboardCollectionsIdEditIndexRoute,
+  }
+
+const protectedDashboardCollectionsIdRouteRouteWithChildren =
+  protectedDashboardCollectionsIdRouteRoute._addFileChildren(
+    protectedDashboardCollectionsIdRouteRouteChildren,
+  )
+
+interface protectedDashboardSnippetsIdRouteRouteChildren {
+  protectedDashboardSnippetsIdEditIndexRoute: typeof protectedDashboardSnippetsIdEditIndexRoute
+}
+
+const protectedDashboardSnippetsIdRouteRouteChildren: protectedDashboardSnippetsIdRouteRouteChildren =
+  {
+    protectedDashboardSnippetsIdEditIndexRoute:
+      protectedDashboardSnippetsIdEditIndexRoute,
+  }
+
+const protectedDashboardSnippetsIdRouteRouteWithChildren =
+  protectedDashboardSnippetsIdRouteRoute._addFileChildren(
+    protectedDashboardSnippetsIdRouteRouteChildren,
+  )
+
 interface protectedDashboardRouteRouteChildren {
   protectedDashboardDashboardLayoutRouteRoute: typeof protectedDashboardDashboardLayoutRouteRouteWithChildren
   protectedDashboardSettingsRouteRoute: typeof protectedDashboardSettingsRouteRouteWithChildren
-  protectedDashboardCollectionsNewRouteRoute: typeof protectedDashboardCollectionsNewRouteRoute
+  protectedDashboardCollectionsIdRouteRoute: typeof protectedDashboardCollectionsIdRouteRouteWithChildren
+  protectedDashboardSnippetsIdRouteRoute: typeof protectedDashboardSnippetsIdRouteRouteWithChildren
+  protectedDashboardCollectionsNewIndexRoute: typeof protectedDashboardCollectionsNewIndexRoute
   protectedDashboardSnippetsNewIndexRoute: typeof protectedDashboardSnippetsNewIndexRoute
-  protectedDashboardCollectionsIdEditIndexRoute: typeof protectedDashboardCollectionsIdEditIndexRoute
-  protectedDashboardSnippetsIdEditIndexRoute: typeof protectedDashboardSnippetsIdEditIndexRoute
 }
 
 const protectedDashboardRouteRouteChildren: protectedDashboardRouteRouteChildren =
@@ -989,14 +1080,14 @@ const protectedDashboardRouteRouteChildren: protectedDashboardRouteRouteChildren
       protectedDashboardDashboardLayoutRouteRouteWithChildren,
     protectedDashboardSettingsRouteRoute:
       protectedDashboardSettingsRouteRouteWithChildren,
-    protectedDashboardCollectionsNewRouteRoute:
-      protectedDashboardCollectionsNewRouteRoute,
+    protectedDashboardCollectionsIdRouteRoute:
+      protectedDashboardCollectionsIdRouteRouteWithChildren,
+    protectedDashboardSnippetsIdRouteRoute:
+      protectedDashboardSnippetsIdRouteRouteWithChildren,
+    protectedDashboardCollectionsNewIndexRoute:
+      protectedDashboardCollectionsNewIndexRoute,
     protectedDashboardSnippetsNewIndexRoute:
       protectedDashboardSnippetsNewIndexRoute,
-    protectedDashboardCollectionsIdEditIndexRoute:
-      protectedDashboardCollectionsIdEditIndexRoute,
-    protectedDashboardSnippetsIdEditIndexRoute:
-      protectedDashboardSnippetsIdEditIndexRoute,
   }
 
 const protectedDashboardRouteRouteWithChildren =

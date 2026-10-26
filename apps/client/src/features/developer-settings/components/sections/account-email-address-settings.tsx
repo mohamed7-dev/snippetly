@@ -1,10 +1,10 @@
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ProcessStatus } from '@/components/feedback/process-status';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/features/auth/hooks/use-auth';
-import { CheckIcon, MailIcon } from 'lucide-react';
+import { MailIcon } from 'lucide-react';
 import React from 'react';
 
 const RefreshAccountVerificationTokenDialog = React.lazy(async () => {
@@ -13,7 +13,7 @@ const RefreshAccountVerificationTokenDialog = React.lazy(async () => {
     return { default: module.RefreshAccountVerificationTokenDialog };
 });
 
-export function SecuritySettingsPageEmail() {
+export function AccountEmailAddressSettings() {
     const { user } = useAuth();
     const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
@@ -24,24 +24,28 @@ export function SecuritySettingsPageEmail() {
         <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                    <MailIcon className="h-5 w-5" />
-                    Email Settings
+                    <MailIcon className="size-5 shrink-0 text-primary" aria-hidden="true" />
+                    <h2>Email address</h2>
                 </CardTitle>
-                <CardDescription>Manage your email address and verification status</CardDescription>
+                <CardDescription>
+                    <p>View your sign-in email address and its verification status.</p>
+                </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 {!isVerified ? (
-                    <Alert className="border-secondary">
-                        <MailIcon className="h-4 w-4 stroke-secondary" />
-                        <AlertDescription className="text-sm font-semibold">
-                            Your email address is not verified.
-                        </AlertDescription>
-                    </Alert>
+                    <ProcessStatus
+                        variant={'info'}
+                        title={'Not Verified'}
+                        description="Your email address is not verified."
+                        showCloseButton={false}
+                    />
                 ) : (
-                    <Alert className="border-primary">
-                        <CheckIcon className="h-4 w-4" />
-                        <AlertDescription>Your email address is verified.</AlertDescription>
-                    </Alert>
+                    <ProcessStatus
+                        variant={'info'}
+                        title={'Verified'}
+                        description="Your email address is verified."
+                        showCloseButton={false}
+                    />
                 )}
                 <div className="space-y-2">
                     <Label>Email Address</Label>

@@ -1,5 +1,6 @@
 import { InfiniteLoader } from '@/components/feedback/infinite-loader';
 import { StatusCard } from '@/components/feedback/status-card';
+import { CreateSnippetIcon } from '@/components/shared/creation-icons';
 import { FilterQueryDialog } from '@/components/shared/list-query-builder/filter-query-dialog';
 import { SortQueryDialog } from '@/components/shared/list-query-builder/sort-query-dialog';
 import { SnippetListLayout } from '@/components/shared/snippet-list-layout';
@@ -14,7 +15,6 @@ import type { ApiSuccess } from '@/lib/api-client';
 import { Permission, snippetListDto, type SnippetListDtoType } from '@snippetly/common/dto';
 import { useQueryClient, useSuspenseInfiniteQuery, type InfiniteData } from '@tanstack/react-query';
 import { Link, useNavigate, useParams, useSearch } from '@tanstack/react-router';
-import { PlusIcon } from 'lucide-react';
 
 export function PublicProfilePageSnippetsList() {
     const { snippets: snippetsSearch } = useSearch({ from: '/(public)/developers/$id/' }) ?? {};
@@ -72,7 +72,7 @@ export function PublicProfilePageSnippetsList() {
     return (
         <div className="space-y-6">
             <OnlineGuard>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center flex-wrap gap-2">
                     <FilterQueryDialog
                         schema={snippetListDto.input.shape.filter}
                         value={{ filter, filterOperator }}
@@ -159,7 +159,7 @@ export function PublicProfilePageSnippetsList() {
                                 >
                                     <Button asChild>
                                         <Link to="/dashboard/snippets/new">
-                                            <PlusIcon className="h-4 w-4 mr-2" />
+                                            <CreateSnippetIcon className="mr-2 size-4" />
                                             <span>Create Snippet</span>
                                         </Link>
                                     </Button>

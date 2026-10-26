@@ -1,12 +1,17 @@
-import { Page } from '@/components/layout/page';
+import { GoToButton } from '@/components/inputs/goto-button';
+import { LoadingButton } from '@/components/inputs/loading-button';
+import { Page, PageTitle } from '@/components/layout/page';
+import { PageActionBar, PageActionBarItem, PageActionBarMenuItem } from '@/components/layout/page-action-bar';
+import { UpdateSnippetIcon } from '@/components/shared/creation-icons';
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import { getOfflineOwnerId, isOfflineMutationAvailable } from '@/features/offline-snippet/lib/common';
+import { MoveSnippetToTrashButton } from '@/features/snippet-delete/components/move-snippet-to-trash-button';
 import { listCurrentUserSnippetsQueryOptions } from '@/features/snippet-listing/lib/snippet-listing-query-options';
 import { SnippetFormMainFields } from '@/features/snippets/components/forms/snippet-form-main-fields';
 import { SnippetFormSidebar } from '@/features/snippets/components/forms/snippet-form-sidebar';
 import { getSnippetQueryOptions } from '@/features/snippets/lib/snippet-query-options';
 import { listPopularTagsQueryOptions } from '@/features/tags/lib/list-tags-query-options';
-import { UpdateSnippetPageHeader } from '@/features/update-snippet/components/update-snippet-page-header';
 import { useUpdateSnippet } from '@/features/update-snippet/hooks/use-update-snippet';
 import {
     updateSnippetFormSchema,
@@ -56,6 +61,7 @@ export const Route = createFileRoute('/(protected)/dashboard/snippets/$id/edit/'
 
 function EditSnippetPage() {
     const { id } = Route.useParams();
+    const navigate = Route.useNavigate();
     const { data } = useSuspenseQuery(getSnippetQueryOptions(id));
     const collection = 'collection' in data ? data.collection : undefined;
     const qClient = useQueryClient();
@@ -80,16 +86,102 @@ function EditSnippetPage() {
         },
     });
     return (
-        <Page form={form} submitHandler={form.handleSubmit(values => mutateAsync(values))}>
-            <UpdateSnippetPageHeader isPending={isPending} />
+        <Page
+            form={form}
+            submitHandler={form.handleSubmit(values => mutateAsync(values))}
+            pageHeaderClassName="px-4 md:px-6 py-4 border-b border-border bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 sticky top-0 z-50"
+        >
+            <PageTitle>Edit Snippet</PageTitle>
+            <PageActionBar>
+                <PageActionBarItem hideOnSmallScreens>
+                    <GoToButton label="Go to Snippet" to="/snippets/$id" params={{ id: id } as any} />
+                </PageActionBarItem>
+
+                <PageActionBarItem hideOnSmallScreens>
+                    <PermissionGuard
+                        requiredPermissions={[
+                            Permission.Authenticated,
+                            Permission.DeleteSnippet,
+                            Permission.Owner,
+                        ]}
+                        ownerId={data.creator.id}
+                    >
+                        <MoveSnippetToTrashButton
+                            snippetId={data.id}
+                            mutationCallbacks={{
+                                onSuccess: () => {
+                                    qClient.invalidateQueries(getSnippetQueryOptions(id));
+                                    navigate({ to: '/dashboard/snippets' });
+                                },
+                            }}
+                            type="button"
+                            variant={'destructive-outline'}
+                            className="w-auto"
+                        />
+                    </PermissionGuard>
+                </PageActionBarItem>
+                <PageActionBarItem>
+                    <PermissionGuard
+                        requiredPermissions={[
+                            Permission.Authenticated,
+                            Permission.UpdateSnippet,
+                            Permission.Owner,
+                        ]}
+                        ownerId={data.creator.id}
+                        isAvailableOffline
+                    >
+                        <LoadingButton isLoading={isPending} type="submit">
+                            <UpdateSnippetIcon className="size-4 sm:mr-2" />
+                            Save Changes
+                        </LoadingButton>
+                    </PermissionGuard>
+                </PageActionBarItem>
+
+                <PageActionBarMenuItem>
+                    <DropdownMenuItem asChild>
+                        <GoToButton
+                            label="Go to Snippet"
+                            to="/snippets/$id"
+                            params={{ id: id } as any}
+                            variant={'ghost'}
+                            className="w-full justify-start"
+                        />
+                    </DropdownMenuItem>
+                </PageActionBarMenuItem>
+                <PageActionBarMenuItem>
+                    <PermissionGuard
+                        requiredPermissions={[
+                            Permission.Authenticated,
+                            Permission.DeleteSnippet,
+                            Permission.Owner,
+                        ]}
+                        ownerId={data.creator.id}
+                    >
+                        <DropdownMenuItem asChild>
+                            <MoveSnippetToTrashButton
+                                snippetId={data.id}
+                                mutationCallbacks={{
+                                    onSuccess: () => {
+                                        qClient.invalidateQueries(getSnippetQueryOptions(id));
+                                        navigate({ to: '/dashboard/snippets' });
+                                    },
+                                }}
+                                type="button"
+                                variant={'ghost'}
+                                className="w-full justify-start"
+                            />
+                        </DropdownMenuItem>
+                    </PermissionGuard>
+                </PageActionBarMenuItem>
+            </PageActionBar>
             <PermissionGuard
                 requiredPermissions={[Permission.Authenticated, Permission.Owner, Permission.UpdateSnippet]}
                 ownerId={data.creator.id}
-                isAvailableOffline
+                isAvailableOffline={true}
             >
-                <main className="container mx-auto px-2 lg:px-6 py-8 max-w-6xl">
+                <main className="container mx-auto px-3 lg:px-6 py-8 max-w-6xl">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        <div className="md:col-span-2 space-y-6">
+                        <div className="md:col-span-2 min-w-0 space-y-6">
                             <SnippetFormMainFields isPending={isPending} snippetId={data.id} />
                         </div>
                         <SnippetFormSidebar isPending={isPending} selectedCollectionName={collection?.name} />

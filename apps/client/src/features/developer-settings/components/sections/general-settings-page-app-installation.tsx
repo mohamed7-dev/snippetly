@@ -1,15 +1,20 @@
 import { InstallAppButton } from '@/components/inputs/install-app-button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { CloudUploadIcon, DownloadIcon, WifiOffIcon } from 'lucide-react';
+import { CloudUploadIcon, DownloadIcon, SmartphoneIcon, WifiOffIcon } from 'lucide-react';
 
 export function GeneralSettingsPageAppInstallation() {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Install Snippetly on this device</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                    <SmartphoneIcon className="size-5 shrink-0 text-primary" aria-hidden="true" />
+                    <h2>Install Snippetly on this device</h2>
+                </CardTitle>
                 <CardDescription>
-                    Add Snippetly to your device for a standalone app experience and access to supported
-                    offline features.
+                    <p>
+                        Add Snippetly to your device for a standalone app experience and access to supported
+                        offline features.
+                    </p>
                 </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-5">
@@ -40,9 +45,7 @@ export function GeneralSettingsPageAppInstallation() {
                     Offline access is limited to cached data and supported create actions. Other features
                     require an internet connection.
                 </p>
-                <div>
-                    <InstallAppButton />
-                </div>
+                <InstallAppButton className="w-full sm:w-auto" />
             </CardContent>
         </Card>
     );

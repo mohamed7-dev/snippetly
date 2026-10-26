@@ -22,12 +22,12 @@ export function SnippetFormMainFields({ isPending, snippetId }: { isPending: boo
                     <CardTitle className="font-heading">Snippet Details</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center flex-wrap gap-4">
                         <FormField
                             control={form.control}
                             name="name"
                             render={({ field }) => (
-                                <FormItem className="flex-1">
+                                <FormItem className="flex-1 min-w-52">
                                     <FormLabel>Name</FormLabel>
                                     <FormControl>
                                         <Input
@@ -44,7 +44,7 @@ export function SnippetFormMainFields({ isPending, snippetId }: { isPending: boo
                             control={form.control}
                             name="slug"
                             render={({ field }) => (
-                                <FormItem className="flex-1">
+                                <FormItem className="flex-1 min-w-52">
                                     <FormLabel>Slug</FormLabel>
                                     <FormControl>
                                         <SlugInput
@@ -133,12 +133,14 @@ export function SnippetFormMainFields({ isPending, snippetId }: { isPending: boo
                 </CardContent>
             </Card>
 
+            <SnippetFormCode />
             <Card>
                 <CardHeader>
-                    <CardTitle>Snippet Code Info</CardTitle>
+                    <CardTitle>
+                        <h2>Snippet Notes</h2>
+                    </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                    <SnippetFormCode />
+                <CardContent>
                     <FormField
                         control={form.control}
                         name="note"

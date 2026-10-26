@@ -42,8 +42,8 @@ export function ProfilePageInfo() {
 
     return (
         <Card>
-            <CardContent className="pt-6">
-                <div className="flex flex-col md:flex-row gap-6">
+            <CardContent>
+                <div className="flex flex-col md:flex-row gap-6 relative">
                     <Avatar className="h-32 w-32 mx-auto md:mx-0">
                         <AvatarImage src={profile.image || '/placeholder.svg'} alt={avatarFallback} />
                         <AvatarFallback className="text-2xl">{avatarFallback}</AvatarFallback>
@@ -105,27 +105,29 @@ export function ProfilePageInfo() {
                         )}
                     </div>
 
-                    <DeveloperActionsDropdown
-                        developer={{ id: profile.id, firstName: profile.firstName }}
-                        friendshipInfo={{
-                            isFriendWithCurrentUser: friendshipInfo?.isCurrentUserAFriend ?? false,
-                            friendshipStatus: friendshipInfo?.friendshipStatus ?? null,
-                        }}
-                        favouriteInfo={{
-                            isFavouritedByCurrentUser:
-                                profile.relationshipWithCurrentUser.isFavouritedByCurrentUser,
-                        }}
-                        showRequestFriendship={shouldDisplaySendButton}
-                        showAddToFavourites={true}
-                        showRemoveFromFavourites={true}
-                        showEditProfile={true}
-                        addDeveloperToFavourites={{
-                            onSuccess: () => onMutateFavSuccess(),
-                        }}
-                        removeDeveloperFromFavourites={{
-                            onSuccess: () => onMutateFavSuccess(),
-                        }}
-                    />
+                    <div className="absolute top-0 inset-e-0">
+                        <DeveloperActionsDropdown
+                            developer={{ id: profile.id, firstName: profile.firstName }}
+                            friendshipInfo={{
+                                isFriendWithCurrentUser: friendshipInfo?.isCurrentUserAFriend ?? false,
+                                friendshipStatus: friendshipInfo?.friendshipStatus ?? null,
+                            }}
+                            favouriteInfo={{
+                                isFavouritedByCurrentUser:
+                                    profile.relationshipWithCurrentUser.isFavouritedByCurrentUser,
+                            }}
+                            showRequestFriendship={shouldDisplaySendButton}
+                            showAddToFavourites={true}
+                            showRemoveFromFavourites={true}
+                            showEditProfile={true}
+                            addDeveloperToFavourites={{
+                                onSuccess: () => onMutateFavSuccess(),
+                            }}
+                            removeDeveloperFromFavourites={{
+                                onSuccess: () => onMutateFavSuccess(),
+                            }}
+                        />
+                    </div>
                 </div>
             </CardContent>
         </Card>

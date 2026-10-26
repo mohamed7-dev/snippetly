@@ -1,10 +1,10 @@
 import { GoToButton } from '@/components/inputs/goto-button';
 import { LoadingButton } from '@/components/inputs/loading-button';
+import { CreateCollectionIcon } from '@/components/shared/creation-icons';
 import { HeaderWrapper } from '@/features/app-shell/components/header-wrapper';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import { Permission } from '@snippetly/common/dto';
 import { useSearch } from '@tanstack/react-router';
-import { SaveIcon } from 'lucide-react';
 
 export function CreateCollectionPageHeader({ isPending }: { isPending: boolean }) {
     const { redirect } = useSearch({
@@ -25,7 +25,7 @@ export function CreateCollectionPageHeader({ isPending }: { isPending: boolean }
                 isAvailableOffline
             >
                 <LoadingButton isLoading={isPending} type="submit">
-                    <SaveIcon />
+                    <CreateCollectionIcon className="size-4" />
                     Create Collection
                 </LoadingButton>
             </PermissionGuard>

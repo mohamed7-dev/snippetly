@@ -1,6 +1,7 @@
 import { InfiniteLoader } from '@/components/feedback/infinite-loader';
 import { StatusCard } from '@/components/feedback/status-card';
 import { CollectionListLayout } from '@/components/shared/collection-list-layout';
+import { CreateCollectionIcon } from '@/components/shared/creation-icons';
 import { FilterQueryDialog } from '@/components/shared/list-query-builder/filter-query-dialog';
 import { SortQueryDialog } from '@/components/shared/list-query-builder/sort-query-dialog';
 import { TagFilterBar } from '@/components/shared/tag-filter-bar';
@@ -16,7 +17,6 @@ import type { ApiSuccess } from '@/lib/api-client';
 import { collectionListDto, Permission, type CollectionListDtoType } from '@snippetly/common/dto';
 import { useQueryClient, useSuspenseInfiniteQuery, type InfiniteData } from '@tanstack/react-query';
 import { Link, useNavigate, useParams, useSearch } from '@tanstack/react-router';
-import { PlusIcon } from 'lucide-react';
 
 export function PublicProfilePageCollectionsList() {
     const qClient = useQueryClient();
@@ -76,7 +76,7 @@ export function PublicProfilePageCollectionsList() {
     return (
         <div className="space-y-6">
             <OnlineGuard>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center flex-wrap gap-2">
                     <FilterQueryDialog
                         schema={collectionListDto.input.shape.filter}
                         value={{ filter, filterOperator }}
@@ -169,7 +169,7 @@ export function PublicProfilePageCollectionsList() {
                                 >
                                     <Button asChild>
                                         <Link to="/dashboard/collections/new">
-                                            <PlusIcon className="h-4 w-4 mr-2" />
+                                            <CreateCollectionIcon className="mr-2 size-4" />
                                             <span>Create Collection</span>
                                         </Link>
                                     </Button>

@@ -9,7 +9,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { Trash2Icon } from 'lucide-react';
 import { useDeleteDeveloperAccount } from '../../hooks/use-delete-developer-account';
 
-export function SecuritySettingsPageAccountDeletion() {
+export function AccountDeletionSettings() {
     const { confirm, resetAndClose } = useDeleteConfirmation();
     const { logout, user } = useAuth();
     const navigate = useNavigate();
@@ -36,10 +36,15 @@ export function SecuritySettingsPageAccountDeletion() {
         <Card className="border-destructive/20">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-destructive">
-                    <Trash2Icon className="h-5 w-5" />
-                    Delete Account
+                    <Trash2Icon className="size-5 shrink-0" aria-hidden="true" />
+                    <h2>Delete Account</h2>
                 </CardTitle>
-                <CardDescription>Delete your account and all associated data.</CardDescription>
+                <CardDescription>
+                    <p>
+                        Schedule account deletion. Your data is permanently removed after 30 days unless you
+                        sign in again.
+                    </p>
+                </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
                 <ProcessStatus

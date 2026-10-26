@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form } from '@/components/ui/form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { MailIcon } from 'lucide-react';
+import { MailPlusIcon } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { useRequestEmailAddressChange } from '../../hooks/use-request-email-address-change';
 import {
@@ -10,7 +10,7 @@ import {
 } from '../../lib/schema';
 import { RequestEmailAddressChangeForm } from '../forms/request-email-address-change-form';
 
-export function SecuritySettingsPageEmailChange() {
+export function AccountEmailAddressChange() {
     const form = useForm<RequestEmailAddressChangeFormSchemaType>({
         defaultValues: {
             newEmailAddress: '',
@@ -24,17 +24,18 @@ export function SecuritySettingsPageEmailChange() {
         <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                    <MailIcon className="h-5 w-5" />
-                    Email Address Change
+                    <MailPlusIcon className="size-5 shrink-0 text-primary" aria-hidden="true" />
+                    <h2>Change email address</h2>
                 </CardTitle>
                 <CardDescription>
-                    Request email address change, and a verification link will be sent to your new email
-                    address
+                    <p>
+                        Request a new sign-in email and confirm the change using the link sent to that address.
+                    </p>
                 </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent>
                 <Form {...form}>
-                    <form className="space-y-4" onSubmit={form.handleSubmit(values => mutateAsync(values))}>
+                    <form onSubmit={form.handleSubmit(values => mutateAsync(values))}>
                         <RequestEmailAddressChangeForm isPending={isPending} />
                     </form>
                 </Form>

@@ -106,112 +106,98 @@ export function SearchResultsPage({ term, tags = [], types }: SearchResultsPageP
     const visibleItemsCount = selectedTypes.reduce((total, type) => total + groups[type].items.length, 0);
 
     return (
-        <main className="container mx-auto max-w-6xl space-y-6 px-4 py-8">
-            <div className="space-y-2">
-                <h1 className="text-3xl font-heading font-semibold">Search results</h1>
-                <p className="text-sm text-muted-foreground">
-                    {term ? `Results for “${term}”` : 'Results matching your tags'}
-                    {tags.length > 0 && ` · ${tags.map(tag => `#${tag}`).join(' ')}`}
-                </p>
-            </div>
+        <div className="grid gap-6 lg:grid-cols-[15rem_minmax(0,1fr)]">
+            <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start" aria-label="Search filters">
+                <Card>
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-base">Filter results</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                        {resultTypes.map(type => (
+                            <label
+                                key={type}
+                                className="flex cursor-pointer items-center justify-between gap-3 text-sm"
+                            >
+                                <span className="flex items-center gap-2">
+                                    <Checkbox
+                                        checked={selectedTypes.includes(type)}
+                                        onCheckedChange={checked => toggleType(type, checked)}
+                                    />
+                                    {typeLabels[type]}
+                                </span>
+                                <span className="text-muted-foreground">{groups[type].totalItems}</span>
+                            </label>
+                        ))}
+                    </CardContent>
+                </Card>
 
-            <div className="grid gap-6 lg:grid-cols-[15rem_minmax(0,1fr)]">
-                <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start" aria-label="Search filters">
+                {firstPage?.tagCounts.length ? (
                     <Card>
                         <CardHeader className="pb-3">
-                            <CardTitle className="text-base">Filter results</CardTitle>
+                            <CardTitle className="text-base">Matching tags</CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-3">
-                            {resultTypes.map(type => (
-                                <label
-                                    key={type}
-                                    className="flex cursor-pointer items-center justify-between gap-3 text-sm"
+                        <CardContent className="flex flex-wrap gap-2">
+                            {firstPage.tagCounts.map((tag: any) => (
+                                <Button
+                                    key={tag.value}
+                                    disabled={tags.some(
+                                        selectedTag =>
+                                            selectedTag.toLocaleLowerCase() === tag.value.toLocaleLowerCase(),
+                                    )}
+                                    onClick={() => appendTag(tag.value)}
+                                    size="sm"
+                                    type="button"
+                                    variant="outline"
                                 >
-                                    <span className="flex items-center gap-2">
-                                        <Checkbox
-                                            checked={selectedTypes.includes(type)}
-                                            onCheckedChange={checked => toggleType(type, checked)}
-                                        />
-                                        {typeLabels[type]}
-                                    </span>
-                                    <span className="text-muted-foreground">{groups[type].totalItems}</span>
-                                </label>
+                                    #{tag.value}
+                                    <span className="ml-1 text-muted-foreground">{tag.count}</span>
+                                </Button>
                             ))}
                         </CardContent>
                     </Card>
+                ) : null}
+            </aside>
 
-                    {firstPage?.tagCounts.length ? (
-                        <Card>
-                            <CardHeader className="pb-3">
-                                <CardTitle className="text-base">Matching tags</CardTitle>
-                            </CardHeader>
-                            <CardContent className="flex flex-wrap gap-2">
-                                {firstPage.tagCounts.map((tag: any) => (
-                                    <Button
-                                        key={tag.value}
-                                        disabled={tags.some(
-                                            selectedTag =>
-                                                selectedTag.toLocaleLowerCase() ===
-                                                tag.value.toLocaleLowerCase(),
-                                        )}
-                                        onClick={() => appendTag(tag.value)}
-                                        size="sm"
-                                        type="button"
-                                        variant="outline"
-                                    >
-                                        #{tag.value}
-                                        <span className="ml-1 text-muted-foreground">{tag.count}</span>
-                                    </Button>
-                                ))}
-                            </CardContent>
-                        </Card>
-                    ) : null}
-                </aside>
+            <div className="min-w-0 space-y-8">
+                {selectedTypes.length === 0 ? (
+                    <StatusCard
+                        variant="info"
+                        title="Choose a result type"
+                        description="Select snippets, collections, or developers in the filters."
+                        layout="section"
+                    />
+                ) : visibleItemsCount === 0 ? (
+                    <StatusCard
+                        variant="empty"
+                        title="No results found"
+                        description="Try different search words or tags."
+                        layout="section"
+                    />
+                ) : (
+                    resultTypes
+                        .filter(type => selectedTypes.includes(type))
+                        .map(type => (
+                            <SearchResultGroup
+                                key={type}
+                                items={groups[type].items}
+                                type={type}
+                                totalItems={groups[type].totalItems}
+                            />
+                        ))
+                )}
 
-                <div className="min-w-0 space-y-8">
-                    {selectedTypes.length === 0 ? (
-                        <StatusCard
-                            variant="info"
-                            title="Choose a result type"
-                            description="Select snippets, collections, or developers in the filters."
-                            layout="section"
-                        />
-                    ) : visibleItemsCount === 0 ? (
-                        <StatusCard
-                            variant="empty"
-                            title="No results found"
-                            description="Try different search words or tags."
-                            layout="section"
-                        />
-                    ) : (
-                        resultTypes
-                            .filter(type => selectedTypes.includes(type))
-                            .map(type => (
-                                <SearchResultGroup
-                                    key={type}
-                                    items={groups[type].items}
-                                    type={type}
-                                    totalItems={groups[type].totalItems}
-                                />
-                            ))
-                    )}
-
-                    {hasNextPage && selectedTypes.length > 0 && (
-                        <div className="flex justify-center">
-                            <Button disabled={isFetchingNextPage} onClick={() => void fetchNextPage()}>
-                                {isFetchingNextPage && (
-                                    <LoaderCircleIcon
-                                        className="mr-2 size-4 animate-spin"
-                                        aria-hidden="true"
-                                    />
-                                )}
-                                {isFetchingNextPage ? 'Loading...' : 'Load more results'}
-                            </Button>
-                        </div>
-                    )}
-                </div>
+                {hasNextPage && selectedTypes.length > 0 && (
+                    <div className="flex justify-center">
+                        <Button disabled={isFetchingNextPage} onClick={() => void fetchNextPage()}>
+                            {isFetchingNextPage && (
+                                <LoaderCircleIcon className="mr-2 size-4 animate-spin" aria-hidden="true" />
+                            )}
+                            {isFetchingNextPage ? 'Loading...' : 'Load more results'}
+                        </Button>
+                    </div>
+                )}
             </div>
-        </main>
+        </div>
     );
 }
 

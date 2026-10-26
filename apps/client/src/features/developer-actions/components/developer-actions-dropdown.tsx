@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { UpdateProfileIcon } from '@/components/shared/creation-icons';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -24,7 +25,7 @@ import type { SendFriendshipRequestMutationCallbacks } from '@/features/friendsh
 import { FriendshipStatus, Permission } from '@snippetly/common/dto';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation } from '@tanstack/react-router';
-import { EyeIcon, MoreHorizontalIcon, UserCog2Icon } from 'lucide-react';
+import { EyeIcon, MoreHorizontalIcon } from 'lucide-react';
 import React from 'react';
 
 export interface DeveloperFriendshipInfo {
@@ -138,8 +139,8 @@ export function DeveloperActionsDropdown({
                             >
                                 <DropdownMenuItem asChild>
                                     <Button variant="ghost" className="w-full justify-start" asChild>
-                                        <Link to="/dashboard/settings/profile">
-                                            <UserCog2Icon />
+                                        <Link to="/dashboard/settings/account">
+                                            <UpdateProfileIcon className="size-4" />
                                             Edit Profile
                                         </Link>
                                     </Button>

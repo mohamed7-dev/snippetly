@@ -1,4 +1,5 @@
 import { LoadingButton } from '@/components/inputs/loading-button';
+import { UpdateProfileIcon } from '@/components/shared/creation-icons';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,7 +13,7 @@ export function UpdateDeveloperProfileForm({ isPending }: { isPending: boolean }
 
     return (
         <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField
                     control={updateProfileForm.control}
                     name="firstName"
@@ -85,7 +86,8 @@ export function UpdateDeveloperProfileForm({ isPending }: { isPending: boolean }
                     )}
                 />
             </div>
-            <LoadingButton isLoading={isPending} type="submit">
+            <LoadingButton isLoading={isPending} type="submit" className="w-full sm:w-auto">
+                <UpdateProfileIcon className="size-4" />
                 Update Profile
             </LoadingButton>
         </div>

@@ -1,4 +1,4 @@
-import { TrashPageContentHeader } from '@/features/trash/components/sections/trash-page-content-header';
+import { Page, PageDescription, PageTitle } from '@/components/layout/page';
 import { TrashPageContentTabs } from '@/features/trash/components/sections/trash-page-content-tabs';
 import { listTrashedSnippetsQueryOptions } from '@/features/trash/lib/trash-query-options';
 import { currentUserTrashedCollectionListDto, currentUserTrashedSnippetListDto } from '@snippetly/common/dto';
@@ -42,9 +42,10 @@ export const Route = createFileRoute('/(protected)/dashboard/_dashboard-layout/t
 
 function TrashPage() {
     return (
-        <div className="space-y-8">
-            <TrashPageContentHeader />
+        <Page>
+            <PageTitle>Trash</PageTitle>
+            <PageDescription>Restore deleted content or permanently remove it.</PageDescription>
             <TrashPageContentTabs />
-        </div>
+        </Page>
     );
 }

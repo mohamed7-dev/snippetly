@@ -3,7 +3,6 @@ import { Input } from '@/components/ui/input';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { cn } from '@/lib/utils';
 import { PaintBucketIcon, PaletteIcon } from 'lucide-react';
-import React from 'react';
 import { useFormContext } from 'react-hook-form';
 import { COLOR_OPTIONS } from '../../lib/data';
 
@@ -14,7 +13,9 @@ export function ColorField() {
     const selectedColor = normalizeColor(form.watch('color'));
     const isPending = form.formState.isSubmitting;
 
-    const isCustomColor = !!selectedColor && !COLOR_OPTIONS.some(option => option.code.toLowerCase() === selectedColor.toLowerCase());
+    const isCustomColor =
+        !!selectedColor &&
+        !COLOR_OPTIONS.some(option => option.code.toLowerCase() === selectedColor.toLowerCase());
 
     const handleColorChange = (value: string) => {
         form.setValue('color', value, { shouldDirty: true, shouldTouch: true });
@@ -46,7 +47,8 @@ export function ColorField() {
                                     className={cn(
                                         'text-xs sm:text-sm h-12 w-full rounded-lg border-2 border-transparent transition-all hover:scale-[1.02] hover:border-primary/70',
                                         color.class,
-                                        selectedColor === color.code && 'ring-2 ring-primary ring-offset-2 ring-offset-background',
+                                        selectedColor === color.code &&
+                                            'ring-2 ring-primary ring-offset-2 ring-offset-background',
                                     )}
                                     value={color.code}
                                     aria-label={`Toggle ${color.name}`}
@@ -56,7 +58,7 @@ export function ColorField() {
                             ))}
                         </ToggleGroup>
 
-                        <div className="flex items-center gap-3 rounded-lg border border-border bg-input/40 p-3">
+                        <div className="flex items-center flex-wrap gap-3 rounded-lg border border-border bg-input/40 p-3">
                             <label
                                 className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-md border border-border bg-background shadow-sm"
                                 htmlFor="custom-collection-color"

@@ -1,5 +1,5 @@
+import { Page, PageDescription, PageTitle } from '@/components/layout/page';
 import { GeneralSettingsPageAppInstallation } from '@/features/developer-settings/components/sections/general-settings-page-app-installation';
-import { GeneralSettingsPageHeader } from '@/features/developer-settings/components/sections/general-settings-page-header';
 import { createFileRoute } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/(protected)/dashboard/settings/')({
@@ -8,7 +8,7 @@ export const Route = createFileRoute('/(protected)/dashboard/settings/')({
         return {
             meta: [
                 {
-                    title: 'Settings',
+                    title: 'General Settings',
                 },
             ],
         };
@@ -17,9 +17,12 @@ export const Route = createFileRoute('/(protected)/dashboard/settings/')({
 
 function GeneralSettingsPage() {
     return (
-        <div className="flex flex-col gap-6">
-            <GeneralSettingsPageHeader />
+        <Page>
+            <PageTitle>General settings</PageTitle>
+            <PageDescription>
+                Manage the app installation and offline features for this device.
+            </PageDescription>
             <GeneralSettingsPageAppInstallation />
-        </div>
+        </Page>
     );
 }

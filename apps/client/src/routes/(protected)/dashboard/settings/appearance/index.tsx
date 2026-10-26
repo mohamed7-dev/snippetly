@@ -1,4 +1,5 @@
-import { AppearanceSettingsPageContentHeader } from '@/features/developer-settings/components/sections/appearance-settings-page-content-header';
+import { Page, PageDescription, PageTitle } from '@/components/layout/page';
+import { AppearanceSettingsPageCodeEditor } from '@/features/developer-settings/components/sections/appearance-settings-page-code-editor';
 import { AppearanceSettingsPageThemeSettings } from '@/features/developer-settings/components/sections/appearance-settings-page-theme';
 import { createFileRoute } from '@tanstack/react-router';
 
@@ -17,9 +18,13 @@ export const Route = createFileRoute('/(protected)/dashboard/settings/appearance
 
 function AppearanceSettingsPage() {
     return (
-        <div className="flex flex-col gap-6">
-            <AppearanceSettingsPageContentHeader />
+        <Page>
+            <PageTitle>Appearance</PageTitle>
+            <PageDescription>
+                Choose your Snippetly color theme and customize how code appears in the editor.
+            </PageDescription>
             <AppearanceSettingsPageThemeSettings />
-        </div>
+            <AppearanceSettingsPageCodeEditor />
+        </Page>
     );
 }

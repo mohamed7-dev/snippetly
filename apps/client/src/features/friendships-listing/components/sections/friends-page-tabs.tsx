@@ -18,7 +18,7 @@ import { currentUserFriendsListDto, type CurrentUserFriendsListDtoType } from '@
 import { omit } from '@snippetly/common/lib';
 import { useQuery, useQueryClient, useSuspenseInfiniteQuery, type InfiniteData } from '@tanstack/react-query';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
-import { PlusIcon } from 'lucide-react';
+import { UserSearchIcon } from 'lucide-react';
 import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { listCurrentUserFriendsQueryOptions } from '../../lib/friendships-listing-query-options';
@@ -269,8 +269,8 @@ function FriendsTabContent() {
                             layout="section"
                             actions={
                                 <Button asChild>
-                                    <Link to="/discover">
-                                        <PlusIcon className="h-4 w-4 mr-2" />
+                                    <Link to="/discover" search={{ tab: 'developers' }}>
+                                        <UserSearchIcon />
                                         <span>Discover Developers</span>
                                     </Link>
                                 </Button>

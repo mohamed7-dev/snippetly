@@ -1,4 +1,5 @@
 import { InfiniteLoader } from '@/components/feedback/infinite-loader';
+import { CreateCollectionIcon } from '@/components/shared/creation-icons';
 import { StatusCard } from '@/components/feedback/status-card';
 import {
     AlertDialog,
@@ -15,7 +16,6 @@ import { getOfflineOwnerId, listOfflineCollectionOptions } from '@/features/offl
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { PlusIcon } from 'lucide-react';
 import { listCurrentUserCollectionsQueryOptions } from '../../lib/collection-listing-query-options';
 import { CollectionItem } from './collection-item';
 
@@ -102,7 +102,7 @@ export function CurrentUserCollectionsOverlay({
                                                     redirect: createCollectionRedirect ?? location.href,
                                                 }}
                                             >
-                                                <PlusIcon className="h-4 w-4 mr-2" />
+                                                <CreateCollectionIcon className="mr-2 size-4" />
                                                 Create Collection
                                             </Link>
                                         </Button>
@@ -117,7 +117,7 @@ export function CurrentUserCollectionsOverlay({
                         to="/dashboard/collections/new"
                         search={{ redirect: createCollectionRedirect ?? location.href }}
                     >
-                        <PlusIcon />
+                        <CreateCollectionIcon className="size-4" />
                         <span>Add New Collection</span>
                     </Link>
                 </Button>

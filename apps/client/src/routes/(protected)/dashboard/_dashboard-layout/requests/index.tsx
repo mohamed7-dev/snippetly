@@ -1,13 +1,15 @@
 import { ErrorBoundaryFallback } from '@/components/feedback/error-boundary-fallback';
 import { SectionLoader } from '@/components/feedback/section-loader';
+import { Page, PageDescription, PageTitle } from '@/components/layout/page';
+import { PageActionBar, PageActionBarItem } from '@/components/layout/page-action-bar';
+import { Button } from '@/components/ui/button';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
-import { useAuth } from '@/features/auth/hooks/use-auth';
-import { RequestsPageMainContentHeader } from '@/features/friendships-listing/components/sections/requests-page-main-content-header';
 import { RequestsPageStats } from '@/features/friendships-listing/components/sections/requests-page-stats';
 import { RequestsPageTabs } from '@/features/friendships-listing/components/sections/requests-page-tabs';
 import { listCurrentUserInboxQueryOptions } from '@/features/friendships-listing/lib/friendships-listing-query-options';
 import { currentUserInboxListDto, currentUserOutboxListDto, Permission } from '@snippetly/common/dto';
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, Link } from '@tanstack/react-router';
+import { UserPlusIcon } from 'lucide-react';
 import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import z from 'zod';
@@ -51,21 +53,30 @@ export const Route = createFileRoute('/(protected)/dashboard/_dashboard-layout/r
 });
 
 function RequestPage() {
-    const { user } = useAuth();
     return (
-        <div className="space-y-6">
-            <RequestsPageMainContentHeader />
-            <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
-                <React.Suspense fallback={<SectionLoader />}>
-                    <RequestsPageStats />
-                </React.Suspense>
-            </ErrorBoundary>
-            <PermissionGuard
-                requiredPermissions={[Permission.Authenticated, Permission.ReadFriendship, Permission.Owner]}
-                ownerId={user?.id}
-            >
-                <RequestsPageTabs />
-            </PermissionGuard>
-        </div>
+        <Page>
+            <PageTitle>Friendship Requests</PageTitle>
+            <PageDescription>Manage your incoming and outgoing friendship requests</PageDescription>
+            <PageActionBar>
+                <PageActionBarItem>
+                    <Button asChild>
+                        <Link to="/discover">
+                            <UserPlusIcon />
+                            Find Friends
+                        </Link>
+                    </Button>
+                </PageActionBarItem>
+            </PageActionBar>
+            <div className="space-y-6">
+                <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
+                    <React.Suspense fallback={<SectionLoader />}>
+                        <RequestsPageStats />
+                    </React.Suspense>
+                </ErrorBoundary>
+                <PermissionGuard requiredPermissions={[Permission.Authenticated, Permission.ReadFriendship]}>
+                    <RequestsPageTabs />
+                </PermissionGuard>
+            </div>
+        </Page>
     );
 }

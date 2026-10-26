@@ -8,7 +8,7 @@ export function MobileSidebar() {
     return (
         <Sheet>
             <SheetTrigger asChild>
-                <Button size={'icon'} variant={'ghost'} className="flex md:hidden">
+                <Button size={'icon'} variant={'ghost'} className="flex lg:hidden">
                     <MenuIcon className="size-6" />
                     <span className="sr-only">open sidebar</span>
                 </Button>

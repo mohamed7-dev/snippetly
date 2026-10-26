@@ -44,6 +44,9 @@ function editorBaseTheme(fontSize: number, fontFamily: 'geist-mono' | 'system-mo
         '&': {
             fontSize: `${fontSize}px`,
             height: '100%',
+            width: '100%',
+            minWidth: '0',
+            maxWidth: '100%',
         },
         '.cm-gutters': {
             display: lineNumbers ? 'block' : 'none',
@@ -60,7 +63,10 @@ function editorBaseTheme(fontSize: number, fontFamily: 'geist-mono' | 'system-mo
                     ? 'var(--font-geist-mono, ui-monospace, monospace)'
                     : 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
             height: '100%',
-            overflow: 'auto',
+            width: '100%',
+            minWidth: '0',
+            overflowX: 'auto',
+            overflowY: 'auto',
         },
     });
 }
@@ -313,7 +319,7 @@ export function SnippetCodeEditor({
     const hasLanguage = language.trim() !== '' && languageName(language) !== 'plaintext';
 
     return (
-        <div className="space-y-2">
+        <div className="w-full min-w-0 space-y-2">
             {!hasLanguage && (
                 <Alert className="rounded-none border-x-0 border-t-0">
                     <InfoIcon className="h-4 w-4 text-primary" />
@@ -323,7 +329,7 @@ export function SnippetCodeEditor({
                     </AlertDescription>
                 </Alert>
             )}
-            <div ref={editorHostRef} className={className} />
+            <div ref={editorHostRef} className={`w-full min-w-0 ${className ?? ''}`} />
         </div>
     );
 }

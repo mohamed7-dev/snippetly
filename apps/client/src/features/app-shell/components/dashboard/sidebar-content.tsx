@@ -1,4 +1,5 @@
 import { StatusCard } from '@/components/feedback/status-card';
+import { CreateCollectionIcon } from '@/components/shared/creation-icons';
 import { Button } from '@/components/ui/button';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import { listCurrentUserCollectionsQueryOptions } from '@/features/collection-listing/lib/collection-listing-query-options';
@@ -51,7 +52,10 @@ export function SidebarContent() {
                                 isAvailableOffline={true}
                             >
                                 <Button variant={'default'} asChild>
-                                    <Link to="/dashboard/collections/new">Create Collection</Link>
+                                    <Link to="/dashboard/collections/new">
+                                        <CreateCollectionIcon className="size-4" />
+                                        Create Collection
+                                    </Link>
                                 </Button>
                             </PermissionGuard>,
                         ]}

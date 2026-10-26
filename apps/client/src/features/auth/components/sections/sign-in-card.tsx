@@ -3,30 +3,12 @@ import { Button } from '@/components/ui/button';
 import { CardContent, CardFooter } from '@/components/ui/card';
 import type { UserType } from '@/lib/types';
 import { Link, useSearch } from '@tanstack/react-router';
-import React from 'react';
-import { toast } from 'sonner';
-import { useAuth } from '../../hooks/use-auth';
 import { SignInFormContent } from '../forms/sign-in-form';
 import { AuthCard } from '../shared/auth-card';
 import { GoogleAuthButton } from '../shared/google-auth-button';
 
-export function SignInCard({
-    userType,
-    isVerifying,
-    isPending,
-}: {
-    userType: UserType;
-    isVerifying: boolean;
-    isPending: boolean;
-}) {
-    const { errorMessage } = useAuth();
+export function SignInCard({ userType, isPending }: { userType: UserType; isPending: boolean }) {
     const { redirect } = useSearch({ from: '/(auth)/_auth-layout/sign-in' });
-
-    React.useEffect(() => {
-        if (errorMessage && !isVerifying) {
-            toast.error(errorMessage);
-        }
-    }, [errorMessage, isVerifying]);
 
     return (
         <AuthCard

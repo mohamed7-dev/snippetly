@@ -20,7 +20,7 @@ export const SETTINGS_NAV_ITEMS = [
         title: 'General',
         href: '/dashboard/settings/',
         icon: AppWindowIcon,
-        description: 'General application settings',
+        description: 'Install Snippetly and manage offline features on this device',
         requiredPermissions: [Permission.Authenticated],
     },
     {
@@ -28,16 +28,16 @@ export const SETTINGS_NAV_ITEMS = [
         title: 'Appearance',
         href: '/dashboard/settings/appearance',
         icon: PaletteIcon,
-        description: 'Theme and display preferences',
+        description: 'Color theme and code editor preferences',
         requiredPermissions: [Permission.Authenticated],
     },
 
     {
-        id: 'profile',
-        title: 'Profile',
-        href: '/dashboard/settings/profile',
+        id: 'account',
+        title: 'Account',
+        href: '/dashboard/settings/account',
         icon: UserIcon,
-        description: 'Personal information and profile picture',
+        description: 'Profile details, profile photo, email address, and account deletion',
         requiredPermissions: [Permission.Authenticated],
     },
     {
@@ -45,7 +45,7 @@ export const SETTINGS_NAV_ITEMS = [
         title: 'Security',
         href: '/dashboard/settings/security',
         icon: ShieldIcon,
-        description: 'Password and email settings',
+        description: 'Password and signed-in sessions',
         requiredPermissions: [Permission.Authenticated],
     },
     {
@@ -53,7 +53,7 @@ export const SETTINGS_NAV_ITEMS = [
         title: 'Notifications',
         href: '/dashboard/settings/notifications',
         icon: BellIcon,
-        description: 'Manage in-app and push notification behavior',
+        description: 'In-app alerts and browser push notifications',
         requiredPermissions: [Permission.Authenticated],
     },
 ];

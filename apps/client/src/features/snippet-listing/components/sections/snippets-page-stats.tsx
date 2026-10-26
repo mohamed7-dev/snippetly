@@ -16,7 +16,7 @@ export function SnippetsPageStats() {
             requiredPermissions={[Permission.Authenticated, Permission.ReadDeveloper]}
             isAvailableOffline={true}
         >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            <div className="grid grid-cols-2 gap-4">
                 <StatCard icon={BookOpenIcon} value={stats.snippetsCount} label="Total Snippets" />
                 <StatCard
                     icon={GitForkIcon}
