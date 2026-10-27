@@ -32,7 +32,7 @@ function SearchPage() {
                     {term ? `Results for “${term}”` : 'Results matching your tags'}
                     {!!tags?.length && ` · ${tags?.map(tag => `#${tag}`).join(' ')}`}
                 </PageDescription>
-                <SearchResultsPage term={term} tags={tags} types={types} />;
+                <SearchResultsPage term={term} tags={tags} types={types} />
             </Page>
         </main>
     );

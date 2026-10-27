@@ -183,8 +183,8 @@ function RowBox({ row, label, shared }: { row: FilterRow; label: string; shared:
     const { builder, operatorLabels, inputs, fieldInputs } = shared;
 
     return (
-        <li role="group" aria-label={label} className="space-y-1">
-            <div className="flex flex-wrap items-start gap-2">
+        <li role="group" aria-label={label} className="space-y-1 overflow-x-auto">
+            <div className="flex items-start gap-2">
                 <Select value={row.field?.name ?? ''} onValueChange={name => builder.setField(row.id, name)}>
                     <SelectTrigger aria-label="Field" className="w-44">
                         <SelectValue placeholder="Field" />

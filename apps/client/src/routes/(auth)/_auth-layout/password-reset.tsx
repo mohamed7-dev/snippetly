@@ -40,7 +40,7 @@ function PasswordResetPage() {
 
     return (
         <Page form={form} submitHandler={form.handleSubmit(async values => await mutateAsync(values))}>
-            <div className="min-h-screen flex items-center justify-center p-1">
+            <div className="flex items-center justify-center px-2 pt-4">
                 <PasswordResetCard
                     isPending={isPending}
                     successMessage={

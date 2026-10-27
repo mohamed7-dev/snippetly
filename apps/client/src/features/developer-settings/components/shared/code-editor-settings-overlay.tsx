@@ -3,33 +3,11 @@ import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import type {
-    CodeEditorSettings,
-    CodeEditorTheme,
-} from '@/features/developer-settings/providers/developer-settings-provider';
+import type { CodeEditorSettings } from '@/features/developer-settings/providers/developer-settings-provider';
 import { Settings2Icon } from 'lucide-react';
 import React, { type ComponentProps } from 'react';
-
-const EDITOR_THEMES = [
-    { value: 'system', label: 'System (follows appearance)' },
-    { value: 'ayu-light', label: 'Ayu Light' },
-    { value: 'one-dark', label: 'One Dark' },
-    { value: 'dracula', label: 'Dracula' },
-] as const;
-const FONT_FAMILIES = [
-    { value: 'geist-mono', label: 'Geist Mono' },
-    { value: 'system-mono', label: 'System Monospace' },
-] as const;
-const FONT_SIZES = [10, 12, 14, 16, 18, 20, 24] as const;
-const TAB_SIZES = [2, 4, 8] as const;
-
-function isEditorTheme(value: string): value is CodeEditorTheme {
-    return EDITOR_THEMES.some(option => option.value === value);
-}
-
-function isFontFamily(value: string): value is CodeEditorSettings['fontFamily'] {
-    return FONT_FAMILIES.some(option => option.value === value);
-}
+import { EDITOR_THEMES, FONT_FAMILIES, FONT_SIZES, TAB_SIZES } from '../../lib/data';
+import { isEditorTheme, isFontFamily } from '../../lib/utils';
 
 type SnippetCodeEditorSettingsProps = {
     settings: CodeEditorSettings;
@@ -39,7 +17,7 @@ type SnippetCodeEditorSettingsProps = {
     onReset: () => void;
 };
 
-export function SnippetCodeEditorSettings({
+export function CodeEditorSettingsOverlay({
     settings,
     hasLocalOverrides,
     onChange,
@@ -112,26 +90,6 @@ export function SnippetCodeEditorSettings({
                             </Select>
                         </div>
                         <div className="space-y-1.5">
-                            <Label htmlFor={`${id}-font-family`}>Font family</Label>
-                            <Select
-                                value={settings.fontFamily}
-                                onValueChange={value => {
-                                    if (isFontFamily(value)) onChange({ fontFamily: value });
-                                }}
-                            >
-                                <SelectTrigger id={`${id}-font-family`}>
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {FONT_FAMILIES.map(option => (
-                                        <SelectItem key={option.value} value={option.value}>
-                                            {option.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-1.5">
                             <Label htmlFor={`${id}-tab-size`}>Indent size</Label>
                             <Select
                                 value={String(settings.tabSize)}
@@ -147,6 +105,26 @@ export function SnippetCodeEditorSettings({
                                     {TAB_SIZES.map(size => (
                                         <SelectItem key={size} value={String(size)}>
                                             {size} spaces
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-1.5 col-span-2">
+                            <Label htmlFor={`${id}-font-family`}>Font family</Label>
+                            <Select
+                                value={settings.fontFamily}
+                                onValueChange={value => {
+                                    if (isFontFamily(value)) onChange({ fontFamily: value });
+                                }}
+                            >
+                                <SelectTrigger id={`${id}-font-family`}>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {FONT_FAMILIES.map(option => (
+                                        <SelectItem key={option.value} value={option.value}>
+                                            {option.label}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>

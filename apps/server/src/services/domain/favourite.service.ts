@@ -42,8 +42,18 @@ export class FavouriteService {
         if (resourceType === 'snippets') {
             const snippet = await this.databaseService.getRepository(ctx, Snippet).findOne({
                 where: [
-                    { id: resourceId, isPrivate: false, deletedAt: IsNull() },
-                    { id: resourceId, isPrivate: true, creator: { id: developerId }, deletedAt: IsNull() },
+                    {
+                        id: resourceId,
+                        isPrivate: false,
+                        creator: { deletedAt: IsNull() },
+                        deletedAt: IsNull(),
+                    },
+                    {
+                        id: resourceId,
+                        isPrivate: true,
+                        creator: { id: developerId, deletedAt: IsNull() },
+                        deletedAt: IsNull(),
+                    },
                 ],
                 relations: { creator: true },
             });
@@ -54,8 +64,18 @@ export class FavouriteService {
         } else if (resourceType === 'collections') {
             const collection = await this.databaseService.getRepository(ctx, Collection).findOne({
                 where: [
-                    { id: resourceId, isPrivate: false, deletedAt: IsNull() },
-                    { id: resourceId, isPrivate: true, creator: { id: developerId }, deletedAt: IsNull() },
+                    {
+                        id: resourceId,
+                        isPrivate: false,
+                        creator: { deletedAt: IsNull() },
+                        deletedAt: IsNull(),
+                    },
+                    {
+                        id: resourceId,
+                        isPrivate: true,
+                        creator: { id: developerId, deletedAt: IsNull() },
+                        deletedAt: IsNull(),
+                    },
                 ],
                 relations: { creator: true },
             });

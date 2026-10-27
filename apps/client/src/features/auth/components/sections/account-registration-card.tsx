@@ -15,7 +15,7 @@ export function AccountRegistrationCard({ isPending }: { isPending: boolean }) {
                 <AccountRegistrationForm isPending={isPending} />
             </CardContent>
             <CardFooter className="flex-col gap-4">
-                <div className="self-start text-sm">
+                <div className="self-start flex items-center">
                     <span className="text-muted-foreground">Already have an account? </span>
                     <Button variant={'link'} asChild>
                         <Link to={'/sign-in'}>Sign in</Link>

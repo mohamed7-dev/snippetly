@@ -7,28 +7,8 @@ import { SnippetCodeEditor } from '@/features/snippets/components/shared/snippet
 import { useTheme } from '@/hooks/use-theme';
 import { Code2Icon } from 'lucide-react';
 import { useDeveloperSettings } from '../../hooks/use-developer-settings';
-import type { CodeEditorSettings, CodeEditorTheme } from '../../providers/developer-settings-provider';
-
-const EDITOR_THEMES = [
-    { value: 'system', label: 'System (follows appearance)' },
-    { value: 'ayu-light', label: 'Ayu Light' },
-    { value: 'one-dark', label: 'One Dark' },
-    { value: 'dracula', label: 'Dracula' },
-] as const;
-const EDITOR_FONT_FAMILIES = [
-    { value: 'geist-mono', label: 'Geist Mono' },
-    { value: 'system-mono', label: 'System Monospace' },
-] as const;
-const EDITOR_FONT_SIZES = [10, 12, 14, 16, 18, 20, 24] as const;
-const EDITOR_TAB_SIZES = [2, 4, 8] as const;
-
-function isCodeEditorTheme(value: string): value is CodeEditorTheme {
-    return EDITOR_THEMES.some(option => option.value === value);
-}
-
-function isCodeEditorFontFamily(value: string): value is CodeEditorSettings['fontFamily'] {
-    return EDITOR_FONT_FAMILIES.some(option => option.value === value);
-}
+import { EDITOR_THEMES, FONT_FAMILIES, FONT_SIZES, TAB_SIZES } from '../../lib/data';
+import { isEditorTheme, isFontFamily } from '../../lib/utils';
 
 export function AppearanceSettingsPageCodeEditor() {
     const {
@@ -60,7 +40,7 @@ export function AppearanceSettingsPageCodeEditor() {
                     <Select
                         value={codeEditor.theme}
                         onValueChange={value => {
-                            if (isCodeEditorTheme(value)) updateCodeEditorSettings({ theme: value });
+                            if (isEditorTheme(value)) updateCodeEditorSettings({ theme: value });
                         }}
                     >
                         <SelectTrigger id="editor-theme" className="w-full">
@@ -81,7 +61,7 @@ export function AppearanceSettingsPageCodeEditor() {
                         value={String(codeEditor.fontSize)}
                         onValueChange={value => {
                             const fontSize = Number(value);
-                            if (EDITOR_FONT_SIZES.some(size => size === fontSize)) {
+                            if (FONT_SIZES.some(size => size === fontSize)) {
                                 updateCodeEditorSettings({ fontSize });
                             }
                         }}
@@ -90,7 +70,7 @@ export function AppearanceSettingsPageCodeEditor() {
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            {EDITOR_FONT_SIZES.map(size => (
+                            {FONT_SIZES.map(size => (
                                 <SelectItem key={size} value={String(size)}>
                                     {size}px
                                 </SelectItem>
@@ -103,7 +83,7 @@ export function AppearanceSettingsPageCodeEditor() {
                     <Select
                         value={codeEditor.fontFamily}
                         onValueChange={value => {
-                            if (isCodeEditorFontFamily(value)) {
+                            if (isFontFamily(value)) {
                                 updateCodeEditorSettings({ fontFamily: value });
                             }
                         }}
@@ -112,7 +92,7 @@ export function AppearanceSettingsPageCodeEditor() {
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            {EDITOR_FONT_FAMILIES.map(option => (
+                            {FONT_FAMILIES.map(option => (
                                 <SelectItem key={option.value} value={option.value}>
                                     {option.label}
                                 </SelectItem>
@@ -126,7 +106,7 @@ export function AppearanceSettingsPageCodeEditor() {
                         value={String(codeEditor.tabSize)}
                         onValueChange={value => {
                             const tabSize = Number(value);
-                            if (EDITOR_TAB_SIZES.some(size => size === tabSize)) {
+                            if (TAB_SIZES.some(size => size === tabSize)) {
                                 updateCodeEditorSettings({ tabSize });
                             }
                         }}
@@ -135,7 +115,7 @@ export function AppearanceSettingsPageCodeEditor() {
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            {EDITOR_TAB_SIZES.map(size => (
+                            {TAB_SIZES.map(size => (
                                 <SelectItem key={size} value={String(size)}>
                                     {size} spaces
                                 </SelectItem>

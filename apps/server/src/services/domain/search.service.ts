@@ -127,7 +127,10 @@ export class SearchService {
                         isVerified: snippet.creator.isVerified,
                     },
                     collection:
-                        snippet.collection && !snippet.collection.isPrivate && !snippet.collection.deletedAt
+                        snippet.collection &&
+                        !snippet.collection.isPrivate &&
+                        !snippet.collection.deletedAt &&
+                        !snippet.collection.creator.deletedAt
                             ? {
                                   id: snippet.collection.id,
                                   name: snippet.collection.name,
@@ -286,7 +289,7 @@ export class SearchService {
                     { expression: 'snippet.language', weight: 1 },
                     { expression: 'snippet.code', weight: 0.5 },
                 ],
-                relations: { creator: { user: true }, collection: true, tags: true },
+                relations: { creator: { user: true }, collection: { creator: true }, tags: true },
             },
             collections: {
                 entity: Collection,

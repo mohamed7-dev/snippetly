@@ -2,7 +2,6 @@ import { GoToButton } from '@/components/inputs/goto-button';
 import { LoadingButton } from '@/components/inputs/loading-button';
 import { Page, PageTitle } from '@/components/layout/page';
 import { PageActionBar, PageActionBarItem, PageActionBarMenuItem } from '@/components/layout/page-action-bar';
-import { CreateCollectionIcon } from '@/components/shared/creation-icons';
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import { listCurrentUserCollectionsQueryOptions } from '@/features/collection-listing/lib/collection-listing-query-options';
@@ -18,6 +17,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Permission } from '@snippetly/common/dto';
 import { useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
+import { SaveIcon } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 
 export const Route = createFileRoute('/(protected)/dashboard/collections/new/')({
@@ -89,8 +89,6 @@ function RouteComponent() {
             form={createCollectionForm}
             submitHandler={createCollectionForm.handleSubmit(values => mutateAsync(values))}
         >
-            {/* <CreateCollectionPageHeader isPending={isPending} /> */}
-
             <PageTitle>Create New Collection</PageTitle>
             <PageActionBar>
                 <PageActionBarItem hideOnSmallScreens>
@@ -99,14 +97,14 @@ function RouteComponent() {
                         label={!redirect ? 'Go to Collections' : 'Go Back'}
                     />
                 </PageActionBarItem>
-                <PageActionBarItem hideOnSmallScreens>
+                <PageActionBarItem>
                     <PermissionGuard
                         requiredPermissions={[Permission.Authenticated, Permission.CreateCollection]}
                         isAvailableOffline={true}
                     >
                         <LoadingButton isLoading={isPending} type="submit">
-                            <CreateCollectionIcon className="size-4" />
-                            Create Collection
+                            <SaveIcon />
+                            <span className="sr-only sm:not-sr-only">Create Collection</span>
                         </LoadingButton>
                     </PermissionGuard>
                 </PageActionBarItem>
@@ -119,29 +117,6 @@ function RouteComponent() {
                             className="justify-start w-full"
                         />
                     </DropdownMenuItem>
-                </PageActionBarMenuItem>
-                <PageActionBarMenuItem>
-                    <PermissionGuard
-                        requiredPermissions={[Permission.Authenticated, Permission.CreateSnippet]}
-                        isAvailableOffline={true}
-                    >
-                        <DropdownMenuItem asChild>
-                            <PermissionGuard
-                                requiredPermissions={[Permission.Authenticated, Permission.CreateCollection]}
-                                isAvailableOffline={true}
-                            >
-                                <LoadingButton
-                                    isLoading={isPending}
-                                    type="submit"
-                                    className="justify-start w-full"
-                                    variant={'ghost'}
-                                >
-                                    <CreateCollectionIcon className="size-4" />
-                                    Create Collection
-                                </LoadingButton>
-                            </PermissionGuard>
-                        </DropdownMenuItem>
-                    </PermissionGuard>
                 </PageActionBarMenuItem>
             </PageActionBar>
 

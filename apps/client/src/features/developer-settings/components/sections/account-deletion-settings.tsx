@@ -72,6 +72,7 @@ export function AccountDeletionSettings() {
                         className="w-full sm:w-auto"
                         onClick={handleDelete}
                         isLoading={isPending}
+                        type="button"
                     >
                         Delete My Account
                     </LoadingButton>

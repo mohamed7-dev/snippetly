@@ -178,14 +178,15 @@ function FilterDialogBody({
                 <Button type="button" variant="ghost" disabled={builder.isEmpty} onClick={builder.clear}>
                     Clear all
                 </Button>
-                <div className="flex gap-2">
-                    <Button type="button" variant="outline" onClick={onCancel}>
+                <div className="flex flex-wrap gap-2">
+                    <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={onCancel}>
                         Cancel
                     </Button>
                     <Button
                         type="button"
                         disabled={hasError || !!builder.unsupported}
                         onClick={() => onApply(builder.query)}
+                        className="w-full sm:w-auto"
                     >
                         Apply
                     </Button>

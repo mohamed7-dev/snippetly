@@ -1,6 +1,8 @@
 import { InstallAppButton } from '@/components/inputs/install-app-button';
-import { Button } from '@/components/ui/button';
+import { PageActionBar, PageActionBarItem, PageActionBarMenuItem } from '@/components/layout/page-action-bar';
 import { CreateSnippetIcon } from '@/components/shared/creation-icons';
+import { Button } from '@/components/ui/button';
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import { NotificationsCenter } from '@/features/notifications/components/notifications-center';
 import { SearchBar } from '@/features/search/components/search-bar';
@@ -21,25 +23,56 @@ export function DashBoardHeader() {
                 <SearchBar className="hidden w-96 max-w-sm lg:block" />
             </div>
 
-            <div className="flex items-center gap-4">
-                <InstallAppButton className="px-2 sm:px-3">
-                    <DownloadIcon />
-                    <span className="hidden sm:inline">Install App</span>
-                    <span className="sr-only sm:hidden">Install Snippetly</span>
-                </InstallAppButton>
-                <PermissionGuard
-                    requiredPermissions={[Permission.Authenticated, Permission.CreateSnippet]}
-                    isAvailableOffline={true}
-                >
-                    <Button className="hidden sm:flex" asChild>
-                        <Link to="/dashboard/snippets/new">
-                            <CreateSnippetIcon className="size-4" />
-                            <span>New Snippet</span>
-                        </Link>
-                    </Button>
-                </PermissionGuard>
-                <NotificationsCenter />
-            </div>
+            <PageActionBar>
+                <PageActionBarItem>
+                    <InstallAppButton className="px-2 sm:px-3">
+                        <DownloadIcon />
+                        <span>Install App</span>
+                        <span className="sr-only">Install Snippetly</span>
+                    </InstallAppButton>
+                </PageActionBarItem>
+                <PageActionBarItem>
+                    <PermissionGuard
+                        requiredPermissions={[Permission.Authenticated, Permission.CreateSnippet]}
+                        isAvailableOffline={true}
+                    >
+                        <Button asChild>
+                            <Link to="/dashboard/snippets/new">
+                                <CreateSnippetIcon className="size-4" />
+                                <span>New Snippet</span>
+                            </Link>
+                        </Button>
+                    </PermissionGuard>
+                </PageActionBarItem>
+                <PageActionBarItem>
+                    <NotificationsCenter />
+                </PageActionBarItem>
+
+                <PageActionBarMenuItem>
+                    <DropdownMenuItem asChild>
+                        <InstallAppButton variant={'ghost'} className="w-full justify-start">
+                            <DownloadIcon />
+                            <span>Install App</span>
+                            <span className="sr-only">Install Snippetly</span>
+                        </InstallAppButton>
+                    </DropdownMenuItem>
+                </PageActionBarMenuItem>
+                <PageActionBarMenuItem>
+                    <PermissionGuard
+                        requiredPermissions={[Permission.Authenticated, Permission.CreateSnippet]}
+                        isAvailableOffline={true}
+                    >
+                        <DropdownMenuItem asChild>
+                            <Button variant={'ghost'} className="w-full justify-start" asChild>
+                                <Link to="/dashboard/snippets/new">
+                                    <CreateSnippetIcon className="size-4" />
+                                    <span>New Snippet</span>
+                                </Link>
+                            </Button>
+                        </DropdownMenuItem>
+                    </PermissionGuard>
+                </PageActionBarMenuItem>
+            </PageActionBar>
         </HeaderWrapper>
     );
 }

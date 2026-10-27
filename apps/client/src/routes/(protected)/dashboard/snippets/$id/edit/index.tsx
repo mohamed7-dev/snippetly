@@ -2,10 +2,8 @@ import { GoToButton } from '@/components/inputs/goto-button';
 import { LoadingButton } from '@/components/inputs/loading-button';
 import { Page, PageTitle } from '@/components/layout/page';
 import { PageActionBar, PageActionBarItem, PageActionBarMenuItem } from '@/components/layout/page-action-bar';
-import { UpdateSnippetIcon } from '@/components/shared/creation-icons';
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
-import { getOfflineOwnerId, isOfflineMutationAvailable } from '@/features/offline-snippet/lib/common';
 import { MoveSnippetToTrashButton } from '@/features/snippet-delete/components/move-snippet-to-trash-button';
 import { listCurrentUserSnippetsQueryOptions } from '@/features/snippet-listing/lib/snippet-listing-query-options';
 import { SnippetFormMainFields } from '@/features/snippets/components/forms/snippet-form-main-fields';
@@ -21,7 +19,8 @@ import { notFoundWithMetadata } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Permission } from '@snippetly/common/dto';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
-import { createFileRoute, redirect } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
+import { SaveIcon } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 
 export const Route = createFileRoute('/(protected)/dashboard/snippets/$id/edit/')({
@@ -43,16 +42,7 @@ export const Route = createFileRoute('/(protected)/dashboard/snippets/$id/edit/'
             ],
         };
     },
-    beforeLoad: async ({ params: { id }, context: { queryClient, auth } }) => {
-        const data = await queryClient.query({ ...getSnippetQueryOptions(id) });
-        const ownerId = auth.user?.id ?? (isOfflineMutationAvailable() ? getOfflineOwnerId() : undefined);
-        if (ownerId !== data.creator.id) {
-            throw redirect({
-                to: '/developers/$id',
-                params: { id: data.creator.id },
-            });
-        }
-    },
+
     loader: async ({ context: { queryClient }, params }) => {
         queryClient.query(listPopularTagsQueryOptions()).catch();
         return await queryClient.query({ ...getSnippetQueryOptions(params.id), staleTime: 'static' });
@@ -131,8 +121,8 @@ function EditSnippetPage() {
                         isAvailableOffline
                     >
                         <LoadingButton isLoading={isPending} type="submit">
-                            <UpdateSnippetIcon className="size-4 sm:mr-2" />
-                            Save Changes
+                            <SaveIcon />
+                            <span className="sr-only sm:not-sr-only">Save Changes</span>
                         </LoadingButton>
                     </PermissionGuard>
                 </PageActionBarItem>

@@ -1,6 +1,6 @@
+import { UpdateProfileIcon } from '@/components/shared/creation-icons';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { UpdateProfileIcon } from '@/components/shared/creation-icons';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -100,7 +100,7 @@ export function HeaderUserMenu({ display = 'avatar' }: { display?: 'avatar' | 's
                             <Button className="w-full justify-start" variant={'ghost'} asChild>
                                 <Link to={'/dashboard/settings/account'}>
                                     <UpdateProfileIcon className="size-4" />
-                                    <span>Profile Settings</span>
+                                    <span>Account Settings</span>
                                 </Link>
                             </Button>
                         </DropdownMenuItem>

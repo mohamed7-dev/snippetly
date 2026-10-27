@@ -107,8 +107,16 @@ export class SnippetService implements OnApplicationBootstrap {
 
         const friendships = await this.databaseService.getRepository(Friendship).find({
             where: [
-                { requester: { id: job.authorId }, status: FriendshipStatus.Accepted },
-                { addressee: { id: job.authorId }, status: FriendshipStatus.Accepted },
+                {
+                    requester: { id: job.authorId, deletedAt: IsNull() },
+                    addressee: { deletedAt: IsNull() },
+                    status: FriendshipStatus.Accepted,
+                },
+                {
+                    requester: { deletedAt: IsNull() },
+                    addressee: { id: job.authorId, deletedAt: IsNull() },
+                    status: FriendshipStatus.Accepted,
+                },
             ],
             relations: { requester: true, addressee: true },
         });

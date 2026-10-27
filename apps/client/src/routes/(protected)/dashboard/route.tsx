@@ -1,5 +1,6 @@
 import { StatusCard } from '@/components/feedback/status-card';
 import { PageLoadingView } from '@/components/views/page-loading-view';
+import { BottomNavigation } from '@/features/app-shell/components/shared/bottom-navigation';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { isOfflineDashboardAvailable, isOfflineDashboardRoute } from '@/features/offline-snippet/lib/common';
 import { createFileRoute, Outlet, redirect, useRouterState } from '@tanstack/react-router';
@@ -25,7 +26,14 @@ function DashboardProtectedLayout() {
     const pathname = useRouterState({ select: state => state.location.pathname });
 
     if (isOfflineDashboardAvailable()) {
-        if (isOfflineDashboardRoute(pathname)) return <Outlet />;
+        if (isOfflineDashboardRoute(pathname)) {
+            return (
+                <div className="min-h-screen pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0">
+                    <Outlet />
+                    <BottomNavigation />
+                </div>
+            );
+        }
         return (
             <StatusCard
                 variant="error"
@@ -40,5 +48,10 @@ function DashboardProtectedLayout() {
         return <PageLoadingView />;
     }
 
-    return <Outlet />;
+    return (
+        <div className="min-h-screen pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0">
+            <Outlet />
+            <BottomNavigation />
+        </div>
+    );
 }

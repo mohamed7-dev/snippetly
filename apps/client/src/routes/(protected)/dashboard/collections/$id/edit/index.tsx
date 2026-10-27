@@ -2,14 +2,12 @@ import { GoToButton } from '@/components/inputs/goto-button';
 import { LoadingButton } from '@/components/inputs/loading-button';
 import { Page, PageTitle } from '@/components/layout/page';
 import { PageActionBar, PageActionBarItem, PageActionBarMenuItem } from '@/components/layout/page-action-bar';
-import { UpdateCollectionIcon } from '@/components/shared/creation-icons';
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import { MoveCollectionToTrashButton } from '@/features/collection-delete/components/move-collection-to-trash-button';
 import { listCurrentUserCollectionsQueryOptions } from '@/features/collection-listing/lib/collection-listing-query-options';
 import { CollectionForm } from '@/features/collections/components/forms/collection-form';
 import { getCollectionQueryOptions } from '@/features/collections/lib/query-options';
-import { getOfflineOwnerId, isOfflineMutationAvailable } from '@/features/offline-snippet/lib/common';
 import { listPopularTagsQueryOptions } from '@/features/tags/lib/list-tags-query-options';
 import { useUpdateCollection } from '@/features/update-collection/hooks/use-update-collection';
 import {
@@ -20,7 +18,8 @@ import { notFoundWithMetadata } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Permission } from '@snippetly/common/dto';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { createFileRoute, redirect } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
+import { SaveIcon } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 
 export const Route = createFileRoute('/(protected)/dashboard/collections/$id/edit/')({
@@ -42,16 +41,6 @@ export const Route = createFileRoute('/(protected)/dashboard/collections/$id/edi
                 },
             ],
         };
-    },
-    beforeLoad: async ({ params: { id }, context: { queryClient, auth } }) => {
-        const data = await queryClient.query({ ...getCollectionQueryOptions(id), staleTime: 'static' });
-        const ownerId = auth.user?.id ?? (isOfflineMutationAvailable() ? getOfflineOwnerId() : undefined);
-        if (ownerId !== data.creator.id) {
-            throw redirect({
-                to: '/developers/$id',
-                params: { id: data.creator.id },
-            });
-        }
     },
     loader: async ({ context: { queryClient }, params }) => {
         void queryClient.query(listPopularTagsQueryOptions()).catch();
@@ -131,8 +120,8 @@ function UpdateCollectionPage() {
                         isAvailableOffline
                     >
                         <LoadingButton isLoading={isPending} type="submit">
-                            <UpdateCollectionIcon className="size-4 sm:mr-2" />
-                            Save Changes
+                            <SaveIcon />
+                            <span className="sr-only sm:not-sr-only">Save Changes</span>
                         </LoadingButton>
                     </PermissionGuard>
                 </PageActionBarItem>

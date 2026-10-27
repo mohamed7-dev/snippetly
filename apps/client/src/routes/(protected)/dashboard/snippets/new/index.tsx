@@ -2,7 +2,6 @@ import { GoToButton } from '@/components/inputs/goto-button';
 import { LoadingButton } from '@/components/inputs/loading-button';
 import { Page, PageTitle } from '@/components/layout/page';
 import { PageActionBar, PageActionBarItem, PageActionBarMenuItem } from '@/components/layout/page-action-bar';
-import { CreateSnippetIcon } from '@/components/shared/creation-icons';
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import { listCurrentUserCollectionsQueryOptions } from '@/features/collection-listing/lib/collection-listing-query-options';
@@ -26,6 +25,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { idSchema, Permission } from '@snippetly/common/dto';
 import { useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
+import { SaveIcon } from 'lucide-react';
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import z from 'zod';
@@ -111,14 +111,14 @@ function CreateSnippetPage() {
                         label={!redirect ? 'Go to Snippets' : 'Go Back'}
                     />
                 </PageActionBarItem>
-                <PageActionBarItem hideOnSmallScreens>
+                <PageActionBarItem>
                     <PermissionGuard
                         requiredPermissions={[Permission.Authenticated, Permission.CreateSnippet]}
                         isAvailableOffline={true}
                     >
                         <LoadingButton isLoading={isPending} type="submit">
-                            <CreateSnippetIcon className="size-4" />
-                            Create Snippet
+                            <SaveIcon className="size-4" />
+                            <span className="sr-only sm:not-sr-only">Create Snippet</span>
                         </LoadingButton>
                     </PermissionGuard>
                 </PageActionBarItem>
@@ -126,29 +126,11 @@ function CreateSnippetPage() {
                     <DropdownMenuItem asChild>
                         <GoToButton
                             to={redirect ?? '/dashboard/snippets'}
-                            label={!redirect ? 'Back to Snippets' : 'Go Back'}
+                            label={!redirect ? 'Go to Snippets' : 'Go Back'}
                             variant={'ghost'}
                             className="justify-start w-full"
                         />
                     </DropdownMenuItem>
-                </PageActionBarMenuItem>
-                <PageActionBarMenuItem>
-                    <PermissionGuard
-                        requiredPermissions={[Permission.Authenticated, Permission.CreateSnippet]}
-                        isAvailableOffline={true}
-                    >
-                        <DropdownMenuItem asChild>
-                            <LoadingButton
-                                variant={'ghost'}
-                                className="justify-start w-full"
-                                isLoading={isPending}
-                                type="submit"
-                            >
-                                <CreateSnippetIcon className="size-4" />
-                                Create Snippet
-                            </LoadingButton>
-                        </DropdownMenuItem>
-                    </PermissionGuard>
                 </PageActionBarMenuItem>
             </PageActionBar>
 
@@ -158,7 +140,7 @@ function CreateSnippetPage() {
             >
                 <main className="container mx-auto px-3 lg:px-6 py-6 max-w-6xl">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        <div className="md:col-span-2 space-y-6">
+                        <div className="md:col-span-2 min-w-0 space-y-6">
                             <SnippetFormMainFields isPending={isPending} />
                         </div>
                         <SnippetFormSidebar isPending={isPending} selectedCollectionName={collectionName} />

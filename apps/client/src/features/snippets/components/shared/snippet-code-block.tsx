@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CodeEditorSettingsOverlay } from '@/features/developer-settings/components/shared/code-editor-settings-overlay';
 import { useDeveloperSettings } from '@/features/developer-settings/hooks/use-developer-settings';
 import type { CodeEditorSettings } from '@/features/developer-settings/providers/developer-settings-provider';
 import { useTheme } from '@/hooks/use-theme';
@@ -9,7 +10,6 @@ import { Maximize2Icon } from 'lucide-react';
 import React from 'react';
 import { CopyButton } from './copy-button';
 import { SnippetCodeEditor } from './snippet-code-editor';
-import { SnippetCodeEditorSettings } from './snippet-code-editor-settings';
 import { SnippetCodeEditorShortcuts } from './snippet-code-editor-shortcuts';
 
 const LazySnippetCodeDialog = React.lazy(async () => {
@@ -66,21 +66,21 @@ export function SnippetCodeBlock({ snippet, readOnly = true, onChange }: Snippet
     );
 
     return (
-        <Card>
+        <Card className="min-w-0">
             <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                     <CardTitle className="font-heading text-lg">Code</CardTitle>
                     <CopyButton code={code} />
                 </div>
             </CardHeader>
-            <CardContent className="p-2">
-                <div className="bg-muted/50 overflow-hidden rounded-lg border">
+            <CardContent className="min-w-0 p-2">
+                <div className="bg-muted/50 min-w-0 overflow-hidden rounded-lg border">
                     <div className="flex items-center justify-between border-b bg-muted px-4 py-2">
                         <span className="text-sm font-mono text-muted-foreground">
                             {snippet.name.toLowerCase().replace(/\s+/g, '-')}.{snippet.language}
                         </span>
                         <div className="flex items-center gap-2">
-                            <SnippetCodeEditorSettings
+                            <CodeEditorSettingsOverlay
                                 settings={editorSettings}
                                 hasLocalOverrides={Object.keys(localEditorSettings).length > 0}
                                 onChange={settings =>

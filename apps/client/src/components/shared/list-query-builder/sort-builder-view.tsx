@@ -47,13 +47,13 @@ export function SortBuilderView({
         <div className="space-y-6">
             {builder.rows.length === 0 && <p className="text-sm text-muted-foreground">{emptyMessage}</p>}
 
-            <ol className="space-y-2">
+            <ol className="space-y-2 overflow-x-auto">
                 {builder.rows.map(row => (
                     <li
                         key={row.id}
                         role="group"
                         aria-label={`Sort ${row.index + 1}`}
-                        className="flex flex-wrap items-center gap-2"
+                        className="flex items-center gap-2 shrink-0"
                     >
                         <span className="w-16 shrink-0 text-sm text-muted-foreground">
                             {row.index === 0 ? 'Sort by' : 'Then by'}

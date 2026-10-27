@@ -23,7 +23,7 @@ export function useRequestEmailAddressChange(callbacks?: RequestEmailAddressChan
             );
         },
         onSuccess: data => {
-            toast.success('Email address change request was sent successfully');
+            toast.success('Email address was changed successfully');
             callbacks?.onSuccess?.(data);
         },
         onError: e => {

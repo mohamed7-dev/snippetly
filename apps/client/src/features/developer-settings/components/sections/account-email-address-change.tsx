@@ -28,9 +28,7 @@ export function AccountEmailAddressChange() {
                     <h2>Change email address</h2>
                 </CardTitle>
                 <CardDescription>
-                    <p>
-                        Request a new sign-in email and confirm the change using the link sent to that address.
-                    </p>
+                    <p>Request a new sign-in email address, you can verify the account later on.</p>
                 </CardDescription>
             </CardHeader>
             <CardContent>

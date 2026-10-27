@@ -20,7 +20,7 @@ export function SignInCard({ userType, isPending }: { userType: UserType; isPend
             </CardContent>
             <CardFooter className="flex-col gap-4">
                 {userType === 'developer' && (
-                    <div className="self-start text-center text-sm">
+                    <div className="self-start flex items-center text-sm">
                         <span className="text-muted-foreground">Don't have an account? </span>
                         <Button variant={'link'} asChild>
                             <Link to={'/register-account'}>Register Account</Link>

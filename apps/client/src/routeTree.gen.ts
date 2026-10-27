@@ -20,6 +20,7 @@ import { Route as publicSearchPageRouteImport } from './routes/(public)/search-p
 import { Route as publicSnippetsRouteRouteImport } from './routes/(public)/snippets/route'
 import { Route as authAuthLayoutAccountVerificationRouteImport } from './routes/(auth)/_auth-layout/account-verification'
 import { Route as authAuthLayoutForgotPasswordRouteImport } from './routes/(auth)/_auth-layout/forgot-password'
+import { Route as authAuthLayoutIdentifierChangeRouteImport } from './routes/(auth)/_auth-layout/identifier-change'
 import { Route as authAuthLayoutPasswordResetRouteImport } from './routes/(auth)/_auth-layout/password-reset'
 import { Route as authAuthLayoutRegisterAccountRouteImport } from './routes/(auth)/_auth-layout/register-account'
 import { Route as authAuthLayoutSignInRouteImport } from './routes/(auth)/_auth-layout/sign-in'
@@ -107,6 +108,12 @@ const authAuthLayoutForgotPasswordRoute =
   authAuthLayoutForgotPasswordRouteImport.update({
     id: '/forgot-password',
     path: '/forgot-password',
+    getParentRoute: () => authAuthLayoutRouteRoute,
+  } as any)
+const authAuthLayoutIdentifierChangeRoute =
+  authAuthLayoutIdentifierChangeRouteImport.update({
+    id: '/identifier-change',
+    path: '/identifier-change',
     getParentRoute: () => authAuthLayoutRouteRoute,
   } as any)
 const authAuthLayoutPasswordResetRoute =
@@ -310,6 +317,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/settings': typeof protectedDashboardSettingsRouteRouteWithChildren
   '/account-verification': typeof authAuthLayoutAccountVerificationRoute
   '/forgot-password': typeof authAuthLayoutForgotPasswordRoute
+  '/identifier-change': typeof authAuthLayoutIdentifierChangeRoute
   '/password-reset': typeof authAuthLayoutPasswordResetRoute
   '/register-account': typeof authAuthLayoutRegisterAccountRoute
   '/sign-in': typeof authAuthLayoutSignInRoute
@@ -352,6 +360,7 @@ export interface FileRoutesByTo {
   '/': typeof publicIndexRoute
   '/account-verification': typeof authAuthLayoutAccountVerificationRoute
   '/forgot-password': typeof authAuthLayoutForgotPasswordRoute
+  '/identifier-change': typeof authAuthLayoutIdentifierChangeRoute
   '/password-reset': typeof authAuthLayoutPasswordResetRoute
   '/register-account': typeof authAuthLayoutRegisterAccountRoute
   '/sign-in': typeof authAuthLayoutSignInRoute
@@ -398,6 +407,7 @@ export interface FileRoutesById {
   '/(protected)/dashboard/settings': typeof protectedDashboardSettingsRouteRouteWithChildren
   '/(auth)/_auth-layout/account-verification': typeof authAuthLayoutAccountVerificationRoute
   '/(auth)/_auth-layout/forgot-password': typeof authAuthLayoutForgotPasswordRoute
+  '/(auth)/_auth-layout/identifier-change': typeof authAuthLayoutIdentifierChangeRoute
   '/(auth)/_auth-layout/password-reset': typeof authAuthLayoutPasswordResetRoute
   '/(auth)/_auth-layout/register-account': typeof authAuthLayoutRegisterAccountRoute
   '/(auth)/_auth-layout/sign-in': typeof authAuthLayoutSignInRoute
@@ -443,6 +453,7 @@ export interface FileRouteTypes {
     | '/dashboard/settings'
     | '/account-verification'
     | '/forgot-password'
+    | '/identifier-change'
     | '/password-reset'
     | '/register-account'
     | '/sign-in'
@@ -485,6 +496,7 @@ export interface FileRouteTypes {
     | '/'
     | '/account-verification'
     | '/forgot-password'
+    | '/identifier-change'
     | '/password-reset'
     | '/register-account'
     | '/sign-in'
@@ -530,6 +542,7 @@ export interface FileRouteTypes {
     | '/(protected)/dashboard/settings'
     | '/(auth)/_auth-layout/account-verification'
     | '/(auth)/_auth-layout/forgot-password'
+    | '/(auth)/_auth-layout/identifier-change'
     | '/(auth)/_auth-layout/password-reset'
     | '/(auth)/_auth-layout/register-account'
     | '/(auth)/_auth-layout/sign-in'
@@ -646,6 +659,13 @@ declare module '@tanstack/react-router' {
       path: '/forgot-password'
       fullPath: '/forgot-password'
       preLoaderRoute: typeof authAuthLayoutForgotPasswordRouteImport
+      parentRoute: typeof authAuthLayoutRouteRoute
+    }
+    '/(auth)/_auth-layout/identifier-change': {
+      id: '/(auth)/_auth-layout/identifier-change'
+      path: '/identifier-change'
+      fullPath: '/identifier-change'
+      preLoaderRoute: typeof authAuthLayoutIdentifierChangeRouteImport
       parentRoute: typeof authAuthLayoutRouteRoute
     }
     '/(auth)/_auth-layout/password-reset': {
@@ -959,6 +979,7 @@ const publicRouteRouteWithChildren = publicRouteRoute._addFileChildren(
 interface authAuthLayoutRouteRouteChildren {
   authAuthLayoutAccountVerificationRoute: typeof authAuthLayoutAccountVerificationRoute
   authAuthLayoutForgotPasswordRoute: typeof authAuthLayoutForgotPasswordRoute
+  authAuthLayoutIdentifierChangeRoute: typeof authAuthLayoutIdentifierChangeRoute
   authAuthLayoutPasswordResetRoute: typeof authAuthLayoutPasswordResetRoute
   authAuthLayoutRegisterAccountRoute: typeof authAuthLayoutRegisterAccountRoute
   authAuthLayoutSignInRoute: typeof authAuthLayoutSignInRoute
@@ -968,6 +989,7 @@ const authAuthLayoutRouteRouteChildren: authAuthLayoutRouteRouteChildren = {
   authAuthLayoutAccountVerificationRoute:
     authAuthLayoutAccountVerificationRoute,
   authAuthLayoutForgotPasswordRoute: authAuthLayoutForgotPasswordRoute,
+  authAuthLayoutIdentifierChangeRoute: authAuthLayoutIdentifierChangeRoute,
   authAuthLayoutPasswordResetRoute: authAuthLayoutPasswordResetRoute,
   authAuthLayoutRegisterAccountRoute: authAuthLayoutRegisterAccountRoute,
   authAuthLayoutSignInRoute: authAuthLayoutSignInRoute,

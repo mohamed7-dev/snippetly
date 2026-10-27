@@ -57,3 +57,16 @@ export const THEME_OPTIONS = [
         preview: 'bg-gradient-to-br from-background dark:from-foreground to-foreground dark:to-background',
     },
 ];
+
+export const EDITOR_THEMES = [
+    { value: 'system', label: 'System (follows appearance)' },
+    { value: 'ayu-light', label: 'Ayu Light' },
+    { value: 'one-dark', label: 'One Dark' },
+    { value: 'dracula', label: 'Dracula' },
+] as const;
+export const FONT_FAMILIES = [
+    { value: 'geist-mono', label: 'Geist Mono' },
+    { value: 'system-mono', label: 'System Monospace' },
+] as const;
+export const FONT_SIZES = [10, 12, 14, 16, 18, 20, 24] as const;
+export const TAB_SIZES = [2, 4, 8] as const;

@@ -6,11 +6,11 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { CodeEditorSettingsOverlay } from '@/features/developer-settings/components/shared/code-editor-settings-overlay';
 import type { CodeEditorSettings } from '@/features/developer-settings/providers/developer-settings-provider';
 import { XIcon } from 'lucide-react';
 import { CopyButton } from './copy-button';
 import { SnippetCodeEditor } from './snippet-code-editor';
-import { SnippetCodeEditorSettings } from './snippet-code-editor-settings';
 import { SnippetCodeEditorShortcuts } from './snippet-code-editor-shortcuts';
 
 type SnippetCodeDialogProps = {
@@ -55,7 +55,7 @@ export function SnippetCodeDialog({
                         {name.toLowerCase().replace(/\s+/g, '-')}.{language}
                     </AlertDialogTitle>
                     <div className="flex items-center gap-2">
-                        <SnippetCodeEditorSettings
+                        <CodeEditorSettingsOverlay
                             settings={settings}
                             hasLocalOverrides={hasLocalOverrides}
                             onChange={onSettingsChange}

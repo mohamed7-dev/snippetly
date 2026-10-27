@@ -1,5 +1,6 @@
+import { PublicLayout } from '@/features/app-shell/components/public/public-layout';
 import { redirectSchema } from '@/lib/zod';
-import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 import type z from 'zod';
 
 export const Route = createFileRoute('/(auth)/_auth-layout')({
@@ -21,9 +22,5 @@ export const Route = createFileRoute('/(auth)/_auth-layout')({
 });
 
 function RouteComponent() {
-    return (
-        <main className="min-h-screen">
-            <Outlet />
-        </main>
-    );
+    return <PublicLayout />;
 }

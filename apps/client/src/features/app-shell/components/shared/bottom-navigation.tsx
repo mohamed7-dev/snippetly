@@ -1,9 +1,16 @@
-import { InstallAppButton } from '@/components/inputs/install-app-button';
+import { CreateCollectionIcon, CreateSnippetIcon } from '@/components/shared/creation-icons';
 import { Button } from '@/components/ui/button';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
 import { useAuth } from '@/features/auth/hooks/use-auth';
+import { Permission } from '@snippetly/common/dto';
 import { Link } from '@tanstack/react-router';
-import { CompassIcon, DownloadIcon, HouseIcon, LibraryIcon, SearchIcon, Settings2Icon } from 'lucide-react';
-
+import { CompassIcon, HouseIcon, LibraryIcon, PlusIcon, SearchIcon } from 'lucide-react';
 const itemClassName = 'h-full min-w-16 flex-1 flex-col gap-1 rounded-none px-2 py-2 text-[10px]';
 const activeClassName = 'text-primary bg-primary/10';
 
@@ -33,6 +40,35 @@ export function BottomNavigation() {
                         <span>Discover</span>
                     </Link>
                 </Button>
+                <PermissionGuard requiredPermissions={[Permission.Authenticated]} isAvailableOffline>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button
+                                type="button"
+                                variant="default"
+                                className={itemClassName}
+                                aria-label="Create"
+                            >
+                                <PlusIcon className="size-5" />
+                                <span>Create</span>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent side="top" align="center">
+                            <DropdownMenuItem asChild>
+                                <Link to="/dashboard/snippets/new">
+                                    <CreateSnippetIcon className="size-4" />
+                                    Create snippet
+                                </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                                <Link to="/dashboard/collections/new">
+                                    <CreateCollectionIcon className="size-4" />
+                                    Create collection
+                                </Link>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </PermissionGuard>
                 <Button variant="ghost" asChild className={itemClassName}>
                     <Link to="/search-page" activeProps={{ className: activeClassName }}>
                         <SearchIcon className="size-5" />
@@ -45,18 +81,6 @@ export function BottomNavigation() {
                         <span>Offline</span>
                     </Link>
                 </Button>
-                <InstallAppButton variant="ghost" size="sm" className={itemClassName}>
-                    <DownloadIcon className="size-5" />
-                    <span>Install</span>
-                </InstallAppButton>
-                {isAuthenticated && (
-                    <Button variant="ghost" asChild className={itemClassName}>
-                        <Link to="/dashboard/settings" activeProps={{ className: activeClassName }}>
-                            <Settings2Icon className="size-5" />
-                            <span>Settings</span>
-                        </Link>
-                    </Button>
-                )}
             </div>
         </nav>
     );

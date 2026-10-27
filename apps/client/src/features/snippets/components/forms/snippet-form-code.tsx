@@ -11,7 +11,7 @@ export function SnippetFormCode() {
             control={form.control}
             name="code"
             render={() => (
-                <FormItem className="overflow-hidden">
+                <FormItem className="min-w-0">
                     <FormControl>
                         <SnippetCodeBlock
                             readOnly={false}

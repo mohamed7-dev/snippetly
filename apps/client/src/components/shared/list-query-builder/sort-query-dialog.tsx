@@ -167,8 +167,8 @@ function QueryDialogBody({
                 >
                     Clear all
                 </Button>
-                <div className="flex gap-2">
-                    <Button type="button" variant="outline" onClick={onCancel}>
+                <div className="flex flex-wrap gap-2">
+                    <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={onCancel}>
                         Cancel
                     </Button>
                     <Button
@@ -179,6 +179,7 @@ function QueryDialogBody({
                                 ...(hasSort ? { sort: sort.query } : {}),
                             })
                         }
+                        className="w-full sm:w-auto"
                     >
                         Apply
                     </Button>

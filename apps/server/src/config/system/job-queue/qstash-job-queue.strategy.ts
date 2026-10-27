@@ -6,6 +6,7 @@ export interface QStashJobQueueOptions {
     callbackUrl?: string;
     currentSigningKey?: string;
     nextSigningKey?: string;
+    url?: string;
 }
 
 export class QStashJobQueueStrategy implements JobQueueStrategy {
@@ -14,7 +15,7 @@ export class QStashJobQueueStrategy implements JobQueueStrategy {
 
     constructor(private readonly options: QStashJobQueueOptions) {
         if (options.token) {
-            this.client = new Client({ token: options.token });
+            this.client = new Client({ token: options.token, baseUrl: options.url });
         }
         if (options.currentSigningKey && options.nextSigningKey) {
             this.receiver = new Receiver({

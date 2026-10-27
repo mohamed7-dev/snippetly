@@ -316,11 +316,19 @@ export class DeveloperService implements OnApplicationBootstrap {
     private subscribeToIdentifierChangeRequestedEvent() {
         this.eventBus.ofType(IdentifierChangeRequestedEvent).subscribe(event => {
             Logger.debug(`Handling event 'IdentifierChangeRequestedEvent'`);
-            const callbackUrl = `${this.configService.systemOptions.email.identifierChangeCallbackUrl}?token=${event.user.getNativeAuthenticationMethod().identifierChangeToken}`;
+            const nativeAuthMethod = event.user.getNativeAuthenticationMethod();
+            if (
+                !nativeAuthMethod ||
+                !nativeAuthMethod.identifierChangeToken ||
+                !nativeAuthMethod.identifierPlaceholder
+            )
+                return;
+            const { identifierChangeToken, identifierPlaceholder } = nativeAuthMethod;
+            const callbackUrl = `${this.configService.systemOptions.email.identifierChangeCallbackUrl}?token=${identifierChangeToken}`;
             void this.emailClient
                 .sendEmail({
                     event,
-                    to: event.user.identifier,
+                    to: identifierPlaceholder,
                     subject: 'Email-address Change Request',
                     html: `
                     <a font-family="Helvetica"
@@ -731,7 +739,10 @@ export class DeveloperService implements OnApplicationBootstrap {
             if (!developer) return false;
             const oldIdentifier = user.identifier;
             user.identifier = normalizedEmailAddress;
+            // user should verify this account later on
+            user.isVerified = false;
             developer.emailAddress = normalizedEmailAddress;
+
             await this.databaseService.getRepository(ctx, User).save(user, { reload: false });
             await this.databaseService.getRepository(ctx, Developer).save(developer, { reload: false });
             await this.eventBus.publish(new IdentifierChangedEvent(ctx, user, oldIdentifier));

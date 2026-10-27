@@ -96,6 +96,7 @@ export const appConfig: AppConfig = {
                   callbackUrl: process.env.QSTASH_JOBS_CALLBACK_URL,
                   currentSigningKey: process.env.QSTASH_CURRENT_SIGNING_KEY,
                   nextSigningKey: process.env.QSTASH_NEXT_SIGNING_KEY,
+                  url: process.env.QSTASH_URL,
               })
             : new DummyJobQueueStrategy(),
         pushNotifications: {

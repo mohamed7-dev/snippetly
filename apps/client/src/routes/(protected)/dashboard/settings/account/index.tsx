@@ -6,15 +6,8 @@ import { AccountEmailAddressChange } from '@/features/developer-settings/compone
 import { AccountEmailAddressSettings } from '@/features/developer-settings/components/sections/account-email-address-settings';
 import { AccountImageSettings } from '@/features/developer-settings/components/sections/account-image-settings';
 import { ProfileSettings } from '@/features/developer-settings/components/sections/profile-settings';
-import { useUpdateDeveloperProfile } from '@/features/developer-settings/hooks/use-update-developer-profile';
-import {
-    updateDeveloperProfileInfoFormSchema,
-    type UpdateDeveloperProfileInfoFormSchemaType,
-} from '@/features/developer-settings/lib/schema';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { Permission } from '@snippetly/common/dto';
 import { createFileRoute, redirect } from '@tanstack/react-router';
-import { useForm } from 'react-hook-form';
 
 export const Route = createFileRoute('/(protected)/dashboard/settings/account/')({
     component: AccountSettingsPage,
@@ -30,32 +23,13 @@ export const Route = createFileRoute('/(protected)/dashboard/settings/account/')
 });
 
 function AccountSettingsPage() {
-    const { user, refreshActiveUser } = useAuth();
+    const { user } = useAuth();
     if (!user) {
         throw redirect({ to: '/sign-in' });
     }
-    const form = useForm<UpdateDeveloperProfileInfoFormSchemaType>({
-        defaultValues: user,
-        resolver: zodResolver(updateDeveloperProfileInfoFormSchema),
-    });
-
-    const { mutateAsync, isPending } = useUpdateDeveloperProfile({
-        onSuccess: () => {
-            refreshActiveUser();
-        },
-    });
-
-    const onSubmit = async (values: UpdateDeveloperProfileInfoFormSchemaType) => {
-        mutateAsync({
-            firstName: values.firstName,
-            lastName: values.lastName,
-            bio: values.bio,
-            isPrivate: values.isPrivate,
-        });
-    };
 
     return (
-        <Page form={form} submitHandler={form.handleSubmit(onSubmit)} entity={user}>
+        <Page entity={user}>
             <PageTitle>Account settings</PageTitle>
             <PageDescription>
                 Update your profile and email address, or schedule account deletion.
@@ -70,7 +44,7 @@ function AccountSettingsPage() {
                     ownerId={user.id}
                 >
                     <AccountImageSettings />
-                    <ProfileSettings isPending={isPending} />
+                    <ProfileSettings />
                     <AccountEmailAddressSettings />
                     <AccountEmailAddressChange />
                     <AccountDeletionSettings />

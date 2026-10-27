@@ -410,8 +410,16 @@ export class FriendshipService implements OnApplicationBootstrap {
         const qb = this.listQueryBuilder.build(Friendship, input as any, {
             ctx,
             where: [
-                { requester: { id: developerId, deletedAt: IsNull() }, status: FriendshipStatus.Accepted },
-                { addressee: { id: developerId, deletedAt: IsNull() }, status: FriendshipStatus.Accepted },
+                {
+                    requester: { id: developerId, deletedAt: IsNull() },
+                    addressee: { deletedAt: IsNull() },
+                    status: FriendshipStatus.Accepted,
+                },
+                {
+                    requester: { deletedAt: IsNull() },
+                    addressee: { id: developerId, deletedAt: IsNull() },
+                    status: FriendshipStatus.Accepted,
+                },
             ],
             relations: {
                 requester: { user: true },
@@ -456,6 +464,7 @@ export class FriendshipService implements OnApplicationBootstrap {
         const qb = this.listQueryBuilder.build(Friendship, input as any, {
             ctx,
             where: {
+                requester: { deletedAt: IsNull() },
                 addressee: { id: developerId, deletedAt: IsNull() },
                 status: FriendshipStatus.Pending,
             },
@@ -495,6 +504,7 @@ export class FriendshipService implements OnApplicationBootstrap {
         const qb = this.listQueryBuilder.build(Friendship, input as any, {
             ctx,
             where: {
+                addressee: { deletedAt: IsNull() },
                 requester: { id: developerId, deletedAt: IsNull() },
                 status: FriendshipStatus.Pending,
             },
@@ -657,15 +667,31 @@ export class FriendshipService implements OnApplicationBootstrap {
         const [friendsCount, friendsInboxCount, friendsOutboxCount] = await Promise.all([
             friendshipRepo.count({
                 where: [
-                    { requester: { id: developerId }, status: FriendshipStatus.Accepted },
-                    { addressee: { id: developerId }, status: FriendshipStatus.Accepted },
+                    {
+                        requester: { id: developerId, deletedAt: IsNull() },
+                        addressee: { deletedAt: IsNull() },
+                        status: FriendshipStatus.Accepted,
+                    },
+                    {
+                        requester: { deletedAt: IsNull() },
+                        addressee: { id: developerId, deletedAt: IsNull() },
+                        status: FriendshipStatus.Accepted,
+                    },
                 ],
             }),
             friendshipRepo.count({
-                where: { addressee: { id: developerId }, status: FriendshipStatus.Pending },
+                where: {
+                    requester: { deletedAt: IsNull() },
+                    addressee: { id: developerId, deletedAt: IsNull() },
+                    status: FriendshipStatus.Pending,
+                },
             }),
             friendshipRepo.count({
-                where: { requester: { id: developerId }, status: FriendshipStatus.Pending },
+                where: {
+                    requester: { id: developerId, deletedAt: IsNull() },
+                    addressee: { deletedAt: IsNull() },
+                    status: FriendshipStatus.Pending,
+                },
             }),
         ]);
 
@@ -708,6 +734,8 @@ export class FriendshipService implements OnApplicationBootstrap {
                         });
                 }),
             )
+            .andWhere('requester.deletedAt IS NULL')
+            .andWhere('addressee.deletedAt IS NULL')
             .getRawMany<{ developerId: string; friendshipStatus: FriendshipStatus }>();
 
         for (const { developerId, friendshipStatus } of friendships) {
@@ -731,12 +759,12 @@ export class FriendshipService implements OnApplicationBootstrap {
         return repo.findOne({
             where: [
                 {
-                    requester: { id: requesterId },
-                    addressee: { id: addresseeId },
+                    requester: { id: requesterId, deletedAt: IsNull() },
+                    addressee: { id: addresseeId, deletedAt: IsNull() },
                 },
                 {
-                    requester: { id: addresseeId },
-                    addressee: { id: requesterId },
+                    requester: { id: addresseeId, deletedAt: IsNull() },
+                    addressee: { id: requesterId, deletedAt: IsNull() },
                 },
             ],
             relations: {
@@ -754,6 +782,7 @@ export class FriendshipService implements OnApplicationBootstrap {
         const developers = await this.databaseService.getRepository(ctx, Developer).find({
             where: {
                 id: In([input.addresseeId, input.requesterId]),
+                deletedAt: IsNull(),
             },
         });
 
