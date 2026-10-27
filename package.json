@@ -1,0 +1,36 @@
+{
+    "name": "snippetly",
+    "version": "0.0.0",
+    "private": true,
+    "packageManager": "pnpm@10.21.0",
+    "engines": {
+        "node": ">=20"
+    },
+    "scripts": {
+        "generate": "ts-node -r tsconfig-paths/register scripts/generate.ts",
+        "dev:server-common": "concurrently 'pnpm run --filter @snippetly/common dev' 'pnpm run --filter @snippetly/server dev'",
+        "dev:server-client": "concurrently 'pnpm run --filter @snippetly/server dev' 'pnpm run --filter @snippetly/client dev'",
+        "start:server-client": "concurrently 'pnpm run --filter @snippetly/server start:local' 'pnpm run --filter @snippetly/client start'"
+    },
+    "dependencies": {
+        "concurrently": "catalog:tooling",
+        "sql.js": "^1.14.1",
+        "zod": "catalog:"
+    },
+    "devDependencies": {
+        "@snippetly/common": "workspace:*",
+        "@snippetly/server": "workspace:*",
+        "@snippetly/testing": "workspace:*",
+        "@snippetly/tsconfig": "workspace:*",
+        "@types/fs-extra": "^11.0.4",
+        "@types/node": "catalog:tooling",
+        "concurrently": "catalog:tooling",
+        "fs-extra": "^11.4.1",
+        "prettier": "catalog:tooling",
+        "prettier-plugin-organize-imports": "^4.1.0",
+        "ts-node": "catalog:tooling",
+        "tsconfig-paths": "catalog:tooling",
+        "typescript": "catalog:tooling",
+        "vitest": "catalog:testing"
+    }
+}

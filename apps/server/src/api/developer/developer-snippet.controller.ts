@@ -1,0 +1,487 @@
+import {
+    createSnippetDto,
+    currentUserSnippetListDto,
+    currentUserTrashedSnippetListDto,
+    deleteSnippetDto,
+    findOneSnippetDto,
+    forkSnippetDto,
+    Permission,
+    relatedSnippetsDto,
+    restoreSnippetDto,
+    snippetListDto,
+    updateSnippetDto,
+    userFriendsSnippetsListDto,
+} from '@snippetly/common/dto';
+import { omit } from '@snippetly/common/lib';
+import { Router } from 'express';
+import { EntityNotFoundError, ForbiddenError } from '../../common/errors/errors';
+import { defineRateLimiter } from '../../common/helpers/define-rate-limiter';
+import { AppRouter } from '../../common/types/app-router.interface';
+import { ConfigService } from '../../config/config.service';
+import { Developer } from '../../entities/developer/developer.entity';
+import { Controller } from '../../infra/ioc-container/controller.decorator';
+import { CollectionService } from '../../services/domain/collection.service';
+import { DeveloperService } from '../../services/domain/developer.service';
+import { SearchService } from '../../services/domain/search.service';
+import { SnippetService } from '../../services/domain/snippet.service';
+import { authGuard } from '../middlewares/auth.guard';
+import { defineRoutePipeline } from '../middlewares/define-router-pipeline.mw';
+import { transactionInterceptor } from '../middlewares/transaction.interceptor';
+import { RequestContext } from '../request-context/request-context';
+
+@Controller({
+    path: 'snippets',
+    version: 1,
+})
+export class DeveloperSnippetController implements AppRouter {
+    constructor(
+        private readonly snippetService: SnippetService,
+        private readonly developerService: DeveloperService,
+        private readonly collectionService: CollectionService,
+        private readonly configService: ConfigService,
+        private readonly searchService: SearchService,
+    ) {}
+
+    snippetWriteLimiter = defineRateLimiter(
+        {
+            windowMs: 15 * 60 * 1000, // 15 minutes
+            max: 50,
+            standardHeaders: true,
+            legacyHeaders: false,
+        },
+        this.configService.apiOptions,
+    );
+
+    snippetReadLimiter = defineRateLimiter(
+        {
+            windowMs: 60 * 1000, // 1 minute
+            max: 120,
+            standardHeaders: true,
+            legacyHeaders: false,
+        },
+        this.configService.apiOptions,
+    );
+
+    initRoutes(router: Router): Router {
+        router.post(
+            '/',
+            ...defineRoutePipeline({
+                before: [
+                    this.snippetWriteLimiter,
+                    authGuard({ permissions: [Permission.Authenticated, Permission.CreateSnippet] }),
+                ],
+                body: createSnippetDto.input,
+                response: createSnippetDto.output,
+                interceptors: [transactionInterceptor()],
+                handler: async (req, res) => {
+                    const result = await this.snippetService.create(req.getRequestContext(), req.body);
+                    res.status(200).json(result);
+                },
+            }),
+        );
+
+        router.patch(
+            '/:id',
+            ...defineRoutePipeline({
+                before: [
+                    this.snippetWriteLimiter,
+                    authGuard({
+                        permissions: [Permission.Owner],
+                    }),
+                ],
+                body: updateSnippetDto.input.omit({ id: true }),
+                params: updateSnippetDto.input.pick({ id: true }),
+                response: updateSnippetDto.output,
+                interceptors: [transactionInterceptor()],
+                handler: async (req, res) => {
+                    if (!req.getRequestContext().activeUserId) {
+                        throw new ForbiddenError();
+                    }
+                    const result = await this.snippetService.update(req.getRequestContext(), {
+                        ...req.params,
+                        ...req.body,
+                    });
+                    res.status(200).json(result);
+                },
+            }),
+        );
+
+        router.delete(
+            '/:id',
+            ...defineRoutePipeline({
+                before: [
+                    this.snippetWriteLimiter,
+                    authGuard({
+                        permissions: [Permission.Owner],
+                    }),
+                ],
+                params: deleteSnippetDto.input,
+                response: deleteSnippetDto.output,
+                interceptors: [transactionInterceptor()],
+                handler: async (req, res) => {
+                    if (!req.getRequestContext().activeUserId) {
+                        throw new ForbiddenError();
+                    }
+                    const result = await this.snippetService.softDelete(req.getRequestContext(), req.params);
+                    res.status(200).json(result);
+                },
+            }),
+        );
+
+        router.patch(
+            '/:id/restore',
+            ...defineRoutePipeline({
+                before: [this.snippetWriteLimiter, authGuard({ permissions: [Permission.Owner] })],
+                params: restoreSnippetDto.input,
+                response: restoreSnippetDto.output,
+                interceptors: [transactionInterceptor()],
+                handler: async (req, res) => {
+                    const result = await this.snippetService.restoreFromTrash(
+                        req.getRequestContext(),
+                        req.params,
+                    );
+                    res.status(200).json(result);
+                },
+            }),
+        );
+
+        router.delete(
+            '/:id/permanent',
+            ...defineRoutePipeline({
+                before: [this.snippetWriteLimiter, authGuard({ permissions: [Permission.Owner] })],
+                params: deleteSnippetDto.input,
+                response: deleteSnippetDto.output,
+                interceptors: [transactionInterceptor()],
+                handler: async (req, res) => {
+                    const result = await this.snippetService.permanentlyDeleteFromTrash(
+                        req.getRequestContext(),
+                        req.params,
+                    );
+                    res.status(200).json(result);
+                },
+            }),
+        );
+
+        router.post(
+            '/:id/forks',
+            ...defineRoutePipeline({
+                before: [
+                    this.snippetWriteLimiter,
+                    authGuard({ permissions: [Permission.Authenticated, Permission.CreateSnippet] }),
+                ],
+                params: forkSnippetDto.input.pick({ id: true }),
+                body: forkSnippetDto.input.pick({ collectionId: true }),
+                response: forkSnippetDto.output,
+                interceptors: [transactionInterceptor()],
+                handler: async (req, res) => {
+                    const result = await this.snippetService.fork(req.getRequestContext(), {
+                        ...req.params,
+                        ...req.body,
+                    });
+                    res.status(200).json(result);
+                },
+            }),
+        );
+
+        router.get(
+            '/',
+            ...defineRoutePipeline({
+                before: [this.snippetReadLimiter, authGuard({ permissions: [Permission.Public] })],
+                query: snippetListDto.input,
+                response: snippetListDto.output,
+                handler: async (req, res) => {
+                    const developer = await this.developerService.getActiveDeveloper(req.getRequestContext());
+                    const shouldRestrictToPublic =
+                        !req.query.creator || !developer || req.query.creator !== developer.id;
+
+                    const canReadPrivateCollectionSnippets =
+                        shouldRestrictToPublic &&
+                        !req.query.creator &&
+                        Boolean(
+                            developer &&
+                            req.query.collection &&
+                            (await this.collectionService.isCollectionOwnedBy(
+                                req.getRequestContext(),
+                                req.query.collection,
+                                developer.id,
+                            )),
+                        );
+
+                    const restrictToPublic = shouldRestrictToPublic && !canReadPrivateCollectionSnippets;
+
+                    const result = await this.snippetService.find(
+                        req.getRequestContext(),
+                        req.query,
+                        {
+                            collection: true,
+                            tags: true,
+                            creator: { user: true },
+                            forkedFrom: { creator: { user: true } },
+                        },
+                        canReadPrivateCollectionSnippets && developer
+                            ? {
+                                  includePrivateSnippetsForCreatorId: developer.id,
+                                  includePrivateSnippets: !restrictToPublic,
+                              }
+                            : {
+                                  includePrivateSnippets: !restrictToPublic,
+                              },
+                    );
+
+                    const snippetsWithFavStatus = await this.snippetService.attachFavouriteStatus(
+                        req.getRequestContext(),
+                        result.items,
+                    );
+
+                    const finalResult = {
+                        ...result,
+                        items: result.items.map((item, index) => ({
+                            ...item,
+                            relationshipsWithCurrentUser: {
+                                isFavouritedByCurrentUser:
+                                    snippetsWithFavStatus[index].isFavouritedByCurrentUser,
+                            },
+                        })),
+                    };
+
+                    const response = restrictToPublic
+                        ? {
+                              ...finalResult,
+                              items: finalResult.items.map(item =>
+                                  omit(item, ['isPrivate', 'updatedAt', 'deletedAt', 'collection']),
+                              ),
+                          }
+                        : finalResult;
+                    res.status(200).json(response);
+                },
+            }),
+        );
+
+        router.get(
+            '/me',
+            ...defineRoutePipeline({
+                before: [
+                    this.snippetReadLimiter,
+                    authGuard({
+                        permissions: [Permission.Owner],
+                    }),
+                ],
+                query: currentUserSnippetListDto.input,
+                response: currentUserSnippetListDto.output,
+                handler: async (req, res) => {
+                    const developer = await this.requireDeveloperForCurrentUser(req.getRequestContext());
+
+                    const result = await this.snippetService.find(
+                        req.getRequestContext(),
+                        {
+                            ...req.query,
+                            creator: developer.id,
+                        },
+                        {
+                            collection: true,
+                            tags: true,
+                            creator: { user: true },
+                            forkedFrom: { creator: { user: true } },
+                        },
+                        { includePrivateSnippets: true },
+                    );
+
+                    const snippetsWithFavStatus = await this.snippetService.attachFavouriteStatus(
+                        req.getRequestContext(),
+                        result.items,
+                        developer,
+                    );
+
+                    const finalResult = {
+                        ...result,
+                        items: result.items.map((item, index) => ({
+                            ...item,
+                            relationshipsWithCurrentUser: {
+                                isFavouritedByCurrentUser:
+                                    snippetsWithFavStatus[index].isFavouritedByCurrentUser,
+                            },
+                        })),
+                    };
+
+                    res.status(200).json(finalResult);
+                },
+            }),
+        );
+
+        router.get(
+            '/trash',
+            ...defineRoutePipeline({
+                before: [
+                    this.snippetReadLimiter,
+                    authGuard({
+                        permissions: [Permission.Owner],
+                    }),
+                ],
+                query: currentUserTrashedSnippetListDto.input,
+                response: currentUserTrashedSnippetListDto.output,
+                handler: async (req, res) => {
+                    const developer = await this.requireDeveloperForCurrentUser(req.getRequestContext());
+                    const result = await this.snippetService.find(
+                        req.getRequestContext(),
+                        {
+                            ...req.query,
+                            creator: developer.id,
+                        },
+                        {
+                            collection: true,
+                            tags: true,
+                            creator: { user: true },
+                        },
+                        { includePrivateSnippets: true, onlySoftDeleted: true },
+                    );
+                    const snippetsWithFavStatus = await this.snippetService.attachFavouriteStatus(
+                        req.getRequestContext(),
+                        result.items,
+                        developer,
+                    );
+
+                    const finalResult = {
+                        ...result,
+                        items: result.items.map((item, index) => ({
+                            ...item,
+                            relationshipsWithCurrentUser: {
+                                isFavouritedByCurrentUser:
+                                    snippetsWithFavStatus[index].isFavouritedByCurrentUser,
+                            },
+                        })),
+                    };
+                    res.status(200).json(finalResult);
+                },
+            }),
+        );
+
+        router.get(
+            '/friends',
+            ...defineRoutePipeline({
+                before: [
+                    this.snippetReadLimiter,
+                    authGuard({ permissions: [Permission.Authenticated, Permission.ReadSnippet] }),
+                ],
+                query: userFriendsSnippetsListDto.input,
+                response: userFriendsSnippetsListDto.output,
+                handler: async (req, res) => {
+                    const developer = await this.requireDeveloperForCurrentUser(req.getRequestContext());
+
+                    const result = await this.snippetService.getUserFriendsSnippets(
+                        req.getRequestContext(),
+                        req.query.creator ?? developer.id,
+                        req.query,
+                    );
+                    const snippetsWithFavStatus = await this.snippetService.attachFavouriteStatus(
+                        req.getRequestContext(),
+                        result.items,
+                        developer,
+                    );
+
+                    const finalResult = {
+                        ...result,
+                        items: result.items.map((item, index) => ({
+                            ...item,
+                            relationshipsWithCurrentUser: {
+                                isFavouritedByCurrentUser:
+                                    snippetsWithFavStatus[index].isFavouritedByCurrentUser,
+                            },
+                        })),
+                    };
+
+                    res.status(200).json(finalResult);
+                },
+            }),
+        );
+
+        router.get(
+            '/:id/related',
+            ...defineRoutePipeline({
+                before: [this.snippetReadLimiter, authGuard({ permissions: [Permission.Public] })],
+                params: relatedSnippetsDto.input,
+                response: relatedSnippetsDto.output,
+                handler: async (req, res) => {
+                    const ctx = req.getRequestContext();
+                    const sourceSnippet = await this.snippetService.findOne(
+                        ctx,
+                        req.params,
+                        { tags: true, creator: { user: true } },
+                        { includePrivateSnippet: true },
+                    );
+
+                    if (
+                        !sourceSnippet ||
+                        (sourceSnippet.isPrivate && sourceSnippet.creator.user.id !== ctx.activeUserId)
+                    ) {
+                        throw new EntityNotFoundError({
+                            entityName: 'Snippet',
+                            entityId: req.params.id,
+                        });
+                    }
+
+                    const result = await this.searchService.findRelatedSnippets(ctx, sourceSnippet);
+                    res.status(200).json(result);
+                },
+            }),
+        );
+
+        router.get(
+            '/:id',
+            ...defineRoutePipeline({
+                before: [this.snippetReadLimiter, authGuard({ permissions: [Permission.Public] })],
+                params: findOneSnippetDto.input,
+                response: findOneSnippetDto.output,
+                handler: async (req, res) => {
+                    const ctx = req.getRequestContext();
+                    const result = await this.snippetService.findOne(
+                        ctx,
+                        req.params,
+                        {
+                            collection: true,
+                            tags: true,
+                            creator: { user: true },
+                            forkedFrom: {
+                                creator: { user: true },
+                            },
+                        },
+                        { includePrivateSnippet: true, includeSoftDeleted: false },
+                    );
+
+                    const isOwner = ctx.activeUserId === result?.creator.user.id ? true : false;
+                    const currentDeveloper = await this.developerService.getActiveDeveloper(ctx);
+
+                    if (!result || (!isOwner && result?.isPrivate)) {
+                        throw new EntityNotFoundError({ entityName: 'Snippet', entityId: req.params.id });
+                    }
+
+                    const snippetsWithFavStatus = await this.snippetService.attachFavouriteStatus(
+                        req.getRequestContext(),
+                        [result],
+                        currentDeveloper,
+                    );
+
+                    const finalResult = {
+                        ...result,
+                        relationshipsWithCurrentUser: {
+                            isFavouritedByCurrentUser: snippetsWithFavStatus[0].isFavouritedByCurrentUser,
+                        },
+                    };
+
+                    const response = isOwner
+                        ? finalResult
+                        : omit(finalResult, ['isPrivate', 'updatedAt', 'deletedAt', 'collection']);
+
+                    res.status(200).json(response);
+                },
+            }),
+        );
+
+        return router;
+    }
+
+    private async requireDeveloperForCurrentUser(ctx: RequestContext): Promise<Developer> {
+        const developer = await this.developerService.getActiveDeveloper(ctx, true);
+
+        return developer;
+    }
+}

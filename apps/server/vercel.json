@@ -1,0 +1,17 @@
+{
+    "version": 2,
+    "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
+    "buildCommand": "cd ../.. && pnpm --filter @snippetly/common build && pnpm --filter @snippetly/server build",
+    "builds": [
+        {
+            "src": "src/vercel.mts",
+            "use": "@vercel/node"
+        }
+    ],
+    "routes": [
+        {
+            "src": "/(.*)",
+            "dest": "src/vercel.mts"
+        }
+    ]
+}

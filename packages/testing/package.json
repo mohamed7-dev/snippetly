@@ -1,0 +1,36 @@
+{
+    "name": "@snippetly/testing",
+    "version": "0.0.0",
+    "private": true,
+    "publishConfig": {
+        "access": "public"
+    },
+    "files": [
+        "./dist/**/*"
+    ],
+    "exports": {
+        ".": {
+            "import": "./dist/index.js",
+            "require": "./dist/index.js",
+            "types": "./dist/index.d.ts"
+        }
+    },
+    "scripts": {
+        "build": "tsc --project ./build/tsconfig.build.json",
+        "dev": "tsc --project ./build/tsconfig.build.json -w"
+    },
+    "dependencies": {
+        "@snippetly/server": "workspace:*",
+        "@snippetly/common": "workspace:*",
+        "faker": "^4.1.0"
+    },
+    "devDependencies": {
+        "@snippetly/tsconfig": "workspace:*",
+        "typescript": "catalog:tooling",
+        "vitest": "catalog:testing",
+        "pg": "catalog:backend",
+        "@types/pg": "catalog:backend",
+        "typeorm": "catalog:backend",
+        "@types/faker": "^5.5.9"
+    }
+}

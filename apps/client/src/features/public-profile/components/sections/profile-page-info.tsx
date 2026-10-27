@@ -1,0 +1,135 @@
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { useAuth } from '@/features/auth/hooks/use-auth';
+import { DeveloperActionsDropdown } from '@/features/developer-actions/components/developer-actions-dropdown';
+import { SendFriendshipRequestButton } from '@/features/friendship/components/send-friendship-request-button';
+import { formatDeveloperInfo } from '@/lib/format-developer-info';
+import { FriendshipStatus } from '@snippetly/common/dto';
+import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import { useLocation, useNavigate, useParams } from '@tanstack/react-router';
+import { CalendarIcon } from 'lucide-react';
+import { getDeveloperProfileQueryOptions } from '../../lib/public-profile-query-options';
+
+export function ProfilePageInfo() {
+    const { id } = useParams({ from: '/(public)/developers/$id/' });
+    const qClient = useQueryClient();
+    const navigate = useNavigate();
+    const location = useLocation();
+    const { user, isAuthenticated } = useAuth();
+    const { data: profile } = useSuspenseQuery(getDeveloperProfileQueryOptions(id));
+    const isPrivate = 'isPrivate' in profile ? profile.isPrivate : false;
+
+    const { fullName, initials: avatarFallback } = formatDeveloperInfo(profile);
+
+    // isCurrentUserAFriend is always true as long as there is an interaction
+    // whether it's accepted or not
+    const friendshipInfo =
+        'friendshipInfo' in profile.relationshipWithCurrentUser
+            ? profile.relationshipWithCurrentUser.friendshipInfo
+            : undefined;
+    const friendCount = 'friendsCount' in profile.activity.stats ? profile.activity.stats.friendsCount : 0;
+    const shouldDisplayFriendshipInfo = !!friendshipInfo && (user?.id ? profile.id !== user.id : true);
+
+    const shouldDisplaySendButton =
+        friendshipInfo?.friendshipStatus === FriendshipStatus.Cancelled ||
+        (friendshipInfo?.friendshipStatus !== FriendshipStatus.Pending &&
+            !friendshipInfo?.isCurrentUserAFriend);
+
+    const onMutateFavSuccess = () => {
+        qClient.invalidateQueries(getDeveloperProfileQueryOptions(id));
+    };
+
+    return (
+        <Card>
+            <CardContent>
+                <div className="flex flex-col md:flex-row gap-6 relative">
+                    <Avatar className="h-32 w-32 mx-auto md:mx-0">
+                        <AvatarImage src={profile.image || '/placeholder.svg'} alt={avatarFallback} />
+                        <AvatarFallback className="text-2xl">{avatarFallback}</AvatarFallback>
+                    </Avatar>
+
+                    <div className="flex-1 space-y-4">
+                        <div className="text-center md:text-left">
+                            <h1 className="text-3xl capitalize font-bold">{fullName}</h1>
+                        </div>
+                        <p className="text-muted-foreground">{profile.bio}</p>
+                        <div className="flex flex-wrap gap-4 justify-between text-sm text-muted-foreground">
+                            <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-1">
+                                    <CalendarIcon className="h-4 w-4" />
+                                    Joined {new Date(profile.createdAt).toLocaleDateString()}
+                                </div>
+                                <Badge variant="secondary">{isPrivate ? 'Private' : 'Public'}</Badge>
+                            </div>
+                        </div>
+                        <div className="flex gap-6 text-sm">
+                            <span>
+                                <strong>{friendCount}</strong> Friend
+                                {friendCount !== 1 ? 's' : ''}
+                            </span>
+                        </div>
+
+                        {shouldDisplayFriendshipInfo && (
+                            <div className="flex gap-2">
+                                {shouldDisplaySendButton && (
+                                    <div className="flex gap-2">
+                                        <SendFriendshipRequestButton
+                                            variant={'outline'}
+                                            friendId={profile.id}
+                                            sendFriendshipRequestMutationCallbacks={{
+                                                onSuccess: () => {
+                                                    qClient.invalidateQueries(
+                                                        getDeveloperProfileQueryOptions(id),
+                                                    );
+                                                },
+                                            }}
+                                            onClick={e => {
+                                                if (!isAuthenticated) {
+                                                    e.preventDefault();
+                                                    navigate({
+                                                        to: '/sign-in',
+                                                        search: { redirect: location.href },
+                                                    });
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                )}
+                                {!!friendshipInfo?.friendshipStatus && (
+                                    <Badge variant="secondary" className="capitalize">
+                                        {friendshipInfo?.friendshipStatus} Friendship Request
+                                    </Badge>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="absolute top-0 inset-e-0">
+                        <DeveloperActionsDropdown
+                            developer={{ id: profile.id, firstName: profile.firstName }}
+                            friendshipInfo={{
+                                isFriendWithCurrentUser: friendshipInfo?.isCurrentUserAFriend ?? false,
+                                friendshipStatus: friendshipInfo?.friendshipStatus ?? null,
+                            }}
+                            favouriteInfo={{
+                                isFavouritedByCurrentUser:
+                                    profile.relationshipWithCurrentUser.isFavouritedByCurrentUser,
+                            }}
+                            showRequestFriendship={shouldDisplaySendButton}
+                            showAddToFavourites={true}
+                            showRemoveFromFavourites={true}
+                            showEditProfile={true}
+                            addDeveloperToFavourites={{
+                                onSuccess: () => onMutateFavSuccess(),
+                            }}
+                            removeDeveloperFromFavourites={{
+                                onSuccess: () => onMutateFavSuccess(),
+                            }}
+                        />
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}

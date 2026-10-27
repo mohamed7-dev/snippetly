@@ -1,0 +1,12 @@
+import { APP_NAME } from '@snippetly/common/lib';
+import { Link } from '@tanstack/react-router';
+import { Code2Icon } from 'lucide-react';
+
+export function Logo() {
+    return (
+        <Link to={'/'} className="flex items-center gap-2">
+            <Code2Icon className="size-8 text-primary" />
+            <span className="font-heading font-bold text-2xl">{APP_NAME}</span>
+        </Link>
+    );
+}

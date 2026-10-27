@@ -1,0 +1,45 @@
+name: Release server
+
+on:
+    workflow_dispatch:
+
+jobs:
+    release:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: pnpm/action-setup@v4
+              with:
+                  version: 10.21.0
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+                  cache: pnpm
+            - run: pnpm install --frozen-lockfile
+            - name: Build Vercel deployment
+              working-directory: apps/server
+              run: |
+                  pnpm dlx vercel@latest pull --yes --environment=production --token="$VERCEL_TOKEN"
+                  pnpm dlx vercel@latest build --prod --token="$VERCEL_TOKEN"
+              env:
+                  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+                  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+                  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+            - name: Run production database migrations
+              run: pnpm --filter @snippetly/server db:migration:run
+              env:
+                  DB_HOST: ${{ secrets.DB_HOST }}
+                  DB_PORT: ${{ secrets.DB_PORT }}
+                  DB_USER: ${{ secrets.DB_USER }}
+                  DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+                  DB_NAME: ${{ secrets.DB_NAME }}
+                  DB_SCHEMA: ${{ secrets.DB_SCHEMA }}
+                  DB_SSL: ${{ secrets.DB_SSL }}
+                  DB_CHANNEL_BINDING: ${{ secrets.DB_CHANNEL_BINDING }}
+            - name: Deploy Vercel artifact
+              working-directory: apps/server
+              run: pnpm dlx vercel@latest deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+              env:
+                  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+                  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+                  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}

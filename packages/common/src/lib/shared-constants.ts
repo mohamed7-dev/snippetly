@@ -1,0 +1,33 @@
+import z from 'zod';
+import { getDeveloperPreferencesDto } from '../schema/developer/preferences.api.js';
+
+export const SUPER_ADMIN_IDENTIFIER = 'superadmin';
+export const SUPER_ADMIN_PASSWORD = 'superadmin';
+export const DEFAULT_ADMIN_API_PATH_PREFIX = 'admin';
+export const DEFAULT_DEVELOPER_API_PATH_PREFIX = 'developer';
+export const DEFAULT_API_SERVER_PORT = 3000;
+export const LANGUAGE_CODE_QUERY_NAME = 'languageCode';
+export const SUPER_ADMIN_ROLE_NAME = '__super-admin__';
+export const SUPER_ADMIN_ROLE_DESCRIPTION = 'SuperAdmin';
+export const DEVELOPER_ROLE_NAME = '__developer__';
+export const DEVELOPER_ROLE_DESCRIPTION = 'Developer';
+export const API_PORT = 3000;
+export const AUTH_TOKEN_HEADER_KEY = 'x-session-token';
+export const APP_NAME = 'Snippetly';
+
+type DeveloperPreferencesValues = z.infer<typeof getDeveloperPreferencesDto.output>['preferences'];
+
+export const DEFAULT_DEVELOPER_PREFERENCES: DeveloperPreferencesValues = {
+    theme: 'system',
+    colorScheme: 'classic',
+    codeEditor: {
+        theme: 'system',
+        fontSize: 14,
+        fontFamily: 'geist-mono',
+        tabSize: 4,
+        lineWrapping: false,
+        lineNumbers: true,
+    },
+    inAppNotificationsEnabled: true,
+    isPushEnabled: true,
+};

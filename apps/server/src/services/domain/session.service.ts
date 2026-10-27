@@ -1,0 +1,259 @@
+import ms from 'ms';
+import { randomBytes } from 'node:crypto';
+import { EntitySubscriberInterface, InsertEvent, MoreThan, RemoveEvent, UpdateEvent } from 'typeorm';
+import { RequestContext } from '../../api/request-context/request-context';
+import { getUserPermissions } from '../../api/utils/get-user-permissions';
+import { EntityNotFoundError } from '../../common/errors/errors';
+import { race } from '../../common/helpers/race';
+import { SessionCacheEntry, SessionCacheStrategy } from '../../config/auth/session-cache-strategy.interface';
+import { ConfigService } from '../../config/config.service';
+import { Role } from '../../entities/role/role.entity';
+import { Session } from '../../entities/session/session.entity';
+import { User } from '../../entities/users/user.entity';
+import { DatabaseService } from '../../infra/database/database.service';
+import { Injectable } from '../../infra/ioc-container/injectable.decorator';
+
+@Injectable()
+export class SessionService implements EntitySubscriberInterface {
+    private readonly sessionDurationInMs: number;
+    private cache: SessionCacheStrategy;
+    private readonly sessionCacheTimeoutMs = 50;
+
+    constructor(
+        private readonly databaseService: DatabaseService,
+        private readonly configService: ConfigService,
+    ) {
+        const { sessionDuration } = configService.authOptions;
+        this.sessionDurationInMs =
+            typeof sessionDuration === 'string' ? ms(sessionDuration) : sessionDuration;
+        this.cache = configService.authOptions.sessionCacheStrategy;
+
+        this.databaseService.dataSource?.subscribers?.push(this);
+    }
+
+    /**
+     * @description
+     * Clears cached sessions after an entity is added to the database.
+     * @internal
+     */
+    async afterInsert(event: InsertEvent<any>): Promise<any> {
+        await this.clearSessionCacheOnDataChange(event);
+    }
+
+    /**
+     * @description
+     * Clears cached sessions after an entity is removed from the database.
+     * @internal
+     */
+    async afterRemove(event: RemoveEvent<any>): Promise<any> {
+        await this.clearSessionCacheOnDataChange(event);
+    }
+
+    /**
+     * @description
+     * Clears cached sessions after an entity is updated in the database.
+     * @internal
+     */
+    async afterUpdate(event: UpdateEvent<any>): Promise<any> {
+        await this.clearSessionCacheOnDataChange(event);
+    }
+
+    /**
+     * @description
+     * Creates a session for a user, saves it, and adds it to the session cache.
+     */
+    public async createSession(
+        ctx: RequestContext,
+        user: User,
+        authStrategyName: string,
+        userAgent: string | null = null,
+    ) {
+        const authenticatedSession = new Session({
+            token: await this.createToken(),
+            invalidated: false,
+            authenticationStrategy: authStrategyName,
+            userAgent,
+            user,
+            expiresAt: this.calculateExpiry(this.sessionDurationInMs),
+        });
+        const savedSession = await this.databaseService
+            .getRepository(ctx, Session)
+            .save(authenticatedSession);
+        await race(this.cache.set(this.toCacheEntry(savedSession)), this.sessionCacheTimeoutMs);
+        return savedSession;
+    }
+
+    /**
+     * @description
+     * Lists a user's sessions that are active and have not expired.
+     */
+    public async listActiveSessions(ctx: RequestContext, userId: string): Promise<Session[]> {
+        return this.databaseService.getRepository(ctx, Session).find({
+            where: {
+                user: { id: userId },
+                invalidated: false,
+                expiresAt: MoreThan(new Date()),
+            },
+            order: { createdAt: 'DESC' },
+        });
+    }
+
+    /**
+     * @description
+     * Removes a user's session and its cached entry.
+     */
+    public async revokeSession(ctx: RequestContext, userId: string, sessionId: string): Promise<Session> {
+        const repository = this.databaseService.getRepository(ctx, Session);
+        const session = await repository.findOne({
+            where: { id: sessionId, user: { id: userId } },
+        });
+        if (!session) {
+            throw new EntityNotFoundError({ entityName: 'Session', entityId: sessionId });
+        }
+
+        await repository.remove(session);
+        await race(this.cache.delete(session.token), this.sessionCacheTimeoutMs);
+        return session;
+    }
+
+    /**
+     * @description
+     * Removes all sessions for a user and deletes their cached entries.
+     */
+    public async deleteSessionsByUser(ctx: RequestContext, user: User): Promise<void> {
+        const userSessions = await this.databaseService
+            .getRepository(ctx, Session)
+            .find({ where: { user: { id: user.id } } });
+        await this.databaseService.getRepository(ctx, Session).remove(userSessions);
+        for (const session of userSessions) {
+            await race(this.cache.delete(session.token), this.sessionCacheTimeoutMs);
+        }
+    }
+
+    /**
+     * @description
+     * Gets a session from cache, checking the database if the cached entry is stale or missing.
+     */
+    public async getSessionByToken(token: string): Promise<SessionCacheEntry | undefined> {
+        const sessionCacheEntry = await race(this.cache.get(token), this.sessionCacheTimeoutMs);
+        const isCacheStale = !!(sessionCacheEntry && sessionCacheEntry.cacheExpiry < Date.now() / 1000);
+        const isSessionExpired = !!(sessionCacheEntry && sessionCacheEntry.sessionExpiry < new Date());
+
+        if (!sessionCacheEntry || isCacheStale || isSessionExpired) {
+            const validSession = await this.findValidSessionByToken(token);
+            // the session(in db) exists, and not expired so we should update the cache
+            if (validSession) {
+                const sessionCacheEntry = this.toCacheEntry(validSession);
+                await race(this.cache.set(sessionCacheEntry), this.sessionCacheTimeoutMs);
+                return sessionCacheEntry;
+            }
+            return undefined;
+        }
+        return sessionCacheEntry;
+    }
+
+    /**
+     * @description
+     * Finds an active, unexpired session in the database and extends its expiry if needed.
+     */
+    private async findValidSessionByToken(token: string): Promise<Session | undefined> {
+        const session = await this.databaseService.getRepository(Session).findOne({
+            where: {
+                token,
+                invalidated: false,
+            },
+            relations: {
+                user: {
+                    roles: true,
+                },
+            },
+        });
+
+        if (session && session.expiresAt > new Date()) {
+            await this.extendSessionExpiry(session);
+            return session;
+        }
+        return undefined;
+    }
+
+    /**
+     * @description
+     * Converts a session into the smaller form stored in the session cache.
+     */
+    private toCacheEntry(session: Session) {
+        const { sessionCacheTTL } = this.configService.authOptions;
+        const sessionCacheTTLInS =
+            typeof sessionCacheTTL === 'string' ? ms(sessionCacheTTL) / 1000 : sessionCacheTTL;
+
+        const expiry = Date.now() / 1000 + sessionCacheTTLInS;
+        const { user } = session;
+
+        const sessionCacheEntry: SessionCacheEntry = {
+            cacheExpiry: expiry,
+            id: session.id,
+            token: session.token,
+            sessionExpiry: session.expiresAt,
+            authStrategyName: session.authenticationStrategy,
+            user: {
+                id: user.id,
+                identifier: user.identifier,
+                isVerified: user.isVerified,
+                permissions: getUserPermissions(user),
+            },
+        };
+        return sessionCacheEntry;
+    }
+
+    /**
+     * @description
+     * Returns the date when a session expires after the given duration.
+     */
+    private calculateExpiry(durationMs: number): Date {
+        return new Date(Date.now() + durationMs);
+    }
+
+    /**
+     * @description
+     * Generates a random token for a new session.
+     */
+    private async createToken(): Promise<string> {
+        return new Promise((resolve, reject) => {
+            randomBytes(32, (err, buf) => {
+                if (err) return reject(err);
+                resolve(buf.toString('hex'));
+            });
+        });
+    }
+
+    /**
+     * @description
+     * Extends a session's expiry when it has passed the halfway point of its lifetime.
+     */
+    private async extendSessionExpiry(session: Session) {
+        const now = Date.now();
+        const isOverHalfDuration = session.expiresAt.getTime() - now < this.sessionDurationInMs / 2;
+        if (isOverHalfDuration) {
+            const newExpiryDate = this.calculateExpiry(this.sessionDurationInMs);
+            session.expiresAt = newExpiryDate;
+            await this.databaseService
+                .getRepository(Session)
+                .update({ id: session.id }, { expiresAt: newExpiryDate });
+        }
+    }
+
+    /**
+     * @description
+     * Clears the session cache when a role change could make cached permissions outdated.
+     */
+    private async clearSessionCacheOnDataChange(
+        event: InsertEvent<any> | RemoveEvent<any> | UpdateEvent<any>,
+    ) {
+        if (event.entity) {
+            // If Role changes, potentially all the cached permissions in the
+            // session cache will be wrong, so we just clear the entire cache.
+            if (event.entity instanceof Role) {
+                await race(this.cache.clear(), this.sessionCacheTimeoutMs);
+            }
+        }
+    }
+}

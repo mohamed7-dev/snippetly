@@ -1,0 +1,42 @@
+{
+    "name": "@snippetly/common",
+    "version": "0.0.0",
+    "type": "module",
+    "publishConfig": {
+        "access": "public"
+    },
+    "files": [
+        "dist/**/*"
+    ],
+    "exports": {
+        "./lib": {
+            "types": "./dist/lib/index.d.ts",
+            "import": "./dist/lib/index.js",
+            "require": "./dist/lib/index.js"
+        },
+        "./dto": {
+            "types": "./dist/schema/index.d.ts",
+            "import": "./dist/schema/index.js",
+            "require": "./dist/schema/index.js"
+        }
+    },
+    "scripts": {
+        "dev": "tsc -p ./build/tsconfig.build.json -w",
+        "build": "rimraf dist && tsc -p ./build/tsconfig.build.json",
+        "lint": "eslint --fix .",
+        "format": "prettier --write .",
+        "test": "vitest"
+    },
+    "devDependencies": {
+        "@snippetly/eslint-config": "workspace:*",
+        "@snippetly/tsconfig": "workspace:*",
+        "eslint": "catalog:tooling",
+        "rimraf": "catalog:tooling",
+        "typescript": "catalog:tooling",
+        "vitest": "catalog:testing"
+    },
+    "dependencies": {
+        "@asteasolutions/zod-to-openapi": "^8.1.0",
+        "zod": "catalog:"
+    }
+}

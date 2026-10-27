@@ -1,0 +1,17 @@
+{
+    "extends": "@snippetly/tsconfig/base",
+    "include": ["**/*.ts", "**/*.tsx", "eslint.config.ts"],
+    "exclude": ["node_modules", ".tanstack"],
+    "compilerOptions": {
+        "target": "es2022",
+        "jsx": "react-jsx",
+        "module": "ESNext",
+        "lib": ["es2022", "DOM", "DOM.Iterable", "WebWorker"],
+        "types": ["vite/client"],
+        "moduleResolution": "bundler",
+        "verbatimModuleSyntax": true,
+        "paths": {
+            "@/*": ["./src/*"]
+        }
+    }
+}

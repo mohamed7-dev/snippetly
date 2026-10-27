@@ -1,0 +1,126 @@
+import { FindOptionsRelations, IsNull } from 'typeorm';
+import { RequestContext } from '../../api/request-context/request-context';
+import { ConfigService } from '../../config';
+import { Administrator } from '../../entities/administrator/administrator.entity';
+import { User } from '../../entities/users/user.entity';
+import { DatabaseService } from '../../infra/database/database.service';
+import { Injectable } from '../../infra/ioc-container/injectable.decorator';
+import { RequestContextService } from '../helpers/request-context.service';
+import { RoleService } from './role.service';
+import { UserService } from './user.service';
+
+@Injectable()
+export class AdministratorService {
+    constructor(
+        private readonly configService: ConfigService,
+        private readonly databaseService: DatabaseService,
+        private readonly roleService: RoleService,
+        private readonly userService: UserService,
+        private readonly requestContextService: RequestContextService,
+    ) {}
+
+    /**
+     * @description
+     * Creates or restores the configured super-admin account and administrator profile.
+     * @internal
+     */
+    public async initializeAdministrators() {
+        const { superAdminCredentials } = this.configService.authOptions;
+        const superAdminUser = await this.databaseService.getRepository(User).findOne({
+            where: {
+                identifier: superAdminCredentials.identifier,
+            },
+        });
+
+        if (superAdminUser) {
+            const admin = await this.databaseService.getRepository(Administrator).findOne({
+                where: {
+                    user: {
+                        id: superAdminUser.id,
+                    },
+                },
+            });
+            if (!admin) {
+                const administrator = new Administrator({
+                    username: superAdminCredentials.identifier,
+                    firstName: 'Super',
+                    lastName: 'Admin',
+                    user: superAdminUser,
+                });
+                await this.databaseService.getRepository(Administrator).save(administrator);
+            } else if (admin.deletedAt !== null) {
+                admin.deletedAt = null;
+                await this.databaseService.getRepository(Administrator).save(admin);
+            }
+            if (superAdminUser.deletedAt != null) {
+                superAdminUser.deletedAt = null;
+                await this.databaseService.getRepository(User).save(superAdminUser);
+            }
+        } else {
+            const superAdminRole = await this.roleService.getSuperAdminRole();
+            const administrator = new Administrator({
+                username: superAdminCredentials.identifier,
+                firstName: 'Super',
+                lastName: 'Admin',
+            });
+            const ctx = this.requestContextService.create({
+                apiType: 'admin',
+            });
+            administrator.user = await this.userService.createAdminUser(ctx, {
+                identifier: superAdminCredentials.identifier,
+                plainPassword: superAdminCredentials.password,
+            });
+            const { id } = await this.databaseService.getRepository(Administrator).save(administrator);
+            const createdAdministrator = (await this.findOneById(ctx, id, {
+                user: { roles: true },
+            })) as Administrator;
+            createdAdministrator?.user.roles.push(superAdminRole);
+            await this.databaseService
+                .getRepository(User)
+                .save(createdAdministrator?.user, { reload: false });
+        }
+    }
+
+    /**
+     * @description
+     * Finds an active administrator by ID and optionally loads related entities.
+     */
+    public async findOneById(
+        ctx: RequestContext,
+        id: string,
+        relations?: FindOptionsRelations<Administrator>,
+    ): Promise<Administrator | undefined> {
+        return await this.databaseService
+            .getRepository(ctx, Administrator)
+            .findOne({
+                relations: { ...relations },
+                where: {
+                    id,
+                    deletedAt: IsNull(),
+                },
+            })
+            .then(result => result ?? undefined);
+    }
+
+    /**
+     * @description
+     * Finds an active administrator by user ID and optionally loads related entities.
+     */
+    public async findOneByUserId(
+        ctx: RequestContext,
+        userId: string,
+        relations?: FindOptionsRelations<Administrator>,
+    ): Promise<Administrator | undefined> {
+        const admin = await this.databaseService.getRepository(ctx, Administrator).findOne({
+            where: {
+                user: { id: userId },
+                deletedAt: IsNull(),
+            },
+            relations: {
+                ...relations,
+            },
+        });
+
+        return admin ?? undefined;
+    }
+}

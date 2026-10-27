@@ -1,0 +1,83 @@
+import { ProcessStatus } from '@/components/feedback/process-status';
+import { LoadingButton } from '@/components/inputs/loading-button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { PermissionGuard } from '@/features/auth/components/shared/permission-guard';
+import { useAuth } from '@/features/auth/hooks/use-auth';
+import { useDeleteConfirmation } from '@/hooks/use-delete-confirmation';
+import { Permission } from '@snippetly/common/dto';
+import { useNavigate } from '@tanstack/react-router';
+import { Trash2Icon } from 'lucide-react';
+import { useDeleteDeveloperAccount } from '../../hooks/use-delete-developer-account';
+
+export function AccountDeletionSettings() {
+    const { confirm, resetAndClose } = useDeleteConfirmation();
+    const { logout, user } = useAuth();
+    const navigate = useNavigate();
+
+    const { mutateAsync: deleteAccount, isPending } = useDeleteDeveloperAccount({
+        onSuccess: () => {
+            resetAndClose?.();
+            logout('developer');
+            navigate({ to: '/goodbye', search: { 'redirected-from-delete': true } });
+        },
+    });
+
+    const handleDelete = () => {
+        confirm({
+            title: 'Account Deletion',
+            description:
+                'Your account will be deactivated for 30 days. during this period you will lose access to your snippets, collections, and profile data unless you sign back in in this case your account will be reactivated. after this period your will lose access to your data permanently',
+            onConfirm: async () => await deleteAccount(),
+            isPending: isPending,
+        });
+    };
+
+    return (
+        <Card className="border-destructive/20">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-destructive">
+                    <Trash2Icon className="size-5 shrink-0" aria-hidden="true" />
+                    <h2>Delete Account</h2>
+                </CardTitle>
+                <CardDescription>
+                    <p>
+                        Schedule account deletion. Your data is permanently removed after 30 days unless you
+                        sign in again.
+                    </p>
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                <ProcessStatus
+                    variant={'info'}
+                    showCloseButton={false}
+                    title="Account Deletion"
+                    description={
+                        <p>
+                            Deleting your account will schedule removal of all your snippets, collections, and
+                            profile data after <b>30 days</b>. during this period you can sign-in and your
+                            account will be reactivated again
+                        </p>
+                    }
+                />
+                <PermissionGuard
+                    requiredPermissions={[
+                        Permission.Authenticated,
+                        Permission.Owner,
+                        Permission.DeleteDeveloper,
+                    ]}
+                    ownerId={user?.id}
+                >
+                    <LoadingButton
+                        variant="destructive"
+                        className="w-full sm:w-auto"
+                        onClick={handleDelete}
+                        isLoading={isPending}
+                        type="button"
+                    >
+                        Delete My Account
+                    </LoadingButton>
+                </PermissionGuard>
+            </CardContent>
+        </Card>
+    );
+}

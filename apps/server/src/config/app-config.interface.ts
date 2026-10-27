@@ -1,0 +1,129 @@
+import { CorsOptions } from 'cors';
+import { DataSourceOptions } from 'typeorm';
+import { LanguageCode } from '../../../../packages/common/dist/schema';
+import { AuthenticationStrategy } from './auth/authentication-strategy.interface';
+import { PasswordHashingStrategy } from './auth/password-hashing-strategy.interface';
+import { PasswordValidationStrategy } from './auth/password-validation-strategy.interface';
+import { SessionCacheStrategy } from './auth/session-cache-strategy.interface';
+import { VerificationTokenStrategy } from './auth/verification-token-strategy.interface';
+import { CacheStrategy } from './system/cache/cache-strategy.interface';
+import { EmailTransporterStrategy } from './system/email/email-transporter-strategy.interface';
+import { JobQueueStrategy } from './system/job-queue/job-queue-strategy.interface';
+import { LoggerStrategy } from './system/logger/logger-strategy.interface';
+import { SearchStrategy } from './system/search/search-strategy';
+
+interface ApiActorOptions {
+    path?: string;
+    listingLimit?: number;
+}
+
+export type TrustProxyConfigOptions = boolean | number | string | string[] | ((ip: string) => boolean);
+
+export interface ApiConfigOptions {
+    host?: string;
+    port?: number;
+    disableRateLimiting?: boolean;
+    admin?: ApiActorOptions;
+    developer?: ApiActorOptions;
+    cors?: CorsOptions;
+    trustProxy?: TrustProxyConfigOptions;
+}
+
+export type DatabaseConfigOptions = DataSourceOptions;
+
+export interface SystemConfigOptions {
+    shouldRunInitialization?: boolean;
+    pushNotifications?: {
+        publicKey?: string;
+        privateKey?: string;
+        subject?: string;
+    };
+    email?: {
+        emailTransporterStrategy?: EmailTransporterStrategy;
+        accountVerificationCallbackUrl?: string;
+        passwordResetCallbackUrl?: string;
+        identifierChangeCallbackUrl?: string;
+        from?: string;
+    };
+    loggerStrategy?: LoggerStrategy;
+    cacheStrategy?: CacheStrategy;
+    jobQueueStrategy?: JobQueueStrategy;
+    searchStrategy?: SearchStrategy;
+}
+
+export interface AuthConfigOptions {
+    authTokenHeaderKey?: string;
+    requireVerification?: boolean;
+    /**
+     * @description
+     * The duration for which a verification token is valid
+     *
+     * @remarks
+     * - If number, it is treated as milliseconds
+     * - If string, it is treated as a duration string (e.g. "1h", "2d") compatible with `ms` package.
+     *
+     * @default '7d'
+     */
+    verificationTokenDuration?: number | string;
+    /**
+     * @description
+     * The time from the last authentication a session is valid for after which the user must re-authenticate
+     *
+     * @remarks
+     * - If number, it is treated as milliseconds
+     * - If string, it is treated as a duration string (e.g. "1h", "2d") compatible with `ms` package.
+     *
+     * @default '1y'
+     */
+    sessionDuration?: number | string;
+    /**
+     * @description
+     * The time a session is cached in the cache before it is considered stale
+     *
+     * @remarks
+     * - If number, it is treated as milliseconds
+     * - If string, it is treated as a duration string (e.g. "1h", "2d") compatible with `ms` package.
+     *
+     * @default 300
+     */
+    sessionCacheTTL?: number | string;
+    superAdminCredentials?: {
+        identifier?: string;
+        password?: string;
+    };
+    sessionCacheStrategy?: SessionCacheStrategy;
+    passwordValidationStrategy?: PasswordValidationStrategy;
+    passwordHashingStrategy?: PasswordHashingStrategy;
+    verificationTokenStrategy?: VerificationTokenStrategy;
+    adminAuthenticationStrategies?: AuthenticationStrategy[];
+    developerAuthenticationStrategies?: AuthenticationStrategy[];
+}
+
+export interface AppConfig {
+    defaultLanguageCode?: LanguageCode;
+    api?: ApiConfigOptions;
+    database?: DatabaseConfigOptions;
+    system?: SystemConfigOptions;
+    auth?: AuthConfigOptions;
+}
+
+/**
+ * @description
+ * This interface represents the AppConfig at runtime.
+ * It exists after merging default configurations with ones provided by the external env.
+ */
+export interface RuntimeAppConfig extends Required<AppConfig> {
+    api: Required<ApiConfigOptions> & {
+        admin: Required<ApiActorOptions>;
+        developer: Required<ApiActorOptions>;
+    };
+    auth: Required<AuthConfigOptions> & {
+        superAdminCredentials: Required<AuthConfigOptions['superAdminCredentials']>;
+    };
+    system: Required<SystemConfigOptions> & {
+        email: Required<SystemConfigOptions['email']>;
+        jobQueueStrategy: JobQueueStrategy;
+    };
+}
+
+export type PartialAppConfig = Partial<AppConfig>;

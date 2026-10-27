@@ -1,0 +1,351 @@
+import {
+    activeDeveloperAccountActivityDto,
+    activeDeveloperDto,
+    deleteDeveloperAccountDto,
+    developerListDto,
+    findOneDeveloperDto,
+    FriendshipStatus,
+    Permission,
+    updateDeveloperAccountDto,
+} from '@snippetly/common/dto';
+import { omit } from '@snippetly/common/lib';
+import { Router } from 'express';
+import rateLimit from 'express-rate-limit';
+import { EntityNotFoundError } from '../../common/errors/errors';
+import { AppRouter } from '../../common/types/app-router.interface';
+import { Developer } from '../../entities/developer/developer.entity';
+import { Controller } from '../../infra/ioc-container/controller.decorator';
+import { DeveloperService } from '../../services/domain/developer.service';
+import { FriendshipService } from '../../services/domain/friendship.service';
+import { authGuard } from '../middlewares/auth.guard';
+import { defineRoutePipeline } from '../middlewares/define-router-pipeline.mw';
+import { RequestContext } from '../request-context/request-context';
+
+@Controller({
+    path: 'developers',
+    version: 1,
+})
+export class DeveloperDeveloperController implements AppRouter {
+    constructor(
+        private readonly developerService: DeveloperService,
+        private readonly friendshipService: FriendshipService,
+    ) {}
+
+    developerReadLimiter = rateLimit({
+        windowMs: 60 * 1000,
+        max: 120,
+        standardHeaders: true,
+        legacyHeaders: false,
+    });
+
+    developerWriteLimiter = rateLimit({
+        windowMs: 15 * 60 * 1000,
+        max: 50,
+        standardHeaders: true,
+        legacyHeaders: false,
+    });
+
+    initRoutes(router: Router): Router {
+        // discover endpoint (always public dto)
+        router.get(
+            '/',
+            ...defineRoutePipeline({
+                before: [this.developerReadLimiter, authGuard({ permissions: [Permission.Public] })],
+                query: developerListDto.input,
+                response: developerListDto.output,
+                handler: async (req, res) => {
+                    const ctx = req.getRequestContext();
+                    const activeDeveloper = await this.developerService.getActiveDeveloper(ctx);
+
+                    const result = await this.developerService.find(
+                        ctx,
+                        req.query,
+                        activeDeveloper,
+                        { addedTags: true },
+                        {
+                            includePrivateDevelopers: false,
+                            includeSoftDeleted: false,
+                        },
+                    );
+
+                    if (result.items.length === 0) {
+                        res.status(200).json(result);
+                        return;
+                    }
+
+                    const [
+                        developersWithFriendshipInfo,
+                        developersWithActivityStats,
+                        developersWithTags,
+                        developersWithFavouriteStatus,
+                    ] = await Promise.all([
+                        this.developerService.attachFriendshipInfoToDevelopersList(
+                            ctx,
+                            result.items,
+                            activeDeveloper,
+                        ),
+                        this.developerService.attachActivityStatsToDevelopersList(ctx, result.items, {
+                            includePrivateCollections: false,
+                            includePrivateSnippets: false,
+                        }),
+                        this.developerService.attachTagsInfoToDevelopersList(ctx, result.items),
+                        this.developerService.attachFavouriteStatusToDevelopersList(
+                            ctx,
+                            result.items,
+                            activeDeveloper,
+                        ),
+                    ]);
+
+                    const finalResultItems = result.items.map((item, index) => ({
+                        ...item,
+                        activity: {
+                            snippetsCount: developersWithActivityStats[index].activityStats.snippetsCount,
+                            collectionsCount:
+                                developersWithActivityStats[index].activityStats.collectionsCount,
+                            tags: developersWithTags[index].tags,
+                        },
+                        relationshipWithCurrentUser: {
+                            friendshipInfo: developersWithFriendshipInfo[index].friendshipInfo,
+                            isFavouritedByCurrentUser:
+                                developersWithFavouriteStatus[index].isFavouritedByCurrentUser,
+                        },
+                    }));
+
+                    res.status(200).json({
+                        ...result,
+                        items: finalResultItems,
+                    });
+                },
+            }),
+        );
+
+        router.get(
+            '/me',
+            ...defineRoutePipeline({
+                before: [
+                    this.developerReadLimiter,
+                    authGuard({
+                        permissions: [Permission.Owner],
+                    }),
+                ],
+                response: activeDeveloperDto.output,
+                handler: async (req, res) => {
+                    const userId = req.getRequestContext().activeUserId;
+                    if (userId) {
+                        const developer = await this.developerService.getOneByUserId(
+                            req.getRequestContext(),
+                            userId,
+                            {
+                                user: {
+                                    roles: true,
+                                    authenticationMethods: true,
+                                },
+                            },
+                            {
+                                includeSoftDeleted: false,
+                                includePrivateDevelopers: true,
+                            },
+                        );
+                        if (developer) {
+                            res.status(200).json(developer);
+                        } else {
+                            res.status(200).json(null);
+                        }
+                    } else {
+                        res.status(200).json(null);
+                    }
+                },
+            }),
+        );
+
+        router.get(
+            '/me/activity',
+            ...defineRoutePipeline({
+                before: [
+                    this.developerReadLimiter,
+                    authGuard({
+                        permissions: [Permission.Owner],
+                    }),
+                ],
+                response: activeDeveloperAccountActivityDto.output,
+                handler: async (req, res) => {
+                    const ctx = req.getRequestContext();
+                    const userId = ctx.activeUserId;
+                    if (userId) {
+                        const developer = await this.developerService.getOneByUserId(
+                            ctx,
+                            userId,
+                            {
+                                user: {
+                                    roles: true,
+                                    authenticationMethods: true,
+                                },
+                            },
+                            {
+                                includePrivateDevelopers: false,
+                                includeSoftDeleted: false,
+                            },
+                        );
+                        if (developer) {
+                            const stats = await this.developerService.getDeveloperActivityStats(
+                                ctx,
+                                developer.id,
+                                { includePrivate: true, includeSoftDeleted: false },
+                            );
+                            res.status(200).json({ stats });
+                        } else {
+                            res.status(200).json(null);
+                        }
+                    } else {
+                        res.status(200).json(null);
+                    }
+                },
+            }),
+        );
+
+        router.get(
+            '/:id',
+            ...defineRoutePipeline({
+                before: [this.developerReadLimiter, authGuard({ permissions: [Permission.Public] })],
+                params: findOneDeveloperDto.input,
+                response: findOneDeveloperDto.output,
+                handler: async (req, res) => {
+                    const ctx = req.getRequestContext();
+
+                    const result = await this.developerService.findOne(
+                        ctx,
+                        req.params,
+                        {
+                            user: { roles: true, authenticationMethods: true },
+                        },
+                        { includePrivateDevelopers: true, includeSoftDeleted: false },
+                    );
+
+                    const isOwner = !!ctx.activeUserId && ctx.activeUserId === result?.user?.id;
+
+                    if (!result || (!isOwner && result?.isPrivate)) {
+                        throw new EntityNotFoundError({ entityName: 'Developer', entityId: req.params.id });
+                    }
+
+                    const currentDeveloper = ctx.activeUserId
+                        ? isOwner
+                            ? result
+                            : await this.developerService.getActiveDeveloper(ctx)
+                        : undefined;
+
+                    const friendshipInfo: {
+                        isFriendWithCurrentUser: boolean;
+                        friendshipStatus: FriendshipStatus | null;
+                    } = {
+                        friendshipStatus: null,
+                        isFriendWithCurrentUser: false,
+                    };
+
+                    if (currentDeveloper) {
+                        const friendshipInfoWithCurrentUserMap =
+                            await this.friendshipService.getFriendshipInfoWithActiveDeveloper(
+                                ctx,
+                                currentDeveloper.id,
+                                [result.id],
+                            );
+                        const friendshipInfoWithCurrentUser = friendshipInfoWithCurrentUserMap.get(result.id);
+                        friendshipInfo.friendshipStatus =
+                            friendshipInfoWithCurrentUser?.friendshipStatus ?? null;
+                        friendshipInfo.isFriendWithCurrentUser =
+                            friendshipInfoWithCurrentUser?.isFriendWithCurrentUser ?? false;
+                    }
+
+                    const developerActivityStats = await this.developerService.getDeveloperActivityStats(
+                        ctx,
+                        result.id,
+                        {
+                            includePrivate: isOwner,
+                            includeSoftDeleted: false,
+                        },
+                    );
+
+                    const [developerWithFavouriteStatus] =
+                        await this.developerService.attachFavouriteStatusToDevelopersList(
+                            ctx,
+                            [result],
+                            currentDeveloper,
+                        );
+
+                    const safeDeveloper = isOwner
+                        ? result
+                        : {
+                              ...omit(result, ['isPrivate', 'updatedAt', 'deletedAt', 'user']),
+                              isVerified: result.isVerified,
+                          };
+
+                    const finalResult = {
+                        ...safeDeveloper,
+                        isVerified: result.isVerified,
+                        activity: {
+                            stats: developerActivityStats,
+                        },
+                        relationshipWithCurrentUser: {
+                            isFavouritedByCurrentUser: developerWithFavouriteStatus.isFavouritedByCurrentUser,
+                            friendshipInfo: {
+                                isCurrentUserAFriend: friendshipInfo.isFriendWithCurrentUser,
+                                friendshipStatus: friendshipInfo.friendshipStatus,
+                            },
+                        },
+                    };
+
+                    res.status(200).json(finalResult);
+                },
+            }),
+        );
+
+        router.patch(
+            '/me',
+            ...defineRoutePipeline({
+                before: [
+                    this.developerWriteLimiter,
+                    authGuard({
+                        permissions: [Permission.Owner],
+                    }),
+                ],
+                body: updateDeveloperAccountDto.input,
+                response: updateDeveloperAccountDto.output,
+                handler: async (req, res) => {
+                    const ctx = req.getRequestContext();
+                    const developer = await this.requireDeveloperForCurrentUser(ctx);
+                    const result = await this.developerService.update(ctx, {
+                        ...req.body,
+                        id: developer.id,
+                    });
+
+                    return res.status(200).json(result);
+                },
+            }),
+        );
+
+        router.delete(
+            '/me',
+            ...defineRoutePipeline({
+                before: [
+                    this.developerWriteLimiter,
+                    authGuard({
+                        permissions: [Permission.Owner],
+                    }),
+                ],
+                response: deleteDeveloperAccountDto.output,
+                handler: async (req, res) => {
+                    const ctx = req.getRequestContext();
+                    const developer = await this.requireDeveloperForCurrentUser(ctx);
+                    const result = await this.developerService.softDelete(ctx, developer.id);
+
+                    return res.status(200).json(result);
+                },
+            }),
+        );
+
+        return router;
+    }
+
+    private async requireDeveloperForCurrentUser(ctx: RequestContext): Promise<Developer> {
+        return this.developerService.getActiveDeveloper(ctx, true);
+    }
+}
