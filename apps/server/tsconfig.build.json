@@ -7,5 +7,5 @@
         "incremental": true
     },
     "exclude": ["./package.json"],
-    "files": ["./src/index.ts", "./src/main.ts", "./src/vercel.mts"]
+    "files": ["./src/index.ts", "./src/main.ts", "./src/vercel.ts"]
 }
