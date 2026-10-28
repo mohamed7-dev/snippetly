@@ -1,11 +1,9 @@
-import { BaseDataSourceOptions } from 'typeorm/data-source/BaseDataSourceOptions.js';
-
 /**
  * @description
  * This interface defines the shape of the database service used to initialize data
  * in a test suite.
  */
-export interface DBInitializer<DataSourceOptions extends BaseDataSourceOptions> {
+export interface DBInitializer<DataSourceOptions = unknown> {
     /**
      * @description
      * uses `testFileName` to derive database name from, creates the database

@@ -30,30 +30,18 @@
     ],
     "screenshots": [
         {
-            "src": "screenshots/screenshot-1.webp",
-            "type": "image/webp",
-            "label": "landing page view",
+            "src": "screenshots/narrow-screen.png",
+            "type": "image/png",
+            "label": "mobile view of the offline code snippets library",
             "form_factor": "narrow",
-            "sizes": "1919x3232"
+            "sizes": "360x780"
         },
         {
-            "src": "screenshots/screenshot-2.webp",
-            "type": "image/webp",
-            "label": "dashboard page view",
+            "src": "screenshots/wide-screen.png",
+            "type": "image/png",
+            "label": "desktop view offline code snippets library",
             "form_factor": "wide",
-            "sizes": "1919x986"
-        },
-        {
-            "src": "screenshots/screenshot-3.webp",
-            "type": "image/webp",
-            "label": "collection page view",
-            "sizes": "1919x1048"
-        },
-        {
-            "src": "screenshots/screenshot-4.webp",
-            "type": "image/webp",
-            "label": "snippet page view",
-            "sizes": "1919x1161"
+            "sizes": "1920x994"
         }
     ]
 }

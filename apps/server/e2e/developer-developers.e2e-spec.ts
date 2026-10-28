@@ -14,11 +14,11 @@ import {
 } from '@snippetly/common/dto';
 import { transformInputToSearchParams } from '@snippetly/common/lib';
 import { DatabaseService, Developer, Friendship, mergeConfig } from '@snippetly/server';
-import { createTestEnvironment } from '@snippetly/testing';
 import { afterAll, beforeAll, describe, expect, it, Mock, vi } from 'vitest';
 import { getE2ETestSetupTimeout } from '../../../e2e-common/e2e-common-utils';
 import { initialData } from '../../../e2e-common/e2e-initial-data';
 import { testConfig } from '../../../e2e-common/test-config';
+import { createTestEnvironment } from './support/create-test-environment';
 import { TestEmailTransporter } from './utils/test-email-transporter.strategy';
 import { TestPasswordValidationStrategy } from './utils/test-password-validation.strategy';
 

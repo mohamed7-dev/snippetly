@@ -1,69 +1,63 @@
-import { App, AppConfig, AppModule, Logger, runPreConfig } from '@snippetly/server';
-import { populate } from './data-population/populate';
 import { resolveInitializer } from './db-initializers/db-initializers-registry';
-import { TestServerOptions, TestServerState } from './types';
 import { getCallerFilename } from './utils/get-caller-filename';
 
-export class TestServer {
+export interface TestServerAdapter<Config, App, State, Options> {
+    getDatabaseOptions(config: Config): { type: string };
+    createInitialState(): State;
+    start(config: Config): Promise<App>;
+    populate(
+        config: Config,
+        options: Options,
+        start: (config: Config) => Promise<App>,
+        stop: (app: App) => Promise<void>,
+    ): Promise<State>;
+    stop(app: App): Promise<void>;
+    attachState?(app: App, state: State): void;
+}
+
+export class TestServer<Config, App, State, Options> {
     public app: App;
-    public state: TestServerState = {
-        developers: [],
-        collections: [],
-        snippets: [],
-        friendships: [],
-    };
+    public state: State;
 
-    constructor(private appConfig: Required<AppConfig>) {}
+    constructor(
+        private config: Config,
+        private adapter: TestServerAdapter<Config, App, State, Options>,
+    ) {
+        this.state = adapter.createInitialState();
+    }
 
-    async init(options: TestServerOptions): Promise<TestServerState> {
-        const databaseInitializer = resolveInitializer(this.appConfig.database.type);
-        const testFilename = getCallerFilename(1);
+    async init(options: Options): Promise<State> {
+        this.state = this.adapter.createInitialState();
+        const databaseOptions = this.adapter.getDatabaseOptions(this.config);
+        const databaseInitializer = resolveInitializer(databaseOptions.type);
+        let initialized = false;
+
         try {
-            await databaseInitializer.init(testFilename, this.appConfig.database);
-            const populateFn = () => this.populateInitialData(this.appConfig, options);
-            await databaseInitializer.populate(populateFn);
-            await databaseInitializer.destroy();
-        } catch (error) {
-            throw error;
+            await databaseInitializer.init(getCallerFilename(1), databaseOptions);
+            initialized = true;
+            await databaseInitializer.populate(async () => {
+                this.state = await this.adapter.populate(
+                    this.config,
+                    options,
+                    config => this.adapter.start(config),
+                    app => this.adapter.stop(app),
+                );
+            });
+        } finally {
+            if (initialized) {
+                await databaseInitializer.destroy();
+            }
         }
-        await this.bootstrap();
+
+        this.app = await this.adapter.start(this.config);
+        this.adapter.attachState?.(this.app, this.state);
         return this.state;
     }
 
-    public async destroy() {
-        // allow a grace period of any outstanding async tasks to complete
+    async destroy(): Promise<void> {
         await new Promise(resolve => global.setTimeout(resolve, 500));
-        await this.app?.close();
-    }
-
-    private async bootstrap() {
-        this.app = await this.bootstrapForTesting(this.appConfig);
-        (this.app as any).state = this.state;
-    }
-
-    private async bootstrapForTesting(this: void, config: Partial<AppConfig>): Promise<App> {
-        try {
-            const finalConfig = runPreConfig(config);
-            Logger.useLogger(finalConfig.system.loggerStrategy);
-            const app = new App(AppModule);
-            app.expressApp.set('trust proxy', finalConfig.api.trustProxy);
-
-            await app.listen(finalConfig.api.port, finalConfig.api.host, () => {
-                Logger.info(`Server running on ${finalConfig.api.host}:${finalConfig.api.port}`);
-            });
-            return app;
-        } catch (error) {
-            console.log(error);
-            throw error;
+        if (this.app) {
+            await this.adapter.stop(this.app);
         }
-    }
-
-    private async populateInitialData(appConfig: Required<AppConfig>, options: TestServerOptions) {
-        const app = await populate(appConfig, this.bootstrapForTesting, {
-            logging: false,
-            ...options,
-        });
-        this.state = (app as any).state ?? this.state;
-        await app.close();
     }
 }

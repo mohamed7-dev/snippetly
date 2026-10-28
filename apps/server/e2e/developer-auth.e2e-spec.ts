@@ -18,11 +18,12 @@ import {
     PasswordValidationError,
     SendEmailOptions,
 } from '@snippetly/server';
-import { ApiClient, createTestEnvironment } from '@snippetly/testing';
+import { ApiClient } from '@snippetly/testing';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 import { getE2ETestSetupTimeout } from '../../../e2e-common/e2e-common-utils';
 import { initialData } from '../../../e2e-common/e2e-initial-data';
 import { testConfig } from '../../../e2e-common/test-config';
+import { createTestEnvironment } from './support/create-test-environment';
 import { authenticatedUserErrorGuard, successErrorGuard } from './utils/error-guards';
 import { TestPasswordValidationStrategy } from './utils/test-password-validation.strategy';
 

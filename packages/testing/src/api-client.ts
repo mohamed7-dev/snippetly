@@ -1,13 +1,22 @@
 import { AuthenticateDeveloperDtoType } from '@snippetly/common/dto';
 import { SUPER_ADMIN_IDENTIFIER, SUPER_ADMIN_PASSWORD } from '@snippetly/common/lib';
-import { AppConfig } from '@snippetly/server';
+
+export interface ApiClientConfig {
+    auth: {
+        authTokenHeaderKey?: string;
+        superAdminCredentials?: {
+            identifier?: string;
+            password?: string;
+        };
+    };
+}
 
 export class ApiClient {
     private authToken: string;
-    private headers: { [key: string]: any } = {};
+    private headers: Record<string, string> = {};
 
     constructor(
-        private appConfig: Required<AppConfig>,
+        private appConfig: ApiClientConfig,
         private apiUrl: string = '',
     ) {}
 

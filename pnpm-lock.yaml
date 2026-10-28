@@ -479,6 +479,9 @@ importers:
       '@types/express':
         specifier: ^5.0.3
         version: 5.0.6
+      '@types/faker':
+        specifier: ^5.5.9
+        version: 5.5.9
       '@types/jsonwebtoken':
         specifier: ^9.0.10
         version: 9.0.10
@@ -515,6 +518,9 @@ importers:
       eslint:
         specifier: catalog:tooling
         version: 9.39.5(jiti@2.7.0)
+      faker:
+        specifier: ^4.1.0
+        version: 4.1.0
       nodemailer:
         specifier: ^7.0.6
         version: 7.0.13
@@ -603,23 +609,14 @@ importers:
       '@snippetly/common':
         specifier: workspace:*
         version: link:../common
-      '@snippetly/server':
-        specifier: workspace:*
-        version: link:../../apps/server
-      faker:
-        specifier: ^4.1.0
-        version: 4.1.0
+      pg:
+        specifier: catalog:backend
+        version: 8.23.1
     devDependencies:
       '@snippetly/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
-      '@types/faker':
-        specifier: ^5.5.9
-        version: 5.5.9
       '@types/pg':
-        specifier: catalog:backend
-        version: 8.23.1
-      pg:
         specifier: catalog:backend
         version: 8.23.1
       typeorm:
