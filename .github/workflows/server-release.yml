@@ -16,6 +16,10 @@ jobs:
                   node-version: 20
                   cache: pnpm
             - run: pnpm install --frozen-lockfile
+            - name: Build workspace packages
+              run: |
+                  pnpm --filter @snippetly/common build
+                  pnpm --filter @snippetly/server build
             - name: Build Vercel deployment
               working-directory: apps/server
               run: |
