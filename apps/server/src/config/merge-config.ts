@@ -33,7 +33,6 @@ export function mergeConfig<Target extends RuntimeAppConfig>(
                     assignToObject(dest, srcTypedKey, {});
                 }
                 if (isConstructorInstance(srcValue)) {
-                    // console.log(srcValue);
                     // constructor -> assign directly to dest
                     assignToObject(dest, srcTypedKey, srcValue);
                 } else {

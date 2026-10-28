@@ -35,6 +35,10 @@ const dbName = process.env.DB_NAME;
 const dbSchema = process.env.DB_SCHEMA ?? 'public';
 const dbSSL = process.env.DB_SSL === 'true';
 const dbChannelBinding = process.env.DB_CHANNEL_BINDING === 'true';
+const corsAllowedOrigins =
+    process.env.CORS_ALLOWED_ORIGINS?.split(',')
+        .map(origin => origin.trim())
+        .filter(Boolean) ?? [];
 
 export const appConfig: AppConfig = {
     api: {
@@ -44,7 +48,9 @@ export const appConfig: AppConfig = {
                 ? Number(process.env.PORT)
                 : undefined
             : DEFAULT_API_SERVER_PORT,
-        ...(isProduction() ? { cors: {} } : { cors: { origin: true, credentials: true } }),
+        ...(isProduction()
+            ? { cors: { origin: corsAllowedOrigins, credentials: true } }
+            : { cors: { origin: true, credentials: true } }),
         trustProxy: isProduction() ? (process.env.VERCEL === '1' ? true : 1) : false,
     },
     auth: {

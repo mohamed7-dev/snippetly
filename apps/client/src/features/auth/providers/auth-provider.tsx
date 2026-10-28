@@ -143,7 +143,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         setAuthStatus(activeUserData?.id ? 'authenticated' : 'unauthenticated');
     }, [isLoadingActiveUser, activeUserData?.id, isActiveAuthMutationInProgress]);
-    console.log({ authStatus });
     React.useEffect(() => {
         if (authStatus !== 'authenticated' && authStatus !== 'unauthenticated') return;
 
