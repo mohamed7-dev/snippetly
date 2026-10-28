@@ -564,6 +564,9 @@ importers:
       '@snippetly/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
+      concurrently:
+        specifier: catalog:tooling
+        version: 9.2.4
       eslint:
         specifier: catalog:tooling
         version: 9.39.5(jiti@2.7.0)

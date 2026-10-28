@@ -12,17 +12,17 @@
         "./lib": {
             "types": "./dist/lib/index.d.ts",
             "import": "./dist/lib/index.js",
-            "require": "./dist/lib/index.js"
+            "require": "./dist/cjs/lib/index.js"
         },
         "./dto": {
             "types": "./dist/schema/index.d.ts",
             "import": "./dist/schema/index.js",
-            "require": "./dist/schema/index.js"
+            "require": "./dist/cjs/schema/index.js"
         }
     },
     "scripts": {
-        "dev": "tsc -p ./build/tsconfig.build.json -w",
-        "build": "rimraf dist && tsc -p ./build/tsconfig.build.json",
+        "dev": "pnpm run build && concurrently 'tsc -p ./build/tsconfig.build.json -w' 'tsc -p ./build/tsconfig.cjs.json -w'",
+        "build": "rimraf dist && tsc -p ./build/tsconfig.build.json && tsc -p ./build/tsconfig.cjs.json && node ./build/copy-cjs-package.mjs",
         "lint": "eslint --fix .",
         "format": "prettier --write .",
         "test": "vitest"
@@ -30,6 +30,7 @@
     "devDependencies": {
         "@snippetly/eslint-config": "workspace:*",
         "@snippetly/tsconfig": "workspace:*",
+        "concurrently": "catalog:tooling",
         "eslint": "catalog:tooling",
         "rimraf": "catalog:tooling",
         "typescript": "catalog:tooling",
