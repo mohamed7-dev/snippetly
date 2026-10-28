@@ -3,6 +3,9 @@
     "version": "0.0.0",
     "private": true,
     "description": "the server side api of the snippetly application.",
+    "engines": {
+        "node": "24.x"
+    },
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
     "files": [
@@ -48,7 +51,7 @@
         "morgan": "^1.10.1",
         "ms": "^2.1.3",
         "multer": "^2.0.2",
-        "nanoid": "^5.1.11",
+        "nanoid": "^3.3.19",
         "pg": "catalog:backend",
         "picocolors": "^1.1.1",
         "reflect-metadata": "^0.2.2",

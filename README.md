@@ -49,7 +49,7 @@ Local instructions are provided for maintaining or experimenting with the projec
 
 ### Requirements
 
-- Node.js 20 or newer
+- Node.js 24 (the repository's `.nvmrc` is the version source of truth)
 - pnpm 10
 - Docker Compose, for the local PostgreSQL service
 

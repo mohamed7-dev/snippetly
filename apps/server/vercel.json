@@ -3,14 +3,14 @@
     "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
     "builds": [
         {
-            "src": "dist/vercel.mjs",
+            "src": "dist/vercel.js",
             "use": "@vercel/node"
         }
     ],
     "routes": [
         {
             "src": "/(.*)",
-            "dest": "dist/vercel.mjs"
+            "dest": "dist/vercel.js"
         }
     ]
 }

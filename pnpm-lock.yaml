@@ -428,8 +428,8 @@ importers:
         specifier: ^2.0.2
         version: 2.4.0
       nanoid:
-        specifier: ^5.1.11
-        version: 5.1.16
+        specifier: ^3.3.19
+        version: 3.3.19
       pg:
         specifier: catalog:backend
         version: 8.23.1
@@ -5182,11 +5182,6 @@ packages:
   nanoid@3.3.19:
     resolution: {integrity: sha512-Y2tUNy4ouw6tq5oDSKeQYGOyhkUBhNOcGV/02KC+6kd9eDGqdZd++mjMiIDilrBYvjEnCYvVtsuHCuP+okSfug==}
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
-    hasBin: true
-
-  nanoid@5.1.16:
-    resolution: {integrity: sha512-kVrnsrJqMR8+oLJnGEmSWw9BivK5mt7H3FZatVRjrc5wGqFYuBxX1yG7+A7Gi5AefkX6t/oCkizcQgpu0cY1dQ==}
-    engines: {node: ^18 || >=20}
     hasBin: true
 
   natural-compare@1.4.0:
@@ -11920,8 +11915,6 @@ snapshots:
     optional: true
 
   nanoid@3.3.19: {}
-
-  nanoid@5.1.16: {}
 
   natural-compare@1.4.0: {}
 
