@@ -22,8 +22,8 @@ jobs:
                   pnpm --filter @snippetly/server build
             - name: Build Vercel deployment
               run: |
-                  pnpm dlx vercel@latest pull --yes --environment=production --token="$VERCEL_TOKEN"
-                  pnpm dlx vercel@latest build --prod --token="$VERCEL_TOKEN"
+                  pnpm dlx vercel@latest --cwd apps/server pull --yes --environment=production --token="$VERCEL_TOKEN"
+                  pnpm dlx vercel@latest --cwd apps/server build --prod --standalone --token="$VERCEL_TOKEN"
               env:
                   VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
                   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -40,7 +40,7 @@ jobs:
                   DB_SSL: ${{ secrets.DB_SSL }}
                   DB_CHANNEL_BINDING: ${{ secrets.DB_CHANNEL_BINDING }}
             - name: Deploy Vercel artifact
-              run: pnpm dlx vercel@latest deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+              run: pnpm dlx vercel@latest --cwd apps/server deploy --prebuilt --prod --token="$VERCEL_TOKEN"
               env:
                   VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
                   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
