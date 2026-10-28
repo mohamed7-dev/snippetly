@@ -1,6 +1,6 @@
 {
     "version": 2,
-    "installCommand": "cd ../.. && pnpm install --frozen-lockfile && pnpm --filter @snippetly/common build && pnpm --filter @snippetly/server build",
+    "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
     "builds": [
         {
             "src": "dist/vercel.mjs",
