@@ -1,33 +1,28 @@
-import { AppConfig } from '@snippetly/server';
-import { ApiClient } from './api-client';
-import { TestServer } from './test-server';
+import { ApiClient, type ApiClientConfig } from './api-client';
+import { TestServer, type TestServerAdapter } from './test-server';
 
-export interface TestEnvironment {
-    /**
-     * @description
-     * A Snippetly server instance.
-     */
-    server: TestServer;
-    /**
-     * @description
-     * An API client configured for the Admin API.
-     */
+export interface TestEnvironmentConfig extends ApiClientConfig {
+    api: {
+        port?: number;
+        admin?: { path?: string };
+        developer?: { path?: string };
+    };
+}
+
+export interface TestEnvironment<Config, App, State, Options> {
+    server: TestServer<Config, App, State, Options>;
     adminClient: ApiClient;
-    /**
-     * @description
-     * An API client configured for the Developer API.
-     */
     developerClient: ApiClient;
 }
 
-export function createTestEnvironment(appConfig: Required<AppConfig>): TestEnvironment {
-    const server = new TestServer(appConfig);
-    const { port, admin, developer } = appConfig.api;
-    const adminClient = new ApiClient(appConfig, `http://localhost:${port}/api/v1/${admin?.path!}`);
-    const developerClient = new ApiClient(appConfig, `http://localhost:${port}/api/v1/${developer?.path!}`);
-    return {
-        server,
-        adminClient,
-        developerClient,
-    };
+export function createTestEnvironment<Config extends TestEnvironmentConfig, App, State, Options>(
+    config: Config,
+    adapter: TestServerAdapter<Config, App, State, Options>,
+): TestEnvironment<Config, App, State, Options> {
+    const server = new TestServer(config, adapter);
+    const { port, admin, developer } = config.api;
+    const adminClient = new ApiClient(config, `http://localhost:${port}/api/v1/${admin?.path ?? ''}`);
+    const developerClient = new ApiClient(config, `http://localhost:${port}/api/v1/${developer?.path ?? ''}`);
+
+    return { server, adminClient, developerClient };
 }

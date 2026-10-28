@@ -40,6 +40,7 @@ export function BottomNavigation() {
                         <span>Discover</span>
                     </Link>
                 </Button>
+
                 <PermissionGuard requiredPermissions={[Permission.Authenticated]} isAvailableOffline>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>

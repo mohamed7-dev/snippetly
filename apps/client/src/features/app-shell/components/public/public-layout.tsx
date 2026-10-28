@@ -44,8 +44,9 @@ function PublicLayoutHeader() {
     return (
         <HeaderWrapper>
             <div className="container mx-auto px-2 sm:px-6 lg:px-8">
-                <div className="flex min-h-14 items-center justify-center lg:hidden">
+                <div className="flex min-h-14 items-center justify-center has-[>button]:justify-between lg:hidden">
                     <Logo />
+                    <InstallAppButton />
                 </div>
                 <div className="hidden min-h-16 items-center justify-between gap-4 py-2 lg:flex">
                     <Logo />

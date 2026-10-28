@@ -104,7 +104,7 @@ export function App() {
                             <ThemeProvider defaultTheme="dark">
                                 <DeleteConfirmationProvider>
                                     <InnerApp />
-                                    {createPortal(<Toaster position="bottom-right" />, document.body)}
+                                    {createPortal(<Toaster position="top-center" />, document.body)}
                                 </DeleteConfirmationProvider>
                             </ThemeProvider>
                         </NotificationsProvider>
